@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel María - Organizador Personal</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+</head>
+<body>
+    <!-- App Bar -->
+    <header class="app-bar">
+        <div class="container">
+            <div class="app-bar__inner">
+                <div class="app-bar__title-group">
+                    <div class="app-bar__icon-wrapper">
+                        <span class="material-symbols-outlined">dashboard</span>
+                    </div>
+                    <div>
+                        <h1 class="app-bar__title">Panel María</h1>
+                        <p class="app-bar__subtitle">Organiza tus recursos, ideas, proyectos y logros</p>
+                    </div>
+                </div>
+                <div class="app-bar__actions">
+                    <button id="voiceBtn" class="btn btn--voice" title="Entrada por voz">
+                        <span class="material-symbols-outlined">mic</span>
+                    </button>
+                    <button id="settingsBtn" class="btn btn--text">
+                        <span class="material-symbols-outlined">settings</span>
+                    </button>
+                    <button id="addItemBtn" class="btn btn--filled">
+                        <span class="material-symbols-outlined">add</span> Nuevo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+        <div class="container">
+            <div class="nav-tabs__inner">
+                <button class="nav-tab active" data-module="directorio">
+                    <span class="material-symbols-outlined">bookmarks</span>
+                    Directorio
+                </button>
+                <button class="nav-tab" data-module="ideas">
+                    <span class="material-symbols-outlined">lightbulb</span>
+                    Ideas
+                </button>
+                <button class="nav-tab" data-module="proyectos">
+                    <span class="material-symbols-outlined">assignment</span>
+                    Proyectos
+                </button>
+                <button class="nav-tab" data-module="logros">
+                    <span class="material-symbols-outlined">emoji_events</span>
+                    Logros
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Search and Filters -->
+        <div class="filters-bar">
+            <div class="search-wrapper">
+                <span class="material-symbols-outlined search-icon">search</span>
+                <input type="text" id="searchInput" placeholder="Buscar..." class="input-field">
+            </div>
+            <div class="category-filter-wrapper">
+                <select id="categoryFilter" class="input-field">
+                    <option value="">Todas las categorías</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Bulk Actions Bar -->
+        <div id="bulkActions" class="bulk-actions-bar hidden">
+            <div class="selection-controls">
+                <input type="checkbox" id="selectAllCheckbox" class="checkbox-field">
+                <label for="selectAllCheckbox">Seleccionar todo</label>
+                <span id="selectionCount" class="selection-count">0</span>
+            </div>
+            <div class="actions">
+                <button id="bulkChangeCategoryBtn" class="btn btn--secondary">Cambiar Categoría</button>
+                <button id="bulkPinBtn" class="btn btn--secondary">Anclar/Desanclar</button>
+                <button id="bulkDeleteBtn" class="btn btn--danger">Eliminar</button>
+            </div>
+        </div>
+
+        <!-- Items Grid -->
+        <div id="itemsContainer" class="items-grid">
+            <!-- Tarjetas de items se inyectan aquí -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state hidden">
+            <span class="material-symbols-outlined empty-state__icon">add_circle</span>
+            <h3 class="empty-state__title">No hay elementos en este módulo</h3>
+            <p class="empty-state__text">Comienza agregando tu primer elemento o usa entrada por voz.</p>
+            <button id="emptyStateAddBtn" class="btn btn--filled">
+                <span class="material-symbols-outlined">add</span>
+                Agregar Primer Elemento
+            </button>
+        </div>
+    </main>
+
+    <!-- Modal for Add/Edit Item -->
+    <div id="itemModal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal__header">
+                <h2 id="modalTitle" class="modal__title">Agregar Nuevo Elemento</h2>
+                <button id="closeModalBtn" class="btn btn--icon"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <form id="itemForm" class="modal__body">
+                <input type="hidden" id="editId">
+                <input type="hidden" id="currentModule">
+                
+                <div class="form-group">
+                    <label for="itemTitle" class="form-label">Título *</label>
+                    <input type="text" id="itemTitle" required class="input-field" placeholder="Título del elemento">
+                </div>
+                
+                <div class="form-group">
+                    <label for="itemDescription" class="form-label">Descripción</label>
+                    <textarea id="itemDescription" rows="3" class="input-field" placeholder="Descripción opcional"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="itemCategories" class="form-label">Categorías</label>
+                    <input type="text" id="itemCategories" class="input-field" placeholder="Categorías separadas por comas">
+                </div>
+                
+                <!-- URLs Section (for Directorio) -->
+                <div id="urlsSection" class="form-group hidden">
+                    <label class="form-label">URLs</label>
+                    <div id="urlsList" class="urls-list">
+                        <div class="url-item">
+                            <input type="url" class="input-field url-input" placeholder="https://ejemplo.com">
+                            <button type="button" class="btn btn--icon remove-url"><span class="material-symbols-outlined">remove</span></button>
+                        </div>
+                    </div>
+                    <button type="button" id="addUrlBtn" class="btn btn--text">
+                        <span class="material-symbols-outlined">add</span> Agregar URL
+                    </button>
+                </div>
+                
+                <!-- Tasks Section (for Proyectos) -->
+                <div id="tasksSection" class="form-group hidden">
+                    <label class="form-label">Tareas</label>
+                    <div id="tasksList" class="tasks-list">
+                        <div class="task-item">
+                            <input type="checkbox" class="checkbox-field task-checkbox">
+                            <input type="text" class="input-field task-input" placeholder="Nueva tarea">
+                            <button type="button" class="btn btn--icon remove-task"><span class="material-symbols-outlined">remove</span></button>
+                        </div>
+                    </div>
+                    <button type="button" id="addTaskBtn" class="btn btn--text">
+                        <span class="material-symbols-outlined">add</span> Agregar Tarea
+                    </button>
+                </div>
+                
+                <div class="form-group-inline">
+                    <input type="checkbox" id="itemPinned" class="checkbox-field">
+                    <label for="itemPinned">Anclar este elemento</label>
+                </div>
+                
+                <div class="modal__footer">
+                    <button type="button" id="cancelBtn" class="btn btn--text">Cancelar</button>
+                    <button type="submit" id="saveBtn" class="btn btn--filled">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Bulk Category Change Modal -->
+    <div id="bulkCategoryModal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal__header">
+                <h2 class="modal__title">Cambiar Categoría en Lote</h2>
+                <button id="bulkCategoryCancelBtn" class="btn btn--icon"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <div class="modal__body">
+                <p class="modal__text">Selecciona la nueva categoría para los elementos seleccionados.</p>
+                <input type="text" id="bulkNewCategory" class="input-field" placeholder="Nueva categoría">
+            </div>
+            <div class="modal__footer">
+                <button type="button" id="bulkCategoryOkBtn" class="btn btn--filled">Aplicar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal-overlay hidden">
+        <div class="modal modal--confirm">
+            <div class="modal__body">
+                <h3 id="confirmTitle" class="modal__title">Confirmar acción</h3>
+                <p id="confirmMessage" class="modal__confirm-text">¿Estás seguro de que quieres realizar esta acción?</p>
+                <div class="modal__footer">
+                    <button id="confirmCancelBtn" class="btn btn--text">Cancelar</button>
+                    <button id="confirmOkBtn" class="btn btn--danger">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Voice Processing Modal -->
+    <div id="voiceModal" class="modal-overlay hidden">
+        <div class="modal modal--voice">
+            <div class="modal__body">
+                <div id="voiceStatus" class="voice-status">
+                    <span class="material-symbols-outlined voice-icon">mic</span>
+                    <h3 id="voiceTitle">Escuchando...</h3>
+                    <p id="voiceMessage">Habla ahora para crear un nuevo elemento</p>
+                </div>
+                <div id="voiceTranscription" class="voice-transcription hidden">
+                    <h4>Transcripción:</h4>
+                    <p id="transcriptionText"></p>
+                    <div class="voice-actions">
+                        <button id="voiceRetryBtn" class="btn btn--text">Reintentar</button>
+                        <button id="voiceSaveBtn" class="btn btn--filled">Guardar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal__header">
+                <h2 class="modal__title">Configuración</h2>
+                <button id="settingsCloseBtn" class="btn btn--icon"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <div class="modal__body">
+                <div class="form-group">
+                    <label for="autoSaveVoice" class="form-label">Guardado automático por voz</label>
+                    <div class="form-group-inline">
+                        <input type="checkbox" id="autoSaveVoice" class="checkbox-field">
+                        <label for="autoSaveVoice">Activar guardado automático</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="themeSelect" class="form-label">Tema</label>
+                    <select id="themeSelect" class="input-field">
+                        <option value="default">Tema por defecto</option>
+                        <option value="dark">Tema oscuro</option>
+                        <option value="colorful">Tema colorido</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button id="exportDataBtn" class="btn btn--secondary">Exportar Datos</button>
+                    <button id="importDataBtn" class="btn btn--secondary">Importar Datos</button>
+                    <input type="file" id="importFile" accept=".json" class="hidden">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="storage.js"></script>
+    <script src="voice.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
