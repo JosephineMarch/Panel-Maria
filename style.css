@@ -358,44 +358,19 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  gap: 0.5rem; /* Add gap for spacing between elements */
 }
 
-.card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-hover);
-}
-
-.card.selected {
-  border-color: var(--accent-orange-cta);
-  background-color: var(--accent-yellow);
-}
-
-/* Category-specific card backgrounds */
-.card[data-category="directorio"] {
-  background-color: var(--category-directorio);
-}
-
-.card[data-category="ideas"] {
-  background-color: var(--category-ideas);
-}
-
-.card[data-category="proyectos"] {
-  background-color: var(--category-proyectos);
-}
-
-.card[data-category="logros"] {
-  background-color: var(--category-logros);
-}
-
-.card[data-category="todos"] {
-  background-color: var(--category-todos);
+.card__tags--top {
+  /* No absolute positioning */
+  margin-bottom: 0.5rem; /* Add some space below tags */
 }
 
 .card__header { 
   display: flex; 
   align-items: center; 
   justify-content: space-between; 
-  margin-bottom: 1rem; 
+  /* margin-bottom: 1rem;  Remove or adjust as needed */
 }
 
 .card__title { 
@@ -439,7 +414,6 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-top: 1rem;
 }
 
 .card__tag {

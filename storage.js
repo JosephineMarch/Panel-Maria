@@ -28,7 +28,7 @@ class LocalStorageAdapter extends StorageAdapter {
                 // Si no hay datos, devuelve la estructura por defecto
                 return {
                     items: [],
-                    settings: { autoSaveVoice: true }
+                    settings: { autoSaveVoice: true, customCategories: [] }
                 };
             }
             return JSON.parse(data);
@@ -205,12 +205,25 @@ class Storage {
             const reader = new FileReader();
             reader.onload = async (event) => {
                 try {
-                    const data = JSON.parse(event.target.result);
-                    if (data && data.items && data.settings) {
-                        await this.saveAll(data);
+                    let importedData;
+                    if (file.type === 'application/json' || file.name.endsWith('.json')) {
+                        importedData = JSON.parse(event.target.result);
+                    } else if (file.type === 'text/html' || file.name.endsWith('.html')) {
+                        importedData = this.parseHtmlBookmarks(event.target.result);
+                    } else {
+                        throw new Error('Tipo de archivo no soportado');
+                    }
+
+                    if (importedData && importedData.items) {
+                        // Merge with existing items or replace
+                        const currentData = await this.loadAll();
+                        currentData.items = [...currentData.items, ...importedData.items];
+                        // Optionally, merge settings or keep current
+                        // currentData.settings = { ...currentData.settings, ...importedData.settings };
+                        await this.saveAll(currentData);
                         resolve();
                     } else {
-                        reject(new Error('Estructura de JSON inválida'));
+                        reject(new Error('Estructura de datos importados inválida'));
                     }
                 } catch (error) {
                     reject(error);
@@ -220,9 +233,61 @@ class Storage {
             reader.readAsText(file);
         });
     }
-    
+
+    parseHtmlBookmarks(htmlContent) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlContent, 'text/html');
+        const items = [];
+
+        const processDl = (dlElement, currentTags = []) => {
+            dlElement.querySelectorAll('> dt').forEach(dt => {
+                const h3 = dt.querySelector('h3');
+                const a = dt.querySelector('a');
+                const nestedDl = dt.querySelector('dl');
+
+                if (h3) {
+                    const folderName = h3.textContent.trim();
+                    const newTags = [...currentTags, folderName];
+                    if (nestedDl) {
+                        processDl(nestedDl, newTags);
+                    }
+                } else if (a) {
+                    const url = a.href;
+                    const title = a.textContent.trim();
+                    const addDate = a.getAttribute('add_date');
+                    const existingTags = a.getAttribute('tags');
+
+                    if (url && title) {
+                        const itemTags = existingTags ? existingTags.split(',').map(tag => tag.trim()) : [];
+                        const allTags = [...new Set([...itemTags, ...currentTags])]; // Combine and deduplicate
+
+                        items.push({
+                            id: this.generateId(),
+                            categoria: 'directorio', // Default category for imported bookmarks
+                            titulo: title,
+                            descripcion: '',
+                            tareas: [],
+                            url: url,
+                            etiquetas: allTags,
+                            anclado: false,
+                            fecha_creacion: addDate ? new Date(parseInt(addDate) * 1000).toISOString() : new Date().toISOString(),
+                            fecha_finalizacion: null,
+                            archivos_adjuntos: [],
+                            meta: { source: 'html_bookmark' }
+                        });
+                    }
+                }
+            });
+        };
+
+        // Start processing from the top-level DL elements
+        doc.querySelectorAll('body > dl').forEach(dl => processDl(dl));
+
+        return { items: items, settings: {} };
+    }
+
     // --- Funciones de Configuración ---
-    
+
     async getSettings() {
         const data = await this.loadAll();
         return data.settings || {};

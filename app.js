@@ -18,21 +18,25 @@ class PanelMariaApp {
         this.filters = { search: '' };
         this.settings = {};
         this.currentEditId = null;
+        this.pendingConfirmId = null; // Added for individual delete confirmation
         
         // Exponer métodos globales para eventos HTML
         window.appController = {
             openModal: (id = null) => this.openModal(id),
             togglePinned: (id) => this.togglePinned(id),
-            confirmDelete: (id) => this.confirmDelete(id),
+            confirmDelete: (id) => this.confirmDeleteItem(id),
             handleCardClick: (event, id) => this.handleCardClick(event, id),
             toggleSelection: (id) => this.toggleSelection(id),
             convertToLogro: (id) => this.convertToLogro(id),
-            toggleTask: (itemId, taskId) => this.toggleTask(itemId, taskId)
+            toggleTask: (itemId, taskId) => this.toggleTask(itemId, taskId),
+            filterByTag: (tag) => this.filterByTag(tag)
         };
     }
     
     async init() {
         await this.loadData();
+        this.renderNavigationTabs(); // Render navigation tabs dynamically
+        this.populateCategorySelector(); // Populate category selector dynamically
         this.setupEventListeners();
         this.switchCategory(this.settings.lastCategory || 'todos'); // Cargar la última categoría visitada
         this.applyTheme();
@@ -42,7 +46,7 @@ class PanelMariaApp {
         try {
             const data = await storage.loadAll();
             this.items = data.items || [];
-            this.settings = data.settings || { autoSaveVoice: false, theme: 'default', lastCategory: 'todos' };
+            this.settings = data.settings || { autoSaveVoice: false, theme: 'default', lastCategory: 'todos', customCategories: [] };
             // voiceManager.setAutoSave(this.settings.autoSaveVoice || false);
         } catch (error) {
             console.error('Error loading data:', error);
@@ -60,13 +64,6 @@ class PanelMariaApp {
     }
     
     setupEventListeners() {
-        // Navegación de categorías
-        document.querySelectorAll('.nav-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                this.switchCategory(tab.dataset.category);
-            });
-        });
-        
         // Botones principales
         document.getElementById('addItemBtn').addEventListener('click', () => this.openModal());
         // document.getElementById('voiceBtn').addEventListener('click', () => voiceManager.startListening());
@@ -86,6 +83,7 @@ class PanelMariaApp {
         
         // Acciones en lote
         document.getElementById('bulkChangeCategoryBtn').addEventListener('click', () => this.openBulkCategoryModal());
+        document.getElementById('bulkChangeTagsBtn').addEventListener('click', () => this.openBulkTagsModal());
         document.getElementById('bulkPinBtn').addEventListener('click', () => this.bulkTogglePinned());
         document.getElementById('bulkDeleteBtn').addEventListener('click', () => this.confirmBulkDelete());
         
@@ -96,6 +94,14 @@ class PanelMariaApp {
         
         // Tareas dinámicas
         document.getElementById('addTaskBtn').addEventListener('click', () => this.addTaskField());
+
+        // Gestión de etiquetas en el modal de item
+        document.getElementById('addTagBtn').addEventListener('click', () => this.addTagToItemModal());
+        document.getElementById('itemTagsContainer').addEventListener('click', (e) => {
+            if (e.target.classList.contains('card__tag')) {
+                this.toggleTagInItemModal(e.target.textContent.trim());
+            }
+        });
         
         // Modales de confirmación
         document.getElementById('confirmCancelBtn').addEventListener('click', () => this.closeConfirmModal());
@@ -104,6 +110,10 @@ class PanelMariaApp {
         // Modal de categoría en lote
         document.getElementById('bulkCategoryCancelBtn').addEventListener('click', () => this.closeBulkCategoryModal());
         document.getElementById('bulkCategoryOkBtn').addEventListener('click', () => this.handleBulkChangeCategory());
+        
+        // Modal de etiquetas en lote
+        document.getElementById('bulkTagsCancelBtn').addEventListener('click', () => this.closeBulkTagsModal());
+        document.getElementById('bulkTagsOkBtn').addEventListener('click', () => this.handleBulkChangeTags());
         
         // Modal de configuración
         document.getElementById('settingsCloseBtn').addEventListener('click', () => this.closeSettingsModal());
@@ -117,12 +127,40 @@ class PanelMariaApp {
             this.applyTheme();
             this.saveData();
         });
+
+        // Custom Categories Management
+        document.getElementById('addCustomCategoryBtn').addEventListener('click', () => this.addCustomCategory());
+        document.getElementById('customCategoriesList').addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-tag')) {
+                this.removeCustomCategory(e.target.dataset.category);
+            }
+        });
+
         document.getElementById('exportDataBtn').addEventListener('click', () => storage.exportData());
         document.getElementById('importDataBtn').addEventListener('click', () => document.getElementById('importFile').click());
         document.getElementById('importFile').addEventListener('change', (e) => this.handleImportFile(e));
         
         // Atajos de teclado
         document.addEventListener('keydown', (e) => this.handleKeyboardShortcuts(e));
+
+        // Sincronización entre pestañas
+        window.addEventListener('storage', (e) => this.handleStorageChange(e));
+    }
+
+    handleStorageChange(e) {
+        if (e.key === storage.adapter.storageKey && e.newValue !== e.oldValue) {
+            // Data changed in another tab, reload and re-render
+            this.loadData().then(() => {
+                this.renderAll();
+                this.showToast('Datos actualizados desde otra pestaña', 'info');
+            });
+        }
+    }
+
+    filterByTag(tag) {
+        this.filters.tag = tag;
+        this.renderAll();
+        this.showToast(`Filtrando por etiqueta: ${tag}`, 'info');
     }
     
     switchCategory(category) {
@@ -143,6 +181,65 @@ class PanelMariaApp {
         this.renderItems();
         this.updateSelectionUI();
         this.updateEmptyState();
+    }
+
+    renderNavigationTabs() {
+        const navTabsContainer = document.querySelector('.nav-tabs__inner');
+        const predefinedCategories = ['directorio', 'ideas', 'proyectos', 'logros'];
+        const allCategories = [...predefinedCategories, ...(this.settings.customCategories || [])];
+
+        let tabsHtml = allCategories.map(category => `
+            <button class="nav-tab" data-category="${category}">
+                <span class="material-symbols-outlined">${this.getCategoryIcon(category)}</span>
+                ${this.formatCategoryName(category)}
+            </button>
+        `).join('');
+
+        // Add 'Todos' tab
+        tabsHtml += `
+            <button class="nav-tab" data-category="todos">
+                <span class="material-symbols-outlined">select_all</span>
+                Todos
+            </button>
+        `;
+
+        navTabsContainer.innerHTML = tabsHtml; // Set innerHTML once
+
+        // Re-attach event listeners for dynamically created tabs
+        navTabsContainer.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                this.switchCategory(tab.dataset.category);
+            });
+        });
+        // Set active tab
+        navTabsContainer.querySelector(`[data-category="${this.currentCategory}"]`)?.classList.add('active');
+    }
+
+    populateCategorySelector() {
+        const selector = document.getElementById('itemCategory');
+        const predefinedCategories = ['directorio', 'ideas', 'proyectos', 'logros'];
+        const allCategories = [...predefinedCategories, ...(this.settings.customCategories || [])];
+
+        selector.innerHTML = allCategories.map(category => `
+            <option value="${category}">${this.formatCategoryName(category)}</option>
+        `).join('');
+
+        // Set selected category
+        selector.value = this.currentCategory === 'todos' ? 'directorio' : this.currentCategory;
+    }
+
+    getCategoryIcon(category) {
+        switch (category) {
+            case 'directorio': return 'bookmarks';
+            case 'ideas': return 'lightbulb';
+            case 'proyectos': return 'assignment';
+            case 'logros': return 'emoji_events';
+            default: return 'category'; // Default icon for custom categories
+        }
+    }
+
+    formatCategoryName(category) {
+        return category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
     }
     
     renderItems() {
@@ -172,6 +269,12 @@ class PanelMariaApp {
                 (item.url && item.url.toLowerCase().includes(searchTerm))
             );
         }
+
+        // Aplicar filtro por etiqueta
+        if (this.filters.tag) {
+            const tagFilter = this.filters.tag.toLowerCase();
+            items = items.filter(item => item.etiquetas && item.etiquetas.some(tag => tag.toLowerCase() === tagFilter));
+        }
         
         // Ordenar: anclados primero, luego por fecha
         items.sort((a, b) => {
@@ -190,6 +293,11 @@ class PanelMariaApp {
         return `
             <div class="card ${isSelected ? 'selected' : ''}" data-id="${item.id}" onclick="appController.handleCardClick(event, '${item.id}')">
                 <input type="checkbox" class="card__checkbox" ${isSelected ? 'checked' : ''} onchange="appController.toggleSelection('${item.id}')">
+                ${item.etiquetas && item.etiquetas.length > 0 ? `
+                    <div class="card__tags card__tags--top">
+                        ${item.etiquetas.map(tag => `<span class="card__tag" onclick="event.stopPropagation(); appController.filterByTag('${this.escapeHtml(tag)}')">${this.formatTagText(this.escapeHtml(tag))}</span>`).join('')}
+                    </div>
+                ` : ''}
                 
                 <div class="card__header">
                     <h3 class="card__title">${this.escapeHtml(item.titulo)}</h3>
@@ -200,13 +308,8 @@ class PanelMariaApp {
                 
                 <div class="card__body">
                     ${item.descripcion ? `<p class="card__description">${this.escapeHtml(item.descripcion)}</p>` : ''}
-                    ${item.url ? `<div class="card__urls"><a href="${item.url}" target="_blank" class="card__url">${this.escapeHtml(item.url)}</a></div>` : ''}
+                    ${item.url ? `<div class="card__urls"><a href="${item.url}" target="_blank" class="card__url">${this.escapeHtml(this.truncateUrl(item.url))}</a></div>` : ''}
                     ${item.tareas && item.tareas.length > 0 ? this.createTasksContent(item) : ''}
-                    ${item.etiquetas && item.etiquetas.length > 0 ? `
-                        <div class="card__tags">
-                            ${item.etiquetas.map(tag => `<span class="card__tag">${this.escapeHtml(tag)}</span>`).join('')}
-                        </div>
-                    ` : ''}
                 </div>
                 
                 <div class="card__footer">
@@ -320,7 +423,9 @@ class PanelMariaApp {
         document.getElementById('itemTitle').value = item.titulo;
         document.getElementById('itemDescription').value = item.descripcion || '';
         document.getElementById('itemUrl').value = item.url || '';
-        document.getElementById('itemTags').value = (item.etiquetas || []).join(', ');
+        
+        this.renderItemTagsInModal(item.etiquetas || []); // Render tags
+        this.tempNewItemTags = item.etiquetas || []; // Initialize temp tags for editing
         
         const tasksList = document.getElementById('tasksList');
         tasksList.innerHTML = '';
@@ -336,6 +441,66 @@ class PanelMariaApp {
         document.getElementById('itemCategory').value = this.currentCategory === 'todos' ? 'directorio' : this.currentCategory;
         document.getElementById('tasksList').innerHTML = '';
         this.addTaskField();
+        this.renderItemTagsInModal([]); // Clear tags
+    }
+    
+    addTagToItemModal() {
+        const input = document.getElementById('newItemTagInput');
+        const newTag = input.value.trim();
+        if (newTag) {
+            const currentItem = this.items.find(item => item.id === this.currentEditId);
+            const tags = currentItem ? [...currentItem.etiquetas] : [];
+            if (!tags.includes(newTag)) {
+                tags.push(newTag);
+                if (currentItem) {
+                    currentItem.etiquetas = tags;
+                } else {
+                    // For new items, store in a temporary array
+                    this.tempNewItemTags = tags;
+                }
+                this.renderItemTagsInModal(tags);
+                input.value = '';
+            } else {
+                this.showToast(`La etiqueta '${newTag}' ya existe.`, 'error');
+            }
+        }
+    }
+
+    toggleTagInItemModal(tag) {
+        const currentItem = this.items.find(item => item.id === this.currentEditId);
+        let tags = currentItem ? [...currentItem.etiquetas] : (this.tempNewItemTags || []);
+
+        if (tags.includes(tag)) {
+            tags = tags.filter(t => t !== tag);
+        } else {
+            tags.push(tag);
+        }
+
+        if (currentItem) {
+            currentItem.etiquetas = tags;
+        } else {
+            this.tempNewItemTags = tags;
+        }
+        this.renderItemTagsInModal(tags);
+    }
+
+    renderItemTagsInModal(selectedTags) {
+        const container = document.getElementById('itemTagsContainer');
+        const allTags = [...new Set([...this.getAllExistingTags(), ...selectedTags])];
+
+        container.innerHTML = allTags.map(tag => `
+            <span class="card__tag ${selectedTags.includes(tag) ? 'selected' : ''}" data-tag="${this.escapeHtml(tag)}">
+                ${this.formatTagText(this.escapeHtml(tag))}
+            </span>
+        `).join('');
+    }
+
+    getAllExistingTags() {
+        const tags = new Set();
+        this.items.forEach(item => {
+            item.etiquetas.forEach(tag => tags.add(tag));
+        });
+        return Array.from(tags);
     }
     
     addTaskField(task = null) {
@@ -368,7 +533,7 @@ class PanelMariaApp {
             titulo: document.getElementById('itemTitle').value.trim(),
             descripcion: document.getElementById('itemDescription').value.trim(),
             url: document.getElementById('itemUrl').value.trim(),
-            etiquetas: document.getElementById('itemTags').value.split(',').map(t => t.trim()).filter(t => t),
+            etiquetas: this.tempNewItemTags || [], // Get tags from the new UI
             tareas: Array.from(document.querySelectorAll('#tasksList .task-item')).map(item => ({
                 id: this.generateId(),
                 titulo: item.querySelector('.task-input').value.trim(),
@@ -413,8 +578,9 @@ class PanelMariaApp {
     async convertToLogro(id) {
         try {
             const updatedItem = await storage.convertToLogro(id);
-            this.items = this.items.map(i => i.id === id ? updatedItem : i);
-            this.renderAll();
+            // Force a full data reload to ensure consistency
+            await this.loadData(); 
+            this.switchCategory('logros'); // Switch to the 'logros' category to show the converted item
             this.showToast('Elemento convertido a logro', 'success');
         } catch (error) {
             console.error('Error converting to logro:', error);
@@ -498,12 +664,45 @@ class PanelMariaApp {
         this.closeBulkCategoryModal();
         this.renderAll();
     }
+
+    async handleBulkChangeTags() {
+        const newTagsInput = document.getElementById('bulkNewTags').value;
+        const newTags = newTagsInput.split(',').map(tag => tag.trim()).filter(tag => tag);
+
+        if (newTags.length === 0) {
+            this.showToast('Por favor, introduce al menos una etiqueta.', 'error');
+            return;
+        }
+
+        for (const id of this.selectedItems) {
+            const item = this.items.find(i => i.id === id);
+            if (item) {
+                // Combine existing tags with new tags, remove duplicates
+                const updatedTags = [...new Set([...item.etiquetas, ...newTags])];
+                await storage.updateItem(id, { etiquetas: updatedTags });
+            }
+        }
+        await this.loadData();
+        this.selectedItems.clear();
+        this.closeBulkTagsModal();
+        this.renderAll();
+        this.showToast('Etiquetas actualizadas en lote', 'success');
+    }
     
     confirmBulkDelete() {
         this.showConfirmModal(
             'Eliminar Elementos',
             `¿Estás seguro de que quieres eliminar ${this.selectedItems.size} elementos? Esta acción no se puede deshacer.`,
             () => this.bulkDelete()
+        );
+    }
+
+    confirmDeleteItem(id) {
+        this.pendingConfirmId = id; // Store the ID for individual delete
+        this.showConfirmModal(
+            'Eliminar Elemento',
+            '¿Estás seguro de que quieres eliminar este elemento? Esta acción no se puede deshacer.',
+            () => this.deleteItem(this.pendingConfirmId)
         );
     }
     
@@ -527,21 +726,82 @@ class PanelMariaApp {
     closeConfirmModal() {
         document.getElementById('confirmModal').classList.add('hidden');
         this.confirmAction = null;
+        this.pendingConfirmId = null; // Clear the stored ID on close
     }
     
     executeConfirmAction() {
         this.confirmAction?.();
         this.closeConfirmModal();
+        this.pendingConfirmId = null; // Clear the stored ID after execution
     }
     
     openBulkCategoryModal() { document.getElementById('bulkCategoryModal').classList.remove('hidden'); }
     closeBulkCategoryModal() { document.getElementById('bulkCategoryModal').classList.add('hidden'); }
-    openSettingsModal() { document.getElementById('settingsModal').classList.remove('hidden'); }
-    closeSettingsModal() { document.getElementById('settingsModal').classList.add('hidden'); }
+    openBulkTagsModal() { document.getElementById('bulkTagsModal').classList.remove('hidden'); }
+    closeBulkTagsModal() { document.getElementById('bulkTagsModal').classList.add('hidden'); }
+    openSettingsModal() {
+        document.getElementById('settingsModal').classList.remove('hidden');
+        this.renderCustomCategories();
+    }
+    closeSettingsModal() {
+        document.getElementById('settingsModal').classList.add('hidden');
+    }
+
+    addCustomCategory() {
+        const input = document.getElementById('newCustomCategoryInput');
+        const newCategory = input.value.trim();
+        if (newCategory && !this.settings.customCategories.includes(newCategory)) {
+            this.settings.customCategories.push(newCategory);
+            this.saveData();
+            this.renderCustomCategories();
+            this.renderNavigationTabs(); // Update navigation tabs
+            this.populateCategorySelector(); // Update category selector
+            input.value = '';
+            this.showToast(`Categoría '${newCategory}' añadida.`, 'success');
+        } else if (newCategory) {
+            this.showToast(`La categoría '${newCategory}' ya existe.`, 'error');
+        }
+    }
+
+    removeCustomCategory(category) {
+        this.settings.customCategories = this.settings.customCategories.filter(cat => cat !== category);
+        this.saveData();
+        this.renderCustomCategories();
+        this.renderNavigationTabs(); // Update navigation tabs
+        this.populateCategorySelector(); // Update category selector
+        this.showToast(`Categoría '${category}' eliminada.`, 'success');
+    }
+
+    renderCustomCategories() {
+        const list = document.getElementById('customCategoriesList');
+        list.innerHTML = this.settings.customCategories.map(category => `
+            <span class="card__tag">
+                ${this.escapeHtml(category)}
+                <button class="btn btn--icon remove-tag" data-category="${this.escapeHtml(category)}">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </span>
+        `).join('');
+    }
 
     // Utilidades
     escapeHtml(text) {
         return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    truncateUrl(url, maxLength = 50) {
+        if (url.length <= maxLength) {
+            return url;
+        }
+        const protocolEnd = url.indexOf('://');
+        let displayUrl = url;
+        if (protocolEnd !== -1) {
+            displayUrl = url.substring(protocolEnd + 3);
+        }
+        if (displayUrl.length <= maxLength) {
+            return displayUrl;
+        }
+        return displayUrl.substring(0, maxLength - 3) + '...';
     }
 
     generateId() {
@@ -560,6 +820,11 @@ class PanelMariaApp {
         toast.textContent = message;
         toastContainer.appendChild(toast);
         setTimeout(() => toast.remove(), 5000);
+    }
+
+    formatTagText(text) {
+        if (!text) return '';
+        return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
     }
     
     handleKeyboardShortcuts(e) {

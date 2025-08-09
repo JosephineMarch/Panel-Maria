@@ -87,6 +87,7 @@
             </div>
             <div class="actions">
                 <button id="bulkChangeCategoryBtn" class="btn btn--secondary">Cambiar Categoría</button>
+                <button id="bulkChangeTagsBtn" class="btn btn--secondary">Cambiar Etiquetas</button>
                 <button id="bulkPinBtn" class="btn btn--secondary">Anclar/Desanclar</button>
                 <button id="bulkDeleteBtn" class="btn btn--danger">Eliminar</button>
             </div>
@@ -146,7 +147,13 @@
 
                 <div class="form-group">
                     <label for="itemTags" class="form-label">Etiquetas</label>
-                    <input type="text" id="itemTags" class="input-field" placeholder="Etiquetas separadas por comas">
+                    <div id="itemTagsContainer" class="tags-input-container">
+                        <!-- Tags will be rendered here -->
+                    </div>
+                    <div class="form-group-inline">
+                        <input type="text" id="newItemTagInput" class="input-field" placeholder="Añadir nueva etiqueta">
+                        <button type="button" id="addTagBtn" class="btn btn--filled">Añadir</button>
+                    </div>
                 </div>
                 
                 <!-- Tasks Section (for Proyectos) -->
@@ -190,6 +197,23 @@
             </div>
             <div class="modal__footer">
                 <button type="button" id="bulkCategoryOkBtn" class="btn btn--filled">Aplicar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Tags Change Modal -->
+    <div id="bulkTagsModal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal__header">
+                <h2 class="modal__title">Cambiar Etiquetas en Lote</h2>
+                <button id="bulkTagsCancelBtn" class="btn btn--icon"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <div class="modal__body">
+                <p class="modal__text">Introduce las etiquetas (separadas por comas) para los elementos seleccionados.</p>
+                <input type="text" id="bulkNewTags" class="input-field" placeholder="Etiqueta1, Etiqueta2">
+            </div>
+            <div class="modal__footer">
+                <button type="button" id="bulkTagsOkBtn" class="btn btn--filled">Aplicar</button>
             </div>
         </div>
     </div>
@@ -252,10 +276,20 @@
                         <option value="colorful">Tema colorido</option>
                     </select>
                 </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Categorías Personalizadas</label>
+                    <div class="form-group-inline">
+                        <input type="text" id="newCustomCategoryInput" class="input-field" placeholder="Nueva categoría">
+                        <button id="addCustomCategoryBtn" class="btn btn--filled">Añadir</button>
+                    </div>
+                    <div id="customCategoriesList" class="tags-list"></div>
+                </div>
+
                 <div class="form-group">
                     <button id="exportDataBtn" class="btn btn--secondary">Exportar Datos</button>
                     <button id="importDataBtn" class="btn btn--secondary">Importar Datos</button>
-                    <input type="file" id="importFile" accept=".json" class="hidden">
+                    <input type="file" id="importFile" accept=".json,.html" class="hidden">
                 </div>
             </div>
         </div>
