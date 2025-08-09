@@ -498,6 +498,7 @@ class PanelMariaApp {
                     ${item.descripcion ? `<p class="card__description">${this.escapeHtml(item.descripcion)}</p>` : ''}
                     ${item.url ? `<div class="card__urls"><a href="${this.escapeHtml(item.url)}" target="_blank" class="card__url" onclick="event.stopPropagation()">${this.escapeHtml(this.truncateUrl(item.url))}</a></div>` : ''}
                     ${item.tareas && item.tareas.length > 0 ? this.createTasksContent(item) : ''}
+                    ${item.tareas && item.tareas.length > 0 ? this.createProgressBar(item) : ''}
                 </div>
                 
                  ${item.etiquetas && item.etiquetas.length > 0 ? `
@@ -532,6 +533,19 @@ class PanelMariaApp {
                     </div>
                 `).join('')}
                 ${item.tareas.length > 3 ? `<div class="card__task">... y ${item.tareas.length - 3} más</div>` : ''}
+            </div>
+        `;
+    }
+
+    createProgressBar(item) {
+        const completedTasks = item.tareas.filter(task => task.completado).length;
+        const totalTasks = item.tareas.length;
+        const progress = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+        const isProyecto = item.categoria === 'proyectos'; // Check if it's a project
+
+        return `
+            <div class="progress-bar ${isProyecto ? 'progress-bar--proyecto' : ''}">
+                <div class="progress-bar__fill" style="width: ${progress}%;"></div>
             </div>
         `;
     }
