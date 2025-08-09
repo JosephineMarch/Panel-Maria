@@ -172,9 +172,14 @@ class PanelMariaApp {
          document.getElementById('emptyStateAddBtn').addEventListener('click', () => this.openModal());
          
          // Búsqueda
+        let searchTimeout;
         document.getElementById('searchInput').addEventListener('input', (e) => {
-            this.filters.search = e.target.value.toLowerCase();
-            this.renderAll();
+            clearTimeout(searchTimeout);
+            const searchTerm = e.target.value.toLowerCase();
+            searchTimeout = setTimeout(() => {
+                this.filters.search = searchTerm;
+                this.renderAll();
+            }, 300); // Debounce por 300ms
         });
         
         // Selección múltiple
@@ -1087,14 +1092,16 @@ class PanelMariaApp {
     }
     
     async bulkTogglePinned() {
-        const updates = [];
+        const operations = [];
         const firstSelectedIsPinned = this.items.find(item => this.selectedItems.has(item.id))?.anclado;
         const targetState = !firstSelectedIsPinned;
 
         for (const id of this.selectedItems) {
-             updates.push(window.storage.updateItem(id, { anclado: targetState }));
+            operations.push({ type: 'update', id: id, data: { anclado: targetState } });
         }
-        await Promise.all(updates);
+        if (operations.length > 0) {
+            await window.storage.adapter.performBatchUpdate(operations);
+        }
         await this.loadData();
         this.selectedItems.clear();
         this.renderAll();
@@ -1104,8 +1111,10 @@ class PanelMariaApp {
         const newCategory = document.getElementById('bulkCategorySelector').value;
         if (!newCategory) return;
         
-        const updates = Array.from(this.selectedItems).map(id => window.storage.updateItem(id, { categoria: newCategory }));
-        await Promise.all(updates);
+        const operations = Array.from(this.selectedItems).map(id => ({ type: 'update', id: id, data: { categoria: newCategory } }));
+        if (operations.length > 0) {
+            await window.storage.adapter.performBatchUpdate(operations);
+        }
 
         await this.loadData();
         this.selectedItems.clear();
@@ -1121,18 +1130,17 @@ class PanelMariaApp {
             return;
         }
 
-        const updates = [];
+        const operations = [];
         for (const id of this.selectedItems) {
             const item = this.items.find(i => i.id === id);
             if (item) {
-                // For bulk change, we replace existing tags with the new selection
-                // Or, if the user wants to add/remove, we need a different UI for that.
-                // Assuming replacement for now.
-                updates.push(window.storage.updateItem(id, { etiquetas: newTags }));
+                operations.push({ type: 'update', id: id, data: { etiquetas: newTags } });
             }
         }
-        await Promise.all(updates);
-        
+        if (operations.length > 0) {
+            await window.storage.adapter.performBatchUpdate(operations);
+        }
+
         await this.loadData();
         this.selectedItems.clear();
         this.closeBulkTagsModal();
@@ -1157,9 +1165,11 @@ class PanelMariaApp {
     }
     
     async bulkDelete() {
-        const deletions = Array.from(this.selectedItems).map(id => window.storage.deleteItem(id));
-        await Promise.all(deletions);
-        
+        const operations = Array.from(this.selectedItems).map(id => ({ type: 'delete', id: id }));
+        if (operations.length > 0) {
+            await window.storage.adapter.performBatchUpdate(operations);
+        }
+
         this.items = this.items.filter(i => !this.selectedItems.has(i.id));
         this.selectedItems.clear();
         this.renderAll();

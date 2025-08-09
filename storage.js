@@ -5,7 +5,7 @@
 */
 
 import { db } from './firebase-config.js';
-import { collection, doc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { collection, doc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, query, where, writeBatch } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 // Clase base para adaptadores de almacenamiento (Define la interfaz)
 class StorageAdapter {
@@ -160,7 +160,7 @@ class FirebaseAdapter extends StorageAdapter {
         return true;
     }
 
-    async addItem(item) {
+    async addItem(item, batch = null) {
         const newItem = {
             ...item,
             fecha_creacion: new Date().toISOString(),
@@ -170,14 +170,25 @@ class FirebaseAdapter extends StorageAdapter {
             tareas: item.tareas || [],
             meta: item.meta || {}
         };
-        const docRef = await addDoc(this.userCollectionRef, newItem);
-        return { id: docRef.id, ...newItem };
+        if (batch) {
+            const newDocRef = doc(this.userCollectionRef);
+            batch.set(newDocRef, newItem);
+            return { id: newDocRef.id, ...newItem }; // Return a temporary ID for batch
+        } else {
+            const docRef = await addDoc(this.userCollectionRef, newItem);
+            return { id: docRef.id, ...newItem };
+        }
     }
 
-    async updateItem(id, partialUpdate) {
+    async updateItem(id, partialUpdate, batch = null) {
         const itemRef = doc(this.userCollectionRef, id);
-        await updateDoc(itemRef, partialUpdate);
+        if (batch) {
+            batch.update(itemRef, partialUpdate);
+        } else {
+            await updateDoc(itemRef, partialUpdate);
+        }
         // For simplicity, we'll reload the item to return the full updated object
+        // This part might need adjustment if we want to avoid a read after every update in a batch
         const updatedSnapshot = await getDocs(query(this.userCollectionRef, where('__name__', '==', id)));
         if (!updatedSnapshot.empty) {
             return { id: updatedSnapshot.docs[0].id, ...updatedSnapshot.docs[0].data() };
@@ -186,10 +197,31 @@ class FirebaseAdapter extends StorageAdapter {
         }
     }
 
-    async deleteItem(id) {
+    async deleteItem(id, batch = null) {
         const itemRef = doc(this.userCollectionRef, id);
-        await deleteDoc(itemRef);
+        if (batch) {
+            batch.delete(itemRef);
+        } else {
+            await deleteDoc(itemRef);
+        }
         return true;
+    }
+
+    async performBatchUpdate(operations) {
+        const batch = writeBatch(db);
+        for (const op of operations) {
+            const itemRef = doc(this.userCollectionRef, op.id);
+            if (op.type === 'update') {
+                batch.update(itemRef, op.data);
+            } else if (op.type === 'delete') {
+                batch.delete(itemRef);
+            } else if (op.type === 'add') {
+                // For add, Firestore generates ID, so we need to create a new doc ref
+                const newDocRef = doc(this.userCollectionRef);
+                batch.set(newDocRef, op.data);
+            }
+        }
+        await batch.commit();
     }
 
     generateId() {
