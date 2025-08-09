@@ -191,23 +191,35 @@ class Storage {
             const reader = new FileReader();
             reader.onload = async (event) => {
                 try {
-                    const importedData = JSON.parse(event.target.result);
-                    if (importedData && importedData.items && importedData.settings) {
+                    const fileContent = event.target.result;
+
+                    if (file.name.endsWith('.html') || file.type === 'text/html') {
+                        const newItems = this._parseChromeBookmarks(fileContent);
+                        if (newItems.length === 0) {
+                            return reject(new Error('No se encontraron marcadores válidos en el archivo HTML.'));
+                        }
                         const currentData = await this.loadAll();
+                        const existingUrls = new Set(currentData.items.map(i => i.url));
+                        const uniqueNewItems = newItems.filter(i => !existingUrls.has(i.url));
                         
-                        // Fusionar items, evitando duplicados por ID
+                        currentData.items.push(...uniqueNewItems);
+                        await this.saveAll(currentData);
+                        resolve({ importedCount: uniqueNewItems.length, type: 'html' });
+
+                    } else {
+                        const importedData = JSON.parse(fileContent);
+                        if (!importedData || !importedData.items || !importedData.settings) {
+                            return reject(new Error('Estructura de datos JSON importados inválida'));
+                        }
+                        const currentData = await this.loadAll();
                         const existingIds = new Set(currentData.items.map(i => i.id));
                         const newItems = importedData.items.filter(i => !existingIds.has(i.id));
                         currentData.items = [...currentData.items, ...newItems];
-
-                        // Fusionar settings
                         currentData.settings.customCategories = [...new Set([...(currentData.settings.customCategories || []), ...(importedData.settings.customCategories || [])])];
                         currentData.settings.allTags = [...new Set([...(currentData.settings.allTags || []), ...(importedData.settings.allTags || [])])];
                         
                         await this.saveAll(currentData);
-                        resolve();
-                    } else {
-                        reject(new Error('Estructura de datos importados inválida'));
+                        resolve({ importedCount: newItems.length, type: 'json' });
                     }
                 } catch (error) {
                     reject(error);
@@ -216,6 +228,54 @@ class Storage {
             reader.onerror = (error) => reject(error);
             reader.readAsText(file);
         });
+    }
+
+    _parseChromeBookmarks(htmlContent) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlContent, 'text/html');
+        const results = [];
+
+        function walk(listNode, categoryStack) {
+            for (const itemNode of listNode.children) {
+                if (itemNode.tagName !== 'DT') continue;
+
+                const h3 = itemNode.querySelector(':scope > h3');
+                const subList = itemNode.querySelector(':scope > dl');
+                const a = itemNode.querySelector(':scope > a');
+
+                if (h3 && subList) {
+                    const folderName = h3.textContent.trim();
+                    walk(subList, [...categoryStack, folderName]);
+                } else if (a && a.href && a.href.startsWith('http')) {
+                    let cleanStack = [...categoryStack];
+                    if (cleanStack.length > 0 && cleanStack[0] === 'Barra de marcadores') {
+                        cleanStack.shift();
+                    }
+                    
+                    const tags = cleanStack.map(folder => folder.toLowerCase());
+
+                    results.push({
+                        id: null, // Se generará en addItem
+                        categoria: 'directorio',
+                        titulo: a.textContent.trim() || 'Enlace sin título',
+                        url: a.href,
+                        descripcion: `Importado de: ${cleanStack.join(' / ')}`,
+                        etiquetas: tags,
+                        anclado: false,
+                        fecha_creacion: new Date().toISOString(),
+                        fecha_finalizacion: null,
+                        tareas: [],
+                        meta: { source: 'html-import' }
+                    });
+                }
+            }
+        }
+
+        const mainList = doc.querySelector('dl');
+        if (mainList) {
+            walk(mainList, []);
+        }
+        return results;
     }
 
     async getSettings() {

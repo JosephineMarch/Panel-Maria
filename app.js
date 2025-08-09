@@ -1278,12 +1278,12 @@ class PanelMariaApp {
         const file = event.target.files?.[0];
         if (!file) return;
         try {
-            await storage.importData(file);
+            const result = await storage.importData(file);
             await this.loadData();
             this.renderNavigationTabs();
             this.populateCategorySelector();
             this.renderAll();
-            this.showToast('Datos importados correctamente', 'success');
+            this.showToast(`${result.importedCount} ${result.type === 'html' ? 'marcadores' : 'elementos'} importados correctamente`, 'success');
         } catch (error) {
             this.showToast(`Error al importar: ${error.message}`, 'error');
         } finally {
