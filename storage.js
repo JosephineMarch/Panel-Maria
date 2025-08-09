@@ -22,29 +22,42 @@ class LocalStorageAdapter extends StorageAdapter {
     }
 
     async loadData() {
+        const defaultData = {
+            items: [],
+            settings: { 
+                autoSaveVoice: false, 
+                theme: 'default',
+                lastCategory: 'todos',
+                customCategories: [], 
+                allTags: [] 
+            }
+        };
+
         try {
             const data = localStorage.getItem(this.storageKey);
             if (!data) {
-                // Si no hay datos, devuelve la estructura por defecto
-                return {
-                    items: [],
-                    settings: { autoSaveVoice: true, customCategories: [], allTags: [] }
-                };
+                return defaultData;
             }
-            return JSON.parse(data);
+            // Asegurarse de que los datos parseados tengan la estructura correcta
+            const parsedData = JSON.parse(data);
+            parsedData.settings = { ...defaultData.settings, ...(parsedData.settings || {}) };
+            return parsedData;
         } catch (error) {
             console.error('Error loading data from localStorage:', error);
             // En caso de error, devuelve la estructura por defecto para evitar crashes
-            return {
-                items: [],
-                settings: { autoSaveVoice: true }
-            };
+            return defaultData;
         }
     }
 
     async saveData(data) {
         try {
             localStorage.setItem(this.storageKey, JSON.stringify(data));
+            // Disparar un evento de storage para sincronización de pestañas
+            window.dispatchEvent(new StorageEvent('storage', {
+                key: this.storageKey,
+                newValue: JSON.stringify(data),
+                storageArea: localStorage,
+            }));
             return true;
         } catch (error) {
             console.error('Error saving data to localStorage:', error);
@@ -69,7 +82,6 @@ class FirebaseAdapter extends StorageAdapter {
 }
 
 // --- Clase Principal de Almacenamiento ---
-// Usa el patrón Adapter para cambiar fácilmente entre LocalStorage y Firebase.
 class Storage {
     constructor(mode = 'local') {
         this.setAdapter(mode);
@@ -85,8 +97,6 @@ class Storage {
             throw new Error(`Unknown storage mode: ${mode}`);
         }
     }
-
-    // --- Funciones CRUD ---
 
     async loadAll() {
         return await this.adapter.loadData();
@@ -107,18 +117,14 @@ class Storage {
             anclado: item.anclado || false,
             etiquetas: item.etiquetas || [],
             tareas: item.tareas || [],
-            archivos_adjuntos: item.archivos_adjuntos || [],
             meta: item.meta || {}
         };
 
-        // Add new tags to the global allTags list
-        if (newItem.etiquetas && newItem.etiquetas.length > 0) {
-            newItem.etiquetas.forEach(tag => {
-                if (!data.settings.allTags.includes(tag)) {
-                    data.settings.allTags.push(tag);
-                }
-            });
-        }
+        (newItem.etiquetas || []).forEach(tag => {
+            if (!data.settings.allTags.includes(tag)) {
+                data.settings.allTags.push(tag);
+            }
+        });
 
         data.items.push(newItem);
         await this.saveAll(data);
@@ -133,14 +139,11 @@ class Storage {
             throw new Error(`Item with id ${id} not found`);
         }
 
-        // Add new tags from partialUpdate to the global allTags list
-        if (partialUpdate.etiquetas && partialUpdate.etiquetas.length > 0) {
-            partialUpdate.etiquetas.forEach(tag => {
-                if (!data.settings.allTags.includes(tag)) {
-                    data.settings.allTags.push(tag);
-                }
-            });
-        }
+        (partialUpdate.etiquetas || []).forEach(tag => {
+            if (!data.settings.allTags.includes(tag)) {
+                data.settings.allTags.push(tag);
+            }
+        });
 
         data.items[itemIndex] = { ...data.items[itemIndex], ...partialUpdate };
         await this.saveAll(data);
@@ -159,63 +162,34 @@ class Storage {
         await this.saveAll(data);
         return true;
     }
-
-    async query(filters = {}) {
-        const { items } = await this.loadAll();
-        let filteredItems = [...items];
-
-        // Filtrar por categoría
-        if (filters.categoria && filters.categoria !== 'todos') {
-            filteredItems = filteredItems.filter(item => item.categoria === filters.categoria);
-        }
-
-        // ... aquí se podrían añadir más filtros (ej: por etiqueta, por texto)
-
-        // Ordenar: anclados primero, luego por fecha de creación descendente
-        filteredItems.sort((a, b) => {
-            if (a.anclado && !b.anclado) return -1;
-            if (!a.anclado && b.anclado) return 1;
-            return new Date(b.fecha_creacion) - new Date(a.fecha_creacion);
-        });
-
-        return filteredItems;
-    }
     
     generateId() {
         return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
     }
 
-    // --- Funciones de Lógica de Negocio ---
-
     async convertToLogro(id) {
-        const data = await this.loadAll();
-        const itemIndex = data.items.findIndex(item => item.id === id);
-
-        if (itemIndex === -1) {
-            throw new Error(`Item with id ${id} not found`);
-        }
-
-        data.items[itemIndex].categoria = 'logro';
-        data.items[itemIndex].fecha_finalizacion = new Date().toISOString();
-        
-        await this.saveAll(data);
-        return data.items[itemIndex];
+        return this.updateItem(id, {
+            categoria: 'logros',
+            fecha_finalizacion: new Date().toISOString()
+        });
     }
 
-    // --- Funciones de Importar/Exportar ---
-
     async exportData() {
-        const data = await this.loadAll();
-        const jsonString = JSON.stringify(data, null, 2);
-        const blob = new Blob([jsonString], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `panel_maria_backup_${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        try {
+            const data = await this.loadAll();
+            const jsonString = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `panel_maria_backup_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Error exporting data:", error);
+        }
     }
 
     async importData(file) {
@@ -223,21 +197,19 @@ class Storage {
             const reader = new FileReader();
             reader.onload = async (event) => {
                 try {
-                    let importedData;
-                    if (file.type === 'application/json' || file.name.endsWith('.json')) {
-                        importedData = JSON.parse(event.target.result);
-                    } else if (file.type === 'text/html' || file.name.endsWith('.html')) {
-                        importedData = this.parseHtmlBookmarks(event.target.result);
-                    } else {
-                        throw new Error('Tipo de archivo no soportado');
-                    }
-
-                    if (importedData && importedData.items) {
-                        // Merge with existing items or replace
+                    const importedData = JSON.parse(event.target.result);
+                    if (importedData && importedData.items && importedData.settings) {
                         const currentData = await this.loadAll();
-                        currentData.items = [...currentData.items, ...importedData.items];
-                        // Optionally, merge settings or keep current
-                        // currentData.settings = { ...currentData.settings, ...importedData.settings };
+                        
+                        // Fusionar items, evitando duplicados por ID
+                        const existingIds = new Set(currentData.items.map(i => i.id));
+                        const newItems = importedData.items.filter(i => !existingIds.has(i.id));
+                        currentData.items = [...currentData.items, ...newItems];
+
+                        // Fusionar settings
+                        currentData.settings.customCategories = [...new Set([...(currentData.settings.customCategories || []), ...(importedData.settings.customCategories || [])])];
+                        currentData.settings.allTags = [...new Set([...(currentData.settings.allTags || []), ...(importedData.settings.allTags || [])])];
+                        
                         await this.saveAll(currentData);
                         resolve();
                     } else {
@@ -252,60 +224,6 @@ class Storage {
         });
     }
 
-    parseHtmlBookmarks(htmlContent) {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(htmlContent, 'text/html');
-        const items = [];
-
-        const processDl = (dlElement, currentTags = []) => {
-            dlElement.querySelectorAll('> dt').forEach(dt => {
-                const h3 = dt.querySelector('h3');
-                const a = dt.querySelector('a');
-                const nestedDl = dt.querySelector('dl');
-
-                if (h3) {
-                    const folderName = h3.textContent.trim();
-                    const newTags = [...currentTags, folderName];
-                    if (nestedDl) {
-                        processDl(nestedDl, newTags);
-                    }
-                } else if (a) {
-                    const url = a.href;
-                    const title = a.textContent.trim();
-                    const addDate = a.getAttribute('add_date');
-                    const existingTags = a.getAttribute('tags');
-
-                    if (url && title) {
-                        const itemTags = existingTags ? existingTags.split(',').map(tag => tag.trim()) : [];
-                        const allTags = [...new Set([...itemTags, ...currentTags])]; // Combine and deduplicate
-
-                        items.push({
-                            id: this.generateId(),
-                            categoria: 'directorio', // Default category for imported bookmarks
-                            titulo: title,
-                            descripcion: '',
-                            tareas: [],
-                            url: url,
-                            etiquetas: allTags,
-                            anclado: false,
-                            fecha_creacion: addDate ? new Date(parseInt(addDate) * 1000).toISOString() : new Date().toISOString(),
-                            fecha_finalizacion: null,
-                            archivos_adjuntos: [],
-                            meta: { source: 'html_bookmark' }
-                        });
-                    }
-                }
-            });
-        };
-
-        // Start processing from the top-level DL elements
-        doc.querySelectorAll('body > dl').forEach(dl => processDl(dl));
-
-        return { items: items, settings: {} };
-    }
-
-    // --- Funciones de Configuración ---
-
     async getSettings() {
         const data = await this.loadAll();
         return data.settings || {};
@@ -318,9 +236,6 @@ class Storage {
     }
 }
 
-// Instancia global del almacenamiento para ser usada en toda la aplicación
+// Instancia global
 const storage = new Storage('local');
-
-// Exportar para uso en otros módulos si se usara un sistema de módulos,
-// o adjuntar a window para acceso global simple.
 window.storage = storage;

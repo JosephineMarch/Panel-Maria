@@ -160,10 +160,20 @@
                     </select>
                 </div>
 
-                <div class="form-group" id="newTagInputGroup" style="display: none;">
-                    <label for="newItemTag" class="form-label">Nombre de la nueva etiqueta *</label>
-                    <input type="text" id="newItemTag" class="input-field" placeholder="Ej: Urgente, Personal">
-                </div>
+                <!-- DENTRO DEL <form id="itemForm"> EN EL MODAL -->
+
+<div class="form-group">
+    <label for="itemTagsInput" class="form-label">Etiquetas</label>
+    <div id="itemTagsWrapper" class="tags-input-wrapper">
+        <!-- Las etiquetas (píldoras) se insertarán aquí con JavaScript -->
+        <input type="text" id="itemTagsInput" class="tags-input-field" placeholder="Añade o crea etiquetas...">
+    </div>
+    <div id="tagSuggestions" class="tag-suggestions">
+        <!-- Las sugerencias de etiquetas aparecerán aquí -->
+    </div>
+</div>
+
+
                 
                 <!-- Tasks Section (for Proyectos) -->
                 <div id="tasksSection" class="form-group">

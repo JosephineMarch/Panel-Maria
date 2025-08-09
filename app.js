@@ -1,26 +1,26 @@
 /*
 ================================================================================
-|       PANEL MARÍA - APLICACIÓN PRINCIPAL (REFACTORIZADO)                      |
+|       PANEL MARÍA - APLICACIÓN PRINCIPAL (CON NUEVO SISTEMA DE ETIQUETAS)    |
 ================================================================================
 */
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Inicializar la aplicación
     const app = new PanelMariaApp();
     app.init();
 });
 
 class PanelMariaApp {
     constructor() {
-        this.currentCategory = 'todos'; // Categoría por defecto
+        this.currentCategory = 'todos';
         this.items = [];
         this.selectedItems = new Set();
-        this.filters = { search: '' };
+        this.filters = { search: '', tag: null };
         this.settings = {};
         this.currentEditId = null;
-        this.currentEditId = null;
         
-        // Exponer métodos globales para eventos HTML
+        // --- Propiedades para el modal de etiquetas ---
+        this.modalActiveTags = new Set(); // Almacena las etiquetas del item en el modal
+
         window.appController = {
             openModal: (id = null) => this.openModal(id),
             togglePinned: (id) => this.togglePinned(id),
@@ -35,10 +35,10 @@ class PanelMariaApp {
     
     async init() {
         await this.loadData();
-        this.renderNavigationTabs(); // Render navigation tabs dynamically
-        this.populateCategorySelector(); // Populate category selector dynamically
+        this.renderNavigationTabs();
+        this.populateCategorySelector();
         this.setupEventListeners();
-        this.switchCategory(this.settings.lastCategory || 'todos'); // Cargar la última categoría visitada
+        this.switchCategory(this.settings.lastCategory || 'todos');
         this.applyTheme();
     }
     
@@ -47,14 +47,14 @@ class PanelMariaApp {
             const data = await storage.loadAll();
             this.items = data.items || [];
             this.settings = data.settings || { autoSaveVoice: false, theme: 'default', lastCategory: 'todos', customCategories: [], allTags: [] };
-            // voiceManager.setAutoSave(this.settings.autoSaveVoice || false);
+            if (!this.settings.allTags) this.settings.allTags = []; // Asegurar que exista
         } catch (error) {
             console.error('Error loading data:', error);
             this.items = [];
-            this.settings = { autoSaveVoice: false, theme: 'default', lastCategory: 'todos' };
+            this.settings = { autoSaveVoice: false, theme: 'default', lastCategory: 'todos', customCategories: [], allTags: [] };
         }
     }
-    
+
     async saveData() {
         try {
             await storage.saveAll({ items: this.items, settings: this.settings });
@@ -66,12 +66,8 @@ class PanelMariaApp {
     setupEventListeners() {
         // Botones principales
         document.getElementById('addItemBtn').addEventListener('click', () => this.openModal());
-        // document.getElementById('voiceBtn').addEventListener('click', () => voiceManager.startListening());
         document.getElementById('settingsBtn').addEventListener('click', () => this.openSettingsModal());
         document.getElementById('emptyStateAddBtn').addEventListener('click', () => this.openModal());
-        setTimeout(() => {
-            document.getElementById('newCategoryNavBtn').addEventListener('click', () => this.openNewCategoryInput());
-        }, 0);
         
         // Búsqueda
         document.getElementById('searchInput').addEventListener('input', (e) => {
@@ -95,7 +91,38 @@ class PanelMariaApp {
         document.getElementById('cancelBtn').addEventListener('click', () => this.closeModal());
         document.getElementById('itemForm').addEventListener('submit', (e) => this.handleFormSubmit(e));
         document.getElementById('itemCategory').addEventListener('change', (e) => this.handleCategoryChange(e));
-        document.getElementById('itemTags').addEventListener('change', (e) => this.handleTagChange(e));
+
+        // --- Nuevos listeners para el componente de etiquetas ---
+        const tagsWrapper = document.getElementById('itemTagsWrapper');
+        const tagsInput = document.getElementById('itemTagsInput');
+        
+        tagsWrapper.addEventListener('click', () => tagsInput.focus());
+
+        tagsInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const newTag = e.target.value.trim();
+                if (newTag) {
+                    this.addModalTag(newTag);
+                }
+            } else if (e.key === 'Backspace' && e.target.value === '') {
+                // Eliminar la última etiqueta si se presiona backspace en un campo vacío
+                const lastTag = Array.from(this.modalActiveTags).pop();
+                if (lastTag) {
+                    this.removeModalTag(lastTag);
+                }
+            }
+        });
+        
+        tagsInput.addEventListener('input', (e) => {
+            this.renderTagSuggestions(e.target.value);
+        });
+
+        document.getElementById('tagSuggestions').addEventListener('click', (e) => {
+            if (e.target.classList.contains('tag-suggestion')) {
+                this.addModalTag(e.target.dataset.tag);
+            }
+        });
         
         // Tareas dinámicas
         document.getElementById('addTaskBtn').addEventListener('click', () => this.addTaskField());
@@ -116,7 +143,6 @@ class PanelMariaApp {
         document.getElementById('settingsCloseBtn').addEventListener('click', () => this.closeSettingsModal());
         document.getElementById('autoSaveVoice').addEventListener('change', (e) => {
             this.settings.autoSaveVoice = e.target.checked;
-            // voiceManager.setAutoSave(e.target.checked);
             this.saveData();
         });
         document.getElementById('themeSelect').addEventListener('change', (e) => {
@@ -128,8 +154,8 @@ class PanelMariaApp {
         // Custom Categories Management
         document.getElementById('addCustomCategoryBtn').addEventListener('click', () => this.addCustomCategory());
         document.getElementById('customCategoriesList').addEventListener('click', (e) => {
-            if (e.target.classList.contains('remove-tag')) {
-                this.removeCustomCategory(e.target.dataset.category);
+            if (e.target.closest('.remove-tag')) {
+                this.removeCustomCategory(e.target.closest('.remove-tag').dataset.category);
             }
         });
 
@@ -146,7 +172,6 @@ class PanelMariaApp {
 
     handleStorageChange(e) {
         if (e.key === storage.adapter.storageKey && e.newValue !== e.oldValue) {
-            // Data changed in another tab, reload and re-render
             this.loadData().then(() => {
                 this.renderAll();
                 this.showToast('Datos actualizados desde otra pestaña', 'info');
@@ -155,9 +180,14 @@ class PanelMariaApp {
     }
 
     filterByTag(tag) {
-        this.filters.tag = tag;
+        if (this.filters.tag === tag) {
+            this.filters.tag = null; // Un-toggle filter if the same tag is clicked
+            this.showToast(`Filtro por etiqueta '${tag}' eliminado`, 'info');
+        } else {
+            this.filters.tag = tag;
+            this.showToast(`Filtrando por etiqueta: ${tag}`, 'info');
+        }
         this.renderAll();
-        this.showToast(`Filtrando por etiqueta: ${tag}`, 'info');
     }
     
     switchCategory(category) {
@@ -165,12 +195,12 @@ class PanelMariaApp {
         this.settings.lastCategory = category;
         this.saveData();
         
-        // Actualizar navegación
         document.querySelectorAll('.nav-tab').forEach(tab => {
             tab.classList.toggle('active', tab.dataset.category === category);
         });
         
         this.selectedItems.clear();
+        this.filters.tag = null; // Reset tag filter on category change
         this.renderAll();
     }
     
@@ -191,24 +221,30 @@ class PanelMariaApp {
                 ${this.formatCategoryName(category)}
             </button>
         `).join('');
-
-        // Add 'Todos' tab
+        
         tabsHtml += `
             <button class="nav-tab" data-category="todos">
                 <span class="material-symbols-outlined">select_all</span>
                 Todos
             </button>
         `;
+        
+        tabsHtml += `
+            <button id="newCategoryNavBtn" class="btn btn--text">
+                <span class="material-symbols-outlined">add</span> Nueva Categoría
+            </button>
+        `;
 
-        navTabsContainer.innerHTML = tabsHtml; // Set innerHTML once
+        navTabsContainer.innerHTML = tabsHtml;
 
-        // Re-attach event listeners for dynamically created tabs
         navTabsContainer.querySelectorAll('.nav-tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 this.switchCategory(tab.dataset.category);
             });
         });
-        // Set active tab
+
+        document.getElementById('newCategoryNavBtn').addEventListener('click', () => this.openNewCategoryInput());
+        
         navTabsContainer.querySelector(`[data-category="${this.currentCategory}"]`)?.classList.add('active');
     }
 
@@ -222,9 +258,6 @@ class PanelMariaApp {
         `).join('');
 
         selector.innerHTML += `<option value="__new_category__">Crear nueva categoría...</option>`;
-
-        // Set selected category
-        selector.value = this.currentCategory === 'todos' ? 'directorio' : this.currentCategory;
     }
 
     getCategoryIcon(category) {
@@ -233,7 +266,7 @@ class PanelMariaApp {
             case 'ideas': return 'lightbulb';
             case 'proyectos': return 'assignment';
             case 'logros': return 'emoji_events';
-            default: return 'category'; // Default icon for custom categories
+            default: return 'label';
         }
     }
 
@@ -253,12 +286,10 @@ class PanelMariaApp {
     getFilteredItems() {
         let items = [...this.items];
         
-        // Filtrar por categoría
         if (this.currentCategory !== 'todos') {
             items = items.filter(item => item.categoria.toLowerCase() === this.currentCategory.toLowerCase());
         }
 
-        // Aplicar filtro de búsqueda
         if (this.filters.search) {
             const searchTerm = this.filters.search;
             items = items.filter(item => 
@@ -269,16 +300,13 @@ class PanelMariaApp {
             );
         }
 
-        // Aplicar filtro por etiqueta
         if (this.filters.tag) {
             const tagFilter = this.filters.tag.toLowerCase();
             items = items.filter(item => item.etiquetas && item.etiquetas.some(tag => tag.toLowerCase() === tagFilter));
         }
         
-        // Ordenar: anclados primero, luego por fecha
         items.sort((a, b) => {
-            if (a.anclado && !b.anclado) return -1;
-            if (!a.anclado && b.anclado) return 1;
+            if (a.anclado !== b.anclado) return a.anclado ? -1 : 1;
             return new Date(b.fecha_creacion) - new Date(a.fecha_creacion);
         });
         
@@ -292,11 +320,6 @@ class PanelMariaApp {
         return `
             <div class="card ${isSelected ? 'selected' : ''}" data-id="${item.id}" onclick="appController.handleCardClick(event, '${item.id}')">
                 <input type="checkbox" class="card__checkbox" ${isSelected ? 'checked' : ''} onchange="appController.toggleSelection('${item.id}')">
-                ${item.etiquetas && item.etiquetas.length > 0 ? `
-                    <div class="card__tags card__tags--top">
-                        ${item.etiquetas.map(tag => `<span class="card__tag" onclick="event.stopPropagation(); appController.filterByTag('${this.escapeHtml(tag)}')">${this.formatTagText(this.escapeHtml(tag))}</span>`).join('')}
-                    </div>
-                ` : ''}
                 
                 <div class="card__header">
                     <h3 class="card__title">${this.escapeHtml(item.titulo)}</h3>
@@ -307,9 +330,15 @@ class PanelMariaApp {
                 
                 <div class="card__body">
                     ${item.descripcion ? `<p class="card__description">${this.escapeHtml(item.descripcion)}</p>` : ''}
-                    ${item.url ? `<div class="card__urls"><a href="${item.url}" target="_blank" class="card__url">${this.escapeHtml(this.truncateUrl(item.url))}</a></div>` : ''}
+                    ${item.url ? `<div class="card__urls"><a href="${this.escapeHtml(item.url)}" target="_blank" class="card__url" onclick="event.stopPropagation()">${this.escapeHtml(this.truncateUrl(item.url))}</a></div>` : ''}
                     ${item.tareas && item.tareas.length > 0 ? this.createTasksContent(item) : ''}
                 </div>
+                
+                 ${item.etiquetas && item.etiquetas.length > 0 ? `
+                    <div class="card__tags">
+                        ${item.etiquetas.map(tag => `<span class="card__tag" onclick="event.stopPropagation(); appController.filterByTag('${this.escapeHtml(tag)}')">${this.formatTagText(this.escapeHtml(tag))}</span>`).join('')}
+                    </div>
+                ` : ''}
                 
                 <div class="card__footer">
                     <span class="card__date">${date} ${item.fecha_finalizacion ? ` (Completado)`: ''}</span>
@@ -342,16 +371,12 @@ class PanelMariaApp {
     }
     
     createCardActions(item) {
-        const actions = [];
-        
+        let actions = [];
         actions.push(`<button class="btn btn--text" onclick="event.stopPropagation(); appController.openModal('${item.id}')" title="Editar"><span class="material-symbols-outlined">edit</span></button>`);
-        
-        if (item.categoria !== 'logro') {
+        if (item.categoria !== 'logros') {
             actions.push(`<button class="btn btn--text" onclick="event.stopPropagation(); appController.convertToLogro('${item.id}')" title="Convertir a logro"><span class="material-symbols-outlined">emoji_events</span></button>`);
         }
-        
         actions.push(`<button class="btn btn--text" onclick="event.stopPropagation(); appController.confirmDelete('${item.id}')" title="Eliminar"><span class="material-symbols-outlined">delete</span></button>`);
-        
         return actions.join('');
     }
     
@@ -368,11 +393,13 @@ class PanelMariaApp {
         }
         
         const filteredItems = this.getFilteredItems();
-        const selectedFilteredItems = filteredItems.filter(item => this.selectedItems.has(item.id));
-        
-        if (selectAllCheckbox) {
-            selectAllCheckbox.checked = selectedFilteredItems.length === filteredItems.length && filteredItems.length > 0;
-            selectAllCheckbox.indeterminate = selectedFilteredItems.length > 0 && selectedFilteredItems.length < filteredItems.length;
+        if (filteredItems.length > 0) {
+            const allVisibleSelected = filteredItems.every(item => this.selectedItems.has(item.id));
+            selectAllCheckbox.checked = allVisibleSelected;
+            selectAllCheckbox.indeterminate = !allVisibleSelected && filteredItems.some(item => this.selectedItems.has(item.id));
+        } else {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
         }
     }
     
@@ -382,32 +409,106 @@ class PanelMariaApp {
         if (!emptyState || !itemsContainer) return;
         
         const hasItems = itemsContainer.children.length > 0;
-        
         emptyState.classList.toggle('hidden', hasItems);
         
         if (!hasItems) {
-            const categoryNames = { 'todos': 'elementos', 'directorio': 'recursos', 'ideas': 'ideas', 'proyectos': 'proyectos', 'logros': 'logros' };
-            emptyState.querySelector('.empty-state__title').textContent = `No hay ${categoryNames[this.currentCategory]}`;
+            const categoryName = this.formatCategoryName(this.currentCategory);
+            emptyState.querySelector('.empty-state__title').textContent = `No hay elementos en "${categoryName}"`;
         }
     }
+
+    // --- LÓGICA DEL NUEVO COMPONENTE DE ETIQUETAS ---
+
+    addModalTag(tag) {
+        const cleanedTag = tag.trim().toLowerCase();
+        if (cleanedTag && !this.modalActiveTags.has(cleanedTag)) {
+            this.modalActiveTags.add(cleanedTag);
+            this.renderModalTags();
+        }
+        const tagsInput = document.getElementById('itemTagsInput');
+        tagsInput.value = '';
+        tagsInput.focus();
+        this.renderTagSuggestions(''); // Limpiar sugerencias
+    }
+
+    removeModalTag(tag) {
+        this.modalActiveTags.delete(tag);
+        this.renderModalTags();
+    }
+
+    renderModalTags() {
+        const tagsWrapper = document.getElementById('itemTagsWrapper');
+        const tagsInput = document.getElementById('itemTagsInput');
+        
+        // Eliminar píldoras antiguas
+        tagsWrapper.querySelectorAll('.tag-pill').forEach(pill => pill.remove());
+
+        // Añadir nuevas píldoras
+        this.modalActiveTags.forEach(tag => {
+            const pill = document.createElement('span');
+            pill.className = 'tag-pill';
+            pill.innerHTML = `
+                ${this.escapeHtml(this.formatTagText(tag))}
+                <span class="tag-pill__remove" data-tag="${this.escapeHtml(tag)}">&times;</span>
+            `;
+            // Añadir listener para eliminar la píldora
+            pill.querySelector('.tag-pill__remove').addEventListener('click', (e) => {
+                e.stopPropagation(); // Evitar que el wrapper reciba el click
+                this.removeModalTag(e.target.dataset.tag);
+            });
+            tagsWrapper.insertBefore(pill, tagsInput);
+        });
+    }
+
+    renderTagSuggestions(filterText = '') {
+        const suggestionsContainer = document.getElementById('tagSuggestions');
+        const allTags = this.settings.allTags || [];
+        const lowerFilter = filterText.trim().toLowerCase();
+
+        if (!lowerFilter) {
+            suggestionsContainer.innerHTML = '';
+            return;
+        }
+
+        const filteredTags = allTags.filter(tag => 
+            tag.toLowerCase().includes(lowerFilter) && !this.modalActiveTags.has(tag)
+        );
+
+        suggestionsContainer.innerHTML = filteredTags.slice(0, 10).map(tag => `
+            <span class="tag-suggestion" data-tag="${this.escapeHtml(tag)}">
+                ${this.escapeHtml(this.formatTagText(tag))}
+            </span>
+        `).join('');
+    }
+
+    // --- FIN DE LA LÓGICA DEL COMPONENTE DE ETIQUETAS ---
     
-    // Gestión de modales
     openModal(id = null) {
         this.currentEditId = id;
         const modal = document.getElementById('itemModal');
         const modalTitle = document.getElementById('modalTitle');
         
+        // Limpiar estado del modal anterior
+        this.modalActiveTags.clear();
+        
         if (id) {
             const item = this.items.find(item => item.id === id);
             if (item) {
-                this.populateModalForm(item);
                 modalTitle.textContent = 'Editar Elemento';
+                this.populateModalForm(item);
+                // Cargar etiquetas del item
+                (item.etiquetas || []).forEach(tag => this.modalActiveTags.add(tag));
             }
         } else {
-            this.clearModalForm();
             modalTitle.textContent = 'Agregar Nuevo Elemento';
+            this.clearModalForm();
+            this.populateModalForm(null);
         }
         
+        // Renderizar etiquetas y sugerencias
+        this.renderModalTags();
+        this.renderTagSuggestions('');
+
         modal.classList.remove('hidden');
         document.getElementById('itemTitle').focus();
     }
@@ -415,49 +516,35 @@ class PanelMariaApp {
     closeModal() {
         document.getElementById('itemModal').classList.add('hidden');
         this.currentEditId = null;
+        this.modalActiveTags.clear(); // Limpiar etiquetas activas al cerrar
     }
     
     populateModalForm(item) {
-        document.getElementById('itemCategory').value = item.categoria;
-        document.getElementById('itemTitle').value = item.titulo;
-        document.getElementById('itemDescription').value = item.descripcion || '';
-        document.getElementById('itemUrl').value = item.url || '';
+        document.getElementById('itemTitle').value = item?.titulo || '';
+        document.getElementById('itemDescription').value = item?.descripcion || '';
+        document.getElementById('itemUrl').value = item?.url || '';
+        document.getElementById('itemPinned').checked = item?.anclado || false;
         
-        // Populate tags multi-select
-        const tagsSelector = document.getElementById('itemTags');
-        const allExistingTags = [...new Set([...this.settings.allTags, ...(item.etiquetas || [])])]; // Combine global tags with item's tags
-        tagsSelector.innerHTML = allExistingTags.map(tag => `
-            <option value="${tag}">${this.formatTagText(tag)}</option>
-        `).join('');
-
-        tagsSelector.innerHTML += `<option value="__new_tag__">Crear nueva etiqueta...</option>`;
-
-        // Select existing tags
-        Array.from(tagsSelector.options).forEach(option => {
-            option.selected = (item.etiquetas || []).includes(option.value);
-        });
-
+        const categorySelector = document.getElementById('itemCategory');
+        categorySelector.value = item?.categoria || (this.currentCategory === 'todos' ? 'directorio' : this.currentCategory);
+        this.handleCategoryChange({ target: categorySelector });
+        
         const tasksList = document.getElementById('tasksList');
         tasksList.innerHTML = '';
-        if (item.tareas && item.tareas.length > 0) {
+        if (item?.tareas && item.tareas.length > 0) {
             item.tareas.forEach(task => this.addTaskField(task));
         } else {
             this.addTaskField();
         }
-        // Trigger change to show/hide new category input
-        this.handleCategoryChange({ target: document.getElementById('itemCategory') });
     }
     
     clearModalForm() {
         document.getElementById('itemForm').reset();
-        document.getElementById('itemCategory').value = this.currentCategory === 'todos' ? 'directorio' : this.currentCategory;
         document.getElementById('tasksList').innerHTML = '';
         this.addTaskField();
-        // Clear tags multi-select
-        const tagsSelector = document.getElementById('itemTags');
-        Array.from(tagsSelector.options).forEach(option => option.selected = false);
-        // Hide new category input on clear
         document.getElementById('newCategoryInputGroup').style.display = 'none';
+        // Limpiar el input de etiquetas explícitamente
+        document.getElementById('itemTagsInput').value = '';
     }
 
     handleCategoryChange(event) {
@@ -468,65 +555,6 @@ class PanelMariaApp {
         } else {
             newCategoryInputGroup.style.display = 'none';
         }
-    }
-    
-    addTagToItemModal() {
-        const input = document.getElementById('newItemTagInput');
-        const newTag = input.value.trim();
-        if (newTag) {
-            const currentItem = this.items.find(item => item.id === this.currentEditId);
-            const tags = currentItem ? [...currentItem.etiquetas] : [];
-            if (!tags.includes(newTag)) {
-                tags.push(newTag);
-                if (currentItem) {
-                    currentItem.etiquetas = tags;
-                } else {
-                    // For new items, store in a temporary array
-                    this.tempNewItemTags = tags;
-                }
-                this.renderItemTagsInModal(tags);
-                input.value = '';
-            } else {
-                this.showToast(`La etiqueta '${newTag}' ya existe.`, 'error');
-            }
-        }
-    }
-
-    toggleTagInItemModal(tag) {
-        const currentItem = this.items.find(item => item.id === this.currentEditId);
-        let tags = currentItem ? [...currentItem.etiquetas] : (this.tempNewItemTags || []);
-
-        if (tags.includes(tag)) {
-            tags = tags.filter(t => t !== tag);
-        } else {
-            tags.push(tag);
-        }
-
-        if (currentItem) {
-            currentItem.etiquetas = tags;
-        } else {
-            this.tempNewItemTags = tags;
-        }
-        this.renderItemTagsInModal(tags);
-    }
-
-    renderItemTagsInModal(selectedTags) {
-        const container = document.getElementById('itemTagsContainer');
-        const allTags = [...new Set([...this.getAllExistingTags(), ...selectedTags])];
-
-        container.innerHTML = allTags.map(tag => `
-            <span class="card__tag ${selectedTags.includes(tag) ? 'selected' : ''}" data-tag="${this.escapeHtml(tag)}">
-                ${this.formatTagText(this.escapeHtml(tag))}
-            </span>
-        `).join('');
-    }
-
-    getAllExistingTags() {
-        const tags = new Set();
-        this.items.forEach(item => {
-            item.etiquetas.forEach(tag => tags.add(tag));
-        });
-        return Array.from(tags);
     }
     
     addTaskField(task = null) {
@@ -554,30 +582,36 @@ class PanelMariaApp {
     async handleFormSubmit(e) {
         e.preventDefault();
         
-        const selectedCategory = document.getElementById('itemCategory').value;
-        let finalCategory = selectedCategory;
-
-        if (selectedCategory === '__new_category__') {
+        let finalCategory = document.getElementById('itemCategory').value;
+        if (finalCategory === '__new_category__') {
             const newCustomCategory = document.getElementById('newItemCategory').value.trim();
             if (!newCustomCategory) {
                 this.showToast('El nombre de la nueva categoría es obligatorio.', 'error');
                 return;
             }
-            finalCategory = newCustomCategory;
-            if (!this.settings.customCategories.includes(newCustomCategory)) {
-                this.settings.customCategories.push(newCustomCategory);
-                await this.saveData(); // Save settings immediately
-                this.renderNavigationTabs();
-                this.populateCategorySelector();
+            finalCategory = newCustomCategory.toLowerCase();
+            if (!(this.settings.customCategories || []).includes(finalCategory)) {
+                this.settings.customCategories.push(finalCategory);
             }
         }
+        
+        // --- Nueva forma de obtener las etiquetas ---
+        const finalTags = Array.from(this.modalActiveTags);
+
+        // Añadir las nuevas etiquetas a la lista global de settings
+        finalTags.forEach(tag => {
+            if (!this.settings.allTags.includes(tag)) {
+                this.settings.allTags.push(tag);
+            }
+        });
 
         const itemData = {
             categoria: finalCategory,
             titulo: document.getElementById('itemTitle').value.trim(),
             descripcion: document.getElementById('itemDescription').value.trim(),
             url: document.getElementById('itemUrl').value.trim(),
-            etiquetas: Array.from(document.getElementById('itemTags').selectedOptions).map(option => option.value), // Get tags from multi-select
+            anclado: document.getElementById('itemPinned').checked,
+            etiquetas: finalTags,
             tareas: Array.from(document.querySelectorAll('#tasksList .task-item')).map(item => ({
                 id: this.generateId(),
                 titulo: item.querySelector('.task-input').value.trim(),
@@ -602,19 +636,20 @@ class PanelMariaApp {
             }
             
             this.closeModal();
-            this.switchCategory(itemData.categoria); // Switch to the item's category after saving
+            this.renderNavigationTabs();
+            this.populateCategorySelector();
+            this.switchCategory(itemData.categoria);
         } catch (error) {
             console.error('Error saving item:', error);
             this.showToast('Error al guardar el elemento', 'error');
         }
     }
     
-    // Acciones
     async togglePinned(id) {
         const item = this.items.find(item => item.id === id);
         if (item) {
-            const updatedItem = await storage.updateItem(id, { anclado: !item.anclado });
-            item.anclado = updatedItem.anclado;
+            item.anclado = !item.anclado;
+            await storage.updateItem(id, { anclado: item.anclado });
             this.renderAll();
         }
     }
@@ -622,12 +657,9 @@ class PanelMariaApp {
     async convertToLogro(id) {
         try {
             const updatedItem = await storage.convertToLogro(id);
-            // Update the local items array immediately
             this.items = this.items.map(i => i.id === id ? updatedItem : i); 
-            this.switchCategory('logros'); // Switch to the 'logros' category to show the converted item
+            this.switchCategory('logros');
             this.showToast('Elemento convertido a logro', 'success');
-            // Ensure items are re-rendered after category switch
-            this.renderItems(); // Explicitly re-render items
         } catch (error) {
             console.error('Error converting to logro:', error);
             this.showToast('Error al convertir el elemento', 'error');
@@ -644,7 +676,7 @@ class PanelMariaApp {
 
         try {
             await storage.updateItem(itemId, { tareas: item.tareas });
-            this.renderItems(); // Solo re-renderizar items, no todo
+            this.renderItems();
         } catch (error) {
             console.error('Error updating task:', error);
             task.completado = !task.completado; // Revert on error
@@ -653,20 +685,17 @@ class PanelMariaApp {
     }
 
     async deleteItem(id) {
-        console.log('deleteItem function started for id:', id);
         try {
             await storage.deleteItem(id);
             this.items = this.items.filter(i => i.id !== id);
             this.renderAll();
             this.showToast('Elemento eliminado', 'success');
-            console.log('Item deleted successfully:', id);
         } catch (error) {
             console.error('Error deleting item:', error);
             this.showToast('Error al eliminar', 'error');
         }
     }
 
-    // Gestión de selección y acciones en lote
     toggleSelection(id) {
         if (this.selectedItems.has(id)) {
             this.selectedItems.delete(id);
@@ -678,21 +707,25 @@ class PanelMariaApp {
     }
     
     toggleSelectAll(checked) {
-        const filteredItems = this.getFilteredItems();
+        const filteredItemIds = this.getFilteredItems().map(item => item.id);
         if (checked) {
-            filteredItems.forEach(item => this.selectedItems.add(item.id));
+            filteredItemIds.forEach(id => this.selectedItems.add(id));
         } else {
-            this.selectedItems.clear();
+            filteredItemIds.forEach(id => this.selectedItems.delete(id));
         }
         this.renderItems();
         this.updateSelectionUI();
     }
     
     async bulkTogglePinned() {
-        const isPinned = this.items.find(item => this.selectedItems.has(item.id))?.anclado;
+        const updates = [];
+        const firstSelectedIsPinned = this.items.find(item => this.selectedItems.has(item.id))?.anclado;
+        const targetState = !firstSelectedIsPinned;
+
         for (const id of this.selectedItems) {
-            await storage.updateItem(id, { anclado: !isPinned });
+             updates.push(storage.updateItem(id, { anclado: targetState }));
         }
+        await Promise.all(updates);
         await this.loadData();
         this.selectedItems.clear();
         this.renderAll();
@@ -702,9 +735,9 @@ class PanelMariaApp {
         const newCategory = document.getElementById('bulkNewCategory').value;
         if (!newCategory) return;
         
-        for (const id of this.selectedItems) {
-            await storage.updateItem(id, { categoria: newCategory });
-        }
+        const updates = Array.from(this.selectedItems).map(id => storage.updateItem(id, { categoria: newCategory }));
+        await Promise.all(updates);
+
         await this.loadData();
         this.selectedItems.clear();
         this.closeBulkCategoryModal();
@@ -713,21 +746,20 @@ class PanelMariaApp {
 
     async handleBulkChangeTags() {
         const newTagsInput = document.getElementById('bulkNewTags').value;
-        const newTags = newTagsInput.split(',').map(tag => tag.trim()).filter(tag => tag);
+        const newTags = newTagsInput.split(',').map(tag => tag.trim().toLowerCase()).filter(tag => tag);
 
-        if (newTags.length === 0) {
-            this.showToast('Por favor, introduce al menos una etiqueta.', 'error');
-            return;
-        }
+        if (newTags.length === 0) return;
 
+        const updates = [];
         for (const id of this.selectedItems) {
             const item = this.items.find(i => i.id === id);
             if (item) {
-                // Combine existing tags with new tags, remove duplicates
-                const updatedTags = [...new Set([...item.etiquetas, ...newTags])];
-                await storage.updateItem(id, { etiquetas: updatedTags });
+                const updatedTags = [...new Set([...(item.etiquetas || []), ...newTags])];
+                updates.push(storage.updateItem(id, { etiquetas: updatedTags }));
             }
         }
+        await Promise.all(updates);
+        
         await this.loadData();
         this.selectedItems.clear();
         this.closeBulkTagsModal();
@@ -744,24 +776,22 @@ class PanelMariaApp {
     }
 
     confirmDeleteItem(id) {
-        this.pendingConfirmId = id; // Store the ID for individual delete
         this.showConfirmModal(
             'Eliminar Elemento',
             '¿Estás seguro de que quieres eliminar este elemento? Esta acción no se puede deshacer.',
-            () => this.deleteItem(this.pendingConfirmId)
+            () => this.deleteItem(id)
         );
     }
     
     async bulkDelete() {
-        for (const id of this.selectedItems) {
-            await storage.deleteItem(id);
-        }
+        const deletions = Array.from(this.selectedItems).map(id => storage.deleteItem(id));
+        await Promise.all(deletions);
+        
         this.items = this.items.filter(i => !this.selectedItems.has(i.id));
         this.selectedItems.clear();
         this.renderAll();
     }
 
-    // Modales de confirmación y otros
     showConfirmModal(title, message, onConfirm) {
         document.getElementById('confirmTitle').textContent = title;
         document.getElementById('confirmMessage').textContent = message;
@@ -772,21 +802,24 @@ class PanelMariaApp {
     closeConfirmModal() {
         document.getElementById('confirmModal').classList.add('hidden');
         this.confirmAction = null;
-        this.pendingConfirmId = null; // Clear the stored ID on close
     }
     
     executeConfirmAction() {
-        this.confirmAction?.();
+        if (typeof this.confirmAction === 'function') {
+            this.confirmAction();
+        }
         this.closeConfirmModal();
-        this.pendingConfirmId = null; // Clear the stored ID after execution
     }
     
     openBulkCategoryModal() { document.getElementById('bulkCategoryModal').classList.remove('hidden'); }
     closeBulkCategoryModal() { document.getElementById('bulkCategoryModal').classList.add('hidden'); }
     openBulkTagsModal() { document.getElementById('bulkTagsModal').classList.remove('hidden'); }
     closeBulkTagsModal() { document.getElementById('bulkTagsModal').classList.add('hidden'); }
+    
     openSettingsModal() {
         document.getElementById('settingsModal').classList.remove('hidden');
+        document.getElementById('autoSaveVoice').checked = this.settings.autoSaveVoice;
+        document.getElementById('themeSelect').value = this.settings.theme;
         this.renderCustomCategories();
     }
     closeSettingsModal() {
@@ -795,42 +828,40 @@ class PanelMariaApp {
 
     openNewCategoryInput() {
         this.openSettingsModal();
-        // Focus on the new category input after a short delay to ensure modal is open
-        setTimeout(() => {
-            document.getElementById('newCustomCategoryInput').focus();
-        }, 100);
+        setTimeout(() => document.getElementById('newCustomCategoryInput').focus(), 100);
     }
 
-    addCustomCategory() {
+    async addCustomCategory() {
         const input = document.getElementById('newCustomCategoryInput');
-        const newCategory = input.value.trim();
-        if (newCategory && !this.settings.customCategories.includes(newCategory)) {
+        const newCategory = input.value.trim().toLowerCase();
+        if (newCategory && !(this.settings.customCategories || []).includes(newCategory)) {
             this.settings.customCategories.push(newCategory);
-            this.saveData();
+            await this.saveData();
             this.renderCustomCategories();
-            this.renderNavigationTabs(); // Update navigation tabs
-            this.populateCategorySelector(); // Update category selector
+            this.renderNavigationTabs();
+            this.populateCategorySelector();
             input.value = '';
-            this.showToast(`Categoría '${newCategory}' añadida.`, 'success');
+            this.showToast(`Categoría '${this.formatCategoryName(newCategory)}' añadida.`, 'success');
         } else if (newCategory) {
-            this.showToast(`La categoría '${newCategory}' ya existe.`, 'error');
+            this.showToast(`La categoría '${this.formatCategoryName(newCategory)}' ya existe.`, 'error');
         }
     }
 
-    removeCustomCategory(category) {
-        this.settings.customCategories = this.settings.customCategories.filter(cat => cat !== category);
-        this.saveData();
+    async removeCustomCategory(categoryToRemove) {
+        this.settings.customCategories = (this.settings.customCategories || []).filter(cat => cat !== categoryToRemove);
+        await this.saveData();
         this.renderCustomCategories();
-        this.renderNavigationTabs(); // Update navigation tabs
-        this.populateCategorySelector(); // Update category selector
-        this.showToast(`Categoría '${category}' eliminada.`, 'success');
+        this.renderNavigationTabs();
+        this.populateCategorySelector();
+        this.showToast(`Categoría '${this.formatCategoryName(categoryToRemove)}' eliminada.`, 'success');
     }
 
     renderCustomCategories() {
         const list = document.getElementById('customCategoriesList');
-        list.innerHTML = this.settings.customCategories.map(category => `
+        const categories = this.settings.customCategories || [];
+        list.innerHTML = categories.map(category => `
             <span class="card__tag">
-                ${this.escapeHtml(category)}
+                ${this.escapeHtml(this.formatCategoryName(category))}
                 <button class="btn btn--icon remove-tag" data-category="${this.escapeHtml(category)}">
                     <span class="material-symbols-outlined">close</span>
                 </button>
@@ -838,24 +869,16 @@ class PanelMariaApp {
         `).join('');
     }
 
-    // Utilidades
     escapeHtml(text) {
+        if (typeof text !== 'string') return '';
         return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
     truncateUrl(url, maxLength = 50) {
-        if (url.length <= maxLength) {
-            return url;
-        }
-        const protocolEnd = url.indexOf('://');
-        let displayUrl = url;
-        if (protocolEnd !== -1) {
-            displayUrl = url.substring(protocolEnd + 3);
-        }
-        if (displayUrl.length <= maxLength) {
-            return displayUrl;
-        }
-        return displayUrl.substring(0, maxLength - 3) + '...';
+        if (url.length <= maxLength) return url;
+        const cleanedUrl = url.replace(/^(https?:\/\/)/, '');
+        if (cleanedUrl.length <= maxLength) return cleanedUrl;
+        return cleanedUrl.substring(0, maxLength - 3) + '...';
     }
 
     generateId() {
@@ -882,15 +905,16 @@ class PanelMariaApp {
     }
     
     handleKeyboardShortcuts(e) {
-        if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-            e.preventDefault();
-            this.openModal();
-        }
+        const modalOpen = !document.getElementById('itemModal').classList.contains('hidden');
         if (e.key === 'Escape') {
             this.closeModal();
             this.closeConfirmModal();
             this.closeBulkCategoryModal();
             this.closeSettingsModal();
+        }
+        if (!modalOpen && (e.ctrlKey || e.metaKey) && (e.key === 'n' || e.key === 'N')) {
+            e.preventDefault();
+            this.openModal();
         }
     }
     
@@ -900,6 +924,8 @@ class PanelMariaApp {
         try {
             await storage.importData(file);
             await this.loadData();
+            this.renderNavigationTabs();
+            this.populateCategorySelector();
             this.renderAll();
             this.showToast('Datos importados correctamente', 'success');
         } catch (error) {
@@ -910,8 +936,7 @@ class PanelMariaApp {
     }
     
     handleCardClick(event, id) {
-        // Previene abrir el modal si el click fue en un elemento interactivo
-        if (event.target.closest('button, input, a, .card__task-checkbox')) {
+        if (event.target.closest('button, input, a, .card__tag')) {
             return;
         }
         this.openModal(id);
