@@ -4,110 +4,10 @@
 ================================================================================
 */
 
-document.addEventListener('DOMContentLoaded', () => {
-    const app = new PanelMariaApp();
-    app.init();
-});
+// Este es un comentario de prueba para demostrar un commit.
 
-class PanelMariaApp {
-    constructor() {
-        this.currentCategory = 'todos';
-        this.items = [];
-        this.selectedItems = new Set();
-        this.filters = { search: '', tag: null };
-        this.settings = {};
-        this.currentEditId = null;
-        
-        // --- Propiedades para el modal de etiquetas ---
-        this.modalActiveTags = new Set(); // Almacena las etiquetas del item en el modal
-
-        // --- Context Menu Properties ---
-        this.contextMenu = null;
-        this.contextMenuAction = null;
-        this.longPressTimer = null;
-        this.bulkActiveTags = new Set(); // New state for bulk tag management
-
-        window.appController = {
-            openModal: (id = null) => this.openModal(id),
-            togglePinned: (id) => this.togglePinned(id),
-            confirmDelete: (id) => this.confirmDeleteItem(id),
-            handleCardClick: (event, id) => this.handleCardClick(event, id),
-            toggleSelection: (id) => this.toggleSelection(id),
-            convertToLogro: (id) => this.convertToLogro(id),
-            toggleTask: (itemId, taskId) => this.toggleTask(itemId, taskId),
-            filterByTag: (tag) => this.filterByTag(tag)
-        };
-    }
-    
-    async init() {
-        await this.loadData();
-        await this.migrateToCategorySpecificTags();
-        this.renderNavigationTabs();
-        this.populateCategorySelector();
-        this.setupEventListeners();
-        this.switchCategory(this.settings.lastCategory || 'todos');
-        this.applyTheme();
-    }
-    
-    async loadData() {
-        try {
-            const data = await storage.loadAll();
-            this.items = data.items || [];
-            this.settings = data.settings || { autoSaveVoice: false, theme: 'default', lastCategory: 'todos', customCategories: [], allTags: [] };
-            if (!this.settings.allTags) this.settings.allTags = []; // Asegurar que exista
-        } catch (error) {
-            console.error('Error loading data:', error);
-            this.items = [];
-            this.settings = { autoSaveVoice: false, theme: 'default', lastCategory: 'todos', customCategories: [], allTags: [] };
-        }
-    }
-
-    async saveData() {
-        try {
-            await storage.saveAll({ items: this.items, settings: this.settings });
-        } catch (error) {
-            console.error('Error saving data:', error);
-        }
-    }
-
-    async migrateToCategorySpecificTags() {
-        if (this.settings.categoryTags) {
-            // Migration already done
-            return;
-        }
-
-        console.log("Running migration to category-specific tags...");
-
-        this.settings.categoryTags = {};
-        this.items.forEach(item => {
-            const category = item.categoria;
-            if (!this.settings.categoryTags[category]) {
-                this.settings.categoryTags[category] = [];
-            }
-            if (item.etiquetas) {
-                item.etiquetas.forEach(tag => {
-                    if (!this.settings.categoryTags[category].includes(tag)) {
-                        this.settings.categoryTags[category].push(tag);
-                    }
-                });
-            }
-        });
-
-        delete this.settings.allTags; // Remove old global tags
-        await this.saveData();
-        console.log("Migration complete.");
-    }
-    
-    setupEventListeners() {
-        // Botones principales
-        import { auth } from './firebase-config.js';
+import { auth } from './firebase-config.js';
 import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-
-/*
-================================================================================
-|       PANEL MARÍA - APLICACIÓN PRINCIPAL (CON NUEVO SISTEMA DE ETIQUETAS)    |
-================================================================================
-*/
 
 document.addEventListener('DOMContentLoaded', () => {
     const app = new PanelMariaApp();
@@ -267,11 +167,11 @@ class PanelMariaApp {
             this.loginWithGoogle();
         });
         document.getElementById('logoutBtn').addEventListener('click', () => this.logout()); // Add logout listener
-        document.getElementById('settingsBtn').addEventListener('click', () => this.openSettingsModal());
+         document.getElementById('settingsBtn').addEventListener('click', () => this.openSettingsModal());
         document.getElementById('addItemBtn').addEventListener('click', () => this.openModal()); // Add listener for 'Nuevo' button
-        document.getElementById('emptyStateAddBtn').addEventListener('click', () => this.openModal());
-        
-        // Búsqueda
+         document.getElementById('emptyStateAddBtn').addEventListener('click', () => this.openModal());
+         
+         // Búsqueda
         document.getElementById('searchInput').addEventListener('input', (e) => {
             this.filters.search = e.target.value.toLowerCase();
             this.renderAll();
@@ -407,8 +307,7 @@ class PanelMariaApp {
         document.getElementById('contextMenuDelete').addEventListener('click', () => {
             if (typeof this.contextMenuAction === 'function') {
                 this.contextMenuAction();
-            }
-            this.hideContextMenu();
+            }n            this.hideContextMenu();
         });
 
         const tagFiltersContainer = document.getElementById('tagFilters');
@@ -553,7 +452,7 @@ class PanelMariaApp {
             if (target && target.dataset.category && !['directorio', 'ideas', 'proyectos', 'logros', 'todos'].includes(target.dataset.category)) {
                 longPressTimer = setTimeout(() => {
                     e.preventDefault();
-                    const category = target.dataset.category;
+                    const tag = target.dataset.category;
                     this.showContextMenu(e.touches[0].clientX, e.touches[0].clientY, () => {
                         this.showConfirmModal(
                             'Eliminar Categoría',
