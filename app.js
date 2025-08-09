@@ -18,7 +18,7 @@ class PanelMariaApp {
         this.filters = { search: '' };
         this.settings = {};
         this.currentEditId = null;
-        this.pendingConfirmId = null; // Added for individual delete confirmation
+        this.currentEditId = null;
         
         // Exponer métodos globales para eventos HTML
         window.appController = {
@@ -46,7 +46,7 @@ class PanelMariaApp {
         try {
             const data = await storage.loadAll();
             this.items = data.items || [];
-            this.settings = data.settings || { autoSaveVoice: false, theme: 'default', lastCategory: 'todos', customCategories: [] };
+            this.settings = data.settings || { autoSaveVoice: false, theme: 'default', lastCategory: 'todos', customCategories: [], allTags: [] };
             // voiceManager.setAutoSave(this.settings.autoSaveVoice || false);
         } catch (error) {
             console.error('Error loading data:', error);
@@ -69,6 +69,9 @@ class PanelMariaApp {
         // document.getElementById('voiceBtn').addEventListener('click', () => voiceManager.startListening());
         document.getElementById('settingsBtn').addEventListener('click', () => this.openSettingsModal());
         document.getElementById('emptyStateAddBtn').addEventListener('click', () => this.openModal());
+        setTimeout(() => {
+            document.getElementById('newCategoryNavBtn').addEventListener('click', () => this.openNewCategoryInput());
+        }, 0);
         
         // Búsqueda
         document.getElementById('searchInput').addEventListener('input', (e) => {
@@ -91,17 +94,11 @@ class PanelMariaApp {
         document.getElementById('closeModalBtn').addEventListener('click', () => this.closeModal());
         document.getElementById('cancelBtn').addEventListener('click', () => this.closeModal());
         document.getElementById('itemForm').addEventListener('submit', (e) => this.handleFormSubmit(e));
+        document.getElementById('itemCategory').addEventListener('change', (e) => this.handleCategoryChange(e));
+        document.getElementById('itemTags').addEventListener('change', (e) => this.handleTagChange(e));
         
         // Tareas dinámicas
         document.getElementById('addTaskBtn').addEventListener('click', () => this.addTaskField());
-
-        // Gestión de etiquetas en el modal de item
-        document.getElementById('addTagBtn').addEventListener('click', () => this.addTagToItemModal());
-        document.getElementById('itemTagsContainer').addEventListener('click', (e) => {
-            if (e.target.classList.contains('card__tag')) {
-                this.toggleTagInItemModal(e.target.textContent.trim());
-            }
-        });
         
         // Modales de confirmación
         document.getElementById('confirmCancelBtn').addEventListener('click', () => this.closeConfirmModal());
@@ -224,6 +221,8 @@ class PanelMariaApp {
             <option value="${category}">${this.formatCategoryName(category)}</option>
         `).join('');
 
+        selector.innerHTML += `<option value="__new_category__">Crear nueva categoría...</option>`;
+
         // Set selected category
         selector.value = this.currentCategory === 'todos' ? 'directorio' : this.currentCategory;
     }
@@ -256,7 +255,7 @@ class PanelMariaApp {
         
         // Filtrar por categoría
         if (this.currentCategory !== 'todos') {
-            items = items.filter(item => item.categoria === this.currentCategory);
+            items = items.filter(item => item.categoria.toLowerCase() === this.currentCategory.toLowerCase());
         }
 
         // Aplicar filtro de búsqueda
@@ -424,9 +423,20 @@ class PanelMariaApp {
         document.getElementById('itemDescription').value = item.descripcion || '';
         document.getElementById('itemUrl').value = item.url || '';
         
-        this.renderItemTagsInModal(item.etiquetas || []); // Render tags
-        this.tempNewItemTags = item.etiquetas || []; // Initialize temp tags for editing
-        
+        // Populate tags multi-select
+        const tagsSelector = document.getElementById('itemTags');
+        const allExistingTags = [...new Set([...this.settings.allTags, ...(item.etiquetas || [])])]; // Combine global tags with item's tags
+        tagsSelector.innerHTML = allExistingTags.map(tag => `
+            <option value="${tag}">${this.formatTagText(tag)}</option>
+        `).join('');
+
+        tagsSelector.innerHTML += `<option value="__new_tag__">Crear nueva etiqueta...</option>`;
+
+        // Select existing tags
+        Array.from(tagsSelector.options).forEach(option => {
+            option.selected = (item.etiquetas || []).includes(option.value);
+        });
+
         const tasksList = document.getElementById('tasksList');
         tasksList.innerHTML = '';
         if (item.tareas && item.tareas.length > 0) {
@@ -434,6 +444,8 @@ class PanelMariaApp {
         } else {
             this.addTaskField();
         }
+        // Trigger change to show/hide new category input
+        this.handleCategoryChange({ target: document.getElementById('itemCategory') });
     }
     
     clearModalForm() {
@@ -441,7 +453,21 @@ class PanelMariaApp {
         document.getElementById('itemCategory').value = this.currentCategory === 'todos' ? 'directorio' : this.currentCategory;
         document.getElementById('tasksList').innerHTML = '';
         this.addTaskField();
-        this.renderItemTagsInModal([]); // Clear tags
+        // Clear tags multi-select
+        const tagsSelector = document.getElementById('itemTags');
+        Array.from(tagsSelector.options).forEach(option => option.selected = false);
+        // Hide new category input on clear
+        document.getElementById('newCategoryInputGroup').style.display = 'none';
+    }
+
+    handleCategoryChange(event) {
+        const newCategoryInputGroup = document.getElementById('newCategoryInputGroup');
+        if (event.target.value === '__new_category__') {
+            newCategoryInputGroup.style.display = 'block';
+            document.getElementById('newItemCategory').focus();
+        } else {
+            newCategoryInputGroup.style.display = 'none';
+        }
     }
     
     addTagToItemModal() {
@@ -528,12 +554,30 @@ class PanelMariaApp {
     async handleFormSubmit(e) {
         e.preventDefault();
         
+        const selectedCategory = document.getElementById('itemCategory').value;
+        let finalCategory = selectedCategory;
+
+        if (selectedCategory === '__new_category__') {
+            const newCustomCategory = document.getElementById('newItemCategory').value.trim();
+            if (!newCustomCategory) {
+                this.showToast('El nombre de la nueva categoría es obligatorio.', 'error');
+                return;
+            }
+            finalCategory = newCustomCategory;
+            if (!this.settings.customCategories.includes(newCustomCategory)) {
+                this.settings.customCategories.push(newCustomCategory);
+                await this.saveData(); // Save settings immediately
+                this.renderNavigationTabs();
+                this.populateCategorySelector();
+            }
+        }
+
         const itemData = {
-            categoria: document.getElementById('itemCategory').value,
+            categoria: finalCategory,
             titulo: document.getElementById('itemTitle').value.trim(),
             descripcion: document.getElementById('itemDescription').value.trim(),
             url: document.getElementById('itemUrl').value.trim(),
-            etiquetas: this.tempNewItemTags || [], // Get tags from the new UI
+            etiquetas: Array.from(document.getElementById('itemTags').selectedOptions).map(option => option.value), // Get tags from multi-select
             tareas: Array.from(document.querySelectorAll('#tasksList .task-item')).map(item => ({
                 id: this.generateId(),
                 titulo: item.querySelector('.task-input').value.trim(),
@@ -578,10 +622,12 @@ class PanelMariaApp {
     async convertToLogro(id) {
         try {
             const updatedItem = await storage.convertToLogro(id);
-            // Force a full data reload to ensure consistency
-            await this.loadData(); 
+            // Update the local items array immediately
+            this.items = this.items.map(i => i.id === id ? updatedItem : i); 
             this.switchCategory('logros'); // Switch to the 'logros' category to show the converted item
             this.showToast('Elemento convertido a logro', 'success');
+            // Ensure items are re-rendered after category switch
+            this.renderItems(); // Explicitly re-render items
         } catch (error) {
             console.error('Error converting to logro:', error);
             this.showToast('Error al convertir el elemento', 'error');
@@ -745,6 +791,14 @@ class PanelMariaApp {
     }
     closeSettingsModal() {
         document.getElementById('settingsModal').classList.add('hidden');
+    }
+
+    openNewCategoryInput() {
+        this.openSettingsModal();
+        // Focus on the new category input after a short delay to ensure modal is open
+        setTimeout(() => {
+            document.getElementById('newCustomCategoryInput').focus();
+        }, 100);
     }
 
     addCustomCategory() {

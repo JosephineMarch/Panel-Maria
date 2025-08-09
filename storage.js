@@ -28,7 +28,7 @@ class LocalStorageAdapter extends StorageAdapter {
                 // Si no hay datos, devuelve la estructura por defecto
                 return {
                     items: [],
-                    settings: { autoSaveVoice: true, customCategories: [] }
+                    settings: { autoSaveVoice: true, customCategories: [], allTags: [] }
                 };
             }
             return JSON.parse(data);
@@ -111,6 +111,15 @@ class Storage {
             meta: item.meta || {}
         };
 
+        // Add new tags to the global allTags list
+        if (newItem.etiquetas && newItem.etiquetas.length > 0) {
+            newItem.etiquetas.forEach(tag => {
+                if (!data.settings.allTags.includes(tag)) {
+                    data.settings.allTags.push(tag);
+                }
+            });
+        }
+
         data.items.push(newItem);
         await this.saveAll(data);
         return newItem;
@@ -122,6 +131,15 @@ class Storage {
 
         if (itemIndex === -1) {
             throw new Error(`Item with id ${id} not found`);
+        }
+
+        // Add new tags from partialUpdate to the global allTags list
+        if (partialUpdate.etiquetas && partialUpdate.etiquetas.length > 0) {
+            partialUpdate.etiquetas.forEach(tag => {
+                if (!data.settings.allTags.includes(tag)) {
+                    data.settings.allTags.push(tag);
+                }
+            });
         }
 
         data.items[itemIndex] = { ...data.items[itemIndex], ...partialUpdate };

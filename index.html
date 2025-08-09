@@ -63,6 +63,9 @@
                     <span class="material-symbols-outlined">select_all</span>
                     Todos
                 </button>
+                <button id="newCategoryNavBtn" class="btn btn--text">
+                    <span class="material-symbols-outlined">add</span> Nueva Categoría
+                </button>
             </div>
         </div>
     </nav>
@@ -130,6 +133,11 @@
                     </select>
                 </div>
 
+                <div class="form-group" id="newCategoryInputGroup" style="display: none;">
+                    <label for="newItemCategory" class="form-label">Nombre de la nueva categoría *</label>
+                    <input type="text" id="newItemCategory" class="input-field" placeholder="Ej: Recetas, Viajes">
+                </div>
+
                 <div class="form-group">
                     <label for="itemTitle" class="form-label">Título *</label>
                     <input type="text" id="itemTitle" required class="input-field" placeholder="Título del elemento">
@@ -147,13 +155,14 @@
 
                 <div class="form-group">
                     <label for="itemTags" class="form-label">Etiquetas</label>
-                    <div id="itemTagsContainer" class="tags-input-container">
-                        <!-- Tags will be rendered here -->
-                    </div>
-                    <div class="form-group-inline">
-                        <input type="text" id="newItemTagInput" class="input-field" placeholder="Añadir nueva etiqueta">
-                        <button type="button" id="addTagBtn" class="btn btn--filled">Añadir</button>
-                    </div>
+                    <select id="itemTags" class="input-field" multiple size="5">
+                        <!-- Options will be populated dynamically -->
+                    </select>
+                </div>
+
+                <div class="form-group" id="newTagInputGroup" style="display: none;">
+                    <label for="newItemTag" class="form-label">Nombre de la nueva etiqueta *</label>
+                    <input type="text" id="newItemTag" class="input-field" placeholder="Ej: Urgente, Personal">
                 </div>
                 
                 <!-- Tasks Section (for Proyectos) -->
