@@ -307,7 +307,8 @@ class PanelMariaApp {
         document.getElementById('contextMenuDelete').addEventListener('click', () => {
             if (typeof this.contextMenuAction === 'function') {
                 this.contextMenuAction();
-            }n            this.hideContextMenu();
+            }
+            this.hideContextMenu();
         });
 
         const tagFiltersContainer = document.getElementById('tagFilters');
