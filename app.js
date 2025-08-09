@@ -40,7 +40,7 @@ class PanelMariaApp {
     
     async init() {
         await this.loadData();
-        await this.ensureAllTagsAreCollected();
+        await this.migrateToCategorySpecificTags();
         this.renderNavigationTabs();
         this.populateCategorySelector();
         this.setupEventListeners();
@@ -69,26 +69,32 @@ class PanelMariaApp {
         }
     }
 
-    async ensureAllTagsAreCollected() {
-        const allItems = this.items || [];
-        const existingTags = new Set(this.settings.allTags || []);
-        let newTagsFound = false;
+    async migrateToCategorySpecificTags() {
+        if (this.settings.categoryTags) {
+            // Migration already done
+            return;
+        }
 
-        allItems.forEach(item => {
-            if (item.etiquetas && Array.isArray(item.etiquetas)) {
+        console.log("Running migration to category-specific tags...");
+
+        this.settings.categoryTags = {};
+        this.items.forEach(item => {
+            const category = item.categoria;
+            if (!this.settings.categoryTags[category]) {
+                this.settings.categoryTags[category] = [];
+            }
+            if (item.etiquetas) {
                 item.etiquetas.forEach(tag => {
-                    if (!existingTags.has(tag)) {
-                        existingTags.add(tag);
-                        newTagsFound = true;
+                    if (!this.settings.categoryTags[category].includes(tag)) {
+                        this.settings.categoryTags[category].push(tag);
                     }
                 });
             }
         });
 
-        if (newTagsFound) {
-            this.settings.allTags = Array.from(existingTags);
-            await this.saveData();
-        }
+        delete this.settings.allTags; // Remove old global tags
+        await this.saveData();
+        console.log("Migration complete.");
     }
     
     setupEventListeners() {
@@ -206,32 +212,17 @@ class PanelMariaApp {
             this.hideContextMenu();
         });
 
-        const navTabsContainer = document.querySelector('.nav-tabs__inner');
-        navTabsContainer.addEventListener('contextmenu', (e) => {
-            const target = e.target.closest('.nav-tab');
-            if (target && target.dataset.category && !['directorio', 'ideas', 'proyectos', 'logros', 'todos'].includes(target.dataset.category)) {
-                e.preventDefault();
-                const category = target.dataset.category;
-                this.showContextMenu(e.clientX, e.clientY, () => {
-                    this.showConfirmModal(
-                        'Eliminar Categoría',
-                        `¿Estás seguro de que quieres eliminar la categoría "${this.formatCategoryName(category)}"? Todos los elementos se moverán a "Directorio".`,
-                        () => this.removeCustomCategory(category)
-                    );
-                });
-            }
-        });
-
         const tagFiltersContainer = document.getElementById('tagFilters');
         tagFiltersContainer.addEventListener('contextmenu', (e) => {
             const target = e.target.closest('.tag-filter');
             if (target && target.dataset.tag) {
                 e.preventDefault();
                 const tag = target.dataset.tag;
+                const categoryContext = this.currentCategory; // Get the current category
                 this.showContextMenu(e.clientX, e.clientY, () => {
                     this.showConfirmModal(
                         'Eliminar Etiqueta',
-                        `¿Estás seguro de que quieres eliminar la etiqueta "${this.formatTagText(tag)}"? Se quitará de todos los elementos.`,
+                        `¿Estás seguro de que quieres eliminar la etiqueta "${this.formatTagText(tag)}" de la categoría "${this.formatCategoryName(categoryContext)}"? Se quitará de los elementos de esta categoría.`,
                         () => this.removeTag(tag)
                     );
                 });
@@ -240,36 +231,17 @@ class PanelMariaApp {
 
         // Long-press for mobile
         let longPressTimer;
-        navTabsContainer.addEventListener('touchstart', (e) => {
-            const target = e.target.closest('.nav-tab');
-            if (target && target.dataset.category && !['directorio', 'ideas', 'proyectos', 'logros', 'todos'].includes(target.dataset.category)) {
-                longPressTimer = setTimeout(() => {
-                    e.preventDefault();
-                    const category = target.dataset.category;
-                    this.showContextMenu(e.touches[0].clientX, e.touches[0].clientY, () => {
-                        this.showConfirmModal(
-                            'Eliminar Categoría',
-                            `¿Estás seguro de que quieres eliminar la categoría "${this.formatCategoryName(category)}"? Todos los elementos se moverán a "Directorio".`,
-                            () => this.removeCustomCategory(category)
-                        );
-                    });
-                }, 500);
-            }
-        });
-
-        navTabsContainer.addEventListener('touchend', () => clearTimeout(longPressTimer));
-        navTabsContainer.addEventListener('touchmove', () => clearTimeout(longPressTimer));
-
         tagFiltersContainer.addEventListener('touchstart', (e) => {
             const target = e.target.closest('.tag-filter');
             if (target && target.dataset.tag) {
                 longPressTimer = setTimeout(() => {
                     e.preventDefault();
                     const tag = target.dataset.tag;
+                    const categoryContext = this.currentCategory; // Get the current category
                     this.showContextMenu(e.touches[0].clientX, e.touches[0].clientY, () => {
                         this.showConfirmModal(
                             'Eliminar Etiqueta',
-                            `¿Estás seguro de que quieres eliminar la etiqueta "${this.formatTagText(tag)}"? Se quitará de todos los elementos.`,
+                            `¿Estás seguro de que quieres eliminar la etiqueta "${this.formatTagText(tag)}" de la categoría "${this.formatCategoryName(categoryContext)}"? Se quitará de los elementos de esta categoría.`,
                             () => this.removeTag(tag)
                         );
                     });
@@ -325,7 +297,8 @@ class PanelMariaApp {
     }
 
     renderNavigationTabs() {
-        const navTabsContainer = document.querySelector('.nav-tabs__inner');
+        console.log("renderNavigationTabs called");
+        const navContainer = document.querySelector('.nav-tabs');
         const predefinedCategories = ['directorio', 'ideas', 'proyectos', 'logros'];
         const allCategories = [...predefinedCategories, ...(this.settings.customCategories || [])];
 
@@ -349,32 +322,72 @@ class PanelMariaApp {
             </button>
         `;
 
-        navTabsContainer.innerHTML = tabsHtml;
+        navContainer.innerHTML = `<div class="container"><div class="nav-tabs__inner">${tabsHtml}</div></div>`;
 
-        navTabsContainer.querySelectorAll('.nav-tab').forEach(tab => {
+        navContainer.querySelectorAll('.nav-tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 this.switchCategory(tab.dataset.category);
             });
         });
 
+        navContainer.addEventListener('contextmenu', (e) => {
+            console.log("contextmenu event triggered on navContainer");
+            const target = e.target.closest('.nav-tab');
+            console.log("target:", target);
+            if (target && target.dataset.category && !['directorio', 'ideas', 'proyectos', 'logros', 'todos'].includes(target.dataset.category)) {
+                console.log("Custom category found:", target.dataset.category);
+                e.preventDefault();
+                const category = target.dataset.category;
+                this.showContextMenu(e.clientX, e.clientY, () => {
+                    this.showConfirmModal(
+                        'Eliminar Categoría',
+                        `¿Estás seguro de que quieres eliminar la categoría "${this.formatCategoryName(category)}"? Todos los elementos se moverán a "Directorio".`,
+                        () => this.removeCustomCategory(category)
+                    );
+                });
+            }
+        });
+
+        let longPressTimer;
+        navContainer.addEventListener('touchstart', (e) => {
+            const target = e.target.closest('.nav-tab');
+            if (target && target.dataset.category && !['directorio', 'ideas', 'proyectos', 'logros', 'todos'].includes(target.dataset.category)) {
+                longPressTimer = setTimeout(() => {
+                    e.preventDefault();
+                    const category = target.dataset.category;
+                    this.showContextMenu(e.touches[0].clientX, e.touches[0].clientY, () => {
+                        this.showConfirmModal(
+                            'Eliminar Categoría',
+                            `¿Estás seguro de que quieres eliminar la categoría "${this.formatCategoryName(category)}"? Todos los elementos se moverán a "Directorio".`,
+                            () => this.removeCustomCategory(category)
+                        );
+                    });
+                }, 500);
+            }
+        });
+
+        navContainer.addEventListener('touchend', () => clearTimeout(longPressTimer));
+        navContainer.addEventListener('touchmove', () => clearTimeout(longPressTimer));
+
         document.getElementById('newCategoryNavBtn').addEventListener('click', () => this.openNewCategoryModal());
         
-        navTabsContainer.querySelector(`[data-category="${this.currentCategory}"]`)?.classList.add('active');
+        navContainer.querySelector(`[data-category="${this.currentCategory}"]`)?.classList.add('active');
     }
 
     renderTagFilters() {
         const container = document.getElementById('tagFilters');
         if (!container) return;
 
-        const allTags = this.settings.allTags || [];
-        if (allTags.length === 0) {
+        const tagsForCategory = (this.settings.categoryTags && this.settings.categoryTags[this.currentCategory]) || [];
+        
+        if (tagsForCategory.length === 0) {
             container.innerHTML = '';
             return;
         }
 
         let tagsHtml = `
             <span class="tag-filter-label">Etiquetas:</span>
-            ${allTags.map(tag => `
+            ${tagsForCategory.map(tag => `
                 <span class="tag-filter ${this.filters.tag === tag ? 'active' : ''}" data-tag="${this.escapeHtml(tag)}">
                     ${this.formatTagText(this.escapeHtml(tag))}
                 </span>
@@ -615,7 +628,8 @@ class PanelMariaApp {
 
     renderTagSuggestions(filterText = '') {
         const suggestionsContainer = document.getElementById('tagSuggestions');
-        const allTags = this.settings.allTags || [];
+        const currentItemCategory = document.getElementById('itemCategory').value; // Get selected category
+        const tagsForCategory = (this.settings.categoryTags && this.settings.categoryTags[currentItemCategory]) || [];
         const lowerFilter = filterText.trim().toLowerCase();
 
         if (!lowerFilter) {
@@ -623,7 +637,7 @@ class PanelMariaApp {
             return;
         }
 
-        const filteredTags = allTags.filter(tag => 
+        const filteredTags = tagsForCategory.filter(tag => 
             tag.toLowerCase().includes(lowerFilter) && !this.modalActiveTags.has(tag)
         );
 
@@ -767,10 +781,13 @@ class PanelMariaApp {
         // --- Nueva forma de obtener las etiquetas ---
         const finalTags = Array.from(this.modalActiveTags);
 
-        // Añadir las nuevas etiquetas a la lista global de settings
+        // Añadir las nuevas etiquetas a la lista de la categoría correspondiente
+        if (!this.settings.categoryTags[finalCategory]) {
+            this.settings.categoryTags[finalCategory] = [];
+        }
         finalTags.forEach(tag => {
-            if (!this.settings.allTags.includes(tag)) {
-                this.settings.allTags.push(tag);
+            if (!this.settings.categoryTags[finalCategory].includes(tag)) {
+                this.settings.categoryTags[finalCategory].push(tag);
             }
         });
 
@@ -989,7 +1006,6 @@ class PanelMariaApp {
         document.getElementById('settingsModal').classList.remove('hidden');
         document.getElementById('autoSaveVoice').checked = this.settings.autoSaveVoice;
         document.getElementById('themeSelect').value = this.settings.theme;
-        this.renderCustomCategories();
     }
     closeSettingsModal() {
         document.getElementById('settingsModal').classList.add('hidden');
@@ -1041,33 +1057,22 @@ class PanelMariaApp {
         this.showToast(`Categoría '${this.formatCategoryName(categoryToRemove)}' eliminada.`, 'success');
     }
 
-    async removeTag(tagToRemove) {
-        // Remove from global list
-        this.settings.allTags = (this.settings.allTags || []).filter(tag => tag !== tagToRemove);
+    async removeTag(tagToRemove, categoryContext) {
+        // Remove from category-specific list
+        if (this.settings.categoryTags && this.settings.categoryTags[categoryContext]) {
+            this.settings.categoryTags[categoryContext] = this.settings.categoryTags[categoryContext].filter(tag => tag !== tagToRemove);
+        }
 
-        // Remove from all items
+        // Remove from all items (only those in the specified category)
         this.items.forEach(item => {
-            if (item.etiquetas && item.etiquetas.includes(tagToRemove)) {
+            if (item.categoria === categoryContext && item.etiquetas && item.etiquetas.includes(tagToRemove)) {
                 item.etiquetas = item.etiquetas.filter(tag => tag !== tagToRemove);
             }
         });
 
         await this.saveData();
         this.renderAll(); // Re-render main view to reflect changes
-        this.showToast(`Etiqueta '${this.formatTagText(tagToRemove)}' eliminada.`, 'success');
-    }
-
-    renderCustomCategories() {
-        const list = document.getElementById('customCategoriesList');
-        const categories = this.settings.customCategories || [];
-        list.innerHTML = categories.map(category => `
-            <span class="card__tag">
-                ${this.escapeHtml(this.formatCategoryName(category))}
-                <button class="btn btn--icon remove-tag" data-category="${this.escapeHtml(category)}">
-                    <span class="material-symbols-outlined">close</span>
-                </button>
-            </span>
-        `).join('');
+        this.showToast(`Etiqueta '${this.formatTagText(tagToRemove)}' eliminada de la categoría '${this.formatCategoryName(categoryContext)}'.`, 'success');
     }
 
     escapeHtml(text) {
