@@ -166,6 +166,73 @@ class Storage {
     generateId() {
         return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
     }
+
+    // --- Funciones de Lógica de Negocio ---
+
+    async convertToLogro(id) {
+        const data = await this.loadAll();
+        const itemIndex = data.items.findIndex(item => item.id === id);
+
+        if (itemIndex === -1) {
+            throw new Error(`Item with id ${id} not found`);
+        }
+
+        data.items[itemIndex].categoria = 'logro';
+        data.items[itemIndex].fecha_finalizacion = new Date().toISOString();
+        
+        await this.saveAll(data);
+        return data.items[itemIndex];
+    }
+
+    // --- Funciones de Importar/Exportar ---
+
+    async exportData() {
+        const data = await this.loadAll();
+        const jsonString = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `panel_maria_backup_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    async importData(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    if (data && data.items && data.settings) {
+                        await this.saveAll(data);
+                        resolve();
+                    } else {
+                        reject(new Error('Estructura de JSON inválida'));
+                    }
+                } catch (error) {
+                    reject(error);
+                }
+            };
+            reader.onerror = (error) => reject(error);
+            reader.readAsText(file);
+        });
+    }
+    
+    // --- Funciones de Configuración ---
+    
+    async getSettings() {
+        const data = await this.loadAll();
+        return data.settings || {};
+    }
+
+    async saveSettings(settings) {
+        const data = await this.loadAll();
+        data.settings = settings;
+        await this.saveAll(data);
+    }
 }
 
 // Instancia global del almacenamiento para ser usada en toda la aplicación

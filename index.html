@@ -25,9 +25,9 @@
                     </div>
                 </div>
                 <div class="app-bar__actions">
-                    <button id="voiceBtn" class="btn btn--voice" title="Entrada por voz">
+                    <!-- <button id="voiceBtn" class="btn btn--voice" title="Entrada por voz">
                         <span class="material-symbols-outlined">mic</span>
-                    </button>
+                    </button> -->
                     <button id="settingsBtn" class="btn btn--text">
                         <span class="material-symbols-outlined">settings</span>
                     </button>
@@ -43,21 +43,25 @@
     <nav class="nav-tabs">
         <div class="container">
             <div class="nav-tabs__inner">
-                <button class="nav-tab active" data-module="directorio">
+                <button class="nav-tab active" data-category="directorio">
                     <span class="material-symbols-outlined">bookmarks</span>
                     Directorio
                 </button>
-                <button class="nav-tab" data-module="ideas">
+                <button class="nav-tab" data-category="ideas">
                     <span class="material-symbols-outlined">lightbulb</span>
                     Ideas
                 </button>
-                <button class="nav-tab" data-module="proyectos">
+                <button class="nav-tab" data-category="proyectos">
                     <span class="material-symbols-outlined">assignment</span>
                     Proyectos
                 </button>
-                <button class="nav-tab" data-module="logros">
+                <button class="nav-tab" data-category="logros">
                     <span class="material-symbols-outlined">emoji_events</span>
                     Logros
+                </button>
+                <button class="nav-tab" data-category="todos">
+                    <span class="material-symbols-outlined">select_all</span>
+                    Todos
                 </button>
             </div>
         </div>
@@ -71,11 +75,7 @@
                 <span class="material-symbols-outlined search-icon">search</span>
                 <input type="text" id="searchInput" placeholder="Buscar..." class="input-field">
             </div>
-            <div class="category-filter-wrapper">
-                <select id="categoryFilter" class="input-field">
-                    <option value="">Todas las categorías</option>
-                </select>
-            </div>
+            <!-- Removed category filter dropdown as per requirements -->
         </div>
 
         <!-- Bulk Actions Bar -->
@@ -118,8 +118,17 @@
             </div>
             <form id="itemForm" class="modal__body">
                 <input type="hidden" id="editId">
-                <input type="hidden" id="currentModule">
                 
+                <div class="form-group">
+                    <label for="itemCategory" class="form-label">Categoría *</label>
+                    <select id="itemCategory" required class="input-field">
+                        <option value="directorio">Directorio</option>
+                        <option value="ideas">Ideas</option>
+                        <option value="proyectos">Proyectos</option>
+                        <option value="logros">Logros</option>
+                    </select>
+                </div>
+
                 <div class="form-group">
                     <label for="itemTitle" class="form-label">Título *</label>
                     <input type="text" id="itemTitle" required class="input-field" placeholder="Título del elemento">
@@ -131,26 +140,17 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="itemCategories" class="form-label">Categorías</label>
-                    <input type="text" id="itemCategories" class="input-field" placeholder="Categorías separadas por comas">
+                    <label for="itemUrl" class="form-label">URL</label>
+                    <input type="url" id="itemUrl" class="input-field" placeholder="https://ejemplo.com">
                 </div>
-                
-                <!-- URLs Section (for Directorio) -->
-                <div id="urlsSection" class="form-group hidden">
-                    <label class="form-label">URLs</label>
-                    <div id="urlsList" class="urls-list">
-                        <div class="url-item">
-                            <input type="url" class="input-field url-input" placeholder="https://ejemplo.com">
-                            <button type="button" class="btn btn--icon remove-url"><span class="material-symbols-outlined">remove</span></button>
-                        </div>
-                    </div>
-                    <button type="button" id="addUrlBtn" class="btn btn--text">
-                        <span class="material-symbols-outlined">add</span> Agregar URL
-                    </button>
+
+                <div class="form-group">
+                    <label for="itemTags" class="form-label">Etiquetas</label>
+                    <input type="text" id="itemTags" class="input-field" placeholder="Etiquetas separadas por comas">
                 </div>
                 
                 <!-- Tasks Section (for Proyectos) -->
-                <div id="tasksSection" class="form-group hidden">
+                <div id="tasksSection" class="form-group">
                     <label class="form-label">Tareas</label>
                     <div id="tasksList" class="tasks-list">
                         <div class="task-item">
