@@ -100,8 +100,175 @@ class PanelMariaApp {
     
     setupEventListeners() {
         // Botones principales
-        document.getElementById('addItemBtn').addEventListener('click', () => this.openModal());
+        import { auth } from './firebase-config.js';
+import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
+/*
+================================================================================
+|       PANEL MARÍA - APLICACIÓN PRINCIPAL (CON NUEVO SISTEMA DE ETIQUETAS)    |
+================================================================================
+*/
+
+document.addEventListener('DOMContentLoaded', () => {
+    const app = new PanelMariaApp();
+    app.init();
+});
+
+class PanelMariaApp {
+    constructor() {
+        this.currentCategory = 'todos';
+        this.items = [];
+        this.selectedItems = new Set();
+        this.filters = { search: '', tag: null };
+        this.settings = {};
+        this.currentEditId = null;
+        this.user = null; // Propiedad para almacenar el usuario autenticado
+        
+        // --- Propiedades para el modal de etiquetas ---
+        this.modalActiveTags = new Set(); // Almacena las etiquetas del item en el modal
+
+        // --- Context Menu Properties ---
+        this.contextMenu = null;
+        this.contextMenuAction = null;
+        this.longPressTimer = null;
+        this.bulkActiveTags = new Set(); // New state for bulk tag management
+
+        window.appController = {
+            openModal: (id = null) => this.openModal(id),
+            togglePinned: (id) => this.togglePinned(id),
+            confirmDelete: (id) => this.confirmDeleteItem(id),
+            handleCardClick: (event, id) => this.handleCardClick(event, id),
+            toggleSelection: (id) => this.toggleSelection(id),
+            convertToLogro: (id) => this.convertToLogro(id),
+            toggleTask: (itemId, taskId) => this.toggleTask(itemId, taskId),
+            filterByTag: (tag) => this.filterByTag(tag)
+        };
+    }
+    
+    async init() {
+        this.setupAuthListener(); // Configurar el listener de autenticación primero
+        await this.loadData();
+        await this.migrateToCategorySpecificTags();
+        this.renderNavigationTabs();
+        this.populateCategorySelector();
+        this.setupEventListeners();
+        this.switchCategory(this.settings.lastCategory || 'todos');
+        this.applyTheme();
+    }
+
+    setupAuthListener() {
+        onAuthStateChanged(auth, (user) => {
+            this.user = user;
+            const authSection = document.getElementById('auth-section');
+            const appContent = document.getElementById('app-content');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const addItemBtn = document.getElementById('addItemBtn'); // Assuming this is the 'Nuevo' button
+
+            if (user) {
+                // User is signed in
+                authSection.classList.add('hidden');
+                appContent.classList.remove('hidden');
+                logoutBtn.classList.remove('hidden');
+                addItemBtn.classList.remove('hidden'); // Show 'Nuevo' button
+                console.log('Usuario autenticado:', user.displayName);
+                // If storage mode needs to change to firebase, do it here
+                // storage.setAdapter('firebase', user.uid); // Uncomment if Firebase storage is desired
+                this.loadData().then(() => this.renderAll()); // Reload data if user changes
+            } else {
+                // User is signed out
+                authSection.classList.remove('hidden');
+                appContent.classList.add('hidden');
+                logoutBtn.classList.add('hidden');
+                addItemBtn.classList.add('hidden'); // Hide 'Nuevo' button
+                console.log('Usuario no autenticado');
+                // If storage mode needs to revert to local, do it here
+                // storage.setAdapter('local'); // Uncomment if local storage is desired for unauthenticated users
+                this.items = []; // Clear items if not authenticated
+                this.renderAll();
+            }
+        });
+    }
+
+    async loginWithGoogle() {
+        const provider = new GoogleAuthProvider();
+        try {
+            await signInWithPopup(auth, provider);
+            this.showToast('Inicio de sesión exitoso', 'success');
+        } catch (error) {
+            console.error('Error durante el inicio de sesión:', error);
+            this.showToast(`Error al iniciar sesión: ${error.message}`, 'error');
+        }
+    }
+
+    async logout() {
+        try {
+            await signOut(auth);
+            this.showToast('Sesión cerrada', 'info');
+        } catch (error) {
+            console.error('Error al cerrar sesión:', error);
+            this.showToast(`Error al cerrar sesión: ${error.message}`, 'error');
+        }
+    }
+    
+    async loadData() {
+        try {
+            // If using Firebase storage, pass user.uid here
+            const data = await storage.loadAll(); // storage.loadAll() should handle adapter based on user state
+            this.items = data.items || [];
+            this.settings = data.settings || { autoSaveVoice: false, theme: 'default', lastCategory: 'todos', customCategories: [], allTags: [] };
+            if (!this.settings.allTags) this.settings.allTags = []; // Asegurar que exista
+        } catch (error) {
+            console.error('Error loading data:', error);
+            this.items = [];
+            this.settings = { autoSaveVoice: false, theme: 'default', lastCategory: 'todos', customCategories: [], allTags: [] };
+        }
+    }
+
+    async saveData() {
+        try {
+            await storage.saveAll({ items: this.items, settings: this.settings });
+        } catch (error) {
+            console.error('Error saving data:', error);
+        }
+    }
+
+    async migrateToCategorySpecificTags() {
+        if (this.settings.categoryTags) {
+            // Migration already done
+            return;
+        }
+
+        console.log("Running migration to category-specific tags...");
+
+        this.settings.categoryTags = {};
+        this.items.forEach(item => {
+            const category = item.categoria;
+            if (!this.settings.categoryTags[category]) {
+                this.settings.categoryTags[category] = [];
+            }
+            if (item.etiquetas) {
+                item.etiquetas.forEach(tag => {
+                    if (!this.settings.categoryTags[category].includes(tag)) {
+                        this.settings.categoryTags[category].push(tag);
+                    }
+                });
+            }
+        });
+
+        delete this.settings.allTags; // Remove old global tags
+        await this.saveData();
+        console.log("Migration complete.");
+    }
+    
+    setupEventListeners() {
+        // Botones principales
+        document.getElementById('loginBtn').addEventListener('click', () => {
+            console.log('Botón de login clicado');
+            this.loginWithGoogle();
+        });
+        document.getElementById('logoutBtn').addEventListener('click', () => this.logout()); // Add logout listener
         document.getElementById('settingsBtn').addEventListener('click', () => this.openSettingsModal());
+        document.getElementById('addItemBtn').addEventListener('click', () => this.openModal()); // Add listener for 'Nuevo' button
         document.getElementById('emptyStateAddBtn').addEventListener('click', () => this.openModal());
         
         // Búsqueda

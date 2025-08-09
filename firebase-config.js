@@ -9,12 +9,12 @@ import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
 const firebaseConfig = {
-    apiKey: "TU_API_KEY_AQUI", // Asegúrate de que esto ya esté actualizado por ti
-    authDomain: "tu-proyecto.firebaseapp.com", // Asegúrate de que esto ya esté actualizado por ti
-    projectId: "tu-proyecto", // Asegúrate de que esto ya esté actualizado por ti
-    storageBucket: "tu-proyecto.appspot.com", // Asegúrate de que esto ya esté actualizado por ti
-    messagingSenderId: "123456789", // Asegúrate de que esto ya esté actualizado por ti
-    appId: "1:123456789:web:abcdef123456" // Asegúrate de que esto ya esté actualizado por ti
+  apiKey: "AIzaSyAgsf640E_y-Ry8C6bf5cHMNB7BYjFk6FA",
+  authDomain: "panel-de-control-maria.firebaseapp.com",
+  projectId: "panel-de-control-maria",
+  storageBucket: "panel-de-control-maria.firebasestorage.app",
+  messagingSenderId: "434100378252",
+  appId: "1:434100378252:web:56c7355bca874a940979a9"
 };
 
 const app = initializeApp(firebaseConfig);
