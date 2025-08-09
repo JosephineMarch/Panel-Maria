@@ -1,39 +1,26 @@
 /*
 ================================================================================
-|       PANEL MARÍA - CONFIGURACIÓN DE FIREBASE (PLACEHOLDER)                  |
+|       PANEL MARÍA - CONFIGURACIÓN DE FIREBASE
 ================================================================================
 */
 
-// Configuración de Firebase para futura implementación
-// Copia tus credenciales de Firebase aquí cuando estés listo para usar la nube
-
-const firebaseConfig = {
-    // Configuración de tu proyecto Firebase
-    apiKey: "TU_API_KEY_AQUI",
-    authDomain: "tu-proyecto.firebaseapp.com",
-    projectId: "tu-proyecto",
-    storageBucket: "tu-proyecto.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "1:123456789:web:abcdef123456"
-};
-
-// Inicialización de Firebase (descomenta cuando estés listo)
-/*
-import { initializeApp } from 'firebase/app';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
+
+const firebaseConfig = {
+    apiKey: "TU_API_KEY_AQUI", // Asegúrate de que esto ya esté actualizado por ti
+    authDomain: "tu-proyecto.firebaseapp.com", // Asegúrate de que esto ya esté actualizado por ti
+    projectId: "tu-proyecto", // Asegúrate de que esto ya esté actualizado por ti
+    storageBucket: "tu-proyecto.appspot.com", // Asegúrate de que esto ya esté actualizado por ti
+    messagingSenderId: "123456789", // Asegúrate de que esto ya esté actualizado por ti
+    appId: "1:123456789:web:abcdef123456" // Asegúrate de que esto ya esté actualizado por ti
+};
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
 export { db, auth };
-*/
 
-// Para activar Firebase:
-// 1. Descomenta las líneas de importación y exportación arriba
-// 2. Reemplaza las credenciales con las de tu proyecto Firebase
-// 3. En app.js, cambia storage.setMode('firebase', firebaseConfig)
-// 4. Implementa los métodos en FirebaseAdapter en storage.js
-
-console.log('Firebase config loaded (not initialized)');
+console.log('Firebase config loaded and initialized');
