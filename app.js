@@ -183,6 +183,14 @@ class PanelMariaApp {
         document.getElementById('importDataBtn').addEventListener('click', () => document.getElementById('importFile').click());
         document.getElementById('importFile').addEventListener('change', (e) => this.handleImportFile(e));
         
+        // New Category Modal Listeners
+        document.getElementById('newCategoryCloseBtn').addEventListener('click', () => this.closeNewCategoryModal());
+        document.getElementById('newCategoryCancelBtn').addEventListener('click', () => this.closeNewCategoryModal());
+        document.getElementById('newCategoryCreateBtn').addEventListener('click', () => {
+            const newCategoryName = document.getElementById('newCategoryNameInput').value;
+            this.addCustomCategory(newCategoryName);
+        });
+
         // Atajos de teclado
         document.addEventListener('keydown', (e) => this.handleKeyboardShortcuts(e));
 
@@ -349,7 +357,7 @@ class PanelMariaApp {
             });
         });
 
-        document.getElementById('newCategoryNavBtn').addEventListener('click', () => this.openNewCategoryInput());
+        document.getElementById('newCategoryNavBtn').addEventListener('click', () => this.openNewCategoryModal());
         
         navTabsContainer.querySelector(`[data-category="${this.currentCategory}"]`)?.classList.add('active');
     }
@@ -987,24 +995,27 @@ class PanelMariaApp {
         document.getElementById('settingsModal').classList.add('hidden');
     }
 
-    openNewCategoryInput() {
-        this.openSettingsModal();
-        setTimeout(() => document.getElementById('newCustomCategoryInput').focus(), 100);
+    openNewCategoryModal() {
+        document.getElementById('newCategoryModal').classList.remove('hidden');
+        document.getElementById('newCategoryNameInput').focus();
     }
 
-    async addCustomCategory() {
-        const input = document.getElementById('newCustomCategoryInput');
-        const newCategory = input.value.trim().toLowerCase();
-        if (newCategory && !(this.settings.customCategories || []).includes(newCategory)) {
-            this.settings.customCategories.push(newCategory);
+    closeNewCategoryModal() {
+        document.getElementById('newCategoryModal').classList.add('hidden');
+        document.getElementById('newCategoryNameInput').value = '';
+    }
+
+    async addCustomCategory(newCategory) {
+        const categoryName = newCategory.trim().toLowerCase();
+        if (categoryName && !(this.settings.customCategories || []).includes(categoryName)) {
+            this.settings.customCategories.push(categoryName);
             await this.saveData();
-            this.renderCustomCategories();
             this.renderNavigationTabs();
             this.populateCategorySelector();
-            input.value = '';
-            this.showToast(`Categoría '${this.formatCategoryName(newCategory)}' añadida.`, 'success');
-        } else if (newCategory) {
-            this.showToast(`La categoría '${this.formatCategoryName(newCategory)}' ya existe.`, 'error');
+            this.closeNewCategoryModal();
+            this.showToast(`Categoría '${this.formatCategoryName(categoryName)}' añadida.`, 'success');
+        } else if (categoryName) {
+            this.showToast(`La categoría '${this.formatCategoryName(categoryName)}' ya existe.`, 'error');
         }
     }
 

@@ -314,6 +314,26 @@
         </div>
     </div>
 
+    <!-- New Category Modal -->
+    <div id="newCategoryModal" class="modal-overlay hidden">
+        <div class="modal modal--confirm">
+            <div class="modal__header">
+                <h2 class="modal__title">Crear Nueva Categoría</h2>
+                <button id="newCategoryCloseBtn" class="btn btn--icon"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <div class="modal__body">
+                <div class="form-group">
+                    <label for="newCategoryNameInput" class="form-label">Nombre de la categoría</label>
+                    <input type="text" id="newCategoryNameInput" class="input-field" placeholder="Ej: Trabajo, Personal">
+                </div>
+            </div>
+            <div class="modal__footer">
+                <button type="button" id="newCategoryCancelBtn" class="btn btn--text">Cancelar</button>
+                <button type="button" id="newCategoryCreateBtn" class="btn btn--filled">Crear</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notifications -->
     <div id="toastContainer" class="toast-container"></div>
 
