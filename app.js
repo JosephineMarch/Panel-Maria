@@ -7,7 +7,8 @@
 // Este es un comentario de prueba para demostrar un commit.
 
 import { auth } from './firebase-config.js';
-import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { signInWithGoogle, signOutUser } from './auth.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const app = new PanelMariaApp();
@@ -72,7 +73,7 @@ class PanelMariaApp {
                 addItemBtn.classList.remove('hidden'); // Show 'Nuevo' button
                 console.log('Usuario autenticado:', user.displayName);
                 // If storage mode needs to change to firebase, do it here
-                // storage.setAdapter('firebase', user.uid); // Uncomment if Firebase storage is desired
+                window.storage.setAdapter('firebase', user.uid); // Uncomment if Firebase storage is desired
                 this.loadData().then(() => this.renderAll()); // Reload data if user changes
             } else {
                 // User is signed out
@@ -82,7 +83,7 @@ class PanelMariaApp {
                 addItemBtn.classList.add('hidden'); // Hide 'Nuevo' button
                 console.log('Usuario no autenticado');
                 // If storage mode needs to revert to local, do it here
-                // storage.setAdapter('local'); // Uncomment if local storage is desired for unauthenticated users
+                window.storage.setAdapter('local'); // Uncomment if local storage is desired for unauthenticated users
                 this.items = []; // Clear items if not authenticated
                 this.renderAll();
             }
@@ -90,9 +91,8 @@ class PanelMariaApp {
     }
 
     async loginWithGoogle() {
-        const provider = new GoogleAuthProvider();
         try {
-            await signInWithPopup(auth, provider);
+            await signInWithGoogle();
             this.showToast('Inicio de sesión exitoso', 'success');
         } catch (error) {
             console.error('Error durante el inicio de sesión:', error);
@@ -102,7 +102,7 @@ class PanelMariaApp {
 
     async logout() {
         try {
-            await signOut(auth);
+            await signOutUser();
             this.showToast('Sesión cerrada', 'info');
         } catch (error) {
             console.error('Error al cerrar sesión:', error);
@@ -113,7 +113,7 @@ class PanelMariaApp {
     async loadData() {
         try {
             // If using Firebase storage, pass user.uid here
-            const data = await storage.loadAll(); // storage.loadAll() should handle adapter based on user state
+            const data = await window.storage.loadAll(); // storage.loadAll() should handle adapter based on user state
             this.items = data.items || [];
             this.settings = data.settings || { autoSaveVoice: false, theme: 'default', lastCategory: 'todos', customCategories: [], allTags: [] };
             if (!this.settings.allTags) this.settings.allTags = []; // Asegurar que exista
@@ -126,7 +126,7 @@ class PanelMariaApp {
 
     async saveData() {
         try {
-            await storage.saveAll({ items: this.items, settings: this.settings });
+            await window.storage.saveAll({ items: this.items, settings: this.settings });
         } catch (error) {
             console.error('Error saving data:', error);
         }
@@ -284,7 +284,7 @@ class PanelMariaApp {
             this.saveData();
         });
 
-        document.getElementById('exportDataBtn').addEventListener('click', () => storage.exportData());
+        document.getElementById('exportDataBtn').addEventListener('click', () => window.storage.exportData());
         document.getElementById('importDataBtn').addEventListener('click', () => document.getElementById('importFile').click());
         document.getElementById('importFile').addEventListener('change', (e) => this.handleImportFile(e));
         
@@ -352,7 +352,7 @@ class PanelMariaApp {
     }
 
     handleStorageChange(e) {
-        if (e.key === storage.adapter.storageKey && e.newValue !== e.oldValue) {
+        if (e.key === window.storage.adapter.storageKey && e.newValue !== e.oldValue) {
             this.loadData().then(() => {
                 this.renderAll();
                 this.showToast('Datos actualizados desde otra pestaña', 'info');
@@ -994,11 +994,11 @@ class PanelMariaApp {
         
         try {
             if (this.currentEditId) {
-                const updatedItem = await storage.updateItem(this.currentEditId, itemData);
+                const updatedItem = await window.storage.updateItem(this.currentEditId, itemData);
                 this.items = this.items.map(i => i.id === this.currentEditId ? updatedItem : i);
                 this.showToast('Elemento actualizado', 'success');
             } else {
-                const newItem = await storage.addItem(itemData);
+                const newItem = await window.storage.addItem(itemData);
                 this.items.push(newItem);
                 this.showToast('Elemento creado', 'success');
             }
@@ -1017,14 +1017,14 @@ class PanelMariaApp {
         const item = this.items.find(item => item.id === id);
         if (item) {
             item.anclado = !item.anclado;
-            await storage.updateItem(id, { anclado: item.anclado });
+            await window.storage.updateItem(id, { anclado: item.anclado });
             this.renderAll();
         }
     }
 
     async convertToLogro(id) {
         try {
-            const updatedItem = await storage.convertToLogro(id);
+            const updatedItem = await window.storage.convertToLogro(id);
             this.items = this.items.map(i => i.id === id ? updatedItem : i); 
             this.switchCategory('logros');
             this.showToast('Elemento convertido a logro', 'success');
@@ -1043,7 +1043,7 @@ class PanelMariaApp {
         task.completado = !task.completado;
 
         try {
-            await storage.updateItem(itemId, { tareas: item.tareas });
+            await window.storage.updateItem(itemId, { tareas: item.tareas });
             this.renderItems();
         } catch (error) {
             console.error('Error updating task:', error);
@@ -1054,7 +1054,7 @@ class PanelMariaApp {
 
     async deleteItem(id) {
         try {
-            await storage.deleteItem(id);
+            await window.storage.deleteItem(id);
             this.items = this.items.filter(i => i.id !== id);
             this.renderAll();
             this.showToast('Elemento eliminado', 'success');
@@ -1091,7 +1091,7 @@ class PanelMariaApp {
         const targetState = !firstSelectedIsPinned;
 
         for (const id of this.selectedItems) {
-             updates.push(storage.updateItem(id, { anclado: targetState }));
+             updates.push(window.storage.updateItem(id, { anclado: targetState }));
         }
         await Promise.all(updates);
         await this.loadData();
@@ -1103,7 +1103,7 @@ class PanelMariaApp {
         const newCategory = document.getElementById('bulkCategorySelector').value;
         if (!newCategory) return;
         
-        const updates = Array.from(this.selectedItems).map(id => storage.updateItem(id, { categoria: newCategory }));
+        const updates = Array.from(this.selectedItems).map(id => window.storage.updateItem(id, { categoria: newCategory }));
         await Promise.all(updates);
 
         await this.loadData();
@@ -1127,7 +1127,7 @@ class PanelMariaApp {
                 // For bulk change, we replace existing tags with the new selection
                 // Or, if the user wants to add/remove, we need a different UI for that.
                 // Assuming replacement for now.
-                updates.push(storage.updateItem(id, { etiquetas: newTags }));
+                updates.push(window.storage.updateItem(id, { etiquetas: newTags }));
             }
         }
         await Promise.all(updates);
@@ -1156,7 +1156,7 @@ class PanelMariaApp {
     }
     
     async bulkDelete() {
-        const deletions = Array.from(this.selectedItems).map(id => storage.deleteItem(id));
+        const deletions = Array.from(this.selectedItems).map(id => window.storage.deleteItem(id));
         await Promise.all(deletions);
         
         this.items = this.items.filter(i => !this.selectedItems.has(i.id));
@@ -1344,7 +1344,7 @@ class PanelMariaApp {
         const file = event.target.files?.[0];
         if (!file) return;
         try {
-            const result = await storage.importData(file);
+            const result = await window.storage.importData(file);
             await this.loadData();
             this.renderNavigationTabs();
             this.populateCategorySelector();
