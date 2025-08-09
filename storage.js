@@ -52,12 +52,6 @@ class LocalStorageAdapter extends StorageAdapter {
     async saveData(data) {
         try {
             localStorage.setItem(this.storageKey, JSON.stringify(data));
-            // Disparar un evento de storage para sincronización de pestañas
-            window.dispatchEvent(new StorageEvent('storage', {
-                key: this.storageKey,
-                newValue: JSON.stringify(data),
-                storageArea: localStorage,
-            }));
             return true;
         } catch (error) {
             console.error('Error saving data to localStorage:', error);
