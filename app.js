@@ -35,6 +35,7 @@ class PanelMariaApp {
     
     async init() {
         await this.loadData();
+        await this.ensureAllTagsAreCollected();
         this.renderNavigationTabs();
         this.populateCategorySelector();
         this.setupEventListeners();
@@ -60,6 +61,28 @@ class PanelMariaApp {
             await storage.saveAll({ items: this.items, settings: this.settings });
         } catch (error) {
             console.error('Error saving data:', error);
+        }
+    }
+
+    async ensureAllTagsAreCollected() {
+        const allItems = this.items || [];
+        const existingTags = new Set(this.settings.allTags || []);
+        let newTagsFound = false;
+
+        allItems.forEach(item => {
+            if (item.etiquetas && Array.isArray(item.etiquetas)) {
+                item.etiquetas.forEach(tag => {
+                    if (!existingTags.has(tag)) {
+                        existingTags.add(tag);
+                        newTagsFound = true;
+                    }
+                });
+            }
+        });
+
+        if (newTagsFound) {
+            this.settings.allTags = Array.from(existingTags);
+            await this.saveData();
         }
     }
     
@@ -180,9 +203,11 @@ class PanelMariaApp {
     }
 
     filterByTag(tag) {
-        if (this.filters.tag === tag) {
-            this.filters.tag = null; // Un-toggle filter if the same tag is clicked
-            this.showToast(`Filtro por etiqueta '${tag}' eliminado`, 'info');
+        if (this.filters.tag === tag || tag === null) {
+            this.filters.tag = null;
+            if (tag) { // only show toast if a tag was provided
+                this.showToast(`Filtro por etiqueta '${tag}' eliminado`, 'info');
+            }
         } else {
             this.filters.tag = tag;
             this.showToast(`Filtrando por etiqueta: ${tag}`, 'info');
@@ -208,6 +233,7 @@ class PanelMariaApp {
         this.renderItems();
         this.updateSelectionUI();
         this.updateEmptyState();
+        this.renderTagFilters();
     }
 
     renderNavigationTabs() {
@@ -246,6 +272,45 @@ class PanelMariaApp {
         document.getElementById('newCategoryNavBtn').addEventListener('click', () => this.openNewCategoryInput());
         
         navTabsContainer.querySelector(`[data-category="${this.currentCategory}"]`)?.classList.add('active');
+    }
+
+    renderTagFilters() {
+        const container = document.getElementById('tagFilters');
+        if (!container) return;
+
+        const allTags = this.settings.allTags || [];
+        if (allTags.length === 0) {
+            container.innerHTML = '';
+            return;
+        }
+
+        let tagsHtml = `
+            <span class="tag-filter-label">Etiquetas:</span>
+            ${allTags.map(tag => `
+                <span class="tag-filter ${this.filters.tag === tag ? 'active' : ''}" data-tag="${this.escapeHtml(tag)}">
+                    ${this.formatTagText(this.escapeHtml(tag))}
+                </span>
+            `).join('')}
+        `;
+
+        if (this.filters.tag) {
+            tagsHtml += `<button class="btn btn--text" id="clearTagFilterBtn">&times; Limpiar</button>`;
+        }
+
+        container.innerHTML = tagsHtml;
+
+        container.querySelectorAll('.tag-filter').forEach(tagEl => {
+            tagEl.addEventListener('click', (e) => {
+                const tag = e.target.dataset.tag;
+                this.filterByTag(tag);
+            });
+        });
+
+        if (this.filters.tag) {
+            document.getElementById('clearTagFilterBtn').addEventListener('click', () => {
+                this.filterByTag(null);
+            });
+        }
     }
 
     populateCategorySelector() {
