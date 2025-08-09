@@ -34,85 +34,102 @@
                     <button id="addItemBtn" class="btn btn--filled">
                         <span class="material-symbols-outlined">add</span> Nuevo
                     </button>
+                    <button id="logoutBtn" class="btn btn--text hidden">
+                        <span class="material-symbols-outlined">logout</span> Salir
+                    </button>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- Navigation Tabs -->
-    <nav class="nav-tabs">
-        <div class="container">
-            <div class="nav-tabs__inner">
-                <button class="nav-tab active" data-category="directorio">
-                    <span class="material-symbols-outlined">bookmarks</span>
-                    Directorio
-                </button>
-                <button class="nav-tab" data-category="ideas">
-                    <span class="material-symbols-outlined">lightbulb</span>
-                    Ideas
-                </button>
-                <button class="nav-tab" data-category="proyectos">
-                    <span class="material-symbols-outlined">assignment</span>
-                    Proyectos
-                </button>
-                <button class="nav-tab" data-category="logros">
-                    <span class="material-symbols-outlined">emoji_events</span>
-                    Logros
-                </button>
-                <button class="nav-tab" data-category="todos">
-                    <span class="material-symbols-outlined">select_all</span>
-                    Todos
-                </button>
-                <button id="newCategoryNavBtn" class="btn btn--text">
-                    <span class="material-symbols-outlined">add</span> Nueva Categoría
-                </button>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="container">
-        <!-- Search and Filters -->
-        <div class="filters-bar">
-            <div class="search-wrapper">
-                <span class="material-symbols-outlined search-icon">search</span>
-                <input type="text" id="searchInput" placeholder="Buscar..." class="input-field">
-            </div>
-            <div id="tagFilters" class="tag-filters"></div>
-            <!-- Removed category filter dropdown as per requirements -->
-        </div>
-
-        <!-- Bulk Actions Bar -->
-        <div id="bulkActions" class="bulk-actions-bar hidden">
-            <div class="selection-controls">
-                <input type="checkbox" id="selectAllCheckbox" class="checkbox-field">
-                <label for="selectAllCheckbox">Seleccionar todo</label>
-                <span id="selectionCount" class="selection-count">0</span>
-            </div>
-            <div class="actions">
-                <button id="bulkChangeCategoryBtn" class="btn btn--secondary">Cambiar Categoría</button>
-                <button id="bulkChangeTagsBtn" class="btn btn--secondary">Cambiar Etiquetas</button>
-                <button id="bulkPinBtn" class="btn btn--secondary">Anclar/Desanclar</button>
-                <button id="bulkDeleteBtn" class="btn btn--danger">Eliminar</button>
-            </div>
-        </div>
-
-        <!-- Items Grid -->
-        <div id="itemsContainer" class="items-grid">
-            <!-- Tarjetas de items se inyectan aquí -->
-        </div>
-
-        <!-- Empty State -->
-        <div id="emptyState" class="empty-state hidden">
-            <span class="material-symbols-outlined empty-state__icon">add_circle</span>
-            <h3 class="empty-state__title">No hay elementos en este módulo</h3>
-            <p class="empty-state__text">Comienza agregando tu primer elemento o usa entrada por voz.</p>
-            <button id="emptyStateAddBtn" class="btn btn--filled">
-                <span class="material-symbols-outlined">add</span>
-                Agregar Primer Elemento
+    <!-- Auth Section -->
+    <div id="auth-section" class="auth-section">
+        <div class="auth-card">
+            <h2>Bienvenido a Panel María</h2>
+            <p>Inicia sesión para acceder a tus datos.</p>
+            <button id="loginBtn" class="btn btn--filled">
+                <span class="material-symbols-outlined">login</span> Iniciar sesión con Google
             </button>
         </div>
-    </main>
+    </div>
+
+    <!-- Main App Content -->
+    <div id="app-content" class="hidden">
+        <!-- Navigation Tabs -->
+        <nav class="nav-tabs">
+            <div class="container">
+                <div class="nav-tabs__inner">
+                    <button class="nav-tab active" data-category="directorio">
+                        <span class="material-symbols-outlined">bookmarks</span>
+                        Directorio
+                    </button>
+                    <button class="nav-tab" data-category="ideas">
+                        <span class="material-symbols-outlined">lightbulb</span>
+                        Ideas
+                    </button>
+                    <button class="nav-tab" data-category="proyectos">
+                        <span class="material-symbols-outlined">assignment</span>
+                        Proyectos
+                    </button>
+                    <button class="nav-tab" data-category="logros">
+                        <span class="material-symbols-outlined">emoji_events</span>
+                        Logros
+                    </button>
+                    <button class="nav-tab" data-category="todos">
+                        <span class="material-symbols-outlined">select_all</span>
+                        Todos
+                    </button>
+                    <button id="newCategoryNavBtn" class="btn btn--text">
+                        <span class="material-symbols-outlined">add</span> Nueva Categoría
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="container">
+            <!-- Search and Filters -->
+            <div class="filters-bar">
+                <div class="search-wrapper">
+                    <span class="material-symbols-outlined search-icon">search</span>
+                    <input type="text" id="searchInput" placeholder="Buscar..." class="input-field">
+                </div>
+                <div id="tagFilters" class="tag-filters"></div>
+                <!-- Removed category filter dropdown as per requirements -->
+            </div>
+
+            <!-- Bulk Actions Bar -->
+            <div id="bulkActions" class="bulk-actions-bar hidden">
+                <div class="selection-controls">
+                    <input type="checkbox" id="selectAllCheckbox" class="checkbox-field">
+                    <label for="selectAllCheckbox">Seleccionar todo</label>
+                    <span id="selectionCount" class="selection-count">0</span>
+                </div>
+                <div class="actions">
+                    <button id="bulkChangeCategoryBtn" class="btn btn--secondary">Cambiar Categoría</button>
+                    <button id="bulkChangeTagsBtn" class="btn btn--secondary">Cambiar Etiquetas</button>
+                    <button id="bulkPinBtn" class="btn btn--secondary">Anclar/Desanclar</button>
+                    <button id="bulkDeleteBtn" class="btn btn--danger">Eliminar</button>
+                </div>
+            </div>
+
+            <!-- Items Grid -->
+            <div id="itemsContainer" class="items-grid">
+                <!-- Tarjetas de items se inyectan aquí -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="empty-state hidden">
+                <span class="material-symbols-outlined empty-state__icon">add_circle</span>
+                <h3 class="empty-state__title">No hay elementos en este módulo</h3>
+                <p class="empty-state__text">Comienza agregando tu primer elemento o usa entrada por voz.</p>
+                <button id="emptyStateAddBtn" class="btn btn--filled">
+                    <span class="material-symbols-outlined">add</span>
+                    Agregar Primer Elemento
+                </button>
+            </div>
+        </main>
+    </div>
 
     <!-- Modal for Add/Edit Item -->
     <div id="itemModal" class="modal-overlay hidden">
@@ -331,9 +348,9 @@
     <!-- Toast Notifications -->
     <div id="toastContainer" class="toast-container"></div>
 
-    <script src="storage.js"></script>
-    <script src="voice.js"></script>
-    <script src="app.js"></script>
+    <script src="storage.js" type="module"></script>
+    <script src="voice.js" type="module"></script>
+    <script src="app.js" type="module"></script>
 
     <!-- Custom Context Menu -->
     <div id="contextMenu" class="context-menu hidden">
