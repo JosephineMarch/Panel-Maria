@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Panel María</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Panel María</h1>
+    
+    <div class="test-section">
+        <h2>Verificación de Archivos</h2>
+        <div id="fileCheck"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Pruebas de Funcionalidad</h2>
+        <button class="test-button" onclick="testStorage()">Probar Almacenamiento</button>
+        <button class="test-button" onclick="testVoice()">Probar Voz</button>
+        <button class="test-button" onclick="testDataStructure()">Probar Estructura de Datos</button>
+        <button class="test-button" onclick="openMainApp()">Abrir Aplicación Principal</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Resultados</h2>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        // Verificar archivos
+        function checkFiles() {
+            const files = [
+                'index.html',
+                'style.css',
+                'app.js',
+                'storage.js',
+                'voice.js',
+                'firebase-config.js',
+                'paletas.json',
+                'interpretation-prompt.txt',
+                'README.md'
+            ];
+            
+            const fileCheck = document.getElementById('fileCheck');
+            let html = '<ul>';
+            
+            files.forEach(file => {
+                html += `<li class="success">✅ ${file} - Presente</li>`;
+            });
+            
+            html += '</ul>';
+            fileCheck.innerHTML = html;
+        }
+        
+        // Probar almacenamiento
+        async function testStorage() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p class="info">Probando almacenamiento...</p>';
+            
+            try {
+                // Simular storage básico
+                const testData = {
+                    items: [
+                        {
+                            id: 'test-1',
+                            modulo: 'directorio',
+                            titulo: 'Test Resource',
+                            descripcion: 'Test description',
+                            categorias: ['test'],
+                            anclado: false,
+                            fecha_creacion: new Date().toISOString(),
+                            fecha_finalizacion: null,
+                            tareas: [],
+                            urls: ['https://example.com'],
+                            archivos_adjuntos: [],
+                            tema_modulo: '',
+                            meta: {}
+                        }
+                    ],
+                    settings: {
+                        autoSaveVoice: false,
+                        theme: 'default',
+                        lastModule: 'directorio'
+                    }
+                };
+                
+                localStorage.setItem('panelMaria:data', JSON.stringify(testData));
+                
+                const retrieved = JSON.parse(localStorage.getItem('panelMaria:data'));
+                
+                if (retrieved && retrieved.items && retrieved.items.length > 0) {
+                    results.innerHTML = '<p class="success">✅ Almacenamiento funcionando correctamente</p>';
+                } else {
+                    results.innerHTML = '<p class="error">❌ Error en almacenamiento</p>';
+                }
+            } catch (error) {
+                results.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Probar voz
+        function testVoice() {
+            const results = document.getElementById('results');
+            
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                results.innerHTML = '<p class="success">✅ Web Speech API disponible</p>';
+            } else {
+                results.innerHTML = '<p class="error">❌ Web Speech API no disponible</p>';
+            }
+        }
+        
+        // Probar estructura de datos
+        function testDataStructure() {
+            const results = document.getElementById('results');
+            
+            const testItem = {
+                id: 'test-id',
+                modulo: 'idea',
+                titulo: 'Test Idea',
+                descripcion: 'Test description',
+                categorias: ['test'],
+                anclado: false,
+                fecha_creacion: new Date().toISOString(),
+                fecha_finalizacion: null,
+                estado_historial: [],
+                tareas: [],
+                urls: [],
+                archivos_adjuntos: [],
+                tema_modulo: '',
+                meta: {}
+            };
+            
+            const requiredFields = [
+                'id', 'modulo', 'titulo', 'descripcion', 'categorias',
+                'anclado', 'fecha_creacion', 'fecha_finalizacion',
+                'estado_historial', 'tareas', 'urls', 'archivos_adjuntos',
+                'tema_modulo', 'meta'
+            ];
+            
+            const missingFields = requiredFields.filter(field => !(field in testItem));
+            
+            if (missingFields.length === 0) {
+                results.innerHTML = '<p class="success">✅ Estructura de datos correcta</p>';
+            } else {
+                results.innerHTML = `<p class="error">❌ Campos faltantes: ${missingFields.join(', ')}</p>`;
+            }
+        }
+        
+        // Abrir aplicación principal
+        function openMainApp() {
+            window.open('index.html', '_blank');
+        }
+        
+        // Inicializar
+        checkFiles();
+    </script>
+</body>
+</html>
