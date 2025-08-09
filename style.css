@@ -868,3 +868,32 @@ body {
     box-shadow: var(--shadow-hover);
     transform: translateY(-1px);
 }
+
+/* Custom Context Menu */
+.context-menu {
+    position: absolute;
+    z-index: 1100;
+    background-color: var(--bg-card);
+    border: 2px solid var(--border-main);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-main);
+    padding: 0.25rem 0;
+    min-width: 120px;
+}
+
+.context-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.context-menu ul li {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-weight: 400;
+    font-size: 0.9rem;
+}
+
+.context-menu ul li:hover {
+    background-color: var(--accent-blue);
+}

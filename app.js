@@ -21,6 +21,11 @@ class PanelMariaApp {
         // --- Propiedades para el modal de etiquetas ---
         this.modalActiveTags = new Set(); // Almacena las etiquetas del item en el modal
 
+        // --- Context Menu Properties ---
+        this.contextMenu = null;
+        this.contextMenuAction = null;
+        this.longPressTimer = null;
+
         window.appController = {
             openModal: (id = null) => this.openModal(id),
             togglePinned: (id) => this.togglePinned(id),
@@ -174,14 +179,6 @@ class PanelMariaApp {
             this.saveData();
         });
 
-        // Custom Categories Management
-        document.getElementById('addCustomCategoryBtn').addEventListener('click', () => this.addCustomCategory());
-        document.getElementById('customCategoriesList').addEventListener('click', (e) => {
-            if (e.target.closest('.remove-tag')) {
-                this.removeCustomCategory(e.target.closest('.remove-tag').dataset.category);
-            }
-        });
-
         document.getElementById('exportDataBtn').addEventListener('click', () => storage.exportData());
         document.getElementById('importDataBtn').addEventListener('click', () => document.getElementById('importFile').click());
         document.getElementById('importFile').addEventListener('change', (e) => this.handleImportFile(e));
@@ -191,6 +188,89 @@ class PanelMariaApp {
 
         // Sincronización entre pestañas
         window.addEventListener('storage', (e) => this.handleStorageChange(e));
+
+        // --- Context Menu Listeners ---
+        document.addEventListener('click', () => this.hideContextMenu());
+        document.getElementById('contextMenuDelete').addEventListener('click', () => {
+            if (typeof this.contextMenuAction === 'function') {
+                this.contextMenuAction();
+            }
+            this.hideContextMenu();
+        });
+
+        const navTabsContainer = document.querySelector('.nav-tabs__inner');
+        navTabsContainer.addEventListener('contextmenu', (e) => {
+            const target = e.target.closest('.nav-tab');
+            if (target && target.dataset.category && !['directorio', 'ideas', 'proyectos', 'logros', 'todos'].includes(target.dataset.category)) {
+                e.preventDefault();
+                const category = target.dataset.category;
+                this.showContextMenu(e.clientX, e.clientY, () => {
+                    this.showConfirmModal(
+                        'Eliminar Categoría',
+                        `¿Estás seguro de que quieres eliminar la categoría "${this.formatCategoryName(category)}"? Todos los elementos se moverán a "Directorio".`,
+                        () => this.removeCustomCategory(category)
+                    );
+                });
+            }
+        });
+
+        const tagFiltersContainer = document.getElementById('tagFilters');
+        tagFiltersContainer.addEventListener('contextmenu', (e) => {
+            const target = e.target.closest('.tag-filter');
+            if (target && target.dataset.tag) {
+                e.preventDefault();
+                const tag = target.dataset.tag;
+                this.showContextMenu(e.clientX, e.clientY, () => {
+                    this.showConfirmModal(
+                        'Eliminar Etiqueta',
+                        `¿Estás seguro de que quieres eliminar la etiqueta "${this.formatTagText(tag)}"? Se quitará de todos los elementos.`,
+                        () => this.removeTag(tag)
+                    );
+                });
+            }
+        });
+
+        // Long-press for mobile
+        let longPressTimer;
+        navTabsContainer.addEventListener('touchstart', (e) => {
+            const target = e.target.closest('.nav-tab');
+            if (target && target.dataset.category && !['directorio', 'ideas', 'proyectos', 'logros', 'todos'].includes(target.dataset.category)) {
+                longPressTimer = setTimeout(() => {
+                    e.preventDefault();
+                    const category = target.dataset.category;
+                    this.showContextMenu(e.touches[0].clientX, e.touches[0].clientY, () => {
+                        this.showConfirmModal(
+                            'Eliminar Categoría',
+                            `¿Estás seguro de que quieres eliminar la categoría "${this.formatCategoryName(category)}"? Todos los elementos se moverán a "Directorio".`,
+                            () => this.removeCustomCategory(category)
+                        );
+                    });
+                }, 500);
+            }
+        });
+
+        navTabsContainer.addEventListener('touchend', () => clearTimeout(longPressTimer));
+        navTabsContainer.addEventListener('touchmove', () => clearTimeout(longPressTimer));
+
+        tagFiltersContainer.addEventListener('touchstart', (e) => {
+            const target = e.target.closest('.tag-filter');
+            if (target && target.dataset.tag) {
+                longPressTimer = setTimeout(() => {
+                    e.preventDefault();
+                    const tag = target.dataset.tag;
+                    this.showContextMenu(e.touches[0].clientX, e.touches[0].clientY, () => {
+                        this.showConfirmModal(
+                            'Eliminar Etiqueta',
+                            `¿Estás seguro de que quieres eliminar la etiqueta "${this.formatTagText(tag)}"? Se quitará de todos los elementos.`,
+                            () => this.removeTag(tag)
+                        );
+                    });
+                }, 500);
+            }
+        });
+
+        tagFiltersContainer.addEventListener('touchend', () => clearTimeout(longPressTimer));
+        tagFiltersContainer.addEventListener('touchmove', () => clearTimeout(longPressTimer));
     }
 
     handleStorageChange(e) {
@@ -547,6 +627,22 @@ class PanelMariaApp {
     }
 
     // --- FIN DE LA LÓGICA DEL COMPONENTE DE ETIQUETAS ---
+
+    // --- Context Menu Logic ---
+    showContextMenu(x, y, action) {
+        this.contextMenu = document.getElementById('contextMenu');
+        this.contextMenu.style.top = `${y}px`;
+        this.contextMenu.style.left = `${x}px`;
+        this.contextMenu.classList.remove('hidden');
+        this.contextMenuAction = action;
+    }
+
+    hideContextMenu() {
+        if (this.contextMenu) {
+            this.contextMenu.classList.add('hidden');
+            this.contextMenuAction = null;
+        }
+    }
     
     openModal(id = null) {
         this.currentEditId = id;
@@ -913,12 +1009,41 @@ class PanelMariaApp {
     }
 
     async removeCustomCategory(categoryToRemove) {
+        // Re-categorize items to 'directorio'
+        this.items.forEach(item => {
+            if (item.categoria === categoryToRemove) {
+                item.categoria = 'directorio';
+            }
+        });
+
         this.settings.customCategories = (this.settings.customCategories || []).filter(cat => cat !== categoryToRemove);
         await this.saveData();
-        this.renderCustomCategories();
+        
+        if (this.currentCategory === categoryToRemove) {
+            this.switchCategory('todos');
+        } else {
+            this.renderAll();
+        }
+
         this.renderNavigationTabs();
         this.populateCategorySelector();
         this.showToast(`Categoría '${this.formatCategoryName(categoryToRemove)}' eliminada.`, 'success');
+    }
+
+    async removeTag(tagToRemove) {
+        // Remove from global list
+        this.settings.allTags = (this.settings.allTags || []).filter(tag => tag !== tagToRemove);
+
+        // Remove from all items
+        this.items.forEach(item => {
+            if (item.etiquetas && item.etiquetas.includes(tagToRemove)) {
+                item.etiquetas = item.etiquetas.filter(tag => tag !== tagToRemove);
+            }
+        });
+
+        await this.saveData();
+        this.renderAll(); // Re-render main view to reflect changes
+        this.showToast(`Etiqueta '${this.formatTagText(tagToRemove)}' eliminada.`, 'success');
     }
 
     renderCustomCategories() {
