@@ -207,7 +207,9 @@
             </div>
             <div class="modal__body">
                 <p class="modal__text">Selecciona la nueva categoría para los elementos seleccionados.</p>
-                <input type="text" id="bulkNewCategory" class="input-field" placeholder="Nueva categoría">
+                <select id="bulkCategorySelector" class="input-field">
+                    <!-- Options will be populated dynamically -->
+                </select>
             </div>
             <div class="modal__footer">
                 <button type="button" id="bulkCategoryOkBtn" class="btn btn--filled">Aplicar</button>
@@ -224,7 +226,13 @@
             </div>
             <div class="modal__body">
                 <p class="modal__text">Introduce las etiquetas (separadas por comas) para los elementos seleccionados.</p>
-                <input type="text" id="bulkNewTags" class="input-field" placeholder="Etiqueta1, Etiqueta2">
+                <div id="bulkTagsWrapper" class="tags-input-wrapper">
+                    <!-- Las etiquetas (píldoras) se insertarán aquí con JavaScript -->
+                    <input type="text" id="bulkTagsInput" class="tags-input-field" placeholder="Añade o crea etiquetas...">
+                </div>
+                <div id="bulkTagSuggestions" class="tag-suggestions">
+                    <!-- Las sugerencias de etiquetas aparecerán aquí -->
+                </div>
             </div>
             <div class="modal__footer">
                 <button type="button" id="bulkTagsOkBtn" class="btn btn--filled">Aplicar</button>

@@ -735,6 +735,16 @@ body {
   
   .bulk-actions-bar .actions {
     justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .bulk-actions-bar .actions .btn {
+    width: 100%;
+    margin-bottom: 0.5rem; /* Add some vertical spacing between stacked buttons */
+  }
+
+  .bulk-actions-bar .actions .btn:last-child {
+    margin-bottom: 0; /* No margin for the last button */
   }
   
   .modal {
@@ -918,7 +928,7 @@ body {
 /* Enhanced Progress Bar for Proyectos */
 .progress-bar--proyecto {
     background-color: var(--accent-blue); /* Lighter background for contrast */
-    border: 1px solid var(--accent-purple); /* Subtle border */
+    border: 2px solid var(--accent-purple); /* Subtle border */
 }
 
 .progress-bar--proyecto .progress-bar__fill {

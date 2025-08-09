@@ -25,6 +25,7 @@ class PanelMariaApp {
         this.contextMenu = null;
         this.contextMenuAction = null;
         this.longPressTimer = null;
+        this.bulkActiveTags = new Set(); // New state for bulk tag management
 
         window.appController = {
             openModal: (id = null) => this.openModal(id),
@@ -172,6 +173,37 @@ class PanelMariaApp {
         // Modal de etiquetas en lote
         document.getElementById('bulkTagsCancelBtn').addEventListener('click', () => this.closeBulkTagsModal());
         document.getElementById('bulkTagsOkBtn').addEventListener('click', () => this.handleBulkChangeTags());
+
+        // Bulk Tags Input Listeners
+        const bulkTagsWrapper = document.getElementById('bulkTagsWrapper');
+        const bulkTagsInput = document.getElementById('bulkTagsInput');
+
+        bulkTagsWrapper.addEventListener('click', () => bulkTagsInput.focus());
+
+        bulkTagsInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const newTag = e.target.value.trim();
+                if (newTag) {
+                    this.addBulkTag(newTag);
+                }
+            } else if (e.key === 'Backspace' && e.target.value === '') {
+                const lastTag = Array.from(this.bulkActiveTags).pop();
+                if (lastTag) {
+                    this.removeBulkTag(lastTag);
+                }
+            }
+        });
+
+        bulkTagsInput.addEventListener('input', (e) => {
+            this.renderBulkTagSuggestions(e.target.value);
+        });
+
+        document.getElementById('bulkTagSuggestions').addEventListener('click', (e) => {
+            if (e.target.classList.contains('tag-suggestion')) {
+                this.addBulkTag(e.target.dataset.tag);
+            }
+        });
         
         // Modal de configuración
         document.getElementById('settingsCloseBtn').addEventListener('click', () => this.closeSettingsModal());
@@ -662,6 +694,76 @@ class PanelMariaApp {
         `).join('');
     }
 
+    // --- Bulk Tag Management ---
+    addBulkTag(tag) {
+        const cleanedTag = tag.trim().toLowerCase();
+        if (cleanedTag && !this.bulkActiveTags.has(cleanedTag)) {
+            this.bulkActiveTags.add(cleanedTag);
+            this.renderBulkTags();
+        }
+        const tagsInput = document.getElementById('bulkTagsInput');
+        tagsInput.value = '';
+        tagsInput.focus();
+        this.renderBulkTagSuggestions('');
+    }
+
+    removeBulkTag(tag) {
+        this.bulkActiveTags.delete(tag);
+        this.renderBulkTags();
+    }
+
+    renderBulkTags() {
+        const tagsWrapper = document.getElementById('bulkTagsWrapper');
+        const tagsInput = document.getElementById('bulkTagsInput');
+
+        tagsWrapper.querySelectorAll('.tag-pill').forEach(pill => pill.remove());
+
+        this.bulkActiveTags.forEach(tag => {
+            const pill = document.createElement('span');
+            pill.className = 'tag-pill';
+            pill.innerHTML = `
+                ${this.escapeHtml(this.formatTagText(tag))}
+                <span class="tag-pill__remove" data-tag="${this.escapeHtml(tag)}">&times;</span>
+            `;
+            pill.querySelector('.tag-pill__remove').addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.removeBulkTag(e.target.dataset.tag);
+            });
+            tagsWrapper.insertBefore(pill, tagsInput);
+        });
+    }
+
+    renderBulkTagSuggestions(filterText = '') {
+        const suggestionsContainer = document.getElementById('bulkTagSuggestions');
+        // For bulk tags, suggestions should come from all tags across all categories
+        // Or, more logically, from the tags of the currently selected items' categories.
+        // For simplicity, let's use all tags for now, but filter by what's already selected.
+        
+        // To get all unique tags from all categories:
+        const allUniqueTags = new Set();
+        for (const category in this.settings.categoryTags) {
+            this.settings.categoryTags[category].forEach(tag => allUniqueTags.add(tag));
+        }
+        const allTagsArray = Array.from(allUniqueTags);
+
+        const lowerFilter = filterText.trim().toLowerCase();
+
+        if (!lowerFilter) {
+            suggestionsContainer.innerHTML = '';
+            return;
+        }
+
+        const filteredTags = allTagsArray.filter(tag => 
+            tag.toLowerCase().includes(lowerFilter) && !this.bulkActiveTags.has(tag)
+        );
+
+        suggestionsContainer.innerHTML = filteredTags.slice(0, 10).map(tag => `
+            <span class="tag-suggestion" data-tag="${this.escapeHtml(tag)}">
+                ${this.escapeHtml(this.formatTagText(tag))}
+            </span>
+        `).join('');
+    }
+
     // --- FIN DE LA LÓGICA DEL COMPONENTE DE ETIQUETAS ---
 
     // --- Context Menu Logic ---
@@ -932,7 +1034,7 @@ class PanelMariaApp {
     }
     
     async handleBulkChangeCategory() {
-        const newCategory = document.getElementById('bulkNewCategory').value;
+        const newCategory = document.getElementById('bulkCategorySelector').value;
         if (!newCategory) return;
         
         const updates = Array.from(this.selectedItems).map(id => storage.updateItem(id, { categoria: newCategory }));
@@ -945,17 +1047,21 @@ class PanelMariaApp {
     }
 
     async handleBulkChangeTags() {
-        const newTagsInput = document.getElementById('bulkNewTags').value;
-        const newTags = newTagsInput.split(',').map(tag => tag.trim().toLowerCase()).filter(tag => tag);
+        const newTags = Array.from(this.bulkActiveTags);
 
-        if (newTags.length === 0) return;
+        if (newTags.length === 0) {
+            this.showToast('Debes seleccionar al menos una etiqueta.', 'error');
+            return;
+        }
 
         const updates = [];
         for (const id of this.selectedItems) {
             const item = this.items.find(i => i.id === id);
             if (item) {
-                const updatedTags = [...new Set([...(item.etiquetas || []), ...newTags])];
-                updates.push(storage.updateItem(id, { etiquetas: updatedTags }));
+                // For bulk change, we replace existing tags with the new selection
+                // Or, if the user wants to add/remove, we need a different UI for that.
+                // Assuming replacement for now.
+                updates.push(storage.updateItem(id, { etiquetas: newTags }));
             }
         }
         await Promise.all(updates);
@@ -1011,9 +1117,39 @@ class PanelMariaApp {
         this.closeConfirmModal();
     }
     
-    openBulkCategoryModal() { document.getElementById('bulkCategoryModal').classList.remove('hidden'); }
+    openBulkCategoryModal() {
+        const selector = document.getElementById('bulkCategorySelector');
+        const predefinedCategories = ['directorio', 'ideas', 'proyectos', 'logros'];
+        const allCategories = [...predefinedCategories, ...(this.settings.customCategories || [])];
+
+        selector.innerHTML = allCategories.map(category => `
+            <option value="${category}">${this.formatCategoryName(category)}</option>
+        `).join('');
+
+        document.getElementById('bulkCategoryModal').classList.remove('hidden');
+    }
     closeBulkCategoryModal() { document.getElementById('bulkCategoryModal').classList.add('hidden'); }
-    openBulkTagsModal() { document.getElementById('bulkTagsModal').classList.remove('hidden'); }
+    openBulkTagsModal() {
+        // Initialize bulkActiveTags with tags from selected items, or empty
+        this.bulkActiveTags.clear();
+        const selectedItemsArray = Array.from(this.selectedItems);
+        if (selectedItemsArray.length > 0) {
+            // Collect all unique tags from selected items
+            const commonTags = new Set();
+            selectedItemsArray.forEach(itemId => {
+                const item = this.items.find(i => i.id === itemId);
+                if (item && item.etiquetas) {
+                    item.etiquetas.forEach(tag => commonTags.add(tag));
+                }
+            });
+            commonTags.forEach(tag => this.bulkActiveTags.add(tag));
+        }
+
+        document.getElementById('bulkTagsModal').classList.remove('hidden');
+        this.renderBulkTags();
+        this.renderBulkTagSuggestions('');
+        document.getElementById('bulkTagsInput').focus();
+    }
     closeBulkTagsModal() { document.getElementById('bulkTagsModal').classList.add('hidden'); }
     
     openSettingsModal() {
