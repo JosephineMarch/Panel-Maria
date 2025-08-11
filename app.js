@@ -46,6 +46,43 @@ class PanelMariaApp {
             filterByTag: (tag) => this.filterByTag(tag)
         };
     }
+
+    checkForBookmarkletData() {
+        const params = new URLSearchParams(window.location.search);
+        const action = params.get('action');
+
+        if (action === 'add') {
+            this.bookmarkletData = {
+                title: params.get('title') || '',
+                url: params.get('url') || '',
+                category: params.get('category') || 'directorio'
+            };
+            console.log('Datos del bookmarklet detectados:', this.bookmarkletData);
+            
+            // Limpia la URL para que los parámetros no persistan en recargas
+            const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
+        }
+    }
+
+    processBookmarkletData() {
+        if (this.bookmarkletData && this.user !== undefined) { // Procesa solo cuando el estado de auth está definido
+            // Llama a openModal para mostrar el formulario para un nuevo elemento
+            this.openModal(); 
+
+            // Rellena el formulario con los datos del bookmarklet
+            document.getElementById('itemTitle').value = this.bookmarkletData.title;
+            document.getElementById('itemUrl').value = this.bookmarkletData.url;
+            
+            const categorySelector = document.getElementById('itemCategory');
+            // Asegúrate de que la categoría del bookmarklet existe, si no, usa 'directorio'
+            const categoryExists = [...categorySelector.options].some(opt => opt.value === this.bookmarkletData.category);
+            categorySelector.value = categoryExists ? this.bookmarkletData.category : 'directorio';
+            
+            // Limpia los datos para que no se procesen de nuevo
+            this.bookmarkletData = null; 
+        }
+    }
     
     async init() {
         this.checkForBookmarkletData(); // Revisar si vienen datos del bookmarklet
