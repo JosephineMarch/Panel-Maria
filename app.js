@@ -24,6 +24,7 @@ class PanelMariaApp {
         this.settings = {};
         this.currentEditId = null;
         this.user = null; // Propiedad para almacenar el usuario autenticado
+        this.bookmarkletData = null; // Para datos del bookmarklet
         
         // --- Propiedades para el modal de etiquetas ---
         this.modalActiveTags = new Set(); // Almacena las etiquetas del item en el modal
@@ -47,6 +48,7 @@ class PanelMariaApp {
     }
     
     async init() {
+        this.checkForBookmarkletData(); // Revisar si vienen datos del bookmarklet
         this.setupAuthListener(); // Configurar el listener de autenticación primero
         await this.loadData();
         await this.migrateToCategorySpecificTags();
@@ -74,7 +76,10 @@ class PanelMariaApp {
                 console.log('Usuario autenticado:', user.displayName);
                 // If storage mode needs to change to firebase, do it here
                 window.storage.setAdapter('firebase', user.uid); // Uncomment if Firebase storage is desired
-                this.loadData().then(() => this.renderAll()); // Reload data if user changes
+                this.loadData().then(() => {
+                    this.renderAll();
+                    this.processBookmarkletData(); // Procesar datos del bookmarklet si existen
+                }); 
             } else {
                 // User is signed out
                 authSection.classList.remove('hidden');
@@ -86,6 +91,7 @@ class PanelMariaApp {
                 window.storage.setAdapter('local'); // Uncomment if local storage is desired for unauthenticated users
                 this.items = []; // Clear items if not authenticated
                 this.renderAll();
+                this.processBookmarkletData(); // Procesar también para modo local
             }
         });
     }
