@@ -11,11 +11,7 @@
 // - Si abres el archivo directamente: file:///H:/MARY%20PROGRAMA/Panel%20Maria/Panel-Maria/index.html (puede tener problemas de seguridad)
 //
 javascript:(function(){
-    const appUrl = 'https://josephinemarch.github.io/Panel-Maria/'; // <-- ¡CAMBIA ESTO!
-    if (appUrl === 'https://josephinemarch.github.io/Panel-Maria/') {
-        alert('Por favor, edita el bookmarklet y cambia donde dice URL_DE_TU_APP_AQUI por la URL real de tu aplicación Panel María.');
-        return;
-    }
+    const appUrl = 'https://josephinemarch.github.io/Panel-Maria/';
     const url = encodeURIComponent(window.location.href);
     const title = encodeURIComponent(document.title);
     const category = 'directorio';
