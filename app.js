@@ -488,7 +488,362 @@ class PanelMariaApp {
     closeConfirmModal() { document.getElementById('confirmModal').classList.add('hidden'); }
     executeConfirmAction() { if (this.confirmAction) this.confirmAction(); this.closeConfirmModal(); }
     escapeHtml(text) { if (typeof text !== 'string') return ''; return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
-    formatCategoryName(name) { return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase(); }
+    formatCategoryName(name) {
+        return name.charAt(0).toUpperCase() + name.slice(1);
+    }
+
+    getCategoryIcon(category) {
+        switch (category) {
+            case 'directorio': return 'folder';
+            case 'ideas': return 'lightbulb';
+            case 'proyectos': return 'work';
+            case 'logros': return 'emoji_events';
+            case 'todos': return 'select_all';
+            default: return 'category';
+        }
+    }
+
+    truncateUrl(url) {
+        const maxLength = 30;
+        if (url.length <= maxLength) return url;
+        const domain = new URL(url).hostname;
+        if (domain.length <= maxLength) return domain;
+        return `${domain.substring(0, maxLength - 3)}...`;
+    }
+
+    createProgressBar(item) {
+        const totalTasks = item.tareas.length;
+        const completedTasks = item.tareas.filter(task => task.completado).length;
+        const percentage = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+        return `
+            <div class="progress-bar-container">
+                <div class="progress-bar" style="width: ${percentage}%;"></div>
+                <span class="progress-text">${completedTasks}/${totalTasks} tareas (${percentage}%)</span>
+            </div>
+        `;
+    }
+
+    createTasksContent(item) {
+        return `
+            <div class="card__tasks">
+                ${item.tareas.map(task => `
+                    <div class="task-item-card">
+                        <input type="checkbox" class="task-checkbox-card" ${task.completado ? 'checked' : ''} onchange="appController.toggleTask('${item.id}', '${task.id}')">
+                        <span class="task-title-card ${task.completado ? 'completed' : ''}">${this.escapeHtml(task.titulo)}</span>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    renderModalTags() {
+        const tagsWrapper = document.getElementById('itemTagsWrapper');
+        const tagsInput = document.getElementById('itemTagsInput');
+        tagsWrapper.innerHTML = '';
+        Array.from(this.modalActiveTags).forEach(tag => {
+            const tagElement = document.createElement('span');
+            tagElement.className = 'tag-pill';
+            tagElement.innerHTML = `${this.formatTagText(this.escapeHtml(tag))} <span class="tag-remove" data-tag="${this.escapeHtml(tag)}">&times;</span>`;
+            tagElement.querySelector('.tag-remove').addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.removeModalTag(e.target.dataset.tag);
+            });
+            tagsWrapper.insertBefore(tagElement, tagsInput);
+        });
+        tagsInput.value = '';
+    }
+
+    addModalTag(tag) {
+        const normalizedTag = tag.toLowerCase();
+        if (!this.modalActiveTags.has(normalizedTag)) {
+            this.modalActiveTags.add(normalizedTag);
+            this.renderModalTags();
+            this.renderTagSuggestions('');
+        }
+    }
+
+    removeModalTag(tag) {
+        this.modalActiveTags.delete(tag);
+        this.renderModalTags();
+        this.renderTagSuggestions('');
+    }
+
+    renderTagSuggestions(input) {
+        const suggestionsContainer = document.getElementById('tagSuggestions');
+        suggestionsContainer.innerHTML = '';
+        const allTags = new Set();
+        this.items.forEach(item => (item.etiquetas || []).forEach(tag => allTags.add(tag)));
+        this.settings.customCategories.forEach(cat => (this.settings.categoryTags[cat] || []).forEach(tag => allTags.add(tag)));
+
+        const filteredSuggestions = Array.from(allTags).filter(tag => tag.includes(input.toLowerCase()) && !this.modalActiveTags.has(tag));
+
+        filteredSuggestions.slice(0, 10).forEach(tag => {
+            const suggestion = document.createElement('span');
+            suggestion.className = 'tag-suggestion';
+            suggestion.dataset.tag = tag;
+            suggestion.textContent = this.formatTagText(tag);
+            suggestionsContainer.appendChild(suggestion);
+        });
+    }
+
+    renderBulkTags() {
+        const tagsWrapper = document.getElementById('bulkTagsWrapper');
+        const tagsInput = document.getElementById('bulkTagsInput');
+        tagsWrapper.innerHTML = '';
+        Array.from(this.bulkActiveTags).forEach(tag => {
+            const tagElement = document.createElement('span');
+            tagElement.className = 'tag-pill';
+            tagElement.innerHTML = `${this.formatTagText(this.escapeHtml(tag))} <span class="tag-remove" data-tag="${this.escapeHtml(tag)}">&times;</span>`;
+            tagElement.querySelector('.tag-remove').addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.removeBulkTag(e.target.dataset.tag);
+            });
+            tagsWrapper.insertBefore(tagElement, tagsInput);
+        });
+        tagsInput.value = '';
+    }
+
+    addBulkTag(tag) {
+        const normalizedTag = tag.toLowerCase();
+        if (!this.bulkActiveTags.has(normalizedTag)) {
+            this.bulkActiveTags.add(normalizedTag);
+            this.renderBulkTags();
+            this.renderBulkTagSuggestions('');
+        }
+    }
+
+    removeBulkTag(tag) {
+        this.bulkActiveTags.delete(tag);
+        this.renderBulkTags();
+        this.renderBulkTagSuggestions('');
+    }
+
+    renderBulkTagSuggestions(input) {
+        const suggestionsContainer = document.getElementById('bulkTagSuggestions');
+        suggestionsContainer.innerHTML = '';
+        const allTags = new Set();
+        this.items.forEach(item => (item.etiquetas || []).forEach(tag => allTags.add(tag)));
+        this.settings.customCategories.forEach(cat => (this.settings.categoryTags[cat] || []).forEach(tag => allTags.add(tag)));
+
+        const filteredSuggestions = Array.from(allTags).filter(tag => tag.includes(input.toLowerCase()) && !this.bulkActiveTags.has(tag));
+
+        filteredSuggestions.slice(0, 10).forEach(tag => {
+            const suggestion = document.createElement('span');
+            suggestion.className = 'tag-suggestion';
+            suggestion.dataset.tag = tag;
+            suggestion.textContent = this.formatTagText(tag);
+            suggestionsContainer.appendChild(suggestion);
+        });
+    }
+
+    populateCategorySelector(selector, includeNewOption = false) {
+        selector.innerHTML = '';
+        const predefinedCategories = ['directorio', 'ideas', 'proyectos', 'logros'];
+        const allCategories = [...new Set([...predefinedCategories, ...(this.settings.customCategories || [])])];
+
+        allCategories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category;
+            option.textContent = this.formatCategoryName(category);
+            selector.appendChild(option);
+        });
+
+        if (includeNewOption) {
+            const newOption = document.createElement('option');
+            newOption.value = '__new_category__';
+            newOption.textContent = 'Crear nueva categoría...';
+            selector.appendChild(newOption);
+        }
+    }
+
+    addCustomCategory(categoryName) {
+        const normalizedName = categoryName.trim().toLowerCase();
+        if (!normalizedName) {
+            this.showToast('El nombre de la categoría no puede estar vacío.', 'error');
+            return;
+        }
+        if (this.settings.customCategories.includes(normalizedName)) {
+            this.showToast('Esa categoría ya existe.', 'info');
+            return;
+        }
+        this.settings.customCategories.push(normalizedName);
+        this.saveDataSettings();
+        this.populateCategorySelector(document.getElementById('itemCategory'), true);
+        this.populateCategorySelector(document.getElementById('bulkCategorySelector'));
+        this.showToast('Categoría creada.', 'success');
+        this.closeNewCategoryModal();
+    }
+
+    openNewCategoryModal() {
+        document.getElementById('newCategoryModal').classList.remove('hidden');
+        document.getElementById('newCategoryNameInput').value = '';
+        document.getElementById('newCategoryNameInput').focus();
+    }
+
+    closeNewCategoryModal() {
+        document.getElementById('newCategoryModal').classList.add('hidden');
+    }
+
+    openBulkCategoryModal() {
+        this.populateCategorySelector(document.getElementById('bulkCategorySelector'));
+        document.getElementById('bulkCategoryModal').classList.remove('hidden');
+    }
+
+    closeBulkCategoryModal() {
+        document.getElementById('bulkCategoryModal').classList.add('hidden');
+    }
+
+    openBulkTagsModal() {
+        this.bulkActiveTags.clear();
+        this.renderBulkTags();
+        document.getElementById('bulkTagsModal').classList.remove('hidden');
+        document.getElementById('bulkTagsInput').focus();
+    }
+
+    closeBulkTagsModal() {
+        document.getElementById('bulkTagsModal').classList.add('hidden');
+    }
+
+    openSettingsModal() {
+        document.getElementById('autoSaveVoice').checked = this.settings.autoSaveVoice;
+        document.getElementById('themeSelect').value = this.settings.theme;
+        document.getElementById('settingsModal').classList.remove('hidden');
+    }
+
+    closeSettingsModal() {
+        document.getElementById('settingsModal').classList.add('hidden');
+    }
+
+    applyTheme() {
+        document.body.className = ''; // Clear existing themes
+        document.body.classList.add(`theme-${this.settings.theme}`);
+    }
+
+    showToast(message, type = 'info') {
+        const toastContainer = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast toast--${type}`;n        toast.textContent = message;
+        toastContainer.appendChild(toast);
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
+
+    toggleSelectAll(checked) {
+        const filteredItems = this.getFilteredItems();
+        this.selectedItems.clear();
+        if (checked) {
+            filteredItems.forEach(item => this.selectedItems.add(item.id));
+        }
+        this.renderItems(); // Re-render to update checkboxes
+        this.updateSelectionUI();
+    }
+
+    toggleSelection(id) {
+        if (this.selectedItems.has(id)) {
+            this.selectedItems.delete(id);
+        } else {
+            this.selectedItems.add(id);
+        }
+        this.renderItems(); // Re-render to update checkboxes
+        this.updateSelectionUI();
+    }
+
+    handleCardClick(event, id) {
+        // If the click was on a checkbox or a button, let those handlers manage it
+        if (event.target.closest('input[type="checkbox"]') || event.target.closest('button')) {
+            return;
+        }
+        // Otherwise, open the modal for editing
+        this.openModal(id);
+    }
+
+    formatTagText(tag) {
+        return tag.charAt(0).toUpperCase() + tag.slice(1);
+    }
+
+    renderTagFilters() {
+        const tagFiltersContainer = document.getElementById('tagFilters');
+        tagFiltersContainer.innerHTML = '';
+        const allTags = new Set();
+        this.getFilteredItems().forEach(item => (item.etiquetas || []).forEach(tag => allTags.add(tag)));
+
+        Array.from(allTags).sort().forEach(tag => {
+            const tagElement = document.createElement('span');
+            tagElement.className = `tag-filter ${this.filters.tag === tag ? 'active' : ''}`;
+            tagElement.textContent = this.formatTagText(tag);
+            tagElement.addEventListener('click', () => this.filterByTag(tag));
+            tagFiltersContainer.appendChild(tagElement);
+        });
+    }
+
+    handleImportFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const content = e.target.result;
+                let importedData;
+
+                if (file.name.endsWith('.json')) {
+                    importedData = JSON.parse(content);
+                } else if (file.name.endsWith('.html')) {
+                    // Basic HTML bookmark import (Google Chrome export format)
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(content, 'text/html');
+                    const links = doc.querySelectorAll('a');
+                    importedData = Array.from(links).map(link => ({
+                        id: window.storage.generateId(),
+                        categoria: 'directorio', // Default category for imported bookmarks
+                        titulo: link.textContent.trim(),
+                        url: link.href,
+                        fecha_creacion: new Date().toISOString(),
+                        etiquetas: [],
+                        tareas: [],
+                        anclado: false,
+                        fecha_finalizacion: null,
+                        meta: {}
+                    }));
+                } else {
+                    this.showToast('Formato de archivo no soportado.', 'error');
+                    return;
+                }
+
+                if (Array.isArray(importedData)) {
+                    // Merge with existing items, avoiding duplicates by URL if it's a directory item
+                    const newItems = [];
+                    for (const importedItem of importedData) {
+                        const existingItem = this.items.find(item => item.url && item.url === importedItem.url);
+                        if (!existingItem) {
+                            newItems.push(importedItem);
+                        }
+                    }
+                    if (newItems.length > 0) {
+                        await window.storage.performBatchUpdate(newItems.map(item => ({ type: 'add', data: item })));
+                        await this.loadData();
+                        this.renderAll();
+                        this.showToast(`Importados ${newItems.length} elementos.`, 'success');
+                    } else {
+                        this.showToast('No se encontraron nuevos elementos para importar o ya existen.', 'info');
+                    }
+                } else if (importedData.items && Array.isArray(importedData.items)) {
+                    // Full backup import
+                    await window.storage.saveAll(importedData);
+                    await this.loadData();
+                    this.renderAll();
+                    this.showToast('Datos importados exitosamente.', 'success');
+                } else {
+                    this.showToast('Formato de datos importados inválido.', 'error');
+                }
+            } catch (parseError) {
+                console.error('Error parsing imported file:', parseError);
+                this.showToast('Error al procesar el archivo importado.', 'error');
+            }n        };
+        reader.readAsText(file);
+    }
+} // Closing brace for PanelMariaApp classperCase() + name.slice(1).toLowerCase(); }
     formatTagText(text) { return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase(); }
     getCategoryIcon(cat) { const icons = {'directorio':'bookmarks','ideas':'lightbulb','proyectos':'assignment','logros':'emoji_events'}; return icons[cat] || 'label'; }
     showToast(message, type = 'success') { const el = document.createElement('div'); el.className = `toast ${type}`; el.textContent = message; document.getElementById('toastContainer').appendChild(el); setTimeout(() => el.remove(), 5000); }
