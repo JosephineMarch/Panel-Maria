@@ -8,25 +8,21 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { getAuth } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
-// IMPORTANTE: Estas claves deben cargarse desde variables de entorno
-// para la seguridad de tu proyecto.
-// Si usas Vite, crea un archivo .env en la raíz de tu proyecto con:
-// VITE_FIREBASE_API_KEY="TU_API_KEY"
-// VITE_FIREBASE_AUTH_DOMAIN="TU_AUTH_DOMAIN"
-// VITE_FIREBASE_PROJECT_ID="TU_PROJECT_ID"
-// VITE_FIREBASE_STORAGE_BUCKET="TU_STORAGE_BUCKET"
-// VITE_FIREBASE_MESSAGING_SENDER_ID="TU_MESSAGING_SENDER_ID"
-// VITE_FIREBASE_APP_ID="TU_APP_ID"
-// Y asegúrate de que .env esté en .gitignore (ya lo está).
-
+// ADVERTENCIA DE SEGURIDAD MUY IMPORTANTE
+// Estas claves están expuestas y son visibles para cualquiera que visite tu sitio web.
+// Esto es un RIESGO DE SEGURIDAD. Cualquiera podría usar tus credenciales para
+// abusar de tus servicios de Firebase, lo que podría generar costos o pérdida de datos.
+// Se recomienda encarecidamente utilizar variables de entorno en un proyecto real.
+// NO SUBAS ESTE ARCHIVO CON CLAVES REALES A UN REPOSITORIO PÚBLICO COMO GITHUB.
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  apiKey: "AIzaSyAgsf640E_y-Ry8C6bf5cHMNB7BYjFk6FA",
+  authDomain: "panel-de-control-maria.firebaseapp.com",
+  projectId: "panel-de-control-maria",
+  storageBucket: "panel-de-control-maria.appspot.com", // CORRECCIÓN: firebasestorage.app a appspot.com
+  messagingSenderId: "434100378252",
+  appId: "1:434100378252:web:56c7355bca874a940979a9"
 };
+
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
