@@ -488,4 +488,9 @@ class PanelMariaApp {
     closeConfirmModal() { document.getElementById('confirmModal').classList.add('hidden'); }
     executeConfirmAction() { if (this.confirmAction) this.confirmAction(); this.closeConfirmModal(); }
     escapeHtml(text) { if (typeof text !== 'string') return ''; return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
-    formatCategoryName(name) { return name.charAt(0).toUp
+    formatCategoryName(name) { return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase(); }
+    formatTagText(text) { return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase(); }
+    getCategoryIcon(cat) { const icons = {'directorio':'bookmarks','ideas':'lightbulb','proyectos':'assignment','logros':'emoji_events'}; return icons[cat] || 'label'; }
+    showToast(message, type = 'success') { const el = document.createElement('div'); el.className = `toast ${type}`; el.textContent = message; document.getElementById('toastContainer').appendChild(el); setTimeout(() => el.remove(), 5000); }
+    // ... y el resto de funciones auxiliares ...
+}
