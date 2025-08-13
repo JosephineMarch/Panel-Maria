@@ -253,3 +253,5 @@ async function interpretAndCreateItem(text) {
     // para que pueda interactuar con el estado de la aplicación.
     console.warn("interpretAndCreateItem is deprecated as a global function.");
 }
+
+export { Storage, LocalStorageAdapter, FirebaseAdapter };
