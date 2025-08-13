@@ -1,7 +1,7 @@
 /*
 ================================================================================
 |       PANEL DE CONTROL UNIFICADO - MÓDULO DE ALMACENAMIENTO (STORAGE)
-|       VERSION OPTIMIZADA
+|       VERSION CORREGIDA Y ROBUSTA
 ================================================================================
 */
 
@@ -61,7 +61,6 @@ class LocalStorageAdapter extends StorageAdapter {
         return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
     }
 
-    // Batch updates para LocalStorage (Corrige el bug de acciones en lote)
     async performBatchUpdate(operations, currentItems) {
         let newItems = [...currentItems];
         for (const op of operations) {
@@ -70,14 +69,15 @@ class LocalStorageAdapter extends StorageAdapter {
             } else if (op.type === 'delete') {
                 newItems = newItems.filter(item => item.id !== op.id);
             } else if (op.type === 'add') {
-                newItems.push(op.data);
+                const newItem = { ...op.data, id: this.generateId() };
+                newItems.push(newItem);
             }
         }
         return newItems; // Devuelve los items actualizados para que app.js los guarde
     }
 }
 
-// Adaptador para Firebase (Sin cambios mayores, solo se alinea con la nueva interfaz)
+// Adaptador para Firebase
 class FirebaseAdapter extends StorageAdapter {
     constructor(userId) {
         super(userId);
@@ -89,7 +89,9 @@ class FirebaseAdapter extends StorageAdapter {
 
     async loadData() {
         const itemsSnapshot = await getDocs(this.userCollectionRef);
+        // La clave está aquí: el id del documento de Firebase SIEMPRE sobreescribe cualquier id corrupto en los datos.
         const items = itemsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+        
         const settingsDoc = await getDocs(query(collection(db, `users/${this.userId}/settings`)));
         let settings = {};
         if (!settingsDoc.empty) settings = settingsDoc.docs[0].data();
@@ -100,26 +102,27 @@ class FirebaseAdapter extends StorageAdapter {
     }
 
     async saveData(data) {
-        // En Firebase, 'saveData' es principalmente para guardar la configuración.
-        // Los items se guardan a través de 'performBatchUpdate'.
+        // Esta función solo guarda la configuración, no los items.
         await setDoc(this.userSettingsDocRef, data.settings, { merge: true });
         return true;
     }
 
     generateId() {
+        // En Firebase, el ID lo genera Firestore al añadir un documento.
         return doc(collection(db, 'temp')).id;
     }
 
     async performBatchUpdate(operations) {
         const batch = writeBatch(db);
         for (const op of operations) {
-            const itemRef = doc(this.userCollectionRef, op.id);
             if (op.type === 'update') {
+                const itemRef = doc(this.userCollectionRef, op.id);
                 batch.update(itemRef, op.data);
             } else if (op.type === 'delete') {
+                const itemRef = doc(this.userCollectionRef, op.id);
                 batch.delete(itemRef);
             } else if (op.type === 'add') {
-                const newDocRef = doc(this.userCollectionRef);
+                const newDocRef = doc(this.userCollectionRef); // Firestore genera el ID
                 batch.set(newDocRef, op.data);
             }
         }
@@ -127,7 +130,7 @@ class FirebaseAdapter extends StorageAdapter {
     }
 }
 
-// --- Clase Principal de Almacenamiento (Simplificada) ---
+// --- Clase Principal de Almacenamiento ---
 class Storage {
     constructor(mode = 'local', userId = null) {
         this.adapter = null;
@@ -146,10 +149,7 @@ class Storage {
     async saveAll(data) { return await this.adapter.saveData(data); }
     generateId() { return this.adapter.generateId(); }
     async performBatchUpdate(operations, currentItems) {
-        if (this.adapter.type === 'local') {
-            return await this.adapter.performBatchUpdate(operations, currentItems);
-        }
-        return await this.adapter.performBatchUpdate(operations);
+        return await this.adapter.performBatchUpdate(operations, currentItems);
     }
 
     async exportData() {
@@ -170,7 +170,6 @@ class Storage {
         }
     }
 
-    // Importación Optimizada
     async importData(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -179,6 +178,7 @@ class Storage {
                     const fileContent = event.target.result;
                     const currentData = await this.loadAll();
                     let itemsToAdd = [];
+                    let importedData = {};
 
                     if (file.name.endsWith('.html') || file.type === 'text/html') {
                         const parsedItems = this._parseChromeBookmarks(fileContent);
@@ -186,23 +186,32 @@ class Storage {
                         const existingUrls = new Set(currentData.items.map(i => i.url).filter(Boolean));
                         itemsToAdd = parsedItems.filter(i => !existingUrls.has(i.url));
                     } else {
-                        const importedData = JSON.parse(fileContent);
+                        importedData = JSON.parse(fileContent);
                         if (!importedData || !importedData.items) return reject(new Error('Estructura JSON inválida.'));
                         const existingIds = new Set(currentData.items.map(i => i.id));
                         itemsToAdd = importedData.items.filter(i => !existingIds.has(i.id));
-                        // Simple settings merge, could be improved if needed
-                        currentData.settings = { ...currentData.settings, ...(importedData.settings || {}) };
                     }
 
-                    // Add new items to the existing ones
-                    currentData.items.push(...itemsToAdd.map(item => ({
-                        ...item,
-                        id: this.generateId(),
-                        fecha_creacion: new Date().toISOString()
-                    })));
+                    if (itemsToAdd.length === 0) {
+                        return resolve({ importedCount: 0 });
+                    }
 
-                    // Save the entire updated database at once
-                    await this.saveAll(currentData);
+                    const operations = itemsToAdd.map(item => ({
+                        type: 'add',
+                        data: {
+                            ...item,
+                            fecha_creacion: item.fecha_creacion || new Date().toISOString(),
+                            anclado: item.anclado || false,
+                            categoria: item.categoria || 'directorio',
+                            tareas: item.tareas || [],
+                            etiquetas: item.etiquetas || [],
+                            url: item.url || '',
+                            descripcion: item.descripcion || ''
+                        }
+                    }));
+
+                    await this.performBatchUpdate(operations);
+
                     resolve({ importedCount: itemsToAdd.length });
 
                 } catch (error) {
@@ -232,7 +241,6 @@ class Storage {
                         titulo: a.textContent.trim() || 'Enlace sin título',
                         url: a.href,
                         etiquetas: categoryStack.map(f => f.toLowerCase()),
-                        // ... other fields are set during import
                     });
                 }
             }
@@ -246,12 +254,5 @@ class Storage {
 // Instancia global
 const storage = new Storage('local');
 window.storage = storage;
-
-// --- Funciones de ayuda para la IA (requieren adaptación si se usan) ---
-async function interpretAndCreateItem(text) {
-    // Esta función ahora necesitaría ser llamada desde la instancia de PanelMariaApp
-    // para que pueda interactuar con el estado de la aplicación.
-    console.warn("interpretAndCreateItem is deprecated as a global function.");
-}
 
 export { Storage, LocalStorageAdapter, FirebaseAdapter };

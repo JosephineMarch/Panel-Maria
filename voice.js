@@ -288,7 +288,7 @@ Texto a interpretar: "${text}"`;
     
     async saveInterpretedItem(item) {
         try {
-            const savedItem = await storage.addItem(item);
+            const savedItem = await window.storage.performBatchUpdate([{ type: 'add', data: item }]);
             return savedItem;
         } catch (error) {
             console.error('Error saving interpreted item:', error);

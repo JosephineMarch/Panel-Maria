@@ -1,6 +1,6 @@
 /*
 ================================================================================
-|       PANEL MARÍA - APLICACIÓN PRINCIPAL (VERSIÓN OPTIMIZADA)              |
+|       PANEL MARÍA - APLICACIÓN PRINCIPAL (VERSIÓN CORREGIDA Y ROBUSTA)     |
 ================================================================================
 */
 
@@ -49,31 +49,13 @@ class PanelMariaApp {
     }
 
     // =============================================================================
-    // --- LÓGICA DE DATOS (OPTIMIZADA) ---
+    // --- LÓGICA DE DATOS CENTRALIZADA Y ROBUSTA ---
     // =============================================================================
 
     async loadData() {
         try {
             const data = await window.storage.loadAll();
             this.items = data.items || [];
-
-            // --- Saneamiento de Datos ---
-            // Repara items que puedan no tener un ID por errores pasados.
-            let dataWasChanged = false;
-            this.items.forEach(item => {
-                if (!item.id) {
-                    console.warn('Found item with missing ID. Assigning a new one:', item);
-                    item.id = window.storage.generateId();
-                    dataWasChanged = true;
-                }
-            });
-
-            if (dataWasChanged) {
-                console.log('Saving data after fixing missing IDs...');
-                await this.saveData(); // Guarda los items corregidos
-            }
-            // --- Fin del Saneamiento ---
-
             this.settings = data.settings || { autoSaveVoice: false, theme: 'default', lastCategory: 'todos', customCategories: [], categoryTags: {} };
         } catch (error) {
             console.error('Error loading data:', error);
@@ -82,13 +64,32 @@ class PanelMariaApp {
         }
     }
 
-    async saveData() {
+    async saveDataSettings() {
         try {
-            await window.storage.saveAll({ items: this.items, settings: this.settings });
+            // Esta función ahora solo guarda la configuración, como debe ser.
+            await window.storage.saveAll({ settings: this.settings });
         } catch (error) {
-            console.error('Error saving data:', error);
-            this.showToast('Error al guardar los datos', 'error');
+            console.error('Error saving settings:', error);
+            this.showToast('Error al guardar la configuración', 'error');
         }
+    }
+
+    // -- NUEVO MÉTODO CENTRALIZADO PARA TODAS LAS MODIFICACIONES DE DATOS --
+    async performItemUpdates(operations) {
+        // Lógica optimista en UI para LocalStorage
+        if (window.storage.adapter.type === 'local') {
+            const newItems = await window.storage.performBatchUpdate(operations, this.items);
+            this.items = newItems;
+            await window.storage.saveAll({ items: this.items, settings: this.settings });
+        } else {
+            // Para Firebase, siempre se actualiza desde el servidor.
+            await window.storage.performBatchUpdate(operations);
+            await this.loadData(); // Recargar siempre desde Firebase para mantener consistencia
+        }
+
+        // Limpiar selección y re-renderizar todo
+        this.selectedItems.clear();
+        this.renderAll();
     }
 
     async handleFormSubmit(e) {
@@ -104,6 +105,8 @@ class PanelMariaApp {
             finalCategory = newCustomCategory.toLowerCase();
             if (!(this.settings.customCategories || []).includes(finalCategory)) {
                 this.settings.customCategories.push(finalCategory);
+                // Guardar la nueva categoría en settings
+                await this.saveDataSettings();
             }
         }
         
@@ -136,92 +139,64 @@ class PanelMariaApp {
             return;
         }
         
+        let operation;
         if (this.currentEditId) {
-            // --- Lógica de Actualización (en memoria) ---
-            const itemIndex = this.items.findIndex(i => i.id === this.currentEditId);
-            if (itemIndex > -1) {
-                this.items[itemIndex] = { ...this.items[itemIndex], ...itemData };
-                this.showToast('Elemento actualizado', 'success');
-            }
+            operation = { type: 'update', id: this.currentEditId, data: itemData };
+            this.showToast('Elemento actualizado', 'success');
         } else {
-            // --- Lógica de Creación (en memoria) ---
             const newItem = {
                 ...itemData,
-                id: window.storage.generateId(),
                 fecha_creacion: new Date().toISOString(),
                 fecha_finalizacion: null,
                 meta: {}
             };
-            this.items.push(newItem);
+            // El ID se genera en el backend para Firebase, aquí solo preparamos los datos.
+            operation = { type: 'add', data: newItem };
             this.showToast('Elemento creado', 'success');
         }
         
-        await this.saveData(); // --- Guardado único al final ---
+        await this.performItemUpdates([operation]);
+        
         this.closeModal();
         this.renderNavigationTabs();
-        this.populateCategorySelector();
+        this.populateCategorySelector(document.getElementById('itemCategory'), true);
+        this.populateCategorySelector(document.getElementById('bulkCategorySelector'));
         this.switchCategory(itemData.categoria);
     }
 
     async deleteItem(id) {
-        this.items = this.items.filter(i => i.id !== id);
-        await this.saveData();
-        this.renderAll();
+        await this.performItemUpdates([{ type: 'delete', id }]);
         this.showToast('Elemento eliminado', 'success');
     }
 
     async togglePinned(id) {
         const item = this.items.find(item => item.id === id);
         if (item) {
-            item.anclado = !item.anclado;
-            await this.saveData();
-            this.renderAll();
+            await this.performItemUpdates([{ type: 'update', id, data: { anclado: !item.anclado } }]);
         }
     }
 
     async convertToLogro(id) {
-        const item = this.items.find(item => item.id === id);
-        if (item) {
-            item.categoria = 'logros';
-            item.fecha_finalizacion = new Date().toISOString();
-            await this.saveData();
-            this.switchCategory('logros');
-            this.showToast('Elemento convertido a logro', 'success');
-        }
+        await this.performItemUpdates([{ type: 'update', id, data: { categoria: 'logros', fecha_finalizacion: new Date().toISOString() } }]);
+        this.showToast('Elemento convertido a logro', 'success');
+        this.switchCategory('logros');
     }
 
     async toggleTask(itemId, taskId) {
         const item = this.items.find(i => i.id === itemId);
         if (item) {
-            const task = item.tareas.find(t => t.id === taskId);
-            if (task) {
-                task.completado = !task.completado;
-                await this.saveData();
-                this.renderItems(); // Solo re-renderiza los items, no todo
-            }
+            const newTasks = item.tareas.map(t => 
+                t.id === taskId ? { ...t, completado: !t.completado } : t
+            );
+            await this.performItemUpdates([{ type: 'update', id: itemId, data: { tareas: newTasks } }]);
         }
-    }
-
-    // --- Métodos de Acciones en Lote (Corregidos y Optimizados) ---
-    async performBulkUpdate(operations) {
-        if (window.storage.adapter.type === 'firebase') {
-            await window.storage.performBatchUpdate(operations);
-            await this.loadData(); // Recargar desde Firebase después del lote
-        } else {
-            // Para LocalStorage, la lógica ahora está en el adaptador
-            const newItems = await window.storage.performBatchUpdate(operations, this.items);
-            this.items = newItems;
-            await this.saveData(); // Guardar el nuevo estado de items
-        }
-        this.selectedItems.clear();
-        this.renderAll();
     }
 
     async bulkTogglePinned() {
         const firstSelectedIsPinned = this.items.find(item => this.selectedItems.has(item.id))?.anclado;
         const targetState = !firstSelectedIsPinned;
         const operations = Array.from(this.selectedItems).map(id => ({ type: 'update', id, data: { anclado: targetState } }));
-        await this.performBulkUpdate(operations);
+        await this.performItemUpdates(operations);
         this.showToast('Elementos anclados/desanclados', 'success');
     }
 
@@ -229,7 +204,7 @@ class PanelMariaApp {
         const newCategory = document.getElementById('bulkCategorySelector').value;
         if (!newCategory) return;
         const operations = Array.from(this.selectedItems).map(id => ({ type: 'update', id, data: { categoria: newCategory } }));
-        await this.performBulkUpdate(operations);
+        await this.performItemUpdates(operations);
         this.closeBulkCategoryModal();
         this.showToast('Categoría cambiada', 'success');
     }
@@ -237,19 +212,19 @@ class PanelMariaApp {
     async handleBulkChangeTags() {
         const newTags = Array.from(this.bulkActiveTags);
         const operations = Array.from(this.selectedItems).map(id => ({ type: 'update', id, data: { etiquetas: newTags } }));
-        await this.performBulkUpdate(operations);
+        await this.performItemUpdates(operations);
         this.closeBulkTagsModal();
         this.showToast('Etiquetas actualizadas', 'success');
     }
 
     async bulkDelete() {
         const operations = Array.from(this.selectedItems).map(id => ({ type: 'delete', id }));
-        await this.performBulkUpdate(operations);
+        await this.performItemUpdates(operations);
         this.showToast('Elementos eliminados', 'success');
     }
 
     // =============================================================================
-    // --- RESTO DE LA LÓGICA (UI, EVENTOS, ETC.) - SIN CAMBIOS MAYORES ---
+    // --- LÓGICA DE UI, EVENTOS Y OTROS ---
     // =============================================================================
 
     setupApplication() {
@@ -403,8 +378,8 @@ class PanelMariaApp {
         });
         
         document.getElementById('settingsCloseBtn').addEventListener('click', () => this.closeSettingsModal());
-        document.getElementById('autoSaveVoice').addEventListener('change', (e) => { this.settings.autoSaveVoice = e.target.checked; this.saveData(); });
-        document.getElementById('themeSelect').addEventListener('change', (e) => { this.settings.theme = e.target.value; this.applyTheme(); this.saveData(); });
+        document.getElementById('autoSaveVoice').addEventListener('change', (e) => { this.settings.autoSaveVoice = e.target.checked; this.saveDataSettings(); });
+        document.getElementById('themeSelect').addEventListener('change', (e) => { this.settings.theme = e.target.value; this.applyTheme(); this.saveDataSettings(); });
         document.getElementById('exportDataBtn').addEventListener('click', () => window.storage.exportData());
         document.getElementById('importDataBtn').addEventListener('click', () => document.getElementById('importFile').click());
         document.getElementById('importFile').addEventListener('change', (e) => this.handleImportFile(e));
@@ -436,7 +411,7 @@ class PanelMariaApp {
     switchCategory(category) {
         this.currentCategory = category;
         this.settings.lastCategory = category;
-        this.saveData(); // Guardar el último estado de la categoría es una operación rápida ahora
+        this.saveDataSettings();
         
         document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.category === category));
         
@@ -457,7 +432,6 @@ class PanelMariaApp {
         const predefinedCategories = ['directorio', 'ideas', 'proyectos', 'logros'];
         const allCategories = [...predefinedCategories, ...(this.settings.customCategories || [])];
 
-        // Clear existing tabs except for the 'add category' button
         navContainer.innerHTML = '';
 
         let tabsHtml = allCategories.map(category => `
@@ -806,7 +780,7 @@ class PanelMariaApp {
         const newCategory = name.trim().toLowerCase();
         if (newCategory && !(this.settings.customCategories || []).includes(newCategory)) {
             this.settings.customCategories.push(newCategory);
-            await this.saveData();
+            await this.saveDataSettings();
             this.renderNavigationTabs();
             this.populateCategorySelector(document.getElementById('itemCategory'), true);
             this.populateCategorySelector(document.getElementById('bulkCategorySelector'));
@@ -815,6 +789,7 @@ class PanelMariaApp {
     }
 
     escapeHtml(text) {
+        if (typeof text !== 'string') return '';
         return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
@@ -826,31 +801,42 @@ class PanelMariaApp {
     getCategoryIcon(cat) { const icons = {'directorio':'bookmarks','ideas':'lightbulb','proyectos':'assignment','logros':'emoji_events'}; return icons[cat] || 'label'; }
     
     handleKeyboardShortcuts(e) { if (e.key === 'Escape') { this.closeModal(); this.closeConfirmModal(); } }
+    
     async handleImportFile(e) {
         const file = e.target.files?.[0];
         if (!file) return;
         try {
             const result = await window.storage.importData(file);
-            await this.loadData();
+            await this.loadData(); // Recargar datos después de importar
             this.renderAll();
-            this.showToast(`${result.importedCount} elementos importados`, 'success');
+            this.showToast(`${result.importedCount} elementos importados con éxito`, 'success');
         } catch (error) {
             this.showToast(`Error al importar: ${error.message}`, 'error');
         } finally {
             e.target.value = '';
         }
     }
+
     handleCardClick(e, id) { if (!e.target.closest('button, input, a, .card__tag')) this.openModal(id); }
+    
     toggleSelectAll(checked) {
-        const filteredIds = this.getFilteredItems().map(item => item.id);
-        if (checked) filteredIds.forEach(id => this.selectedItems.add(id));
-        else filteredIds.forEach(id => this.selectedItems.delete(id));
+        const filteredIds = this.getFilteredItems().map(item => item.id).filter(id => id); // Filtra IDs inválidos
+        if (checked) {
+            filteredIds.forEach(id => this.selectedItems.add(id));
+        } else {
+            this.selectedItems.clear();
+        }
         this.renderItems();
         this.updateSelectionUI();
     }
+
     toggleSelection(id) {
-        if (this.selectedItems.has(id)) this.selectedItems.delete(id);
-        else this.selectedItems.add(id);
+        if (!id) return;
+        if (this.selectedItems.has(id)) {
+            this.selectedItems.delete(id);
+        } else {
+            this.selectedItems.add(id);
+        }
         this.renderItems();
         this.updateSelectionUI();
     }
