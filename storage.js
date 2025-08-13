@@ -24,6 +24,7 @@ class LocalStorageAdapter extends StorageAdapter {
     constructor(userId = null) {
         super(userId);
         this.storageKey = 'panelControlUnificadoData';
+        this.type = 'local';
     }
 
     async loadData() {
@@ -80,6 +81,7 @@ class LocalStorageAdapter extends StorageAdapter {
 class FirebaseAdapter extends StorageAdapter {
     constructor(userId) {
         super(userId);
+        this.type = 'firebase';
         if (!this.userId) throw new Error("FirebaseAdapter requires a userId.");
         this.userCollectionRef = collection(db, `users/${this.userId}/items`);
         this.userSettingsDocRef = doc(db, `users/${this.userId}/settings/appSettings`);
@@ -144,7 +146,7 @@ class Storage {
     async saveAll(data) { return await this.adapter.saveData(data); }
     generateId() { return this.adapter.generateId(); }
     async performBatchUpdate(operations, currentItems) {
-        if (this.adapter instanceof LocalStorageAdapter) {
+        if (this.adapter.type === 'local') {
             return await this.adapter.performBatchUpdate(operations, currentItems);
         }
         return await this.adapter.performBatchUpdate(operations);

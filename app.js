@@ -7,6 +7,7 @@
 import { auth } from './firebase-config.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { signInWithGoogle, signOutUser } from './auth.js';
+import { FirebaseAdapter } from './storage.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const app = new PanelMariaApp();
@@ -43,13 +44,8 @@ class PanelMariaApp {
 
     async init() {
         this.checkForBookmarkletData();
-        this.setupAuthListener();
-        await this.loadData();
-        this.renderNavigationTabs();
-        this.populateCategorySelector();
         this.setupEventListeners();
-        this.switchCategory(this.settings.lastCategory || 'todos');
-        this.applyTheme();
+        this.setupAuthListener();
     }
 
     // =============================================================================
@@ -190,7 +186,7 @@ class PanelMariaApp {
 
     // --- Métodos de Acciones en Lote (Corregidos y Optimizados) ---
     async performBulkUpdate(operations) {
-        if (window.storage.adapter instanceof FirebaseAdapter) {
+        if (window.storage.adapter.type === 'firebase') {
             await window.storage.performBatchUpdate(operations);
             await this.loadData(); // Recargar desde Firebase después del lote
         } else {
@@ -238,6 +234,14 @@ class PanelMariaApp {
     // --- RESTO DE LA LÓGICA (UI, EVENTOS, ETC.) - SIN CAMBIOS MAYORES ---
     // =============================================================================
 
+    setupApplication() {
+        this.renderNavigationTabs();
+        this.populateCategorySelector();
+        this.switchCategory(this.settings.lastCategory || 'todos');
+        this.applyTheme();
+        this.processBookmarkletData();
+    }
+
     setupAuthListener() {
         onAuthStateChanged(auth, (user) => {
             this.user = user;
@@ -252,21 +256,17 @@ class PanelMariaApp {
                 logoutBtn.classList.remove('hidden');
                 addItemBtn.classList.remove('hidden');
                 window.storage.setAdapter('firebase', user.uid);
-                this.loadData().then(() => {
-                    this.renderAll();
-                    this.processBookmarkletData();
-                }); 
             } else {
                 authSection.classList.remove('hidden');
                 appContent.classList.add('hidden');
                 logoutBtn.classList.add('hidden');
                 addItemBtn.classList.add('hidden');
                 window.storage.setAdapter('local');
-                this.loadData().then(() => {
-                    this.renderAll();
-                    this.processBookmarkletData();
-                });
             }
+
+            this.loadData().then(() => {
+                this.setupApplication();
+            });
         });
     }
 
