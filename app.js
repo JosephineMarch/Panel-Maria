@@ -628,10 +628,45 @@ class PanelMariaApp {
         container.innerHTML = filtered.slice(0, 10).map(t => `<span class="tag-suggestion" data-tag="${this.escapeHtml(t)}">${this.escapeHtml(this.formatTagText(t))}</span>`).join('');
     }
 
-    addBulkTag(tag) { /* Similar logic */ }
-    removeBulkTag(tag) { /* Similar logic */ }
-    renderBulkTags() { /* Similar logic */ }
-    renderBulkTagSuggestions(filter = '') { /* Similar logic */ }
+    addBulkTag(tag) {
+        const cleaned = tag.trim().toLowerCase();
+        if (cleaned) this.bulkActiveTags.add(cleaned);
+        this.renderBulkTags();
+        const input = document.getElementById('bulkTagsInput');
+        input.value = '';
+        input.focus();
+        this.renderBulkTagSuggestions('');
+    }
+
+    removeBulkTag(tag) {
+        this.bulkActiveTags.delete(tag);
+        this.renderBulkTags();
+    }
+
+    renderBulkTags() {
+        const wrapper = document.getElementById('bulkTagsWrapper');
+        const input = document.getElementById('bulkTagsInput');
+        wrapper.querySelectorAll('.tag-pill').forEach(p => p.remove());
+        this.bulkActiveTags.forEach(tag => {
+            const pill = document.createElement('span');
+            pill.className = 'tag-pill';
+            pill.innerHTML = `${this.escapeHtml(this.formatTagText(tag))}<span class="tag-pill__remove" data-tag="${this.escapeHtml(tag)}">&times;</span>`;
+            pill.querySelector('.tag-pill__remove').addEventListener('click', (e) => this.removeBulkTag(e.target.dataset.tag));
+            wrapper.insertBefore(pill, input);
+        });
+    }
+
+    renderBulkTagSuggestions(filterText = '') {
+        const container = document.getElementById('bulkTagSuggestions');
+        const allTags = [...new Set(this.items.flatMap(i => i.etiquetas || []))];
+        const lowerFilter = filterText.trim().toLowerCase();
+        if (!lowerFilter) {
+            container.innerHTML = '';
+            return;
+        }
+        const filtered = allTags.filter(t => t.toLowerCase().includes(lowerFilter) && !this.bulkActiveTags.has(t));
+        container.innerHTML = filtered.slice(0, 10).map(t => `<span class="tag-suggestion" data-tag="${this.escapeHtml(t)}">${this.escapeHtml(this.formatTagText(t))}</span>`).join('');
+    }
 
     showContextMenu(x, y, action) {
         this.contextMenu = document.getElementById('contextMenu');
