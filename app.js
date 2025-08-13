@@ -56,6 +56,24 @@ class PanelMariaApp {
         try {
             const data = await window.storage.loadAll();
             this.items = data.items || [];
+
+            // --- Saneamiento de Datos ---
+            // Repara items que puedan no tener un ID por errores pasados.
+            let dataWasChanged = false;
+            this.items.forEach(item => {
+                if (!item.id) {
+                    console.warn('Found item with missing ID. Assigning a new one:', item);
+                    item.id = window.storage.generateId();
+                    dataWasChanged = true;
+                }
+            });
+
+            if (dataWasChanged) {
+                console.log('Saving data after fixing missing IDs...');
+                await this.saveData(); // Guarda los items corregidos
+            }
+            // --- Fin del Saneamiento ---
+
             this.settings = data.settings || { autoSaveVoice: false, theme: 'default', lastCategory: 'todos', customCategories: [], categoryTags: {} };
         } catch (error) {
             console.error('Error loading data:', error);
@@ -236,7 +254,7 @@ class PanelMariaApp {
 
     setupApplication() {
         this.renderNavigationTabs();
-        this.populateCategorySelector();
+        this.populateCategorySelector(document.getElementById('itemCategory'), true);
         this.switchCategory(this.settings.lastCategory || 'todos');
         this.applyTheme();
         this.processBookmarkletData();
@@ -480,12 +498,14 @@ class PanelMariaApp {
         }
     }
 
-    populateCategorySelector() {
-        const selector = document.getElementById('itemCategory');
+    populateCategorySelector(selectorElement, includeNewOption = false) {
         const predefinedCategories = ['directorio', 'ideas', 'proyectos', 'logros'];
         const allCategories = [...predefinedCategories, ...(this.settings.customCategories || [])];
-        selector.innerHTML = allCategories.map(cat => `<option value="${cat}">${this.formatCategoryName(cat)}</option>`).join('');
-        selector.innerHTML += `<option value="__new_category__">Crear nueva categoría...</option>`;
+        let optionsHtml = allCategories.map(cat => `<option value="${cat}">${this.formatCategoryName(cat)}</option>`).join('');
+        if (includeNewOption) {
+            optionsHtml += `<option value="__new_category__">Crear nueva categoría...</option>`;
+        }
+        selectorElement.innerHTML = optionsHtml;
     }
 
     getFilteredItems() {
@@ -770,7 +790,7 @@ class PanelMariaApp {
     
     openBulkCategoryModal() {
         const selector = document.getElementById('bulkCategorySelector');
-        this.populateCategorySelector(); // Re-use population logic
+        this.populateCategorySelector(selector);
         selector.value = '';
         document.getElementById('bulkCategoryModal').classList.remove('hidden');
     }
@@ -788,7 +808,8 @@ class PanelMariaApp {
             this.settings.customCategories.push(newCategory);
             await this.saveData();
             this.renderNavigationTabs();
-            this.populateCategorySelector();
+            this.populateCategorySelector(document.getElementById('itemCategory'), true);
+            this.populateCategorySelector(document.getElementById('bulkCategorySelector'));
             this.closeNewCategoryModal();
         }
     }
