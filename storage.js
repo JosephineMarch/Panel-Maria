@@ -89,7 +89,7 @@ class FirebaseAdapter extends StorageAdapter {
 
     async loadData() {
         const itemsSnapshot = await getDocs(this.userCollectionRef);
-        const items = itemsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const items = itemsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
         const settingsDoc = await getDocs(query(collection(db, `users/${this.userId}/settings`)));
         let settings = {};
         if (!settingsDoc.empty) settings = settingsDoc.docs[0].data();
