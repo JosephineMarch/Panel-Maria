@@ -25,17 +25,10 @@ class PanelMariaApp {
         this.bulkActiveTags = new Set();
         this.loaderElement = document.getElementById('loader');
 
+        // El appController global ya no es necesario gracias al nuevo manejador de eventos
+        // y a que los módulos externos (voice.js) ahora tienen un punto de entrada claro.
         window.appController = {
-            openModal: (id = null) => this.openModal(id),
-            togglePinned: (id) => this.togglePinned(id),
-            confirmDelete: (id) => this.confirmDeleteItem(id),
-            handleCardClick: (event, id) => this.handleCardClick(event, id),
-            toggleSelection: (id) => this.toggleSelection(id),
-            convertToLogro: (id) => this.convertToLogro(id),
-            toggleTask: (itemId, taskId) => this.toggleTask(itemId, taskId),
-            filterByTag: (tag) => this.filterByTag(tag),
-            // CORRECCIÓN: Función para que módulos externos como voice.js puedan recargar la UI.
-            requestDataRefresh: async () => {
+             requestDataRefresh: async () => {
                 await this.loadData();
                 this.renderAll();
             }
@@ -413,6 +406,64 @@ class PanelMariaApp {
         document.getElementById('newCategoryCloseBtn').addEventListener('click', () => this.closeNewCategoryModal());
         document.getElementById('newCategoryCancelBtn').addEventListener('click', () => this.closeNewCategoryModal());
         document.getElementById('newCategoryCreateBtn').addEventListener('click', () => this.addCustomCategory(document.getElementById('newCategoryNameInput').value));
+
+        // NUEVO: Manejador de eventos centralizado para las tarjetas de elementos (event delegation)
+        const itemsContainer = document.getElementById('itemsContainer');
+        itemsContainer.addEventListener('click', (event) => {
+            const target = event.target;
+            const actionElement = target.closest('[data-action]');
+
+            if (!actionElement) return;
+
+            const action = actionElement.dataset.action;
+            const card = actionElement.closest('.card');
+            
+            // Algunas acciones, como en el modal, pueden no estar dentro de una tarjeta
+            if (!card && action !== 'filter-by-tag') return; 
+
+            const id = card ? card.dataset.id : null;
+
+            // Detener la propagación para acciones específicas para evitar que se active el clic de la tarjeta principal
+            if (action !== 'handle-card-click') {
+                event.stopPropagation();
+            }
+
+            switch (action) {
+                case 'handle-card-click':
+                    // Prevenir que se abra el modal si se hizo clic en un enlace, botón o checkbox.
+                    if (target.closest('a, button, input[type="checkbox"], .card__tag')) return;
+                    this.openModal(id);
+                    break;
+                case 'toggle-selection':
+                    this.toggleSelection(id);
+                    break;
+                case 'toggle-pinned':
+                    this.togglePinned(id);
+                    break;
+                case 'open-link':
+                    // La acción por defecto del navegador (abrir el enlace) es suficiente.
+                    // La propagación ya se detuvo.
+                    break;
+                case 'filter-by-tag':
+                    this.filterByTag(actionElement.dataset.tag);
+                    break;
+                case 'open-modal':
+                    this.openModal(id);
+                    break;
+                case 'convert-to-logro':
+                    this.convertToLogro(id);
+                    break;
+                case 'confirm-delete':
+                    this.confirmDeleteItem(id);
+                    break;
+                case 'toggle-task':
+                    const taskId = actionElement.dataset.taskId;
+                    if (id && taskId) {
+                        this.toggleTask(id, taskId);
+                    }
+                    break;
+            }
+        });
     }
     
     // --- MÉTODOS DE RENDERIZADO ---
@@ -460,26 +511,27 @@ class PanelMariaApp {
         const isSelected = this.selectedItems.has(item.id);
         const date = new Date(item.fecha_creacion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
         const progress = (item.tareas && item.tareas.length > 0) ? this.createProgressBar(item) : '';
+        // Refactorizado para usar data-actions en lugar de onclick y onchange
         return `
-            <div class="card ${isSelected ? 'selected' : ''}" data-id="${item.id}" onclick="appController.handleCardClick(event, '${item.id}')">
-                <input type="checkbox" class="card__checkbox" ${isSelected ? 'checked' : ''} onchange="appController.toggleSelection('${item.id}')">
+            <div class="card ${isSelected ? 'selected' : ''}" data-id="${item.id}" data-action="handle-card-click">
+                <input type="checkbox" class="card__checkbox" data-action="toggle-selection" ${isSelected ? 'checked' : ''}>
                 <div class="card__header">
                     <h3 class="card__title">${this.escapeHtml(item.titulo)}</h3>
-                    <button class="card__pin ${item.anclado ? 'pinned' : ''}" onclick="event.stopPropagation(); appController.togglePinned('${item.id}')" title="Anclar"><span class="material-symbols-outlined">push_pin</span></button>
+                    <button class="card__pin ${item.anclado ? 'pinned' : ''}" data-action="toggle-pinned" title="Anclar"><span class="material-symbols-outlined">push_pin</span></button>
                 </div>
                 <div class="card__body">
                     ${item.descripcion ? `<p class="card__description">${this.escapeHtml(item.descripcion)}</p>` : ''}
-                    ${item.url ? `<div class="card__urls"><a href="${this.escapeHtml(item.url)}" target="_blank" class="card__url" onclick="event.stopPropagation()">${this.escapeHtml(this.truncateUrl(item.url))}</a></div>` : ''}
+                    ${item.url ? `<div class="card__urls"><a href="${this.escapeHtml(item.url)}" target="_blank" class="card__url" data-action="open-link">${this.escapeHtml(this.truncateUrl(item.url))}</a></div>` : ''}
                     ${item.tareas && item.tareas.length > 0 ? this.createTasksContent(item) : ''}
                     ${progress}
                 </div>
-                ${item.etiquetas && item.etiquetas.length > 0 ? `<div class="card__tags">${item.etiquetas.map(tag => `<span class="card__tag" onclick="event.stopPropagation(); appController.filterByTag('${this.escapeHtml(tag)}')">${this.formatTagText(this.escapeHtml(tag))}</span>`).join('')}</div>` : ''}
+                ${item.etiquetas && item.etiquetas.length > 0 ? `<div class="card__tags">${item.etiquetas.map(tag => `<span class="card__tag" data-action="filter-by-tag" data-tag="${this.escapeHtml(tag)}">${this.formatTagText(this.escapeHtml(tag))}</span>`).join('')}</div>` : ''}
                 <div class="card__footer">
                     <span class="card__date">${date} ${item.fecha_finalizacion ? ` (Completado)`: ''}</span>
                     <div class="card__actions">
-                        <button class="btn btn--text" onclick="event.stopPropagation(); appController.openModal('${item.id}')" title="Editar"><span class="material-symbols-outlined">edit</span></button>
-                        ${item.categoria !== 'logros' ? `<button class="btn btn--text" onclick="event.stopPropagation(); appController.convertToLogro('${item.id}')" title="Convertir a logro"><span class="material-symbols-outlined">emoji_events</span></button>` : ''}
-                        <button class="btn btn--text" onclick="event.stopPropagation(); appController.confirmDelete('${item.id}')" title="Eliminar"><span class="material-symbols-outlined">delete</span></button>
+                        <button class="btn btn--text" data-action="open-modal" title="Editar"><span class="material-symbols-outlined">edit</span></button>
+                        ${item.categoria !== 'logros' ? `<button class="btn btn--text" data-action="convert-to-logro" title="Convertir a logro"><span class="material-symbols-outlined">emoji_events</span></button>` : ''}
+                        <button class="btn btn--text" data-action="confirm-delete" title="Eliminar"><span class="material-symbols-outlined">delete</span></button>
                     </div>
                 </div>
             </div>`;
@@ -542,11 +594,12 @@ class PanelMariaApp {
     }
 
     createTasksContent(item) {
+        // Refactorizado para usar data-actions
         return `
             <div class="card__tasks">
                 ${item.tareas.map(task => `
                     <div class="task-item-card">
-                        <input type="checkbox" class="task-checkbox-card" ${task.completado ? 'checked' : ''} onchange="appController.toggleTask('${item.id}', '${task.id}')">
+                        <input type="checkbox" class="task-checkbox-card" data-action="toggle-task" data-task-id="${task.id}" ${task.completado ? 'checked' : ''}>
                         <span class="task-title-card ${task.completado ? 'completed' : ''}">${this.escapeHtml(task.titulo)}</span>
                     </div>
                 `).join('')}
@@ -781,14 +834,7 @@ class PanelMariaApp {
         this.updateSelectionUI();
     }
 
-    handleCardClick(event, id) {
-        // If the click was on a checkbox or a button, let those handlers manage it
-        if (event.target.closest('input[type="checkbox"]') || event.target.closest('button')) {
-            return;
-        }
-        // Otherwise, open the modal for editing
-        this.openModal(id);
-    }
+    
 
     formatTagText(tag) {
         return tag.charAt(0).toUpperCase() + tag.slice(1);
