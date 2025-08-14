@@ -855,7 +855,61 @@ class PanelMariaApp {
         };
         reader.readAsText(file);
     }
-} // Closing brace for PanelMariaApp class
+    renderGlobalTagsInSettings() {
+        const container = document.getElementById('globalTagsList');
+        if (!container) return;
+
+        container.innerHTML = ''; // Clear previous content
+
+        const allTags = new Set();
+        this.items.forEach(item => (item.etiquetas || []).forEach(tag => allTags.add(tag)));
+
+        if (allTags.size === 0) {
+            container.innerHTML = '<p>No hay etiquetas globales.</p>';
+            return;
+        }
+
+        Array.from(allTags).sort().forEach(tag => {
+            const tagDiv = document.createElement('div');
+            tagDiv.className = 'custom-category-item'; // Reusing the same style for now
+            tagDiv.innerHTML = `
+                <span>${this.formatTagText(tag)}</span>
+                <button class="btn btn--icon btn--danger delete-tag-btn" data-tag="${tag}" title="Eliminar etiqueta">
+                    <span class="material-symbols-outlined">delete</span>
+                </button>
+            `;
+            container.appendChild(tagDiv);
+        });
+
+        // Attach event listeners to delete buttons
+        container.querySelectorAll('.delete-tag-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const tagToDelete = e.currentTarget.dataset.tag;
+                this.confirmDeleteItem('Eliminar Etiqueta', `¿Estás seguro de que quieres eliminar la etiqueta "${this.formatTagText(tagToDelete)}"? Se eliminará de todos los elementos.`, () => this.deleteGlobalTag(tagToDelete));
+            });
+        });
+    }
+
+    async deleteGlobalTag(tagName) {
+        const operations = [];
+        this.items.forEach(item => {
+            if (item.etiquetas && item.etiquetas.includes(tagName)) {
+                const newTags = item.etiquetas.filter(tag => tag !== tagName);
+                operations.push({ type: 'update', id: item.id, data: { etiquetas: newTags } });
+            }
+        });
+
+        if (operations.length > 0) {
+            await this.performItemUpdates(operations); // This will also save data and re-render
+        } else {
+            // If no items had the tag, just re-render settings to reflect removal
+            this.renderGlobalTagsInSettings();
+        }
+
+        this.showToast(`Etiqueta "${this.formatTagText(tagName)}" eliminada de todos los elementos.`, 'success');
+        this.renderGlobalTagsInSettings(); // Re-render to update the list in settings
+    }
+}
 
     renderCustomCategoriesInSettings() {
         const container = document.getElementById('customCategoriesList');
@@ -923,57 +977,4 @@ class PanelMariaApp {
         this.showToast(`Categoría "${this.formatCategoryName(categoryName)}" eliminada.`, 'success');
     }
 
-    renderGlobalTagsInSettings() {
-        const container = document.getElementById('globalTagsList');
-        if (!container) return;
-
-        container.innerHTML = ''; // Clear previous content
-
-        const allTags = new Set();
-        this.items.forEach(item => (item.etiquetas || []).forEach(tag => allTags.add(tag)));
-
-        if (allTags.size === 0) {
-            container.innerHTML = '<p>No hay etiquetas globales.</p>';
-            return;
-        }
-
-        Array.from(allTags).sort().forEach(tag => {
-            const tagDiv = document.createElement('div');
-            tagDiv.className = 'custom-category-item'; // Reusing the same style for now
-            tagDiv.innerHTML = `
-                <span>${this.formatTagText(tag)}</span>
-                <button class="btn btn--icon btn--danger delete-tag-btn" data-tag="${tag}" title="Eliminar etiqueta">
-                    <span class="material-symbols-outlined">delete</span>
-                </button>
-            `;
-            container.appendChild(tagDiv);
-        });
-
-        // Attach event listeners to delete buttons
-        container.querySelectorAll('.delete-tag-btn').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const tagToDelete = e.currentTarget.dataset.tag;
-                this.confirmDeleteItem('Eliminar Etiqueta', `¿Estás seguro de que quieres eliminar la etiqueta "${this.formatTagText(tagToDelete)}"? Se eliminará de todos los elementos.`, () => this.deleteGlobalTag(tagToDelete));
-            });
-        });
-    }
-
-    async deleteGlobalTag(tagName) {
-        const operations = [];
-        this.items.forEach(item => {
-            if (item.etiquetas && item.etiquetas.includes(tagName)) {
-                const newTags = item.etiquetas.filter(tag => tag !== tagName);
-                operations.push({ type: 'update', id: item.id, data: { etiquetas: newTags } });
-            }
-        });
-
-        if (operations.length > 0) {
-            await this.performItemUpdates(operations); // This will also save data and re-render
-        } else {
-            // If no items had the tag, just re-render settings to reflect removal
-            this.renderGlobalTagsInSettings();
-        }
-
-        this.showToast(`Etiqueta "${this.formatTagText(tagName)}" eliminada de todos los elementos.`, 'success');
-        this.renderGlobalTagsInSettings(); // Re-render to update the list in settings
-    }
+    
