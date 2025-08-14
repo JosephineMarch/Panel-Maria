@@ -128,130 +128,6 @@ class TagInput {
 // CLASE PRINCIPAL DE LA APLICACIÓN
 // ==============================================================================
 
-// ==============================================================================
-// CLASE REUTILIZABLE PARA CAMPOS DE ETIQUETAS (TAGS)
-// ==============================================================================
-
-/**
- * Formatea el texto de una etiqueta para visualización (primera letra en mayúscula).
- * @param {string} tag - La etiqueta a formatear.
- * @returns {string}
- */
-function formatTagText(tag) {
-    if (!tag) return '';
-    return tag.charAt(0).toUpperCase() + tag.slice(1);
-}
-
-class TagInput {
-    /**
-     * @param {HTMLElement} container - El elemento contenedor del campo de etiquetas.
-     * @param {Function} allTagsProvider - Una función que devuelve un Set de todas las etiquetas disponibles para sugerencias.
-     */
-    constructor(container, allTagsProvider) {
-        this.container = container;
-        this.input = this.container.querySelector('.tags-input');
-        this.suggestionsContainer = this.container.parentElement.querySelector('.tag-suggestions');
-        this.allTagsProvider = allTagsProvider;
-        this.activeTags = new Set();
-
-        this.setupEventListeners();
-    }
-
-    setupEventListeners() {
-        this.container.addEventListener('click', () => this.input.focus());
-
-        this.input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                if (this.input.value.trim()) this.addTag(this.input.value.trim());
-            } else if (e.key === 'Backspace' && this.input.value === '') {
-                this.removeTag(Array.from(this.activeTags).pop());
-            }
-        });
-
-        this.input.addEventListener('input', () => this.renderSuggestions());
-
-        this.suggestionsContainer.addEventListener('click', (e) => {
-            if (e.target.classList.contains('tag-suggestion')) {
-                this.addTag(e.target.dataset.tag);
-            }
-        });
-
-        // Listener para el botón de eliminar en cada píldora de etiqueta
-        this.container.addEventListener('click', (e) => {
-            const removeButton = e.target.closest('.tag-remove');
-            if (removeButton) {
-                e.stopPropagation();
-                this.removeTag(removeButton.dataset.tag);
-            }
-        });
-    }
-
-    getTags() {
-        return Array.from(this.activeTags);
-    }
-
-    setTags(tags = []) {
-        this.activeTags = new Set(tags.map(t => t.toLowerCase()));
-        this.render();
-    }
-
-    addTag(tag) {
-        const normalizedTag = tag.toLowerCase().trim();
-        if (normalizedTag && !this.activeTags.has(normalizedTag)) {
-            this.activeTags.add(normalizedTag);
-            this.input.value = '';
-            this.render();
-            this.renderSuggestions();
-            this.input.focus();
-        }
-    }
-
-    removeTag(tag) {
-        if (!tag) return;
-        this.activeTags.delete(tag.toLowerCase());
-        this.render();
-        this.renderSuggestions();
-    }
-
-    render() {
-        // Limpiar píldoras existentes
-        Array.from(this.container.querySelectorAll('.tag-pill')).forEach(pill => pill.remove());
-
-        // Renderizar nuevas píldoras
-        this.activeTags.forEach(tag => {
-            const tagElement = document.createElement('span');
-            tagElement.className = 'tag-pill';
-            tagElement.innerHTML = `${formatTagText(tag)} <span class="tag-remove" data-tag="${tag}">&times;</span>`;
-            this.container.insertBefore(tagElement, this.input);
-        });
-    }
-
-    renderSuggestions() {
-        this.suggestionsContainer.innerHTML = '';
-        const allTags = this.allTagsProvider();
-        const inputValue = this.input.value.toLowerCase();
-
-        if (!inputValue) return; // No mostrar sugerencias si el campo está vacío
-
-        const filteredSuggestions = Array.from(allTags).filter(tag =>
-            tag.toLowerCase().includes(inputValue) && !this.activeTags.has(tag.toLowerCase())
-        );
-
-        filteredSuggestions.slice(0, 10).forEach(tag => {
-            const suggestion = document.createElement('span');
-            suggestion.className = 'tag-suggestion';
-            suggestion.dataset.tag = tag;
-            suggestion.textContent = formatTagText(tag);
-            this.suggestionsContainer.appendChild(suggestion);
-        });
-    }
-}
-
-// ==============================================================================
-// CLASE PRINCIPAL DE LA APLICACIÓN
-// ==============================================================================
-
 import { auth, onAuthStateChanged, signInWithGoogle, signOutUser } from './auth.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -261,17 +137,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 class PanelMariaApp {
     constructor() {
-        this.currentCategory = 'todos';
-        this.items = [];
-        this.selectedItems = new Set();
-        this.filters = { search: '', tag: null };
-        this.settings = {};
-        this.currentEditId = null;
-        this.user = null;
-        this.bookmarkletData = null;
-        this.loaderElement = document.getElementById('loader');
-
-        constructor() {
         this.currentCategory = 'todos';
         this.items = [];
         this.selectedItems = new Set();
@@ -308,6 +173,11 @@ class PanelMariaApp {
         return allTags;
     }
 
+    async init() {
+        this.checkForBookmarkletData();
+        this.setupEventListeners();
+        this.setupAuthListener();
+        
         // Instanciar los nuevos manejadores de etiquetas
         this.modalTagInput = new TagInput(
             document.getElementById('itemTagsWrapper'),
@@ -317,24 +187,6 @@ class PanelMariaApp {
             document.getElementById('bulkTagsWrapper'),
             () => this.getAllTags()
         );
-    }
-
-    /**
-     * Devuelve un Set con todas las etiquetas únicas existentes en todos los items.
-     * @returns {Set<string>}
-     */
-    getAllTags() {
-        const allTags = new Set();
-        this.items.forEach(item => (item.etiquetas || []).forEach(tag => allTags.add(tag)));
-        // Opcional: Incluir también etiquetas definidas por categoría
-        Object.values(this.settings.categoryTags || {}).forEach(tags => tags.forEach(tag => allTags.add(tag)));
-        return allTags;
-    }
-
-    async init() {
-        this.checkForBookmarkletData();
-        this.setupEventListeners();
-        this.setupAuthListener();
     }
 
     showLoader() {
