@@ -228,7 +228,7 @@ class PanelMariaApp {
     setupApplication() {
         this.renderNavigationTabs();
         this.populateCategorySelector(document.getElementById('itemCategory'), true);
-        this.switchCategory(this.settings.lastCategory || 'todos');
+        this.switchCategory(this.settings.lastCategory || 'directorio');
         this.applyTheme();
         this.processBookmarkletData();
     }
@@ -419,7 +419,6 @@ class PanelMariaApp {
         const allCategories = [...new Set([...predefinedCategories, ...(this.settings.customCategories || [])])];
 
         navContainer.innerHTML = `
-            <button class="nav-tab" data-category="todos"><span class="material-symbols-outlined">select_all</span>Todos</button>
             ${allCategories.map(category => `
                 <button class="nav-tab" data-category="${category}">
                     <span class="material-symbols-outlined">${this.getCategoryIcon(category)}</span>
@@ -476,7 +475,7 @@ class PanelMariaApp {
     updateEmptyState() { const emptyState = document.getElementById('emptyState'); const hasItems = document.getElementById('itemsContainer').children.length > 0; emptyState.classList.toggle('hidden', !hasItems); if (!hasItems) { emptyState.querySelector('.empty-state__title').textContent = `No hay elementos en "${this.formatCategoryName(this.currentCategory)}"`; } }
     openModal(id = null) { this.currentEditId = id; const modal = document.getElementById('itemModal'); this.modalActiveTags.clear(); if (id) { const item = this.items.find(i => i.id === id); if (item) { document.getElementById('modalTitle').textContent = 'Editar Elemento'; this.populateModalForm(item); (item.etiquetas || []).forEach(tag => this.modalActiveTags.add(tag)); } } else { document.getElementById('modalTitle').textContent = 'Agregar Nuevo Elemento'; this.clearModalForm(); }         modal.classList.remove('hidden'); this.renderModalTags(); document.getElementById('itemTitle').focus(); }
     closeModal() { document.getElementById('itemModal').classList.add('hidden'); }
-    populateModalForm(item) { document.getElementById('itemTitle').value = item?.titulo || ''; document.getElementById('itemDescription').value = item?.descripcion || ''; document.getElementById('itemUrl').value = item?.url || ''; document.getElementById('itemPinned').checked = item?.anclado || false; const categorySelector = document.getElementById('itemCategory'); categorySelector.value = item?.categoria || (this.currentCategory === 'todos' ? 'directorio' : this.currentCategory); this.handleCategoryChange({ target: categorySelector }); document.getElementById('tasksList').innerHTML = ''; if (item?.tareas?.length) { item.tareas.forEach(task => this.addTaskField(task)); } else { this.addTaskField(); } }
+    populateModalForm(item) { document.getElementById('itemTitle').value = item?.titulo || ''; document.getElementById('itemDescription').value = item?.descripcion || ''; document.getElementById('itemUrl').value = item?.url || ''; document.getElementById('itemPinned').checked = item?.anclado || false; const categorySelector = document.getElementById('itemCategory'); categorySelector.value = item?.categoria || this.currentCategory || 'directorio'; this.handleCategoryChange({ target: categorySelector }); document.getElementById('tasksList').innerHTML = ''; if (item?.tareas?.length) { item.tareas.forEach(task => this.addTaskField(task)); } else { this.addTaskField(); } }
     clearModalForm() { document.getElementById('itemForm').reset(); document.getElementById('tasksList').innerHTML = ''; this.addTaskField(); document.getElementById('newCategoryInputGroup').style.display = 'none'; }
     handleCategoryChange(event) { document.getElementById('newCategoryInputGroup').style.display = event.target.value === '__new_category__' ? 'block' : 'none'; }
     addTaskField(task = null) { const list = document.getElementById('tasksList'); const item = document.createElement('div'); item.className = 'task-item'; item.innerHTML = `<input type="checkbox" class="checkbox-field task-checkbox" ${task?.completado ? 'checked' : ''}><input type="text" class="input-field task-input" value="${this.escapeHtml(task?.titulo || '')}" placeholder="Nueva tarea"><button type="button" class="btn btn--icon remove-task"><span class="material-symbols-outlined">remove</span></button>`; item.querySelector('.remove-task').addEventListener('click', () => { if (list.children.length > 1) item.remove(); else { item.querySelector('.task-input').value = ''; item.querySelector('.task-checkbox').checked = false; } }); list.appendChild(item); }
