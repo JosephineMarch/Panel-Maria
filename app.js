@@ -695,7 +695,10 @@ class PanelMariaApp {
         this.bulkActiveTags.clear();
         this.renderBulkTags();
         document.getElementById('bulkTagsModal').classList.remove('hidden');
-        document.getElementById('bulkTagsInput').focus();
+        // CORRECCIÓN: Añadir un pequeño retraso para asegurar que el elemento esté renderizado y enfocable.
+        setTimeout(() => {
+            document.getElementById('bulkTagsInput').focus();
+        }, 50); // 50ms de retraso
     }
 
     closeBulkTagsModal() {
