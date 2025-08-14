@@ -997,9 +997,7 @@ class PanelMariaApp {
 
     
 
-    formatTagText(tag) {
-        return tag.charAt(0).toUpperCase() + tag.slice(1);
-    }
+    
 
     renderTagFilters() {
         const tagFiltersContainer = document.getElementById('tagFilters');
