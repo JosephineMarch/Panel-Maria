@@ -24,10 +24,19 @@ const firebaseConfig = {
 };
 
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+let app;
+let db;
+let auth;
+
+try {
+  app = initializeApp(firebaseConfig);
+  db = getFirestore(app);
+  auth = getAuth(app);
+  console.log('Firebase config loaded and initialized successfully.');
+} catch (error) {
+  console.error('Error initializing Firebase:', error);
+  // Optionally, display an error message to the user
+  // alert('Error al inicializar Firebase. Por favor, revisa la consola para más detalles.');
+}
 
 export { db, auth };
-
-console.log('Firebase config loaded and initialized');
