@@ -23,6 +23,7 @@ class PanelMariaApp {
         this.bookmarkletData = null;
         this.modalActiveTags = new Set();
         this.bulkActiveTags = new Set();
+        this.loaderElement = document.getElementById('loader');
 
         window.appController = {
             openModal: (id = null) => this.openModal(id),
@@ -47,9 +48,18 @@ class PanelMariaApp {
         this.setupAuthListener();
     }
 
+    showLoader() {
+        if (this.loaderElement) this.loaderElement.classList.remove('hidden');
+    }
+
+    hideLoader() {
+        if (this.loaderElement) this.loaderElement.classList.add('hidden');
+    }
+
     // --- LÓGICA DE DATOS ---
 
     async loadData() {
+        this.showLoader();
         try {
             const data = await window.storage.loadAll();
             this.items = data.items || [];
@@ -59,6 +69,8 @@ class PanelMariaApp {
             console.error('Error loading data:', error);
             this.items = [];
             this.settings = { autoSaveVoice: false, theme: 'default', lastCategory: 'todos', customCategories: [], categoryTags: {} };
+        } finally {
+            this.hideLoader();
         }
     }
 
@@ -72,6 +84,7 @@ class PanelMariaApp {
     }
 
     async performItemUpdates(operations) {
+        this.showLoader();
         try {
             if (window.storage.adapter.type === 'local') {
                 const newItems = await window.storage.performBatchUpdate(operations, this.items);
@@ -82,7 +95,7 @@ class PanelMariaApp {
                 // Envía los cambios y luego recarga todo para asegurar la consistencia.
                 // Es menos eficiente pero más robusto en este contexto.
                 await window.storage.performBatchUpdate(operations);
-                await this.loadData();
+                await this.loadData(); // This will call show/hide loader again, which is fine.
             }
             this.selectedItems.clear();
             this.renderAll();
@@ -91,6 +104,8 @@ class PanelMariaApp {
             this.showToast("Error al actualizar los datos.", "error");
             await this.loadData(); // Recargar si hay un error
             this.renderAll();
+        } finally {
+            this.hideLoader();
         }
     }
 
@@ -290,20 +305,26 @@ class PanelMariaApp {
     }
 
     async loginWithGoogle() {
+        this.showLoader();
         try {
             await signInWithGoogle();
             this.showToast('Inicio de sesión exitoso', 'success');
         } catch (error) {
             this.showToast(`Error al iniciar sesión: ${error.message}`, 'error');
+        } finally {
+            this.hideLoader();
         }
     }
 
     async logout() {
+        this.showLoader();
         try {
             await signOutUser();
             this.showToast('Sesión cerrada', 'info');
         } catch (error) {
             this.showToast(`Error al cerrar sesión: ${error.message}`, 'error');
+        } finally {
+            this.hideLoader();
         }
     }
     
@@ -792,6 +813,7 @@ class PanelMariaApp {
         const file = event.target.files[0];
         if (!file) return;
 
+        this.showLoader();
         const reader = new FileReader();
         reader.onload = async (e) => {
             try {
@@ -851,6 +873,8 @@ class PanelMariaApp {
             } catch (parseError) {
                 console.error('Error parsing imported file:', parseError);
                 this.showToast('Error al procesar el archivo importado.', 'error');
+            } finally {
+                this.hideLoader();
             }
         };
         reader.readAsText(file);
@@ -975,130 +999,4 @@ class PanelMariaApp {
         this.showToast(`Etiqueta "${this.formatTagText(tagName)}" eliminada de todos los elementos.`, 'success');
         this.renderGlobalTagsInSettings(); // Re-render to update the list in settings
     }
-    renderCustomCategoriesInSettings() {
-        const container = document.getElementById('customCategoriesList');
-        if (!container) return; // Ensure the container exists
-
-        container.innerHTML = ''; // Clear previous content
-
-        const customCategories = this.settings.customCategories || [];
-
-        if (customCategories.length === 0) {
-            container.innerHTML = '<p>No hay categorías personalizadas.</p>';
-            return;
-        }
-
-        customCategories.forEach(category => {
-            const categoryDiv = document.createElement('div');
-            categoryDiv.className = 'custom-category-item'; // Add a class for styling
-            categoryDiv.innerHTML = `
-                <span>${this.formatCategoryName(category)}</span>
-                <button class="btn btn--icon btn--danger delete-category-btn" data-category="${category}" title="Eliminar categoría">
-                    <span class="material-symbols-outlined">delete</span>
-                </button>
-            `;
-            container.appendChild(categoryDiv);
-        });
-
-        // Attach event listeners to delete buttons
-        container.querySelectorAll('.delete-category-btn').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const categoryToDelete = e.currentTarget.dataset.category;
-                this.confirmDeleteItem('Eliminar Categoría', `¿Estás seguro de que quieres eliminar la categoría "${this.formatCategoryName(categoryToDelete)}"? Todos los elementos en esta categoría se moverán a "Directorio".`, () => this.deleteCustomCategory(categoryToDelete));
-            });
-        });
-    }
-
-    async deleteCustomCategory(categoryName) {
-        // Remove from customCategories array
-        this.settings.customCategories = this.settings.customCategories.filter(cat => cat !== categoryName);
-
-        // Remove associated categoryTags
-        if (this.settings.categoryTags && this.settings.categoryTags[categoryName]) {
-            delete this.settings.categoryTags[categoryName];
-        }
-
-        // Recategorize items
-        const operations = [];
-        this.items.forEach(item => {
-            if (item.categoria === categoryName) {
-                operations.push({ type: 'update', id: item.id, data: { categoria: 'directorio' } });
-            }
-        });
-
-        if (operations.length > 0) {
-            await this.performItemUpdates(operations); // This will also save data and re-render
-        } else {
-            await this.saveDataSettings(); // Save settings if no items were updated
-            await this.loadData(); // Reload data to ensure consistency
-            this.renderAll(); // Re-render main content
-        }
-
-        this.renderNavigationTabs(); // Update navigation tabs
-        this.populateCategorySelector(document.getElementById('itemCategory'), true); // Update category selectors
-        this.populateCategorySelector(document.getElementById('bulkCategorySelector'));
-        this.renderCustomCategoriesInSettings(); // Re-render custom categories in settings modal
-        this.showToast(`Categoría "${this.formatCategoryName(categoryName)}" eliminada.`, 'success');
-    }
-
-    renderGlobalTagsInSettings() {
-        const container = document.getElementById('globalTagsList');
-        if (!container) return;
-
-        container.innerHTML = ''; // Clear previous content
-
-        const allTags = new Set();
-        this.items.forEach(item => (item.etiquetas || []).forEach(tag => allTags.add(tag)));
-
-        if (allTags.size === 0) {
-            container.innerHTML = '<p>No hay etiquetas globales.</p>';
-            return;
-        }
-
-        Array.from(allTags).sort().forEach(tag => {
-            const tagDiv = document.createElement('div');
-            tagDiv.className = 'custom-category-item'; // Reusing the same style for now
-            tagDiv.innerHTML = `
-                <span>${this.formatTagText(tag)}</span>
-                <button class="btn btn--icon btn--danger delete-tag-btn" data-tag="${tag}" title="Eliminar etiqueta">
-                    <span class="material-symbols-outlined">delete</span>
-                </button>
-            `;
-            container.appendChild(tagDiv);
-        });
-
-        // Attach event listeners to delete buttons
-        container.querySelectorAll('.delete-tag-btn').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const tagToDelete = e.currentTarget.dataset.tag;
-                this.confirmDeleteItem('Eliminar Etiqueta', `¿Estás seguro de que quieres eliminar la etiqueta "${this.formatTagText(tagToDelete)}"? Se eliminará de todos los elementos.`, () => this.deleteGlobalTag(tagToDelete));
-            });
-        });
-    }
-
-    async deleteGlobalTag(tagName) {
-        const operations = [];
-        this.items.forEach(item => {
-            if (item.etiquetas && item.etiquetas.includes(tagName)) {
-                const newTags = item.etiquetas.filter(tag => tag !== tagName);
-                operations.push({ type: 'update', id: item.id, data: { etiquetas: newTags } });
-            }
-        });
-
-        if (operations.length > 0) {
-            await this.performItemUpdates(operations); // This will also save data and re-render
-        } else {
-            // If no items had the tag, just re-render settings to reflect removal
-            this.renderGlobalTagsInSettings();
-        }
-
-        this.showToast(`Etiqueta "${this.formatTagText(tagName)}" eliminada de todos los elementos.`, 'success');
-        this.renderGlobalTagsInSettings(); // Re-render to update the list in settings
-    }
-
-
-    
-
-    
-
-    
+}
