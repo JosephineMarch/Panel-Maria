@@ -548,7 +548,9 @@ class PanelMariaApp {
             });
             tagsWrapper.insertBefore(tagElement, tagsInput);
         });
-        tagsInput.value = '';
+        if (tagsInput) { // Add null check here
+            tagsInput.value = '';
+        }
     }
 
     addModalTag(tag) {
