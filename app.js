@@ -178,7 +178,6 @@ class PanelMariaApp {
         Object.values(this.settings.categoryTags || {}).forEach(tags => tags.forEach(tag => allTags.add(tag)));
         return allTags;
     }
-    }
 
     async init() {
         this.checkForBookmarkletData();
