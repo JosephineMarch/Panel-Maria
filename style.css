@@ -962,6 +962,19 @@ body {
     margin-bottom: 2rem;
 }
 
+/* Custom Category Item in Settings */
+.custom-category-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.custom-category-item:last-child {
+    border-bottom: none;
+}
+
 .hidden {
     display: none !important;
 }
