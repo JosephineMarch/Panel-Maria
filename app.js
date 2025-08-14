@@ -548,7 +548,7 @@ class PanelMariaApp {
             tagsWrapper.insertBefore(tagElement, tagsInput);
         });
         if (tagsInput) { // Add null check here
-            tagsInput.value = '';
+            // tagsInput.value = ''; // Moved to addModalTag
         }
     }
 
@@ -558,6 +558,7 @@ class PanelMariaApp {
             this.modalActiveTags.add(normalizedTag);
             this.renderModalTags();
             this.renderTagSuggestions('');
+            document.getElementById('itemTagsInput').value = '';
         }
     }
 
