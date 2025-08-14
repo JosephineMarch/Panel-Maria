@@ -146,6 +146,7 @@ class PanelMariaApp {
         this.user = null;
         this.bookmarkletData = null;
         this.loaderElement = document.getElementById('loader');
+        this.modalActiveTags = new Set();
 
         // El appController global ya no es necesario gracias al nuevo manejador de eventos
         // y a que los módulos externos (voice.js) ahora tienen un punto de entrada claro.
@@ -645,7 +646,7 @@ class PanelMariaApp {
                     ${item.tareas && item.tareas.length > 0 ? this.createTasksContent(item) : ''}
                     ${progress}
                 </div>
-                ${item.etiquetas && item.etiquetas.length > 0 ? `<div class="card__tags">${item.etiquetas.map(tag => `<span class="card__tag" data-action="filter-by-tag" data-tag="${this.escapeHtml(tag)}">${this.formatTagText(this.escapeHtml(tag))}</span>`).join('')}</div>` : ''}
+                ${item.etiquetas && item.etiquetas.length > 0 ? `<div class="card__tags">${item.etiquetas.map(tag => `<span class="card__tag" data-action="filter-by-tag" data-tag="${this.escapeHtml(tag)}">${formatTagText(this.escapeHtml(tag))}</span>`).join('')}</div>` : ''}
                 <div class="card__footer">
                     <span class="card__date">${date} ${item.fecha_finalizacion ? ` (Completado)`: ''}</span>
                     <div class="card__actions">
@@ -860,7 +861,7 @@ class PanelMariaApp {
         Array.from(allTags).sort().forEach(tag => {
             const tagElement = document.createElement('span');
             tagElement.className = `tag-filter ${this.filters.tag === tag ? 'active' : ''}`;
-            tagElement.textContent = this.formatTagText(tag);
+            tagElement.textContent = formatTagText(tag);
             tagElement.addEventListener('click', () => this.filterByTag(tag));
             tagFiltersContainer.appendChild(tagElement);
         });
@@ -1063,7 +1064,7 @@ class PanelMariaApp {
             const tagDiv = document.createElement('div');
             tagDiv.className = 'custom-category-item'; // Reusing the same style for now
             tagDiv.innerHTML = `
-                <span>${this.formatTagText(tag)}</span>
+                <span>${formatTagText(tag)}</span>
                 <button class="btn btn--icon btn--danger delete-tag-btn" data-tag="${tag}" title="Eliminar etiqueta">
                     <span class="material-symbols-outlined">delete</span>
                 </button>
@@ -1075,7 +1076,7 @@ class PanelMariaApp {
         container.querySelectorAll('.delete-tag-btn').forEach(button => {
             button.addEventListener('click', (e) => {
                 const tagToDelete = e.currentTarget.dataset.tag;
-                this.confirmDeleteItem('Eliminar Etiqueta', `¿Estás seguro de que quieres eliminar la etiqueta "${this.formatTagText(tagToDelete)}"? Se eliminará de todos los elementos.`, () => this.deleteGlobalTag(tagToDelete));
+                this.confirmDeleteItem('Eliminar Etiqueta', `¿Estás seguro de que quieres eliminar la etiqueta "${formatTagText(tagToDelete)}"? Se eliminará de todos los elementos.`, () => this.deleteGlobalTag(tagToDelete));
             });
         });
     }
@@ -1096,7 +1097,7 @@ class PanelMariaApp {
             this.renderGlobalTagsInSettings();
         }
 
-        this.showToast(`Etiqueta "${this.formatTagText(tagName)}" eliminada de todos los elementos.`, 'success');
+        this.showToast(`Etiqueta "${formatTagText(tagName)}" eliminada de todos los elementos.`, 'success');
         this.renderGlobalTagsInSettings(); // Re-render to update the list in settings
     }
 }
