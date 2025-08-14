@@ -879,22 +879,65 @@ class PanelMariaApp {
                 if (file.name.endsWith('.json')) {
                     importedData = JSON.parse(content);
                 } else if (file.name.endsWith('.html')) {
-                    // Basic HTML bookmark import (Google Chrome export format)
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(content, 'text/html');
-                    const links = doc.querySelectorAll('a');
-                    importedData = Array.from(links).map(link => ({
-                        id: window.storage.generateId(),
-                        categoria: 'directorio', // Default category for imported bookmarks
-                        titulo: link.textContent.trim(),
-                        url: link.href,
-                        fecha_creacion: new Date().toISOString(),
-                        etiquetas: [],
-                        tareas: [],
-                        anclado: false,
-                        fecha_finalizacion: null,
-                        meta: {}
-                    }));
+                    const bookmarks = [];
+                    
+                    // Función recursiva para recorrer el árbol de marcadores
+                    const traverseBookmarks = (node, currentTags = []) => {
+                        // Un nodo DT puede contener un H3 (carpeta) o un A (marcador)
+                        if (node.nodeName === 'DT') {
+                            const h3 = node.querySelector('H3');
+                            const link = node.querySelector('A');
+                            const dl = node.querySelector('DL'); // La lista de elementos dentro de la carpeta
+
+                            if (h3) { // Es una carpeta
+                                const folderName = h3.textContent.trim();
+                                if (dl) {
+                                    Array.from(dl.children).forEach(child => {
+                                        traverseBookmarks(child, [...currentTags, folderName]);
+                                    });
+                                }
+                            } else if (link) { // Es un marcador
+                                bookmarks.push({
+                                    id: window.storage.generateId(),
+                                    categoria: 'directorio', // Categoría por defecto para marcadores importados
+                                    titulo: link.textContent.trim(),
+                                    url: link.href,
+                                    fecha_creacion: new Date().toISOString(),
+                                    etiquetas: [...new Set(currentTags)], // Usar Set para evitar etiquetas duplicadas
+                                    tareas: [],
+                                    anclado: false,
+                                    fecha_finalizacion: null,
+                                    meta: {}
+                                });
+                            }
+                        }
+                        // También manejar enlaces directos que no estén dentro de un DT (menos común en exports de Chrome)
+                        else if (node.nodeName === 'A') {
+                             bookmarks.push({
+                                id: window.storage.generateId(),
+                                categoria: 'directorio',
+                                titulo: node.textContent.trim(),
+                                url: node.href,
+                                fecha_creacion: new Date().toISOString(),
+                                etiquetas: [...new Set(currentTags)],
+                                tareas: [],
+                                anclado: false,
+                                fecha_finalizacion: null,
+                                meta: {}
+                            });
+                        }
+                    };
+
+                    // Empezar el recorrido desde el cuerpo del documento o la primera DL principal
+                    const rootDl = doc.querySelector('DL');
+                    if (rootDl) {
+                        Array.from(rootDl.children).forEach(child => traverseBookmarks(child));
+                    }
+                    
+                    importedData = bookmarks;
+
                 } else {
                     this.showToast('Formato de archivo no soportado.', 'error');
                     return;
