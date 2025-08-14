@@ -14,12 +14,12 @@ import { getAuth } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-aut
 // 2. El archivo "firebase-config.js" está ignorado por Git para que no se suba.
 // 3. Rellena tus claves en "firebase-config.js".
 const firebaseConfig = {
-  apiKey: "AIzaSyAgsf640E_y-Ry8C6bf5cHMNB7BYjFk6FA",
-  authDomain: "panel-de-control-maria.firebaseapp.com",
-  projectId: "panel-de-control-maria",
-  storageBucket: "panel-de-control-maria.firebasestorage.app",
-  messagingSenderId: "434100378252",
-  appId: "1:434100378252:web:56c7355bca874a940979a9"
+  apiKey: "TU_API_KEY",
+  authDomain: "TU_AUTH_DOMAIN",
+  projectId: "TU_PROJECT_ID",
+  storageBucket: "TU_STORAGE_BUCKET",
+  messagingSenderId: "TU_MESSAGING_SENDER_ID",
+  appId: "TU_APP_ID"
 };
 
 

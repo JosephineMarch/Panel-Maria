@@ -1095,7 +1095,7 @@ class PanelMariaApp {
         this.showToast(`Etiqueta "${this.formatTagText(tagName)}" eliminada de todos los elementos.`, 'success');
         this.renderGlobalTagsInSettings(); // Re-render to update the list in settings
     }
-} // Closing brace for PanelMariaApp class
+
 
     
 

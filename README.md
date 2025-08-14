@@ -26,8 +26,11 @@ No se necesita instalación. ¡Funciona directamente!
 Para que tus datos se guarden en la nube y se sincronicen entre dispositivos, necesitas configurar tu propio proyecto de Firebase:
 
 1.  **Crea un Proyecto en Firebase**: Ve a la [consola de Firebase](https://console.firebase.google.com/), crea un nuevo proyecto y añade una aplicación web.
-2.  **Obtén tus Credenciales**: Firebase te dará un objeto de configuración (`firebaseConfig`). Copia esos valores.
-3.  **Actualiza `firebase-config.js`**: Abre el archivo `firebase-config.js` con un editor de texto y pega tus propias credenciales en el objeto `firebaseConfig`.
+2.  **Obtén tus Credenciales**: Firebase te dará un objeto de configuración (`firebaseConfig`) con tus claves.
+3.  **Crea tu archivo de configuración**:
+    *   En la carpeta del proyecto, busca el archivo `firebase-config.example.js`.
+    *   Crea una **copia** de este archivo y renómbrala a `firebase-config.js`.
+    *   Abre tu nuevo archivo `firebase-config.js` y pega tus propias credenciales de Firebase donde se indica.
 4.  **Configura Reglas de Seguridad**:
     *   En tu proyecto de Firebase, ve a **Firestore Database**.
     *   Haz clic en la pestaña **"Reglas"**.
@@ -42,6 +45,8 @@ Para que tus datos se guarden en la nube y se sincronicen entre dispositivos, ne
           }
         }
         ```
+
+**Importante**: El archivo `firebase-config.js` donde pones tus claves está ignorado por Git, por lo que no se subirá a ningún repositorio. Este es el método seguro para proteger tus credenciales.
 
 Ahora, cuando abras la aplicación e inicies sesión con Google, tus datos se guardarán y leerán de forma segura desde tu cuenta de Firebase.
 
