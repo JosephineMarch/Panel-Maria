@@ -179,9 +179,42 @@ class PanelMariaApp {
         this.switchCategory(itemData.categoria);
     }
 
+    removeCardFromDOM(id) {
+        const card = document.querySelector(`.card[data-id='${id}']`);
+        if (card) {
+            card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            card.style.opacity = '0';
+            card.style.transform = 'scale(0.9)';
+            setTimeout(() => {
+                card.remove();
+                // Actualiza el estado de "vacío" y los contadores de selección
+                this.updateEmptyState();
+                this.updateSelectionUI();
+            }, 300);
+        }
+    }
+
     async deleteItem(id) {
-        await this.performItemUpdates([{ type: 'delete', id }]);
-        this.showToast('Elemento eliminado', 'success');
+        // Actualización optimista de la UI
+        this.removeCardFromDOM(id);
+        this.selectedItems.delete(id); // Asegurarse de deseleccionarlo
+
+        // Eliminar del array local de items para mantener la consistencia
+        this.items = this.items.filter(item => item.id !== id);
+
+        // Realizar la eliminación en el almacenamiento en segundo plano
+        try {
+            // Usamos performItemUpdates pero evitamos que redibuje todo después
+            await window.storage.performBatchUpdate([{ type: 'delete', id }]);
+            this.showToast('Elemento eliminado', 'success');
+        } catch (error) {
+            console.error('Fallo al eliminar el elemento, se recomienda recargar:', error);
+            this.showToast('Error al eliminar. Se recomienda recargar la página.', 'error');
+            // En caso de error, una recarga completa es la forma más segura de
+            // restaurar la consistencia entre la UI y los datos.
+            await this.loadData();
+            this.renderAll();
+        }
     }
 
     async togglePinned(id) {
@@ -233,9 +266,27 @@ class PanelMariaApp {
     }
 
     async bulkDelete() {
-        const operations = Array.from(this.selectedItems).map(id => ({ type: 'delete', id }));
-        await this.performItemUpdates(operations);
-        this.showToast('Elementos eliminados', 'success');
+        const idsToDelete = Array.from(this.selectedItems);
+
+        // Actualización optimista de la UI para cada elemento
+        idsToDelete.forEach(id => this.removeCardFromDOM(id));
+
+        // Limpiar la selección y el array local de items
+        this.items = this.items.filter(item => !idsToDelete.includes(item.id));
+        this.selectedItems.clear();
+
+        // Realizar la eliminación en el almacenamiento en segundo plano
+        const operations = idsToDelete.map(id => ({ type: 'delete', id }));
+        try {
+            await window.storage.performBatchUpdate(operations);
+            this.showToast(`${idsToDelete.length} elementos eliminados`, 'success');
+        } catch (error) {
+            console.error('Fallo al eliminar elementos, se recomienda recargar:', error);
+            this.showToast('Error al eliminar. Se recomienda recargar la página.', 'error');
+            // En caso de error, recargar los datos para restaurar la consistencia
+            await this.loadData();
+            this.renderAll();
+        }
     }
 
     // --- LÓGICA DE UI Y EVENTOS ---
