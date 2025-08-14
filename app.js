@@ -25,7 +25,7 @@ class TagInput {
      */
     constructor(container, allTagsProvider) {
         this.container = container;
-        this.input = this.container.querySelector('.tags-input');
+        this.input = this.container.querySelector('.tags-input-field');
         this.suggestionsContainer = this.container.parentElement.querySelector('.tag-suggestions');
         this.allTagsProvider = allTagsProvider;
         this.activeTags = new Set();
@@ -146,10 +146,7 @@ class PanelMariaApp {
         this.user = null;
         this.bookmarkletData = null;
         this.loaderElement = document.getElementById('loader');
-        this.modalActiveTags = new Set();
 
-        // El appController global ya no es necesario gracias al nuevo manejador de eventos
-        // y a que los módulos externos (voice.js) ahora tienen un punto de entrada claro.
         window.appController = {
              requestDataRefresh: async () => {
                 await this.loadData();
@@ -157,19 +154,13 @@ class PanelMariaApp {
             }
         };
 
-        // Instanciar los nuevos manejadores de etiquetas
         this.modalTagInput = null;
         this.bulkTagInput = null;
     }
 
-    /**
-     * Devuelve un Set con todas las etiquetas únicas existentes en todos los items.
-     * @returns {Set<string>}
-     */
     getAllTags() {
         const allTags = new Set();
         this.items.forEach(item => (item.etiquetas || []).forEach(tag => allTags.add(tag)));
-        // Opcional: Incluir también etiquetas definidas por categoría
         Object.values(this.settings.categoryTags || {}).forEach(tags => tags.forEach(tag => allTags.add(tag)));
         return allTags;
     }
@@ -177,9 +168,7 @@ class PanelMariaApp {
     async init() {
         this.checkForBookmarkletData();
         this.setupEventListeners();
-        this.setupAuthListener();
         
-        // Instanciar los nuevos manejadores de etiquetas
         this.modalTagInput = new TagInput(
             document.getElementById('itemTagsWrapper'),
             () => this.getAllTags()
@@ -188,6 +177,8 @@ class PanelMariaApp {
             document.getElementById('bulkTagsWrapper'),
             () => this.getAllTags()
         );
+
+        this.setupAuthListener();
     }
 
     showLoader() {
@@ -233,18 +224,15 @@ class PanelMariaApp {
                 this.items = newItems;
                 await window.storage.saveAll({ items: this.items, settings: this.settings });
             } else {
-                // CORRECCIÓN: Lógica simplificada para Firebase sin compilador.
-                // Envía los cambios y luego recarga todo para asegurar la consistencia.
-                // Es menos eficiente pero más robusto en este contexto.
                 await window.storage.performBatchUpdate(operations);
-                await this.loadData(); // This will call show/hide loader again, which is fine.
+                await this.loadData();
             }
             this.selectedItems.clear();
             this.renderAll();
         } catch (error) {
             console.error("Error performing item updates:", error);
             this.showToast("Error al actualizar los datos.", "error");
-            await this.loadData(); // Recargar si hay un error
+            await this.loadData();
             this.renderAll();
         } finally {
             this.hideLoader();
@@ -268,7 +256,7 @@ class PanelMariaApp {
             }
         }
         
-        const finalTags = this.modalTagInput.getTags(); // Usar nueva instancia de TagInput
+        const finalTags = this.modalTagInput.getTags();
         if (!this.settings.categoryTags[finalCategory]) {
             this.settings.categoryTags[finalCategory] = [];
         }
@@ -367,7 +355,7 @@ class PanelMariaApp {
     }
 
     async handleBulkChangeTags() {
-        const newTags = this.bulkTagInput.getTags(); // Usar nueva instancia de TagInput
+        const newTags = this.bulkTagInput.getTags();
         const operations = Array.from(this.selectedItems).map(id => ({ type: 'update', id, data: { etiquetas: newTags } }));
         await this.performItemUpdates(operations);
         this.closeBulkTagsModal();
@@ -505,8 +493,6 @@ class PanelMariaApp {
         document.getElementById('itemForm').addEventListener('submit', (e) => this.handleFormSubmit(e));
         document.getElementById('itemCategory').addEventListener('change', (e) => this.handleCategoryChange(e));
 
-        
-        
         document.getElementById('addTaskBtn').addEventListener('click', () => this.addTaskField());
         document.getElementById('confirmCancelBtn').addEventListener('click', () => this.closeConfirmModal());
         document.getElementById('confirmOkBtn').addEventListener('click', () => this.executeConfirmAction());
@@ -515,8 +501,6 @@ class PanelMariaApp {
         document.getElementById('bulkTagsCancelBtn').addEventListener('click', () => this.closeBulkTagsModal());
         document.getElementById('bulkTagsOkBtn').addEventListener('click', () => this.handleBulkChangeTags());
 
-        
-        
         document.getElementById('settingsCloseBtn').addEventListener('click', () => this.closeSettingsModal());
         document.getElementById('autoSaveVoice').addEventListener('change', (e) => { this.settings.autoSaveVoice = e.target.checked; this.saveDataSettings(); });
         document.getElementById('themeSelect').addEventListener('change', (e) => { this.settings.theme = e.target.value; this.applyTheme(); this.saveDataSettings(); });
@@ -528,7 +512,6 @@ class PanelMariaApp {
         document.getElementById('newCategoryCancelBtn').addEventListener('click', () => this.closeNewCategoryModal());
         document.getElementById('newCategoryCreateBtn').addEventListener('click', () => this.addCustomCategory(document.getElementById('newCategoryNameInput').value));
 
-        // NUEVO: Manejador de eventos centralizado para las tarjetas de elementos (event delegation)
         const itemsContainer = document.getElementById('itemsContainer');
         itemsContainer.addEventListener('click', (event) => {
             const target = event.target;
@@ -539,19 +522,16 @@ class PanelMariaApp {
             const action = actionElement.dataset.action;
             const card = actionElement.closest('.card');
             
-            // Algunas acciones, como en el modal, pueden no estar dentro de una tarjeta
             if (!card && action !== 'filter-by-tag') return; 
 
             const id = card ? card.dataset.id : null;
 
-            // Detener la propagación para acciones específicas para evitar que se active el clic de la tarjeta principal
             if (action !== 'handle-card-click') {
                 event.stopPropagation();
             }
 
             switch (action) {
                 case 'handle-card-click':
-                    // Prevenir que se abra el modal si se hizo clic en un enlace, botón o checkbox.
                     if (target.closest('a, button, input[type="checkbox"], .card__tag')) return;
                     this.openModal(id);
                     break;
@@ -562,8 +542,6 @@ class PanelMariaApp {
                     this.togglePinned(id);
                     break;
                 case 'open-link':
-                    // La acción por defecto del navegador (abrir el enlace) es suficiente.
-                    // La propagación ya se detuvo.
                     break;
                 case 'filter-by-tag':
                     this.filterByTag(actionElement.dataset.tag);
@@ -632,7 +610,6 @@ class PanelMariaApp {
         const isSelected = this.selectedItems.has(item.id);
         const date = new Date(item.fecha_creacion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
         const progress = (item.tareas && item.tareas.length > 0) ? this.createProgressBar(item) : '';
-        // Refactorizado para usar data-actions en lugar de onclick y onchange
         return `
             <div class="card ${isSelected ? 'selected' : ''}" data-id="${item.id}" data-action="handle-card-click">
                 <input type="checkbox" class="card__checkbox" data-action="toggle-selection" ${isSelected ? 'checked' : ''}>
@@ -658,16 +635,31 @@ class PanelMariaApp {
             </div>`;
     }
 
-    // (El resto de funciones de renderizado, modales, helpers, etc. no requieren cambios críticos
-    // y se omiten por brevedad, pero se incluirían en el archivo final)
-    
-    // --- Resto de las funciones (sin cambios importantes) ---
     filterByTag(tag) { this.filters.tag = this.filters.tag === tag ? null : tag; this.renderAll(); }
     renderItems() { const container = document.getElementById('itemsContainer'); const filteredItems = this.getFilteredItems(); container.innerHTML = filteredItems.length > 0 ? filteredItems.map(item => this.createItemCard(item)).join('') : ''; }
     getFilteredItems() { let items = this.items; if (this.currentCategory !== 'todos') { items = items.filter(item => item.categoria.toLowerCase() === this.currentCategory.toLowerCase()); } if (this.filters.search) { const term = this.filters.search; items = items.filter(item => item.titulo.toLowerCase().includes(term) || (item.descripcion && item.descripcion.toLowerCase().includes(term)) || (item.etiquetas && item.etiquetas.some(tag => tag.toLowerCase().includes(term))) || (item.url && item.url.toLowerCase().includes(term))); } if (this.filters.tag) { items = items.filter(item => item.etiquetas && item.etiquetas.some(tag => tag.toLowerCase() === this.filters.tag.toLowerCase())); } return items.sort((a, b) => (a.anclado === b.anclado) ? (new Date(b.fecha_creacion) - new Date(a.fecha_creacion)) : (a.anclado ? -1 : 1)); }
     updateSelectionUI() { const bulkActions = document.getElementById('bulkActions'); const selectAllCheckbox = document.getElementById('selectAllCheckbox'); const selectionCount = document.getElementById('selectionCount'); if (this.selectedItems.size > 0) { bulkActions.classList.remove('hidden'); selectionCount.textContent = this.selectedItems.size; } else { bulkActions.classList.add('hidden'); } const filteredItems = this.getFilteredItems(); if (filteredItems.length > 0) { const allVisibleSelected = filteredItems.every(item => this.selectedItems.has(item.id)); selectAllCheckbox.checked = allVisibleSelected; selectAllCheckbox.indeterminate = !allVisibleSelected && filteredItems.some(item => this.selectedItems.has(item.id)); } else { selectAllCheckbox.checked = false; selectAllCheckbox.indeterminate = false; } }
     updateEmptyState() { const emptyState = document.getElementById('emptyState'); const hasItems = document.getElementById('itemsContainer').children.length > 0; emptyState.classList.toggle('hidden', !hasItems); if (!hasItems) { emptyState.querySelector('.empty-state__title').textContent = `No hay elementos en "${this.formatCategoryName(this.currentCategory)}"`; } }
-    openModal(id = null) { this.currentEditId = id; const modal = document.getElementById('itemModal'); this.modalActiveTags.clear(); if (id) { const item = this.items.find(i => i.id === id); if (item) { document.getElementById('modalTitle').textContent = 'Editar Elemento'; this.populateModalForm(item); (item.etiquetas || []).forEach(tag => this.modalActiveTags.add(tag)); } } else { document.getElementById('modalTitle').textContent = 'Agregar Nuevo Elemento'; this.clearModalForm(); }         modal.classList.remove('hidden'); this.renderModalTags(); document.getElementById('itemTitle').focus(); }
+    
+    openModal(id = null) {
+        this.currentEditId = id;
+        const modal = document.getElementById('itemModal');
+        if (id) {
+            const item = this.items.find(i => i.id === id);
+            if (item) {
+                document.getElementById('modalTitle').textContent = 'Editar Elemento';
+                this.populateModalForm(item);
+                this.modalTagInput.setTags(item.etiquetas || []);
+            }
+        } else {
+            document.getElementById('modalTitle').textContent = 'Agregar Nuevo Elemento';
+            this.clearModalForm();
+            this.modalTagInput.setTags([]);
+        }
+        modal.classList.remove('hidden');
+        document.getElementById('itemTitle').focus();
+    }
+
     closeModal() { document.getElementById('itemModal').classList.add('hidden'); }
     populateModalForm(item) { document.getElementById('itemTitle').value = item?.titulo || ''; document.getElementById('itemDescription').value = item?.descripcion || ''; document.getElementById('itemUrl').value = item?.url || ''; document.getElementById('itemPinned').checked = item?.anclado || false; const categorySelector = document.getElementById('itemCategory'); categorySelector.value = item?.categoria || this.currentCategory || 'directorio'; this.handleCategoryChange({ target: categorySelector }); document.getElementById('tasksList').innerHTML = ''; if (item?.tareas?.length) { item.tareas.forEach(task => this.addTaskField(task)); } else { this.addTaskField(); } }
     clearModalForm() { document.getElementById('itemForm').reset(); document.getElementById('tasksList').innerHTML = ''; this.addTaskField(); document.getElementById('newCategoryInputGroup').style.display = 'none'; }
@@ -679,44 +671,22 @@ class PanelMariaApp {
     closeConfirmModal() { document.getElementById('confirmModal').classList.add('hidden'); }
     executeConfirmAction() { if (this.confirmAction) this.confirmAction(); this.closeConfirmModal(); }
     escapeHtml(text) { if (typeof text !== 'string') return ''; return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
-    formatCategoryName(name) {
-        return name.charAt(0).toUpperCase() + name.slice(1);
-    }
-
-    getCategoryIcon(category) {
-        switch (category) {
-            case 'directorio': return 'folder';
-            case 'ideas': return 'lightbulb';
-            case 'proyectos': return 'work';
-            case 'logros': return 'emoji_events';
-            case 'todos': return 'select_all';
-            default: return 'category';
-        }
-    }
-
-    truncateUrl(url) {
-        const maxLength = 30;
-        if (url.length <= maxLength) return url;
-        const domain = new URL(url).hostname;
-        if (domain.length <= maxLength) return domain;
-        return `${domain.substring(0, maxLength - 3)}...`;
-    }
-
-    createProgressBar(item) {
-        const totalTasks = item.tareas.length;
-        const completedTasks = item.tareas.filter(task => task.completado).length;
-        const percentage = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
-        return `
+    formatCategoryName(name) { return name.charAt(0).toUpperCase() + name.slice(1); }
+    getCategoryIcon(category) { switch (category) { case 'directorio': return 'folder'; case 'ideas': return 'lightbulb'; case 'proyectos': return 'work'; case 'logros': return 'emoji_events'; case 'todos': return 'select_all'; default: return 'category'; } }
+    truncateUrl(url) { const maxLength = 30; if (url.length <= maxLength) return url;
+ const domain = new URL(url).hostname;
+ if (domain.length <= maxLength) return domain;
+ return `${domain.substring(0, maxLength - 3)}...`; }
+    createProgressBar(item) { const totalTasks = item.tareas.length;
+ const completedTasks = item.tareas.filter(task => task.completado).length;
+ const percentage = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+ return `
             <div class="progress-bar-container">
                 <div class="progress-bar" style="width: ${percentage}%;"></div>
                 <span class="progress-text">${completedTasks}/${totalTasks} tareas (${percentage}%)</span>
             </div>
-        `;
-    }
-
-    createTasksContent(item) {
-        // Refactorizado para usar data-actions
-        return `
+        `; }
+    createTasksContent(item) { return `
             <div class="card__tasks">
                 ${item.tareas.map(task => `
                     <div class="task-item-card">
@@ -725,132 +695,22 @@ class PanelMariaApp {
                     </div>
                 `).join('')}
             </div>
-        `;
-    }
+        `; }
 
-    
-
-    populateCategorySelector(selector, includeNewOption = false) {
-        selector.innerHTML = '';
-        const predefinedCategories = ['directorio', 'ideas', 'proyectos', 'logros'];
-        const allCategories = [...new Set([...predefinedCategories, ...(this.settings.customCategories || [])])];
-
-        allCategories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category;
-            option.textContent = this.formatCategoryName(category);
-            selector.appendChild(option);
-        });
-
-        if (includeNewOption) {
-            const newOption = document.createElement('option');
-            newOption.value = '__new_category__';
-            newOption.textContent = 'Crear nueva categoría...';
-            selector.appendChild(newOption);
-        }
-    }
-
-    addCustomCategory(categoryName) {
-        const normalizedName = categoryName.trim().toLowerCase();
-        if (!normalizedName) {
-            this.showToast('El nombre de la categoría no puede estar vacío.', 'error');
-            return;
-        }
-        if (this.settings.customCategories.includes(normalizedName)) {
-            this.showToast('Esa categoría ya existe.', 'info');
-            return;
-        }
-        this.settings.customCategories.push(normalizedName);
-        this.saveDataSettings();
-        this.populateCategorySelector(document.getElementById('itemCategory'), true);
-        this.populateCategorySelector(document.getElementById('bulkCategorySelector'));
-        this.showToast('Categoría creada.', 'success');
-        this.closeNewCategoryModal();
-    }
-
-    openNewCategoryModal() {
-        document.getElementById('newCategoryModal').classList.remove('hidden');
-        document.getElementById('newCategoryNameInput').value = '';
-        document.getElementById('newCategoryNameInput').focus();
-    }
-
-    closeNewCategoryModal() {
-        document.getElementById('newCategoryModal').classList.add('hidden');
-    }
-
-    openBulkCategoryModal() {
-        this.populateCategorySelector(document.getElementById('bulkCategorySelector'));
-        document.getElementById('bulkCategoryModal').classList.remove('hidden');
-    }
-
-    closeBulkCategoryModal() {
-        document.getElementById('bulkCategoryModal').classList.add('hidden');
-    }
-
-    openBulkTagsModal() {
-        this.bulkTagInput.setTags([]); // Limpiar etiquetas para edición masiva
-        document.getElementById('bulkTagsModal').classList.remove('hidden');
-        // CORRECCIÓN: Añadir un pequeño retraso para asegurar que el elemento esté renderizado y enfocable.
-        setTimeout(() => {
-            document.getElementById('bulkTagsInput').focus();
-        }, 50); // 50ms de retraso
-    }
-
-    closeBulkTagsModal() {
-        document.getElementById('bulkTagsModal').classList.add('hidden');
-    }
-
-    openSettingsModal() {
-        document.getElementById('autoSaveVoice').checked = this.settings.autoSaveVoice;
-        document.getElementById('themeSelect').value = this.settings.theme;
-        this.renderCustomCategoriesInSettings();
-        this.renderGlobalTagsInSettings(); // Call new function
-        document.getElementById('settingsModal').classList.remove('hidden');
-    }
-
-    closeSettingsModal() {
-        document.getElementById('settingsModal').classList.add('hidden');
-    }
-
-    applyTheme() {
-        document.body.className = ''; // Clear existing themes
-        document.body.classList.add(`theme-${this.settings.theme}`);
-    }
-
-    showToast(message, type = 'info') {
-        const toastContainer = document.getElementById('toastContainer');
-        const toast = document.createElement('div');
-        toast.className = `toast toast--${type}`;
-        toast.textContent = message;
-        toastContainer.appendChild(toast);
-        setTimeout(() => {
-            toast.remove();
-        }, 3000);
-    }
-
-    toggleSelectAll(checked) {
-        const filteredItems = this.getFilteredItems();
-        this.selectedItems.clear();
-        if (checked) {
-            filteredItems.forEach(item => this.selectedItems.add(item.id));
-        }
-        this.renderItems(); // Re-render to update checkboxes
-        this.updateSelectionUI();
-    }
-
-    toggleSelection(id) {
-        if (this.selectedItems.has(id)) {
-            this.selectedItems.delete(id);
-        } else {
-            this.selectedItems.add(id);
-        }
-        this.renderItems(); // Re-render to update checkboxes
-        this.updateSelectionUI();
-    }
-
-    
-
-    
+    populateCategorySelector(selector, includeNewOption = false) { selector.innerHTML = ''; const predefinedCategories = ['directorio', 'ideas', 'proyectos', 'logros']; const allCategories = [...new Set([...predefinedCategories, ...(this.settings.customCategories || [])])]; allCategories.forEach(category => { const option = document.createElement('option'); option.value = category; option.textContent = this.formatCategoryName(category); selector.appendChild(option); }); if (includeNewOption) { const newOption = document.createElement('option'); newOption.value = '__new_category__'; newOption.textContent = 'Crear nueva categoría...'; selector.appendChild(newOption); } }
+    addCustomCategory(categoryName) { const normalizedName = categoryName.trim().toLowerCase(); if (!normalizedName) { this.showToast('El nombre de la categoría no puede estar vacío.', 'error'); return; } if (this.settings.customCategories.includes(normalizedName)) { this.showToast('Esa categoría ya existe.', 'info'); return; } this.settings.customCategories.push(normalizedName); this.saveDataSettings(); this.populateCategorySelector(document.getElementById('itemCategory'), true); this.populateCategorySelector(document.getElementById('bulkCategorySelector')); this.showToast('Categoría creada.', 'success'); this.closeNewCategoryModal(); }
+    openNewCategoryModal() { document.getElementById('newCategoryModal').classList.remove('hidden'); document.getElementById('newCategoryNameInput').value = ''; document.getElementById('newCategoryNameInput').focus(); }
+    closeNewCategoryModal() { document.getElementById('newCategoryModal').classList.add('hidden'); }
+    openBulkCategoryModal() { this.populateCategorySelector(document.getElementById('bulkCategorySelector')); document.getElementById('bulkCategoryModal').classList.remove('hidden'); }
+    closeBulkCategoryModal() { document.getElementById('bulkCategoryModal').classList.add('hidden'); }
+    openBulkTagsModal() { this.bulkTagInput.setTags([]); setTimeout(() => { document.getElementById('bulkTagsInput').focus(); }, 50); }
+    closeBulkTagsModal() { document.getElementById('bulkTagsModal').classList.add('hidden'); }
+    openSettingsModal() { document.getElementById('autoSaveVoice').checked = this.settings.autoSaveVoice; document.getElementById('themeSelect').value = this.settings.theme; this.renderCustomCategoriesInSettings(); this.renderGlobalTagsInSettings(); document.getElementById('settingsModal').classList.remove('hidden'); }
+    closeSettingsModal() { document.getElementById('settingsModal').classList.add('hidden'); }
+    applyTheme() { document.body.className = ''; document.body.classList.add(`theme-${this.settings.theme}`); }
+    showToast(message, type = 'info') { const toastContainer = document.getElementById('toastContainer'); const toast = document.createElement('div'); toast.className = `toast toast--${type}`; toast.textContent = message; toastContainer.appendChild(toast); setTimeout(() => { toast.remove(); }, 3000); }
+    toggleSelectAll(checked) { const filteredItems = this.getFilteredItems(); this.selectedItems.clear(); if (checked) { filteredItems.forEach(item => this.selectedItems.add(item.id)); } this.renderItems(); this.updateSelectionUI(); }
+    toggleSelection(id) { if (this.selectedItems.has(id)) { this.selectedItems.delete(id); } else { this.selectedItems.add(id); } this.renderItems(); this.updateSelectionUI(); }
 
     renderTagFilters() {
         const tagFiltersContainer = document.getElementById('tagFilters');
@@ -885,38 +745,34 @@ class PanelMariaApp {
                     const doc = parser.parseFromString(content, 'text/html');
                     const bookmarks = [];
                     
-                    // Función recursiva para recorrer el árbol de marcadores
                     const traverseBookmarks = (node, currentTags = []) => {
-                        // Un nodo DT puede contener un H3 (carpeta) o un A (marcador)
                         if (node.nodeName === 'DT') {
                             const h3 = node.querySelector('H3');
                             const link = node.querySelector('A');
-                            const dl = node.querySelector('DL'); // La lista de elementos dentro de la carpeta
+                            const dl = node.querySelector('DL');
 
-                            if (h3) { // Es una carpeta
+                            if (h3) {
                                 const folderName = h3.textContent.trim();
                                 if (dl) {
                                     Array.from(dl.children).forEach(child => {
                                         traverseBookmarks(child, [...currentTags, folderName]);
                                     });
                                 }
-                            } else if (link) { // Es un marcador
+                            } else if (link) {
                                 bookmarks.push({
                                     id: window.storage.generateId(),
-                                    categoria: 'directorio', // Categoría por defecto para marcadores importados
+                                    categoria: 'directorio',
                                     titulo: link.textContent.trim(),
                                     url: link.href,
                                     fecha_creacion: new Date().toISOString(),
-                                    etiquetas: [...new Set(currentTags)], // Usar Set para evitar etiquetas duplicadas
+                                    etiquetas: [...new Set(currentTags)],
                                     tareas: [],
                                     anclado: false,
                                     fecha_finalizacion: null,
                                     meta: {}
                                 });
                             }
-                        }
-                        // También manejar enlaces directos que no estén dentro de un DT (menos común en exports de Chrome)
-                        else if (node.nodeName === 'A') {
+                        } else if (node.nodeName === 'A') {
                              bookmarks.push({
                                 id: window.storage.generateId(),
                                 categoria: 'directorio',
@@ -932,7 +788,6 @@ class PanelMariaApp {
                         }
                     };
 
-                    // Empezar el recorrido desde el cuerpo del documento o la primera DL principal
                     const rootDl = doc.querySelector('DL');
                     if (rootDl) {
                         Array.from(rootDl.children).forEach(child => traverseBookmarks(child));
@@ -946,7 +801,6 @@ class PanelMariaApp {
                 }
 
                 if (Array.isArray(importedData)) {
-                    // Merge with existing items, avoiding duplicates by URL if it's a directory item
                     const newItems = [];
                     for (const importedItem of importedData) {
                         const existingItem = this.items.find(item => item.url && item.url === importedItem.url);
@@ -963,7 +817,6 @@ class PanelMariaApp {
                         this.showToast('No se encontraron nuevos elementos para importar o ya existen.', 'info');
                     }
                 } else if (importedData.items && Array.isArray(importedData.items)) {
-                    // Full backup import
                     await window.storage.saveAll(importedData);
                     await this.loadData();
                     this.renderAll();
@@ -982,9 +835,9 @@ class PanelMariaApp {
     }
     renderCustomCategoriesInSettings() {
         const container = document.getElementById('customCategoriesList');
-        if (!container) return; // Ensure the container exists
+        if (!container) return;
 
-        container.innerHTML = ''; // Clear previous content
+        container.innerHTML = '';
 
         const customCategories = this.settings.customCategories || [];
 
@@ -995,7 +848,7 @@ class PanelMariaApp {
 
         customCategories.forEach(category => {
             const categoryDiv = document.createElement('div');
-            categoryDiv.className = 'custom-category-item'; // Add a class for styling
+            categoryDiv.className = 'custom-category-item';
             categoryDiv.innerHTML = `
                 <span>${this.formatCategoryName(category)}</span>
                 <button class="btn btn--icon btn--danger delete-category-btn" data-category="${category}" title="Eliminar categoría">
@@ -1005,7 +858,6 @@ class PanelMariaApp {
             container.appendChild(categoryDiv);
         });
 
-        // Attach event listeners to delete buttons
         container.querySelectorAll('.delete-category-btn').forEach(button => {
             button.addEventListener('click', (e) => {
                 const categoryToDelete = e.currentTarget.dataset.category;
@@ -1015,15 +867,12 @@ class PanelMariaApp {
     }
 
     async deleteCustomCategory(categoryName) {
-        // Remove from customCategories array
         this.settings.customCategories = this.settings.customCategories.filter(cat => cat !== categoryName);
 
-        // Remove associated categoryTags
         if (this.settings.categoryTags && this.settings.categoryTags[categoryName]) {
             delete this.settings.categoryTags[categoryName];
         }
 
-        // Recategorize items
         const operations = [];
         this.items.forEach(item => {
             if (item.categoria === categoryName) {
@@ -1032,17 +881,17 @@ class PanelMariaApp {
         });
 
         if (operations.length > 0) {
-            await this.performItemUpdates(operations); // This will also save data and re-render
+            await this.performItemUpdates(operations);
         } else {
-            await this.saveDataSettings(); // Save settings if no items were updated
-            await this.loadData(); // Reload data to ensure consistency
-            this.renderAll(); // Re-render main content
+            await this.saveDataSettings();
+            await this.loadData();
+            this.renderAll();
         }
 
-        this.renderNavigationTabs(); // Update navigation tabs
-        this.populateCategorySelector(document.getElementById('itemCategory'), true); // Update category selectors
+        this.renderNavigationTabs();
+        this.populateCategorySelector(document.getElementById('itemCategory'), true);
         this.populateCategorySelector(document.getElementById('bulkCategorySelector'));
-        this.renderCustomCategoriesInSettings(); // Re-render custom categories in settings modal
+        this.renderCustomCategoriesInSettings();
         this.showToast(`Categoría "${this.formatCategoryName(categoryName)}" eliminada.`, 'success');
     }
 
@@ -1050,7 +899,7 @@ class PanelMariaApp {
         const container = document.getElementById('globalTagsList');
         if (!container) return;
 
-        container.innerHTML = ''; // Clear previous content
+        container.innerHTML = '';
 
         const allTags = new Set();
         this.items.forEach(item => (item.etiquetas || []).forEach(tag => allTags.add(tag)));
@@ -1062,7 +911,7 @@ class PanelMariaApp {
 
         Array.from(allTags).sort().forEach(tag => {
             const tagDiv = document.createElement('div');
-            tagDiv.className = 'custom-category-item'; // Reusing the same style for now
+            tagDiv.className = 'custom-category-item';
             tagDiv.innerHTML = `
                 <span>${formatTagText(tag)}</span>
                 <button class="btn btn--icon btn--danger delete-tag-btn" data-tag="${tag}" title="Eliminar etiqueta">
@@ -1072,7 +921,6 @@ class PanelMariaApp {
             container.appendChild(tagDiv);
         });
 
-        // Attach event listeners to delete buttons
         container.querySelectorAll('.delete-tag-btn').forEach(button => {
             button.addEventListener('click', (e) => {
                 const tagToDelete = e.currentTarget.dataset.tag;
@@ -1091,13 +939,12 @@ class PanelMariaApp {
         });
 
         if (operations.length > 0) {
-            await this.performItemUpdates(operations); // This will also save data and re-render
+            await this.performItemUpdates(operations);
         } else {
-            // If no items had the tag, just re-render settings to reflect removal
             this.renderGlobalTagsInSettings();
         }
 
         this.showToast(`Etiqueta "${formatTagText(tagName)}" eliminada de todos los elementos.`, 'success');
-        this.renderGlobalTagsInSettings(); // Re-render to update the list in settings
+        this.renderGlobalTagsInSettings();
     }
 }
