@@ -98,7 +98,7 @@ async function handleCommand(command) {
 
     const newItem = {
         ...mockResponse,
-        id: appInstance.storage.generateId(), // Usar el generador de IDs del storage
+        id: window.storage.generateId(), // CORRECCIÓN: Usar window.storage
         fecha_creacion: new Date().toISOString(),
         fecha_finalizacion: null,
         anclado: false,
