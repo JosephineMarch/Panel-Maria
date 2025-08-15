@@ -28,8 +28,10 @@ class LocalStorageAdapter extends StorageAdapter {
         };
         try {
             const data = localStorage.getItem(this.storageKey);
+            console.log('LocalStorageAdapter: Raw data from localStorage:', data); // Added log
             if (!data) return defaultData;
             const parsedData = JSON.parse(data);
+            console.log('LocalStorageAdapter: Parsed data from localStorage:', parsedData); // Added log
             parsedData.settings = { ...defaultData.settings, ...(parsedData.settings || {}) };
             return parsedData;
         } catch (error) {
@@ -40,7 +42,9 @@ class LocalStorageAdapter extends StorageAdapter {
 
     async saveAll(data) {
         try {
+            console.log('LocalStorageAdapter: Saving data to localStorage:', data); // Added log
             localStorage.setItem(this.storageKey, JSON.stringify(data));
+            console.log('LocalStorageAdapter: Data saved successfully to localStorage.'); // Added log
         } catch (error) {
             console.error('Error saving to localStorage:', error);
         }

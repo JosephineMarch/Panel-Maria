@@ -867,11 +867,13 @@ class PanelMariaApp {
     }
 
     async deleteCustomCategory(categoryName) {
+        console.log('deleteCustomCategory: Before modification, settings:', JSON.parse(JSON.stringify(this.settings)));
         this.settings.customCategories = this.settings.customCategories.filter(cat => cat !== categoryName);
 
         if (this.settings.categoryTags && this.settings.categoryTags[categoryName]) {
             delete this.settings.categoryTags[categoryName];
         }
+        console.log('deleteCustomCategory: After modification, settings:', JSON.parse(JSON.stringify(this.settings)));
 
         const operations = [];
         this.items.forEach(item => {
@@ -880,15 +882,16 @@ class PanelMariaApp {
             }
         });
 
-        // Always save settings after modifying customCategories or categoryTags
-        await this.saveDataSettings();
-
         if (operations.length > 0) {
+            console.log('deleteCustomCategory: Calling performItemUpdates with operations:', operations);
             await this.performItemUpdates(operations);
         } else {
-            // If no items were updated, still need to refresh data and UI
+            console.log('deleteCustomCategory: No item operations, saving all data directly.');
+            await window.storage.saveAll({ items: this.items, settings: this.settings });
+            console.log('deleteCustomCategory: Data saved directly. Loading and rendering all.');
             await this.loadData();
             this.renderAll();
+            console.log('deleteCustomCategory: After direct save and reload, settings:', JSON.parse(JSON.stringify(this.settings)));
         }
 
         this.renderNavigationTabs();
@@ -933,6 +936,7 @@ class PanelMariaApp {
     }
 
     async deleteGlobalTag(tagName) {
+        console.log('deleteGlobalTag: Before modification, settings:', JSON.parse(JSON.stringify(this.settings)));
         const operations = [];
         this.items.forEach(item => {
             if (item.etiquetas && item.etiquetas.includes(tagName)) {
@@ -947,15 +951,18 @@ class PanelMariaApp {
                 this.settings.categoryTags[category] = this.settings.categoryTags[category].filter(tag => tag !== tagName);
             }
         }
-        // Always save settings after modifying categoryTags
-        await window.storage.saveAll({ items: this.items, settings: this.settings }); // Changed this line
+        console.log('deleteGlobalTag: After modification, settings:', JSON.parse(JSON.stringify(this.settings)));
 
         if (operations.length > 0) {
+            console.log('deleteGlobalTag: Calling performItemUpdates with operations:', operations);
             await this.performItemUpdates(operations);
         } else {
-            // If no items were updated, still need to refresh data and UI
+            console.log('deleteGlobalTag: No item operations, saving all data directly.');
+            await window.storage.saveAll({ items: this.items, settings: this.settings });
+            console.log('deleteGlobalTag: Data saved directly. Loading and rendering all.');
             await this.loadData();
             this.renderAll();
+            console.log('deleteGlobalTag: After direct save and reload, settings:', JSON.parse(JSON.stringify(this.settings)));
         }
 
         this.showToast(`Etiqueta "${formatTagText(tagName)}" eliminada de todos los elementos.`, 'success');
