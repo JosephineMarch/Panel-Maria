@@ -1,0 +1,70 @@
+{
+  "temas": {
+    "default": {
+      "nombre": "Tema por defecto",
+      "descripcion": "Paleta suave y profesional",
+      "variables": {
+        "--bg-main": "#FDFCF7",
+        "--bg-card": "#FFFFFF",
+        "--text-main": "#2C2C2C",
+        "--text-secondary": "#6B6B6B",
+        "--border-main": "#2C2C2C",
+        "--accent-purple": "#D0C4F7",
+        "--accent-green": "#D4F0E0",
+        "--accent-yellow": "#FCE8A9",
+        "--accent-orange-cta": "#F5C56F",
+        "--accent-red-danger": "#D94A4A",
+        "--accent-blue": "#DBEAFE",
+        "--module-directorio": "#eef2ff",
+        "--module-ideas": "#fef3c7",
+        "--module-proyectos": "#dbeafe",
+        "--module-logros": "#ecfdf5",
+        "--shadow-color": "#2C2C2C"
+      }
+    },
+    "dark": {
+      "nombre": "Tema oscuro",
+      "descripcion": "Modo oscuro para uso nocturno",
+      "variables": {
+        "--bg-main": "#1a1a1a",
+        "--bg-card": "#2d2d2d",
+        "--text-main": "#ffffff",
+        "--text-secondary": "#b0b0b0",
+        "--border-main": "#ffffff",
+        "--accent-purple": "#7c3aed",
+        "--accent-green": "#059669",
+        "--accent-yellow": "#d97706",
+        "--accent-orange-cta": "#ea580c",
+        "--accent-red-danger": "#dc2626",
+        "--accent-blue": "#2563eb",
+        "--module-directorio": "#1e3a8a",
+        "--module-ideas": "#92400e",
+        "--module-proyectos": "#1e40af",
+        "--module-logros": "#065f46",
+        "--shadow-color": "#000000"
+      }
+    },
+    "colorful": {
+      "nombre": "Tema colorido",
+      "descripcion": "Paleta vibrante y energética",
+      "variables": {
+        "--bg-main": "#fef7ff",
+        "--bg-card": "#ffffff",
+        "--text-main": "#1f2937",
+        "--text-secondary": "#6b7280",
+        "--border-main": "#8b5cf6",
+        "--accent-purple": "#a855f7",
+        "--accent-green": "#10b981",
+        "--accent-yellow": "#f59e0b",
+        "--accent-orange-cta": "#f97316",
+        "--accent-red-danger": "#ef4444",
+        "--accent-blue": "#3b82f6",
+        "--module-directorio": "#ffebee",
+        "--module-ideas": "#fff3e0",
+        "--module-proyectos": "#e8f5e8",
+        "--module-logros": "#f3e5f5",
+        "--shadow-color": "#8b5cf6"
+      }
+    }
+  }
+}
