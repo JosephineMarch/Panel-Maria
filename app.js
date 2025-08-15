@@ -948,7 +948,7 @@ class PanelMariaApp {
             }
         }
         // Always save settings after modifying categoryTags
-        await this.saveDataSettings();
+        await window.storage.saveAll({ items: this.items, settings: this.settings }); // Changed this line
 
         if (operations.length > 0) {
             await this.performItemUpdates(operations);
