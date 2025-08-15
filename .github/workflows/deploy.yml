@@ -60,7 +60,8 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           echo "--- Git Status before add ---"
           git status
-          git add firebase-config.js config.js
+          git rm --cached firebase-config.js config.js || true
+          git add -f firebase-config.js config.js
           echo "--- Git Status after add ---"
           git status
           echo "--- Git Diff Staged ---"
