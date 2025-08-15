@@ -51,6 +51,9 @@ jobs:
       - name: List files before deploy
         run: ls -la
 
+      - name: Debugging - List files before deploy action
+        run: ls -la
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
