@@ -4,6 +4,10 @@
 ================================================================================
 */
 
+// Importa la clave de API desde el archivo de configuración. 
+// Este archivo no se sube a GitHub gracias a .gitignore.
+import { CEREBRAS_API_KEY } from './config.js';
+
 class VoiceManager {
     constructor() {
         this.recognition = null;
@@ -124,15 +128,11 @@ class VoiceManager {
         const fullPrompt = this.promptTemplate.replace('{TEXTO_TRANSCRITO}', text);
 
         // ======================================================================
-        // CONFIGURACIÓN DE LA API DE CEREBRAS - ¡ACCIÓN REQUERIDA!
+        // CONFIGURACIÓN DE LA API DE CEREBRAS
         // ======================================================================
         const apiEndpoint = 'https://api.cerebras.ai/v1/chat/completions';
+        const apiKey = CEREBRAS_API_KEY;
 
-        // 1. Reemplaza 'YOUR_API_KEY' con tu clave de API de Cerebras.
-        const apiKey = 'YOUR_API_KEY';
-
-        // 2. Este es el cuerpo de la petición, ya ajustado para Cerebras.
-        //    Puedes cambiar el modelo si lo deseas.
         const body = {
             model: "llama-4-scout-17b-16e-instruct",
             messages: [{ role: "user", content: fullPrompt }],
@@ -140,8 +140,8 @@ class VoiceManager {
         };
         // ======================================================================
 
-        if (apiKey === 'YOUR_API_KEY') {
-            throw new Error('Configura tu API key de Cerebras en voice.js');
+        if (!apiKey || apiKey === 'YOUR_CEREBRAS_API_KEY_HERE') {
+            throw new Error('La clave de API de Cerebras no está configurada. Revisa tu archivo config.js');
         }
 
         const response = await fetch(apiEndpoint, {
@@ -160,7 +160,6 @@ class VoiceManager {
 
         const data = await response.json();
         
-        // La API de Cerebras es compatible con la de OpenAI, por lo que esta línea es correcta.
         const jsonString = data.choices[0].message.content;
 
         try {
