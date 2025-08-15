@@ -1067,7 +1067,7 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+    transition: all 0.3s ease-out;
     transform-origin: bottom right;
 }
 
@@ -1194,4 +1194,19 @@ body {
         max-height: none;
         border-radius: var(--radius-lg);
     }
+}
+
+.chat-header-actions {
+    display: flex;
+    align-items: center;
+}
+
+.chat-container.is-minimized {
+    height: 56px; /* Altura de la cabecera */
+    max-height: 56px;
+}
+
+.chat-container.is-minimized .chat-messages,
+.chat-container.is-minimized .chat-form {
+    display: none;
 }

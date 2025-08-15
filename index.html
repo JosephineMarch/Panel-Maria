@@ -180,7 +180,10 @@
     <div id="chat-container" class="chat-container hidden">
         <div class="chat-header">
             <h3>Asistente IA</h3>
-            <button id="chat-close" class="btn btn--icon"><span class="material-symbols-outlined">close</span></button>
+            <div class="chat-header-actions">
+                <button id="chat-minimize" class="btn btn--icon" title="Minimizar"><span class="material-symbols-outlined">expand_more</span></button>
+                <button id="chat-close" class="btn btn--icon" title="Cerrar"><span class="material-symbols-outlined">close</span></button>
+            </div>
         </div>
         <div id="chat-messages" class="chat-messages"></div>
         <form id="chat-form" class="chat-input-area">
