@@ -555,7 +555,7 @@ body {
 }
 
 .modal__body { 
-  padding: 1.5rem; 
+  padding: 1rem; /* Changed from 1.5rem to 1rem */
   overflow-y: auto; 
   max-height: 60vh;
   display: flex; 
@@ -752,6 +752,10 @@ body {
   
   .nav-tabs__inner {
     justify-content: flex-start;
+  }
+  
+  .nav-tab { /* Added this rule */
+    padding: 0.75rem 1rem; /* Changed padding */
   }
   
   .filters-bar {
@@ -999,12 +1003,8 @@ body {
 }
 
 /* Custom Category Item in Settings */
-.custom-category-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
+.custom-category-item span { /* Added this rule */
+    font-size: 0.9rem; /* Reduced font size for mobile */
 }
 
 .custom-category-item:last-child {
