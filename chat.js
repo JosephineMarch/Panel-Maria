@@ -11,15 +11,16 @@ let qaPrompt = '';
 // Elementos del DOM
 let chatFab, chatContainer, chatClose, chatMinimize, chatMessages, chatForm, chatInput;
 
-// URL del Endpoint de la API (ajustar si es necesario)
-const API_ENDPOINT = 'https://api.cerebras.net/v1/chat/completions'; // Placeholder, ajustar a la URL real
+// URL del Endpoint y modelo de la API, según la documentación
+const API_ENDPOINT = 'https://api.cerebras.ai/v1/chat/completions';
+const API_MODEL = 'gpt-oss-120b';
 
 /**
- * Llama a la API de Cerebras con un prompt específico.
- * @param {string} prompt - El prompt completo a enviar.
+ * Llama a la API de Cerebras con un array de mensajes.
+ * @param {Array<object>} messages - El array de mensajes para la API.
  * @returns {Promise<string>} - La respuesta de texto de la IA.
  */
-async function callCerebrasAPI(prompt) {
+async function callCerebrasAPI(messages) {
     if (!CEREBRAS_API_KEY || CEREBRAS_API_KEY === 'YOUR_CEREBRAS_API_KEY_HERE') {
         throw new Error('La clave de API de Cerebras no está configurada en config.js');
     }
@@ -32,15 +33,17 @@ async function callCerebrasAPI(prompt) {
                 'Authorization': `Bearer ${CEREBRAS_API_KEY}`
             },
             body: JSON.stringify({
-                model: 'llama-4-scout-17b-16e-instruct', // Actualizado según la documentación
-                messages: [{ role: 'user', content: prompt }],
-                temperature: 0.7
+                model: API_MODEL,
+                messages: messages,
+                temperature: 0.7, // Ajustar según se necesite
+                max_tokens: 2048, // Limitar la longitud de la respuesta
+                stream: false // Importante: No usar streaming para obtener una respuesta completa
             })
         });
 
         if (!response.ok) {
-            const errorBody = await response.json();
-            throw new Error(`Error de la API: ${response.status} ${response.statusText} - ${errorBody.error.message}`);
+            const errorBody = await response.text();
+            throw new Error(`Error de la API: ${response.status} ${response.statusText} - ${errorBody}`);
         }
 
         const data = await response.json();
@@ -48,7 +51,7 @@ async function callCerebrasAPI(prompt) {
 
     } catch (error) {
         console.error("Error llamando a la API de Cerebras:", error);
-        throw error; // Re-lanzar para que la función que llama lo maneje
+        throw error;
     }
 }
 
@@ -102,7 +105,6 @@ async function handleFormSubmit(e) {
     showThinkingIndicator(true);
 
     try {
-        // Lógica para decidir si es un comando o una pregunta
         const commandKeywords = ['crea', 'añade', 'agrega', 'idea', 'proyecto', 'logro', 'directorio', 'enlace', 'link'];
         const isCommand = commandKeywords.some(kw => userInput.toLowerCase().split(' ').some(word => word === kw));
 
@@ -119,8 +121,12 @@ async function handleFormSubmit(e) {
 }
 
 async function handleCommand(text) {
-    const prompt = interpretationPrompt.replace('{text}', text);
-    const responseJson = await callCerebrasAPI(prompt);
+    const messages = [
+        { role: 'system', content: interpretationPrompt },
+        { role: 'user', content: text }
+    ];
+    
+    const responseJson = await callCerebrasAPI(messages);
 
     try {
         const itemData = JSON.parse(responseJson);
@@ -141,14 +147,20 @@ async function handleCommand(text) {
 
     } catch (error) {
         console.error("Error al procesar la respuesta JSON de la IA:", error);
-        addMessage('ia', "La IA me dio una respuesta en un formato inesperado. No pude crear el bloque.");
+        addMessage('ia', "La IA me dio una respuesta en un formato inesperado. No pude crear el bloque. Respuesta recibida: " + responseJson);
     }
 }
 
 async function handleQuestion(question) {
     const context = JSON.stringify(appInstance.items, null, 2);
-    const prompt = qaPrompt.replace('{context}', context).replace('{query}', question);
-    const responseText = await callCerebrasAPI(prompt);
+    const systemPrompt = qaPrompt.replace('{context}', context);
+    
+    const messages = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: question }
+    ];
+
+    const responseText = await callCerebrasAPI(messages);
     addMessage('ia', responseText);
 }
 
