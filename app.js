@@ -129,6 +129,7 @@ class TagInput {
 // ==============================================================================
 
 import { auth, onAuthStateChanged, signInWithGoogle, signOutUser } from './auth.js';
+import { initChat } from './chat.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const app = new PanelMariaApp();
@@ -168,6 +169,7 @@ class PanelMariaApp {
     async init() {
         this.checkForBookmarkletData();
         this.setupEventListeners();
+        initChat(this);
         
         this.modalTagInput = new TagInput(
             document.getElementById('itemTagsWrapper'),
@@ -385,21 +387,18 @@ class PanelMariaApp {
             const appContent = document.getElementById('app-content');
             const logoutBtn = document.getElementById('logoutBtn');
             const addItemBtn = document.getElementById('addItemBtn');
-            const voiceBtn = document.getElementById('voiceBtn');
 
             if (user) {
                 authSection.classList.add('hidden');
                 appContent.classList.remove('hidden');
                 logoutBtn.classList.remove('hidden');
                 addItemBtn.classList.remove('hidden');
-                voiceBtn.classList.remove('hidden');
                 window.storage.setAdapter('firebase', user.uid);
             } else {
                 authSection.classList.remove('hidden');
                 appContent.classList.add('hidden');
                 logoutBtn.classList.add('hidden');
                 addItemBtn.classList.add('hidden');
-                voiceBtn.classList.add('hidden');
                 window.storage.setAdapter('local');
             }
 
@@ -461,14 +460,6 @@ class PanelMariaApp {
     setupEventListeners() {
         document.getElementById('loginBtn').addEventListener('click', () => this.loginWithGoogle());
         document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
-        document.getElementById('voiceBtn').addEventListener('click', () => {
-            if (window.voiceManager) {
-                window.voiceManager.setAutoSave(this.settings.autoSaveVoice);
-                window.voiceManager.startListening();
-            } else {
-                this.showToast('El módulo de voz no está cargado.', 'error');
-            }
-        });
         document.getElementById('settingsBtn').addEventListener('click', () => this.openSettingsModal());
         document.getElementById('addItemBtn').addEventListener('click', () => this.openModal());
         document.getElementById('emptyStateAddBtn').addEventListener('click', () => this.openModal());
