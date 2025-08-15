@@ -1,6 +1,6 @@
 /*
 ================================================================================
-|       PANEL MARÍA - SISTEMA DE ENTRADA POR VOZ (VERSIÓN CORREGIDA)           |
+|       PANEL MARÍA - SISTEMA DE ENTRADA POR VOZ (CON IA)                      |
 ================================================================================
 */
 
@@ -10,8 +10,21 @@ class VoiceManager {
         this.isListening = false;
         this.currentTranscription = '';
         this.autoSave = false;
+        this.promptTemplate = '';
 
         this.initSpeechRecognition();
+        this.loadPromptTemplate();
+    }
+
+    async loadPromptTemplate() {
+        try {
+            const response = await fetch('interpretation-prompt.txt');
+            if (!response.ok) throw new Error('Network response was not ok');
+            this.promptTemplate = await response.text();
+        } catch (error) {
+            console.error('Error loading interpretation prompt:', error);
+            this.showToast('Error al cargar la plantilla de IA.', 'error');
+        }
     }
 
     initSpeechRecognition() {
@@ -22,37 +35,40 @@ class VoiceManager {
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         this.recognition = new SpeechRecognition();
-        this.recognition.continuous = false;
+        this.recognition.continuous = true;
         this.recognition.interimResults = true;
         this.recognition.lang = 'es-ES';
 
         this.recognition.onstart = () => {
             this.isListening = true;
             this.updateUIForListening(true);
-            this.updateVoiceModal('Escuchando...', 'Habla ahora...');
+            this.updateVoiceModal('Escuchando...', 'Habla ahora... (haz clic en el botón para detener)');
         };
 
         this.recognition.onresult = (event) => {
-            this.currentTranscription = Array.from(event.results)
-                .map(result => result[0].transcript).join('');
+            let finalTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                finalTranscript += event.results[i][0].transcript;
+            }
+            this.currentTranscription = finalTranscript;
             this.updateTranscriptionDisplay(this.currentTranscription);
         };
 
         this.recognition.onerror = (event) => {
             console.error('Error de reconocimiento de voz:', event.error);
             this.showToast(`Error de voz: ${event.error}`, 'error');
-            this.stopListening();
+            this.isListening = false;
+            this.updateUIForListening(false);
+            this.closeVoiceModal();
         };
 
         this.recognition.onend = () => {
-            if (this.isListening) { // Solo procesa si no fue una parada manual
-                this.isListening = false;
-                this.updateUIForListening(false);
-                if (this.currentTranscription.trim()) {
-                    this.processTranscription();
-                } else {
-                    this.closeVoiceModal();
-                }
+            this.isListening = false;
+            this.updateUIForListening(false);
+            if (this.currentTranscription.trim()) {
+                this.processTranscription();
+            } else {
+                this.closeVoiceModal();
             }
         };
     }
@@ -68,6 +84,7 @@ class VoiceManager {
         }
         try {
             this.currentTranscription = '';
+            this.updateTranscriptionDisplay('');
             this.recognition.start();
             this.openVoiceModal();
         } catch (e) {
@@ -76,62 +93,108 @@ class VoiceManager {
     }
 
     stopListening() {
-        this.isListening = false; // Marcar como parada manual
-        if (this.recognition) {
+        if (this.recognition && this.isListening) {
             this.recognition.stop();
         }
-        this.updateUIForListening(false);
-        this.closeVoiceModal();
     }
     
-    processTranscription() {
-        this.updateVoiceModal('Procesando...', 'Interpretando tu entrada.');
-        const interpretedItem = this.interpretTextToItem(this.currentTranscription);
+    async processTranscription() {
+        this.updateVoiceModal('Procesando con IA...', 'Analizando el texto para estructurar los datos.');
+        try {
+            const structuredData = await this.getAIInterpretation(this.currentTranscription);
+            const item = this.mapAIDataToItem(structuredData);
 
-        if (this.autoSave) {
-            this.saveInterpretedItem(interpretedItem);
-        } else {
-            this.showForReview(interpretedItem);
+            if (this.autoSave) {
+                this.saveInterpretedItem(item);
+            } else {
+                this.showForReview(item);
+            }
+        } catch (error) {
+            console.error('AI interpretation failed:', error);
+            this.showToast(error.message, 'error');
+            this.closeVoiceModal();
         }
     }
 
-    interpretTextToItem(text) {
-        const lowerText = text.toLowerCase();
-        let categoria = 'ideas'; // Default
-        if (/\brecurso|link|enlace\b/.test(lowerText)) categoria = 'directorio';
-        else if (/\bproyecto|voy a hacer|pasos\b/.test(lowerText)) categoria = 'proyectos';
-        else if (/\blogro|terminado|finalizado\b/.test(lowerText)) categoria = 'logros';
+    async getAIInterpretation(text) {
+        if (!this.promptTemplate) {
+            throw new Error('La plantilla de IA no se ha cargado.');
+        }
 
-        const titulo = text.split(/[.!?]/)[0].trim() || 'Elemento de voz';
-        const url = (text.match(/(https?:\/\/[^\s]+)/gi) || [''])[0];
+        const fullPrompt = this.promptTemplate.replace('{TEXTO_TRANSCRITO}', text);
+
+        // ======================================================================
+        // CONFIGURACIÓN DE LA API DE CEREBRAS - ¡ACCIÓN REQUERIDA!
+        // ======================================================================
+        const apiEndpoint = 'https://api.cerebras.ai/v1/chat/completions';
+
+        // 1. Reemplaza 'YOUR_API_KEY' con tu clave de API de Cerebras.
+        const apiKey = 'YOUR_API_KEY';
+
+        // 2. Este es el cuerpo de la petición, ya ajustado para Cerebras.
+        //    Puedes cambiar el modelo si lo deseas.
+        const body = {
+            model: "llama-4-scout-17b-16e-instruct",
+            messages: [{ role: "user", content: fullPrompt }],
+            temperature: 0.5
+        };
+        // ======================================================================
+
+        if (apiKey === 'YOUR_API_KEY') {
+            throw new Error('Configura tu API key de Cerebras en voice.js');
+        }
+
+        const response = await fetch(apiEndpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify(body)
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`Error de la API de Cerebras: ${response.status} ${errorBody}`);
+        }
+
+        const data = await response.json();
         
-        const tareas = (text.match(/(-|\*|\d\.)\s*(.*)/g) || []).map(t => ({
-            id: `task_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-            titulo: t.replace(/(-|\*|\d\.)\s*/, '').trim(),
-            completado: false
-        }));
+        // La API de Cerebras es compatible con la de OpenAI, por lo que esta línea es correcta.
+        const jsonString = data.choices[0].message.content;
 
+        try {
+            return JSON.parse(jsonString);
+        } catch (e) {
+            console.error("La IA no devolvió un JSON válido:", jsonString);
+            throw new Error("La respuesta de la IA no tuvo el formato JSON esperado.");
+        }
+    }
+
+    mapAIDataToItem(aiData) {
         return {
-            titulo,
-            descripcion: text,
-            categoria,
-            url,
-            tareas,
-            etiquetas: [],
+            titulo: aiData.titulo || 'Elemento de voz',
+            descripcion: aiData.descripcion || '',
+            categoria: aiData.modulo || 'ideas',
+            url: (aiData.urls && aiData.urls.length > 0) ? aiData.urls[0] : '',
+            tareas: (aiData.tareas || []).map(t => ({
+                id: `task_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+                titulo: t,
+                completado: false
+            })),
+            etiquetas: aiData.categorias || [],
             anclado: false,
             fecha_creacion: new Date().toISOString(),
-            fecha_finalizacion: categoria === 'logros' ? new Date().toISOString() : null,
-            meta: { source: 'voice' }
+            fecha_finalizacion: (aiData.modulo === 'logros') ? new Date().toISOString() : null,
+            meta: { source: 'voice-ai', raw: aiData }
         };
     }
 
     async saveInterpretedItem(itemData) {
         try {
-            // CORRECCIÓN: Usar el método correcto del storage global.
             await window.storage.performBatchUpdate([{ type: 'add', data: itemData }]);
             this.showToast(`Elemento "${itemData.titulo}" guardado.`, 'success');
             this.closeVoiceModal();
-            // CORRECCIÓN: Notificar a la app principal para que refresque la UI.
             if (window.appController) {
                 window.appController.requestDataRefresh();
             }
@@ -158,8 +221,7 @@ class VoiceManager {
         saveBtn.onclick = () => this.saveInterpretedItem(item);
         editBtn.onclick = () => {
             this.closeVoiceModal();
-            window.appController.openModal(); // Abre modal vacío
-            // Rellena el formulario con los datos interpretados
+            window.appController.openModal();
             document.getElementById('itemTitle').value = item.titulo;
             document.getElementById('itemDescription').value = item.descripcion;
             document.getElementById('itemUrl').value = item.url;
@@ -168,7 +230,11 @@ class VoiceManager {
     }
     
     // --- UI Helpers ---
-    openVoiceModal() { document.getElementById('voiceModal').classList.remove('hidden'); }
+    openVoiceModal() { 
+        document.getElementById('voiceModal').classList.remove('hidden');
+        document.getElementById('voiceStatus').classList.remove('hidden');
+        document.getElementById('voiceTranscription').classList.add('hidden');
+    }
     closeVoiceModal() { document.getElementById('voiceModal').classList.add('hidden'); }
     updateUIForListening(isListening) {
         const voiceBtn = document.getElementById('voiceBtn');
@@ -176,13 +242,11 @@ class VoiceManager {
             voiceBtn.classList.toggle('listening', isListening);
             voiceBtn.querySelector('.material-symbols-outlined').textContent = isListening ? 'stop' : 'mic';
         }
-        document.getElementById('voiceStatus').classList.toggle('hidden', !isListening);
-        document.getElementById('voiceTranscription').classList.toggle('hidden', isListening);
     }
     updateVoiceModal(title, msg) { document.getElementById('voiceTitle').textContent = title; document.getElementById('voiceMessage').textContent = msg; }
     updateTranscriptionDisplay(text) { document.getElementById('transcriptionText').textContent = text; }
     setAutoSave(enabled) { this.autoSave = !!enabled; }
-    showToast(message, type = 'success') { if (window.appController) window.appController.showToast(message, type); }
+    showToast(message, type = 'success') { if (window.appController && window.appController.showToast) window.appController.showToast(message, type); }
 }
 
 window.voiceManager = new VoiceManager();
