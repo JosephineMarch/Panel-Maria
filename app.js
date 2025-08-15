@@ -880,10 +880,13 @@ class PanelMariaApp {
             }
         });
 
+        // Always save settings after modifying customCategories or categoryTags
+        await this.saveDataSettings();
+
         if (operations.length > 0) {
             await this.performItemUpdates(operations);
         } else {
-            await this.saveDataSettings();
+            // If no items were updated, still need to refresh data and UI
             await this.loadData();
             this.renderAll();
         }
@@ -938,10 +941,21 @@ class PanelMariaApp {
             }
         });
 
+        // Remove the tag from categoryTags in settings if it exists there
+        for (const category in this.settings.categoryTags) {
+            if (Array.isArray(this.settings.categoryTags[category])) { // Ensure it's an array before filtering
+                this.settings.categoryTags[category] = this.settings.categoryTags[category].filter(tag => tag !== tagName);
+            }
+        }
+        // Always save settings after modifying categoryTags
+        await this.saveDataSettings();
+
         if (operations.length > 0) {
             await this.performItemUpdates(operations);
         } else {
-            this.renderGlobalTagsInSettings();
+            // If no items were updated, still need to refresh data and UI
+            await this.loadData();
+            this.renderAll();
         }
 
         this.showToast(`Etiqueta "${formatTagText(tagName)}" eliminada de todos los elementos.`, 'success');
