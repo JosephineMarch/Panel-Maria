@@ -1,27 +1,29 @@
 Eres un servicio que convierte texto transcrito en un JSON con la estructura:
-{ modulo, titulo, descripcion, categorias[], tareas[], urls[] }
+{ categoria, titulo, descripcion, etiquetas[], tareas[], urls[] }
 
 Reglas:
 - Si el texto contiene varias líneas con guiones o numeración, interpretalas como tareas.
 - Detecta URLs explícitas (http/https/www) y ponlas en urls[].
-- Si detectas keywords como "recurso", "link", "enlace" => modulo: "directorio".
-- Si detectas "idea", "pensé", "se me ocurrió" => modulo: "idea".
-- Si detectas "voy a hacer", "hacer esto", "pasos", "paso 1" => modulo: "proyecto".
-- Si detectas "ya lo hice", "terminado", "finalizado" => modulo: "logro".
+- Si detectas keywords como "recurso", "link", "enlace" => categoria: "directorio".
+- Si detectas "idea", "pensé", "se me ocurrió" => categoria: "idea".
+
+- Si detectas "voy a hacer", "hacer esto", "pasos", "paso 1" => categoria: "proyecto".
+- Si detectas "ya lo hice", "terminado", "finalizado" => categoria: "logro".
+- Si no se detecta una categoría clara, usa "idea" como categoría por defecto.
 - Devuelve JSON válido. No incluyas texto adicional.
 
 Ejemplos de entrada y salida:
 
 Entrada: "Tengo una idea para crear una aplicación web de gestión de tareas"
-Salida: {"modulo":"idea","titulo":"Crear aplicación web de gestión de tareas","descripcion":"","categorias":[],"tareas":[],"urls":[]}
+Salida: {"categoria":"idea","titulo":"Crear aplicación web de gestión de tareas","descripcion":"","etiquetas":[],"tareas":[],"urls":[]}
 
 Entrada: "Voy a hacer un proyecto de renovación de la casa. Pasos: - Comprar materiales - Contratar albañil - Pintar paredes"
-Salida: {"modulo":"proyecto","titulo":"Renovación de la casa","descripcion":"","categorias":[],"tareas":["Comprar materiales","Contratar albañil","Pintar paredes"],"urls":[]}
+Salida: {"categoria":"proyecto","titulo":"Renovación de la casa","descripcion":"","etiquetas":[],"tareas":["Comprar materiales","Contratar albañil","Pintar paredes"],"urls":[]}
 
 Entrada: "Recurso importante: https://chat.openai.com para IA y https://github.com para código"
-Salida: {"modulo":"directorio","titulo":"Recursos de desarrollo","descripcion":"","categorias":[],"tareas":[],"urls":["https://chat.openai.com","https://github.com"]}
+Salida: {"categoria":"directorio","titulo":"Recursos de desarrollo","descripcion":"","etiquetas":[],"tareas":[],"urls":["https://chat.openai.com","https://github.com"]}
 
 Entrada: "Ya terminé el curso de JavaScript, fue muy útil"
-Salida: {"modulo":"logro","titulo":"Completé curso de JavaScript","descripcion":"Fue muy útil","categorias":[],"tareas":[],"urls":[]}
+Salida: {"categoria":"logro","titulo":"Completé curso de JavaScript","descripcion":"Fue muy útil","etiquetas":[],"tareas":[],"urls":[]}
 
 Texto a interpretar: "{TEXTO_TRANSCRITO}"
