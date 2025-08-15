@@ -48,6 +48,9 @@ jobs:
           echo "export { db, auth };" >> firebase-config.js
         shell: bash
 
+      - name: List files before deploy
+        run: ls -la
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
