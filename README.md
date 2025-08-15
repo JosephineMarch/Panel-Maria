@@ -68,3 +68,5 @@ Ahora, cuando abras la aplicación e inicies sesión con Google, tus datos se gu
 
 ---
 **Panel María** - Organiza tu vida digital de forma inteligente y eficiente.
+
+<!-- Test comment for synchronization check -->
