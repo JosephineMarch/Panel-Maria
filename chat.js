@@ -105,17 +105,21 @@ async function handleFormSubmit(e) {
     showThinkingIndicator(true);
 
     try {
-        // 1. Preparar el prompt unificado
-        const context = JSON.stringify(appInstance.items, null, 2);
+        // Optimización: Solo enviar el contexto de datos si no es un comando de creación obvio.
+        const commandKeywords = ['crea', 'añade', 'agrega', 'idea', 'proyecto', 'logro', 'directorio'];
+        const isLikelyCommand = commandKeywords.some(kw => userInput.toLowerCase().startsWith(kw));
+        
+        let context = '[]'; // Por defecto, no se envía contexto para aligerar la petición.
+        if (!isLikelyCommand) {
+            // Si no es un comando de creación, es probable que sea una pregunta, así que enviamos el contexto.
+            context = JSON.stringify(appInstance.items, null, 2);
+        }
+
         const prompt = mainPrompt.replace('{context}', context).replace('{text}', userInput);
 
-        // 2. Llamar a la IA
         const responseJsonString = await callCerebrasAPI(prompt);
-
-        // 3. Procesar la respuesta estructurada
         const responseObject = JSON.parse(responseJsonString);
 
-        // 4. Actuar según la intención
         switch (responseObject.intent) {
             case 'create':
                 handleCreate(responseObject.data);
@@ -124,7 +128,9 @@ async function handleFormSubmit(e) {
                 handleAnswer(responseObject.response);
                 break;
             default:
-                throw new Error(`Intención no reconocida: ${responseObject.intent}`);
+                // Si la IA devuelve una intención desconocida, la mostramos como respuesta de chat.
+                handleAnswer(responseJsonString);
+                console.warn('Intención no reconocida, mostrando JSON crudo:', responseObject);
         }
 
     } catch (error) {
