@@ -513,8 +513,13 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 1000; /* Base z-index for all modal overlays */
   padding: 1rem;
+}
+
+/* Add this new rule */
+#confirmModal { /* Targeting the specific ID for the confirm modal */
+  z-index: 1001; /* Ensure it's always on top of other modals */
 }
 
 .modal {
