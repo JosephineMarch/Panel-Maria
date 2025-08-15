@@ -784,6 +784,13 @@ body {
     max-height: calc(100vh - 2rem);
   }
 }
+
+@media (max-width: 480px) {
+  .app-bar__actions {
+    gap: 0.5rem; /* Reduce gap for very small screens */
+  }
+}
+
 /*
 ================================================================================
 |       ESTILOS PARA EL NUEVO COMPONENTE DE ETIQUETAS (TAG INPUT)             |
