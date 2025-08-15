@@ -1,6 +1,6 @@
 name: Deploy to GitHub Pages
 
-on: 
+on:
   push:
     branches: [ main ]
 
@@ -9,15 +9,46 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout 
+      - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Create config.js from Secret 
+      - name: Create config.js from Secret
         run: |
           echo "export const CEREBRAS_API_KEY = '${{ secrets.CEREBRAS_API_KEY }}';" > config.js
         shell: bash
 
-      - name: Deploy to GitHub Pages 
+      - name: Create firebase-config.js from Secrets
+        run: |
+          echo "import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';" > firebase-config.js
+          echo "import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';" >> firebase-config.js
+          echo "import { getAuth } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';" >> firebase-config.js
+          echo "" >> firebase-config.js
+          echo "const firebaseConfig = {" >> firebase-config.js
+          echo "  apiKey: "${{ secrets.FIREBASE_API_KEY }}"," >> firebase-config.js
+          echo "  authDomain: "${{ secrets.FIREBASE_AUTH_DOMAIN }}"," >> firebase-config.js
+          echo "  projectId: "${{ secrets.FIREBASE_PROJECT_ID }}"," >> firebase-config.js
+          echo "  storageBucket: "${{ secrets.FIREBASE_STORAGE_BUCKET }}"," >> firebase-config.js
+          echo "  messagingSenderId: "${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}"," >> firebase-config.js
+          echo "  appId: "${{ secrets.FIREBASE_APP_ID }}"" >> firebase-config.js
+          echo "};" >> firebase-config.js
+          echo "" >> firebase-config.js
+          echo "let app;" >> firebase-config.js
+          echo "let db;" >> firebase-config.js
+          echo "let auth;" >> firebase-config.js
+          echo "" >> firebase-config.js
+          echo "try {" >> firebase-config.js
+          echo "  app = initializeApp(firebaseConfig);" >> firebase-config.js
+          echo "  db = getFirestore(app);" >> firebase-config.js
+          echo "  auth = getAuth(app);" >> firebase-config.js
+          echo "  console.log('Firebase config loaded and initialized successfully.');" >> firebase-config.js
+          echo "} catch (error) {" >> firebase-config.js
+          echo "  console.error('Error initializing Firebase:', error);" >> firebase-config.js
+          echo "}" >> firebase-config.js
+          echo "" >> firebase-config.js
+          echo "export { db, auth };" >> firebase-config.js
+        shell: bash
+
+      - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
