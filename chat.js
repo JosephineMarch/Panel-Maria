@@ -1,26 +1,25 @@
-// Módulo para gestionar la funcionalidad del chat con IA
+// Módulo para gestionar la funcionalidad del chat con IA (Arquitectura de Prompt Unificado)
 import { CEREBRAS_API_KEY } from './config.js';
 
 // Referencia a la instancia principal de la aplicación
 let appInstance = null;
 
-// Prompts de la IA
-let interpretationPrompt = '';
-let qaPrompt = '';
+// Contenido del prompt principal
+let mainPrompt = '';
 
 // Elementos del DOM
 let chatFab, chatContainer, chatClose, chatMinimize, chatMessages, chatForm, chatInput;
 
-// URL del Endpoint y modelo de la API, según la documentación
+// Configuración de la API
 const API_ENDPOINT = 'https://api.cerebras.ai/v1/chat/completions';
 const API_MODEL = 'gpt-oss-120b';
 
 /**
- * Llama a la API de Cerebras con un array de mensajes.
- * @param {Array<object>} messages - El array de mensajes para la API.
+ * Llama a la API de Cerebras con un prompt específico.
+ * @param {string} prompt - El prompt completo a enviar.
  * @returns {Promise<string>} - La respuesta de texto de la IA.
  */
-async function callCerebrasAPI(messages) {
+async function callCerebrasAPI(prompt) {
     if (!CEREBRAS_API_KEY || CEREBRAS_API_KEY === 'YOUR_CEREBRAS_API_KEY_HERE') {
         throw new Error('La clave de API de Cerebras no está configurada en config.js');
     }
@@ -34,16 +33,16 @@ async function callCerebrasAPI(messages) {
             },
             body: JSON.stringify({
                 model: API_MODEL,
-                messages: messages,
-                temperature: 0.7, // Ajustar según se necesite
-                max_tokens: 2048, // Limitar la longitud de la respuesta
-                stream: false // Importante: No usar streaming para obtener una respuesta completa
+                messages: [{ role: 'user', content: prompt }],
+                temperature: 0.7,
+                max_tokens: 2048,
+                stream: false
             })
         });
 
         if (!response.ok) {
             const errorBody = await response.text();
-            throw new Error(`Error de la API: ${response.status} ${response.statusText} - ${errorBody}`);
+            throw new Error(`Error de la API: ${response.status} - ${errorBody}`);
         }
 
         const data = await response.json();
@@ -55,14 +54,13 @@ async function callCerebrasAPI(messages) {
     }
 }
 
-
 /**
- * Inicializa el módulo de chat, recibiendo la instancia de la app.
- * @param {object} app - La instancia de la clase PanelMariaApp.
+ * Inicializa el módulo de chat.
+ * @param {object} app - La instancia de PanelMariaApp.
  */
 export async function initChat(app) {
     appInstance = app;
-
+    
     // Asignar elementos del DOM
     chatFab = document.getElementById('chat-fab');
     chatContainer = document.getElementById('chat-container');
@@ -75,15 +73,14 @@ export async function initChat(app) {
     if (!chatFab) return;
 
     try {
-        interpretationPrompt = await fetch('./interpretation-prompt.txt').then(res => res.text());
-        qaPrompt = await fetch('./qa-prompt.txt').then(res => res.text());
+        mainPrompt = await fetch('./main-prompt.txt').then(res => res.text());
     } catch (error) {
-        console.error("Error al cargar los prompts:", error);
+        console.error("Error fatal: no se pudo cargar main-prompt.txt", error);
         chatFab.classList.add('hidden');
         return;
     }
 
-    // Event Listeners
+    // Listeners
     chatFab.addEventListener('click', toggleChat);
     chatClose.addEventListener('click', toggleChat);
     chatMinimize.addEventListener('click', toggleMinimize);
@@ -91,9 +88,12 @@ export async function initChat(app) {
     chatInput.addEventListener('input', autoResizeTextarea);
     chatInput.addEventListener('keydown', handleTextareaKeydown);
 
-    addMessage('ia', '¡Hola! Estoy conectada y lista para ayudarte. Pídeme que cree algo o pregúntame sobre tu contenido.');
+    addMessage('ia', '¡Hola! Soy María AI. ¿Qué te gustaría organizar o crear hoy?');
 }
 
+/**
+ * Gestiona el envío de un mensaje del usuario.
+ */
 async function handleFormSubmit(e) {
     e.preventDefault();
     const userInput = chatInput.value.trim();
@@ -105,64 +105,65 @@ async function handleFormSubmit(e) {
     showThinkingIndicator(true);
 
     try {
-        const commandKeywords = ['crea', 'añade', 'agrega', 'idea', 'proyecto', 'logro', 'directorio', 'enlace', 'link'];
-        const isCommand = commandKeywords.some(kw => userInput.toLowerCase().split(' ').some(word => word === kw));
+        // 1. Preparar el prompt unificado
+        const context = JSON.stringify(appInstance.items, null, 2);
+        const prompt = mainPrompt.replace('{context}', context).replace('{text}', userInput);
 
-        if (isCommand) {
-            await handleCommand(userInput);
-        } else {
-            await handleQuestion(userInput);
+        // 2. Llamar a la IA
+        const responseJsonString = await callCerebrasAPI(prompt);
+
+        // 3. Procesar la respuesta estructurada
+        const responseObject = JSON.parse(responseJsonString);
+
+        // 4. Actuar según la intención
+        switch (responseObject.intent) {
+            case 'create':
+                handleCreate(responseObject.data);
+                break;
+            case 'answer':
+                handleAnswer(responseObject.response);
+                break;
+            default:
+                throw new Error(`Intención no reconocida: ${responseObject.intent}`);
         }
+
     } catch (error) {
+        console.error("Error en el ciclo del chat:", error);
         addMessage('ia', `Lo siento, ha ocurrido un error: ${error.message}`);
     } finally {
         showThinkingIndicator(false);
     }
 }
 
-async function handleCommand(text) {
-    const messages = [
-        { role: 'system', content: interpretationPrompt },
-        { role: 'user', content: text }
-    ];
-    
-    const responseJson = await callCerebrasAPI(messages);
+/**
+ * Maneja la creación de un nuevo bloque de datos.
+ * @param {object} itemData - El objeto de datos del bloque a crear.
+ */
+async function handleCreate(itemData) {
+    const newItem = {
+        ...itemData,
+        id: window.storage.generateId(),
+        fecha_creacion: new Date().toISOString(),
+        fecha_finalizacion: null,
+        anclado: itemData.anclado || false,
+        tareas: itemData.tareas || [],
+        meta: { source: 'chat-ia' }
+    };
 
-    try {
-        const itemData = JSON.parse(responseJson);
-        const newItem = {
-            ...itemData,
-            id: window.storage.generateId(),
-            fecha_creacion: new Date().toISOString(),
-            fecha_finalizacion: null,
-            anclado: itemData.anclado || false,
-            tareas: itemData.tareas || [],
-            meta: { source: 'chat-ia' }
-        };
-
-        await appInstance.performItemUpdates([{ type: 'add', data: newItem }]);
-        addMessage('ia', `¡Hecho! He creado un nuevo elemento en "${newItem.categoria}".`);
-        appInstance.showToast('Elemento creado con éxito por IA', 'success');
-        appInstance.switchCategory(newItem.categoria);
-
-    } catch (error) {
-        console.error("Error al procesar la respuesta JSON de la IA:", error);
-        addMessage('ia', "La IA me dio una respuesta en un formato inesperado. No pude crear el bloque. Respuesta recibida: " + responseJson);
-    }
+    await appInstance.performItemUpdates([{ type: 'add', data: newItem }]);
+    addMessage('ia', `¡Listo! He creado un nuevo elemento en la categoría "${newItem.categoria}".`);
+    appInstance.showToast('Elemento creado con éxito por IA', 'success');
+    appInstance.switchCategory(newItem.categoria);
 }
 
-async function handleQuestion(question) {
-    const context = JSON.stringify(appInstance.items, null, 2);
-    const systemPrompt = qaPrompt.replace('{context}', context);
-    
-    const messages = [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: question }
-    ];
-
-    const responseText = await callCerebrasAPI(messages);
+/**
+ * Maneja una respuesta conversacional de la IA.
+ * @param {string} responseText - El texto de la respuesta.
+ */
+function handleAnswer(responseText) {
     addMessage('ia', responseText);
 }
+
 
 // --- Funciones de UI (sin cambios) ---
 
