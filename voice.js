@@ -13,7 +13,7 @@ class VoiceManager {
         this.recognition = null;
         this.isListening = false;
         this.currentTranscription = '';
-        this.autoSave = false;
+        this.autoSave = false; // Temporarily force to false for debugging
         this.promptTemplate = '';
 
         this.initSpeechRecognition();
@@ -193,13 +193,14 @@ class VoiceManager {
         try {
             await window.storage.performBatchUpdate([{ type: 'add', data: itemData }]);
             this.showToast(`Elemento "${itemData.titulo}" guardado.`, 'success');
-            this.closeVoiceModal();
+            // this.closeVoiceModal(); // Removed for debugging
             if (window.appController) {
                 window.appController.requestDataRefresh();
             }
         } catch (error) {
             console.error("Error al guardar desde voz:", error);
             this.showToast("No se pudo guardar el elemento.", "error");
+            // Keep modal open on error for user to see toast
         }
     }
     
