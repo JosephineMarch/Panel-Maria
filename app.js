@@ -142,6 +142,7 @@ class PanelMariaApp {
         this.items = [];
         this.selectedItems = new Set();
         this.filters = { search: '', tag: null };
+        this.sortBy = 'recientes'; // Criterio de ordenación por defecto
         this.settings = {};
         this.currentEditId = null;
         this.user = null;
@@ -498,6 +499,11 @@ class PanelMariaApp {
         document.getElementById('exportDataBtn').addEventListener('click', () => window.storage.exportData());
         document.getElementById('importDataBtn').addEventListener('click', () => document.getElementById('importFile').click());
         document.getElementById('importFile').addEventListener('change', (e) => this.handleImportFile(e));
+
+        document.getElementById('sortSelect').addEventListener('change', (e) => {
+            this.sortBy = e.target.value;
+            this.renderAll();
+        });
         
         document.getElementById('newCategoryCloseBtn').addEventListener('click', () => this.closeNewCategoryModal());
         document.getElementById('newCategoryCancelBtn').addEventListener('click', () => this.closeNewCategoryModal());
@@ -628,7 +634,50 @@ class PanelMariaApp {
 
     filterByTag(tag) { this.filters.tag = this.filters.tag === tag ? null : tag; this.renderAll(); }
     renderItems() { const container = document.getElementById('itemsContainer'); const filteredItems = this.getFilteredItems(); container.innerHTML = filteredItems.length > 0 ? filteredItems.map(item => this.createItemCard(item)).join('') : ''; }
-    getFilteredItems() { let items = this.items; if (this.currentCategory !== 'todos') { items = items.filter(item => item.categoria.toLowerCase() === this.currentCategory.toLowerCase()); } if (this.filters.search) { const term = this.filters.search; items = items.filter(item => item.titulo.toLowerCase().includes(term) || (item.descripcion && item.descripcion.toLowerCase().includes(term)) || (item.etiquetas && item.etiquetas.some(tag => tag.toLowerCase().includes(term))) || (item.url && item.url.toLowerCase().includes(term))); } if (this.filters.tag) { items = items.filter(item => item.etiquetas && item.etiquetas.some(tag => tag.toLowerCase() === this.filters.tag.toLowerCase())); } return items.sort((a, b) => (a.anclado === b.anclado) ? (new Date(b.fecha_creacion) - new Date(b.fecha_creacion)) : (a.anclado ? -1 : 1)); }
+    getFilteredItems() {
+        let items = [...this.items]; // Crear una copia para no mutar el original
+
+        // 1. Filtrado
+        if (this.currentCategory !== 'todos') {
+            items = items.filter(item => item.categoria.toLowerCase() === this.currentCategory.toLowerCase());
+        }
+        if (this.filters.search) {
+            const term = this.filters.search;
+            items = items.filter(item => 
+                item.titulo.toLowerCase().includes(term) || 
+                (item.descripcion && item.descripcion.toLowerCase().includes(term)) || 
+                (item.etiquetas && item.etiquetas.some(tag => tag.toLowerCase().includes(term))) || 
+                (item.url && item.url.toLowerCase().includes(term))
+            );
+        }
+        if (this.filters.tag) {
+            items = items.filter(item => item.etiquetas && item.etiquetas.some(tag => tag.toLowerCase() === this.filters.tag.toLowerCase()));
+        }
+
+        // 2. Ordenación
+        const sortedItems = items.sort((a, b) => {
+            // Prioridad máxima para los anclados
+            if (a.anclado !== b.anclado) {
+                return a.anclado ? -1 : 1;
+            }
+
+            // Criterio de ordenación secundario
+            switch (this.sortBy) {
+                case 'recientes':
+                    return new Date(b.fecha_creacion) - new Date(a.fecha_creacion);
+                case 'antiguos':
+                    return new Date(a.fecha_creacion) - new Date(b.fecha_creacion);
+                case 'titulo-asc':
+                    return a.titulo.localeCompare(b.titulo);
+                case 'titulo-desc':
+                    return b.titulo.localeCompare(a.titulo);
+                default:
+                    return 0;
+            }
+        });
+
+        return sortedItems;
+    }
     updateSelectionUI() { const bulkActions = document.getElementById('bulkActions'); const selectAllCheckbox = document.getElementById('selectAllCheckbox'); const selectionCount = document.getElementById('selectionCount'); if (this.selectedItems.size > 0) { bulkActions.classList.remove('hidden'); selectionCount.textContent = this.selectedItems.size; } else { bulkActions.classList.add('hidden'); } const filteredItems = this.getFilteredItems(); if (filteredItems.length > 0) { const allVisibleSelected = filteredItems.every(item => this.selectedItems.has(item.id)); selectAllCheckbox.checked = allVisibleSelected; selectAllCheckbox.indeterminate = !allVisibleSelected && filteredItems.some(item => this.selectedItems.has(item.id)); } else { selectAllCheckbox.checked = false; selectAllCheckbox.indeterminate = false; } }
     updateEmptyState() { const emptyState = document.getElementById('emptyState'); const hasItems = document.getElementById('itemsContainer').children.length > 0; emptyState.classList.toggle('hidden', !hasItems); if (!hasItems) { emptyState.querySelector('.empty-state__title').textContent = `No hay elementos en "${this.formatCategoryName(this.currentCategory)}"`; } }
     
