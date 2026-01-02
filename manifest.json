@@ -13,12 +13,12 @@
       "sizes": "512x512"
     }
   ],
-  "start_url": "/",
+  "start_url": "./index.html",
   "background_color": "#ffffff",
   "display": "standalone",
   "theme_color": "#3b82f6",
   "share_target": {
-    "action": "/index.html",
+    "action": "./index.html",
     "method": "GET",
     "params": {
       "title": "title",
