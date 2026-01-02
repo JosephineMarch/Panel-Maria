@@ -6,12 +6,6 @@ const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './style.css',
-  './script.js',
-  './firebase-config.js',
-  './assets/logo.png', // Asegúrate de que esta ruta sea correcta si tienes logo
-  './icon-192.png',
-  './icon-512.png'
 ];
 
 // Instalación: Guarda los archivos en caché
