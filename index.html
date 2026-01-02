@@ -10,6 +10,36 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
     <link rel="icon" href="data:,">
+
+    <link rel="manifest" href="manifest.json">
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('Service Worker registrado', reg))
+        .catch(err => console.log('Error al registrar SW', err));
+    });
+  }
+
+  // Lógica para capturar lo compartido
+  window.addEventListener('DOMContentLoaded', () => {
+    const parsedUrl = new URL(window.location);
+    const sharedTitle = parsedUrl.searchParams.get('title');
+    const sharedText = parsedUrl.searchParams.get('text');
+    const sharedUrl = parsedUrl.searchParams.get('url');
+
+    if (sharedTitle || sharedText || sharedUrl) {
+      // Aquí es donde tu app recibe la info. 
+      // Puedes hacer un alert o llamar a tu función de Firebase para guardar
+      console.log("Recibido para guardar:", { sharedTitle, sharedText, sharedUrl });
+      alert("¡Recibido! Guardando: " + (sharedTitle || sharedUrl));
+      
+      // Ejemplo: si tienes una función guardarEnFirebase(data), la llamarías aquí
+    }
+  });
+</script>
+    
 </head>
 <body>
     <!-- App Bar -->
