@@ -590,8 +590,8 @@ class PanelMariaApp {
         document.getElementById('loginBtn').addEventListener('click', () => this.loginWithGoogle());
         document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
         document.getElementById('settingsBtn').addEventListener('click', () => this.openSettingsModal());
-        document.getElementById('addItemBtn').addEventListener('click', () => this.openModal());
-        document.getElementById('emptyStateAddBtn').addEventListener('click', () => this.openModal());
+        document.getElementById('addItemBtn')?.addEventListener('click', () => this.openModal());
+        document.getElementById('emptyStateAddBtn')?.addEventListener('click', () => this.openModal());
 
         let searchTimeout;
         document.getElementById('searchInput').addEventListener('input', (e) => {
