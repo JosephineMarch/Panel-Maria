@@ -1,4 +1,4 @@
-const CACHE_NAME = 'panel-maria-v2-adhd';
+const CACHE_NAME = 'panel-maria-v3-fix';
 
 // Archivos estáticos del App Shell (Rutas relativas a la raíz del sw.js)
 const PRECACHE_ASSETS = [

@@ -453,9 +453,17 @@ class PanelMariaApp {
             }
 
             // Reload data and Render (Do NOT call setupApplication again)
-            this.loadData().then(() => {
-                this.renderAll();
-            });
+            this.loadData()
+                .then(() => {
+                    this.renderAll();
+                })
+                .catch(err => {
+                    console.error('Error post-auth load:', err);
+                    this.showToast('Error al cargar datos', 'error');
+                })
+                .finally(() => {
+                    this.hideLoader(); // Force hide loader
+                });
         });
     }
 
