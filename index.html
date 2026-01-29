@@ -80,9 +80,28 @@
                 </div>
 
                 <!-- Search in Gallery -->
+                <!-- Search in Gallery -->
                 <div class="gallery-search">
+                    <input type="checkbox" id="selectAllCheckbox" title="Seleccionar todo">
                     <span class="material-symbols-outlined">search</span>
                     <input type="text" id="gallerySearchInput" placeholder="Buscar bloques...">
+                </div>
+
+                <!-- Icons bar for Bulk Actions -->
+                <div id="bulkActions" class="bulk-actions hidden">
+                    <div class="bulk-info">
+                        <span id="selectionCount">0</span> seleccionados
+                    </div>
+                    <div class="bulk-buttons">
+                        <button id="bulkPinBtn" class="btn btn--icon btn--small" title="Anclar"><span
+                                class="material-symbols-outlined">push_pin</span></button>
+                        <button id="bulkChangeCategoryBtn" class="btn btn--icon btn--small" title="Mover"><span
+                                class="material-symbols-outlined">folder</span></button>
+                        <button id="bulkChangeTagsBtn" class="btn btn--icon btn--small" title="Etiquetas"><span
+                                class="material-symbols-outlined">label</span></button>
+                        <button id="bulkDeleteBtn" class="btn btn--icon btn--small btn--danger" title="Eliminar"><span
+                                class="material-symbols-outlined">delete</span></button>
+                    </div>
                 </div>
 
                 <!-- Items Grid (Bento) -->
@@ -231,6 +250,57 @@
                 <div class="form-group">
                     <label>Importar Datos</label>
                     <input type="file" id="importFile" accept=".json" class="input-field">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Category Modal -->
+    <div id="bulkCategoryModal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal__header">
+                <h2>Mover Elementos</h2>
+                <button id="bulkCategoryCloseBtn" class="btn btn--icon"><span
+                        class="material-symbols-outlined">close</span></button>
+            </div>
+            <div class="modal__body">
+                <div class="form-group">
+                    <label>Nueva Categoría</label>
+                    <select id="bulkCategorySelect" class="input-field">
+                        <option value="directorio">Directorio</option>
+                        <option value="ideas">Ideas</option>
+                        <option value="proyectos">Proyectos</option>
+                        <option value="logros">Logros</option>
+                    </select>
+                </div>
+                <div class="modal__footer">
+                    <button id="bulkCategoryCancelBtn" class="btn btn--text">Cancelar</button>
+                    <button id="bulkCategoryOkBtn" class="btn btn--filled">Mover</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Tags Modal -->
+    <div id="bulkTagsModal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal__header">
+                <h2>Editar Etiquetas en Lote</h2>
+                <button id="bulkTagsCloseBtn" class="btn btn--icon"><span
+                        class="material-symbols-outlined">close</span></button>
+            </div>
+            <div class="modal__body">
+                <div class="form-group">
+                    <label>Añadir/Quitar Etiquetas</label>
+                    <div id="bulkTagsWrapper" class="tags-input-wrapper">
+                        <input type="text" id="bulkTagsInput" class="tags-input-field"
+                            placeholder="Escribe etiquetas...">
+                    </div>
+                    <small>Las etiquetas se añadirán a los items seleccionados.</small>
+                </div>
+                <div class="modal__footer">
+                    <button id="bulkTagsCancelBtn" class="btn btn--text">Cancelar</button>
+                    <button id="bulkTagsOkBtn" class="btn btn--filled">Guardar</button>
                 </div>
             </div>
         </div>

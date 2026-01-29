@@ -585,50 +585,67 @@ class PanelMariaApp {
         }
     }
 
+    addSafeListener(id, event, handler) {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener(event, handler);
+        } else {
+            console.warn(`Element with ID '${id}' not found. Skipping '${event}' listener.`);
+        }
+    }
+
     setupEventListeners() {
         console.log('PanelMariaApp: Setting up event listeners...');
-        document.getElementById('loginBtn').addEventListener('click', () => this.loginWithGoogle());
-        document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
-        document.getElementById('settingsBtn').addEventListener('click', () => this.openSettingsModal());
-        document.getElementById('addItemBtn')?.addEventListener('click', () => this.openModal());
-        document.getElementById('emptyStateAddBtn')?.addEventListener('click', () => this.openModal());
+        this.addSafeListener('loginBtn', 'click', () => this.loginWithGoogle());
+        this.addSafeListener('logoutBtn', 'click', () => this.logout());
+        this.addSafeListener('settingsBtn', 'click', () => this.openSettingsModal());
+        this.addSafeListener('addItemBtn', 'click', () => this.openModal());
+        this.addSafeListener('emptyStateAddBtn', 'click', () => this.openModal());
 
+        const searchInput = document.getElementById('searchInput');
         let searchTimeout;
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                this.filters.search = e.target.value.toLowerCase();
-                this.renderAll();
-            }, 300);
-        });
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.filters.search = e.target.value.toLowerCase();
+                    this.renderAll();
+                }, 300);
+            });
+        }
 
-        document.getElementById('selectAllCheckbox').addEventListener('change', (e) => this.toggleSelectAll(e.target.checked));
-        document.getElementById('bulkChangeCategoryBtn').addEventListener('click', () => this.openBulkCategoryModal());
-        document.getElementById('bulkChangeTagsBtn').addEventListener('click', () => this.openBulkTagsModal());
-        document.getElementById('bulkPinBtn').addEventListener('click', () => this.bulkTogglePinned());
-        document.getElementById('bulkDeleteBtn').addEventListener('click', () => this.confirmBulkDelete());
+        this.addSafeListener('selectAllCheckbox', 'change', (e) => this.toggleSelectAll(e.target.checked));
+        this.addSafeListener('bulkChangeCategoryBtn', 'click', () => this.openBulkCategoryModal());
+        this.addSafeListener('bulkChangeTagsBtn', 'click', () => this.openBulkTagsModal());
+        this.addSafeListener('bulkPinBtn', 'click', () => this.bulkTogglePinned());
+        this.addSafeListener('bulkDeleteBtn', 'click', () => this.confirmBulkDelete());
 
-        document.getElementById('closeModalBtn').addEventListener('click', () => this.closeModal());
-        document.getElementById('cancelBtn').addEventListener('click', () => this.closeModal());
-        document.getElementById('itemForm').addEventListener('submit', (e) => this.handleFormSubmit(e));
-        document.getElementById('itemCategory').addEventListener('change', (e) => this.handleCategoryChange(e));
+        this.addSafeListener('closeModalBtn', 'click', () => this.closeModal());
+        this.addSafeListener('cancelBtn', 'click', () => this.closeModal());
+        this.addSafeListener('itemForm', 'submit', (e) => this.handleFormSubmit(e));
+        this.addSafeListener('itemCategory', 'change', (e) => this.handleCategoryChange(e));
 
-        document.getElementById('addTaskBtn').addEventListener('click', () => this.addTaskField());
-        document.getElementById('confirmCancelBtn').addEventListener('click', () => this.closeConfirmModal());
-        document.getElementById('confirmOkBtn').addEventListener('click', () => this.executeConfirmAction());
-        document.getElementById('bulkCategoryCancelBtn').addEventListener('click', () => this.closeBulkCategoryModal());
-        document.getElementById('bulkCategoryOkBtn').addEventListener('click', () => this.handleBulkChangeCategory());
-        document.getElementById('bulkTagsCancelBtn').addEventListener('click', () => this.closeBulkTagsModal());
-        document.getElementById('bulkTagsOkBtn').addEventListener('click', () => this.handleBulkChangeTags());
+        this.addSafeListener('addTaskBtn', 'click', () => this.addTaskField());
+        this.addSafeListener('confirmCancelBtn', 'click', () => this.closeConfirmModal());
+        this.addSafeListener('confirmOkBtn', 'click', () => this.executeConfirmAction());
 
-        document.getElementById('settingsCloseBtn').addEventListener('click', () => this.closeSettingsModal());
-        document.getElementById('autoSaveVoice').addEventListener('change', (e) => { this.settings.autoSaveVoice = e.target.checked; this.saveDataSettings(); });
-        document.getElementById('themeSelect').addEventListener('change', (e) => { this.settings.theme = e.target.value; this.applyTheme(); this.saveDataSettings(); });
-        document.getElementById('exportDataBtn').addEventListener('click', () => window.storage.exportData());
-        document.getElementById('importDataBtn').addEventListener('click', () => document.getElementById('importFile').click());
-        document.getElementById('importFile').addEventListener('change', (e) => this.handleImportFile(e));
+        this.addSafeListener('bulkCategoryCancelBtn', 'click', () => this.closeBulkCategoryModal());
+        this.addSafeListener('bulkCategoryOkBtn', 'click', () => this.handleBulkChangeCategory());
+        this.addSafeListener('bulkCategoryCloseBtn', 'click', () => this.closeBulkCategoryModal()); // Added close btn
 
-        document.getElementById('sortSelect').addEventListener('change', (e) => {
+        this.addSafeListener('bulkTagsCancelBtn', 'click', () => this.closeBulkTagsModal());
+        this.addSafeListener('bulkTagsOkBtn', 'click', () => this.handleBulkChangeTags());
+        this.addSafeListener('bulkTagsCloseBtn', 'click', () => this.closeBulkTagsModal()); // Added close btn
+
+        this.addSafeListener('settingsCloseBtn', 'click', () => this.closeSettingsModal());
+
+        this.addSafeListener('autoSaveVoice', 'change', (e) => { this.settings.autoSaveVoice = e.target.checked; this.saveDataSettings(); });
+        this.addSafeListener('themeSelect', 'change', (e) => { this.settings.theme = e.target.value; this.applyTheme(); this.saveDataSettings(); });
+        this.addSafeListener('exportDataBtn', 'click', () => window.storage.exportData());
+        this.addSafeListener('importDataBtn', 'click', () => document.getElementById('importFile').click()); // importDataBtn might be missing?
+        this.addSafeListener('importFile', 'change', (e) => this.handleImportFile(e));
+
+        this.addSafeListener('sortSelect', 'change', (e) => {
             this.sortBy = e.target.value;
             this.renderAll();
         });
@@ -781,7 +798,32 @@ class PanelMariaApp {
 
         return sortedItems;
     }
-    updateSelectionUI() { const bulkActions = document.getElementById('bulkActions'); const selectAllCheckbox = document.getElementById('selectAllCheckbox'); const selectionCount = document.getElementById('selectionCount'); if (this.selectedItems.size > 0) { bulkActions.classList.remove('hidden'); selectionCount.textContent = this.selectedItems.size; } else { bulkActions.classList.add('hidden'); } const filteredItems = this.getFilteredItems(); if (filteredItems.length > 0) { const allVisibleSelected = filteredItems.every(item => this.selectedItems.has(item.id)); selectAllCheckbox.checked = allVisibleSelected; selectAllCheckbox.indeterminate = !allVisibleSelected && filteredItems.some(item => this.selectedItems.has(item.id)); } else { selectAllCheckbox.checked = false; selectAllCheckbox.indeterminate = false; } }
+    updateSelectionUI() {
+        const bulkActions = document.getElementById('bulkActions');
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        const selectionCount = document.getElementById('selectionCount');
+
+        if (bulkActions && selectionCount) {
+            if (this.selectedItems.size > 0) {
+                bulkActions.classList.remove('hidden');
+                selectionCount.textContent = this.selectedItems.size;
+            } else {
+                bulkActions.classList.add('hidden');
+            }
+        }
+
+        if (selectAllCheckbox) {
+            const filteredItems = this.getFilteredItems();
+            if (filteredItems.length > 0) {
+                const allVisibleSelected = filteredItems.every(item => this.selectedItems.has(item.id));
+                selectAllCheckbox.checked = allVisibleSelected;
+                selectAllCheckbox.indeterminate = !allVisibleSelected && filteredItems.some(item => this.selectedItems.has(item.id));
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            }
+        }
+    }
     updateEmptyState() { const emptyState = document.getElementById('emptyState'); const hasItems = document.getElementById('itemsContainer').children.length > 0; emptyState.classList.toggle('hidden', !hasItems); if (!hasItems) { emptyState.querySelector('.empty-state__title').textContent = `No hay elementos en "${this.formatCategoryName(this.currentCategory)}"`; } }
 
     openModal(id = null) {
