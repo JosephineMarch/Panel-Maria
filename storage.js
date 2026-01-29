@@ -80,14 +80,38 @@ class FirebaseAdapter extends StorageAdapter {
     }
 
     async loadAll() {
-        const itemsSnapshot = await getDocs(this.itemsCollectionRef);
-        const items = itemsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+        console.log('FirebaseAdapter: Loading all items...');
+        try {
+            const itemsSnapshot = await getDocs(this.itemsCollectionRef);
+            const items = itemsSnapshot.docs.map(doc => this.normalizeItem({ ...doc.data(), id: doc.id }));
+            console.log(`FirebaseAdapter: Loaded ${items.length} items.`);
 
-        const settingsSnapshot = await getDoc(this.settingsDocRef);
-        const defaultSettings = { autoSaveVoice: false, theme: 'default', lastCategory: 'todos', customCategories: [], categoryTags: {} };
-        const settings = settingsSnapshot.exists() ? { ...defaultSettings, ...settingsSnapshot.data() } : defaultSettings;
-        
-        return { items, settings };
+            const settingsSnapshot = await getDoc(this.settingsDocRef);
+            const defaultSettings = { autoSaveVoice: false, theme: 'default', lastCategory: 'todos', customCategories: [], categoryTags: {} };
+            const settings = settingsSnapshot.exists() ? { ...defaultSettings, ...settingsSnapshot.data() } : defaultSettings;
+
+            return { items, settings };
+        } catch (error) {
+            console.error('FirebaseAdapter: Error loading items:', error);
+            throw error;
+        }
+    }
+
+    // Helper to ensure compatibility with old data
+    normalizeItem(item) {
+        return {
+            id: item.id,
+            titulo: item.titulo || 'Sin Título',
+            descripcion: item.descripcion || '',
+            categoria: item.categoria || 'directorio', // Fallback safety
+            url: item.url || '',
+            tareas: Array.isArray(item.tareas) ? item.tareas : [],
+            etiquetas: Array.isArray(item.etiquetas) ? item.etiquetas : [],
+            anclado: !!item.anclado,
+            fecha_creacion: item.fecha_creacion || new Date().toISOString(),
+            fecha_finalizacion: item.fecha_finalizacion || null,
+            meta: item.meta || {}
+        };
     }
 
     async saveAll(data) {
@@ -138,7 +162,7 @@ class Storage {
     async performBatchUpdate(operations, currentItems) {
         return this.adapter.performBatchUpdate(operations, currentItems);
     }
-    
+
     async exportData() {
         try {
             const data = await this.loadAll();
@@ -162,7 +186,7 @@ class Storage {
                 try {
                     const data = JSON.parse(event.target.result);
                     if (!data || !data.items) return reject(new Error('Formato de archivo inválido.'));
-                    
+
                     const currentData = await this.loadAll();
                     const existingIds = new Set(currentData.items.map(i => i.id));
                     const itemsToImport = data.items.filter(i => !existingIds.has(i.id));
