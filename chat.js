@@ -1,74 +1,32 @@
+```javascript
 // Módulo de Inteligencia Artificial - KAI (Cerebras Powered)
 import { CEREBRAS_API_KEY } from './config.js';
+import { buildSystemPrompt } from './kai-persona.js'; // Import Persona
 
 let appInstance = null;
 const API_ENDPOINT = 'https://api.cerebras.ai/v1/chat/completions';
 const MODEL = 'llama-3.3-70b'; // High capability model for instructions
 
-// --- SYSTEM PROMPT ---
-const BASE_PROMPT = `
-Eres KAI ⚡, el sistema operativo inteligente de la vida de María.
-Tu objetivo es organizar su caos, gestionar su información y ser un compañero proactivo.
-
-PERSONALIDAD:
-- Alegre, ingeniosa, rápida y empática (pero no empalagosa).
-- Usas emojis con moderación pero estilo.
-- Vas al grano. No das discursos vacíos.
-
-CAPACIDADES:
-Tienes acceso DE LECTURA a sus notas y CAPACIDAD DE ESCRITURA para crear/modificar.
-
-INSTRUCCIONES DE LÓGICA (TÚ DECIDES EL INTENT):
-
-1. MODO "CREATE" (GUARDAR):
-   - Solo actívalo si detectas INTENCIÓN DE ALMACENAMIENTO EXPLÍCITA O IMPLÍCITA FUERTE.
-   - Palabras clave activadoras: "Guarda", "Anota", "Apunta", "Crea un bloque", "Recuérdame", "Tengo una idea", "Nueva tarea".
-   - Ejemplo: "Anota comprar leche" -> CREATE JSON.
-   - Ejemplo: "Tengo una idea para un libro" -> CREATE JSON.
-
-2. MODO "CHAT" (CONVERSACIÓN / CONSULTA):
-   - Úsalo para todo lo demás: saludos, dudas, consultas sobre el sistema, reflexiones.
-   - IMPORTANTE: Si te piden una ACCIÓN DE IA (ej: "Dime qué puedes hacer", "Resume mis notas", "Busca algo"), ES UN CHAT. NO LO GUARDES.
-   - Ejemplo: "Dime qué cosas puedo hacer" -> RESPUESTA EN TEXTO ("Puedo organizar tus notas...").
-   - Ejemplo: "¿Qué tengo pendiente?" -> RESPUESTA EN TEXTO (Lees el contexto y respondes).
-
-FORMATO JSON OBLIGATORIO (SIEMPRE RESPONDE EN JSON):
-
-1. SI ELIGES MODO "CREATE":
-{
-  "action": "create",
-  "data": {
-    "titulo": "Título",
-    "descripcion": "Contenido...",
-    "etiquetas": ["tag1"],
-    "tareas": [],
-    "url": ""
-  }
-}
-
-2. SI ELIGES MODO "CHAT":
-{
-  "action": "chat",
-  "response": "Tu respuesta en texto plano aquí. Usa emojis si cuadra."
-}
-`;
 
 // --- MAIN FUNCTION ---
 export async function initChat(app) {
     appInstance = app;
-    console.log('Kai AI Module Initialized');
+    console.log('Kai AI Module Initialized (Persona Loaded)');
 }
 
 // --- PUBLIC API ---
 export async function sendMessageToKai(text) {
     if (!text.trim()) return;
 
-    // 1. Get Context (Items Summarized)
+    // 1. Get Context
     const context = getContextSummary(appInstance.store);
+    
+    // 2. Build Prompt using Persona
+    const systemPrompt = buildSystemPrompt(context);
 
-    // 2. Prepare Messages
+    // 3. Prepare Messages
     const messages = [
-        { role: 'system', content: basePromptWithContext(context) },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: text }
     ];
 
@@ -84,20 +42,17 @@ export async function sendMessageToKai(text) {
 // --- INTERNAL HELPERS ---
 
 function getContextSummary(store) {
-    // Summarize last 50 items headers + All Tags
+    // Summarize last 40 items with IDs
     const tags = Array.from(store.getAllTags()).join(', ');
-    const items = store.items.slice(0, 30).map(i => `- [${i.titulo}] #${(i.etiquetas || [])[0]}`).join('\n');
+    const items = store.items.slice(0, 40).map(i => `(ID: ${ i.id })[${ i.titulo }]#${ (i.etiquetas || []).join(',') } `).join('\n');
 
     return `
-    CONTEXTO ACTUAL (DATOS DE MARÍA):
-    Etiquetas Existentes: ${tags}
-    Últimas Notas:
-    ${items}
-    `;
-}
-
-function basePromptWithContext(context) {
-    return BASE_PROMPT + "\n" + context;
+CONTEXTO(TUS DATOS):
+    Etiquetas Globales: ${ tags }
+    
+    ITEMS RECIENTES(Úsalos para editar / borrar):
+    ${ items }
+`;
 }
 
 async function callCerebras(messages) {
@@ -107,7 +62,7 @@ async function callCerebras(messages) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${CEREBRAS_API_KEY}`
+            'Authorization': `Bearer ${ CEREBRAS_API_KEY } `
         },
         body: JSON.stringify({
             model: MODEL,
@@ -120,7 +75,7 @@ async function callCerebras(messages) {
 
     if (!res.ok) {
         const err = await res.text();
-        throw new Error(`API Error: ${err}`);
+        throw new Error(`API Error: ${ err } `);
     }
 
     const data = await res.json();
@@ -134,36 +89,51 @@ async function handleKaiResponse(rawText) {
     try {
         parsed = JSON.parse(rawText);
     } catch (e) {
-        // Fallback: It's just chat text
-        appendMessage('kai', rawText);
+        appendMessage('kai', rawText); // Fallback
         return;
     }
 
-    // Check Intents
-    if (parsed.action === 'create') {
+    // --- ROUTER DE ACCIONES ---
+    const { action, data, id, response } = parsed;
+
+    // 1. CREATE
+    if (action === 'create') {
         const newItem = {
             id: appInstance.store.generateId(),
-            titulo: parsed.data.titulo,
-            descripcion: parsed.data.descripcion || '',
-            url: parsed.data.url || '',
-            etiquetas: parsed.data.etiquetas || [],
-            tareas: parsed.data.tareas || [],
+            titulo: data.titulo || 'Sin Título',
+            descripcion: data.descripcion || '',
+            url: data.url || '',
+            etiquetas: data.etiquetas || [],
+            tareas: data.tareas || [],
             fecha_creacion: new Date().toISOString()
         };
-
-        // Add to Store
         await appInstance.store.addItem(newItem);
+        appendMessage('kai', `He guardado "<b>${newItem.titulo}</b>" ⚡`);
 
-        // Notify User
-        appendMessage('kai', `¡Hecho! He guardado "<b>${newItem.titulo}</b>" con las etiquetas <b>#${newItem.etiquetas.join(', #')}</b>. 🧠✨`);
+        // 2. UPDATE
+    } else if (action === 'update') {
+        if (!id) {
+            appendMessage('kai', 'Necesito un ID para editar, pero no lo encontré. 😵');
+            return;
+        }
+        await appInstance.store.updateItem(id, data);
+        appendMessage('kai', `Actualizado.Renové el item ${ id.substr(0, 4) }... ✨`);
 
-    } else if (parsed.action === 'chat' || parsed.response) {
-        // Standard Chat Response
-        // Fallback checks for the user's previous error case just in case model hallucinates keys
-        const text = parsed.response || parsed.data?.mensaje || (typeof parsed.data === 'string' ? parsed.data : JSON.stringify(parsed));
+        // 3. DELETE
+    } else if (action === 'delete') {
+        if (!id) {
+            appendMessage('kai', 'No sé qué ID borrar. 😵');
+            return;
+        }
+        await appInstance.store.deleteItem(id);
+        appendMessage('kai', `Borrado.Desapareció en el vacío. 🗑️`);
+
+        // 4. CHAT
+    } else if (action === 'chat' || response) {
+        const text = response || data?.mensaje || (typeof data === 'string' ? data : "...");
         appendMessage('kai', text);
+
     } else {
-        // Total Fallback
         appendMessage('kai', rawText);
     }
 }
@@ -173,7 +143,7 @@ function appendMessage(sender, html) {
     if (!container) return;
 
     const div = document.createElement('div');
-    div.className = `msg msg-${sender}`;
+    div.className = `msg msg - ${ sender } `;
     div.innerHTML = html;
     container.appendChild(div);
     container.scrollTop = container.scrollHeight;
