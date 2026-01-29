@@ -1,1152 +1,541 @@
+
 /*
 ================================================================================
-|       PANEL MARÍA - APLICACIÓN PRINCIPAL (VERSIÓN CORREGIDA Y ROBUSTA)     |
+|       PANEL MARÍA - APP ORCHESTRATOR (CORE v2.1)                             |
 ================================================================================
 */
 
-// ==============================================================================
-// CLASE REUTILIZABLE PARA CAMPOS DE ETIQUETAS (TAGS)
-// ==============================================================================
+import { Store } from './store.js';
+import { Renderer } from './renderer.js';
+import { initChat } from './chat.js';
+import { auth, onAuthStateChanged, signInWithGoogle, signOutUser } from './auth.js';
 
-/**
- * Formatea el texto de una etiqueta para visualización (primera letra en mayúscula).
- * @param {string} tag - La etiqueta a formatear.
- * @returns {string}
- */
-function formatTagText(tag) {
-    if (!tag) return '';
-    return tag.charAt(0).toUpperCase() + tag.slice(1);
-}
-
+// --- Helper: TagInput Class ---
 class TagInput {
-    /**
-     * @param {HTMLElement} container - El elemento contenedor del campo de etiquetas.
-     * @param {Function} allTagsProvider - Una función que devuelve un Set de todas las etiquetas disponibles para sugerencias.
-     */
     constructor(container, allTagsProvider) {
         this.container = container;
         this.input = this.container.querySelector('.tags-input-field');
         this.suggestionsContainer = this.container.parentElement.querySelector('.tag-suggestions');
         this.allTagsProvider = allTagsProvider;
         this.activeTags = new Set();
-
         this.setupEventListeners();
     }
-
     setupEventListeners() {
         this.container.addEventListener('click', () => this.input.focus());
-
         this.input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                if (this.input.value.trim()) this.addTag(this.input.value.trim());
-            } else if (e.key === 'Backspace' && this.input.value === '') {
-                this.removeTag(Array.from(this.activeTags).pop());
-            }
+            if (e.key === 'Enter') { e.preventDefault(); if (this.input.value.trim()) this.addTag(this.input.value.trim()); }
+            else if (e.key === 'Backspace' && this.input.value === '') { this.removeTag(Array.from(this.activeTags).pop()); }
         });
-
         this.input.addEventListener('input', () => this.renderSuggestions());
-
         this.suggestionsContainer.addEventListener('click', (e) => {
-            if (e.target.classList.contains('tag-suggestion')) {
-                this.addTag(e.target.dataset.tag);
-            }
+            if (e.target.classList.contains('tag-suggestion')) this.addTag(e.target.dataset.tag);
         });
-
-        // Listener para el botón de eliminar en cada píldora de etiqueta
         this.container.addEventListener('click', (e) => {
             const removeButton = e.target.closest('.tag-remove');
-            if (removeButton) {
-                e.stopPropagation();
-                this.removeTag(removeButton.dataset.tag);
-            }
+            if (removeButton) { e.stopPropagation(); this.removeTag(removeButton.dataset.tag); }
         });
     }
-
-    getTags() {
-        return Array.from(this.activeTags);
-    }
-
-    setTags(tags = []) {
-        this.activeTags = new Set(tags.map(t => t.toLowerCase()));
-        this.render();
-    }
-
+    getTags() { return Array.from(this.activeTags); }
+    setTags(tags = []) { this.activeTags = new Set(tags.map(t => t.toLowerCase())); this.render(); }
     addTag(tag) {
         const normalizedTag = tag.toLowerCase().trim();
         if (normalizedTag && !this.activeTags.has(normalizedTag)) {
             this.activeTags.add(normalizedTag);
-            this.input.value = '';
-            this.render();
-            this.renderSuggestions();
-            this.input.focus();
+            this.input.value = ''; this.render(); this.renderSuggestions(); this.input.focus();
         }
     }
-
-    removeTag(tag) {
-        if (!tag) return;
-        this.activeTags.delete(tag.toLowerCase());
-        this.render();
-        this.renderSuggestions();
-    }
-
+    removeTag(tag) { if (!tag) return; this.activeTags.delete(tag.toLowerCase()); this.render(); this.renderSuggestions(); }
     render() {
-        // Limpiar píldoras existentes
         Array.from(this.container.querySelectorAll('.tag-pill')).forEach(pill => pill.remove());
-
-        // Renderizar nuevas píldoras
         this.activeTags.forEach(tag => {
             const tagElement = document.createElement('span');
             tagElement.className = 'tag-pill';
-            tagElement.innerHTML = `${formatTagText(tag)} <span class="tag-remove" data-tag="${tag}">&times;</span>`;
+            tagElement.innerHTML = `${tag.charAt(0).toUpperCase() + tag.slice(1)} <span class="tag-remove" data-tag="${tag}">&times;</span>`;
             this.container.insertBefore(tagElement, this.input);
         });
     }
-
     renderSuggestions() {
         this.suggestionsContainer.innerHTML = '';
         const allTags = this.allTagsProvider();
         const inputValue = this.input.value.toLowerCase();
-
-        if (!inputValue) return; // No mostrar sugerencias si el campo está vacío
-
-        const filteredSuggestions = Array.from(allTags).filter(tag =>
-            tag.toLowerCase().includes(inputValue) && !this.activeTags.has(tag.toLowerCase())
-        );
-
-        filteredSuggestions.slice(0, 10).forEach(tag => {
-            const suggestion = document.createElement('span');
-            suggestion.className = 'tag-suggestion';
-            suggestion.dataset.tag = tag;
-            suggestion.textContent = formatTagText(tag);
-            this.suggestionsContainer.appendChild(suggestion);
+        if (!inputValue) return;
+        const filtered = Array.from(allTags).filter(tag => tag.toLowerCase().includes(inputValue) && !this.activeTags.has(tag.toLowerCase()));
+        filtered.slice(0, 10).forEach(tag => {
+            const span = document.createElement('span');
+            span.className = 'tag-suggestion'; span.dataset.tag = tag; span.textContent = tag.charAt(0).toUpperCase() + tag.slice(1);
+            this.suggestionsContainer.appendChild(span);
         });
     }
 }
 
-// ==============================================================================
-// CLASE PRINCIPAL DE LA APLICACIÓN
-// ==============================================================================
-
-import { auth, onAuthStateChanged, signInWithGoogle, signOutUser } from './auth.js';
-import { initChat } from './chat.js';
-
-document.addEventListener('DOMContentLoaded', () => {
-    const app = new PanelMariaApp();
-    app.init();
-});
-
+// --- Main Application Class ---
 class PanelMariaApp {
     constructor() {
-        this.currentCategory = 'todos';
-        this.items = [];
+        this.store = new Store();
+        this.renderer = new Renderer(this);
         this.selectedItems = new Set();
-        this.filters = { search: '', tag: null };
-        this.sortBy = 'recientes';
-        // Provide defaults immediately to prevent crashes before loadData
-        this.settings = { autoSaveVoice: false, theme: 'default', lastCategory: 'todos', customCategories: [], categoryTags: {} };
-        this.currentEditId = null;
-        this.user = null;
-        this.bookmarkletData = null;
-        this.loaderElement = document.getElementById('loader');
-
-        window.appController = {
-            requestDataRefresh: async () => {
-                await this.loadData();
-                this.renderAll();
-            }
-        };
-
         this.modalTagInput = null;
         this.bulkTagInput = null;
 
-        console.log('PanelMariaApp: Constructor initialized');
-    }
+        // Subscribe Renderer to Store updates
+        this.store.subscribe((storeInstance) => {
+            this.renderer.render(storeInstance, this.selectedItems);
+            // Also apply theme if settings changed
+            this.renderer.applyTheme(storeInstance.settings.theme);
+        });
 
-    getAllTags() {
-        const allTags = new Set();
-        this.items.forEach(item => (item.etiquetas || []).forEach(tag => allTags.add(tag)));
-        Object.values(this.settings.categoryTags || {}).forEach(tags => tags.forEach(tag => allTags.add(tag)));
-        return allTags;
+        console.log('App: Initialized (Modular v2.1)');
     }
 
     async init() {
-        this.checkForUrlData();
-        this.setupApplication(); // Initialize logic once
+        this.setupComponents();
         this.setupEventListeners();
         initChat(this);
-
-        this.modalTagInput = new TagInput(
-            document.getElementById('itemTagsWrapper'),
-            () => this.getAllTags()
-        );
-        this.bulkTagInput = new TagInput(
-            document.getElementById('bulkTagsWrapper'),
-            () => this.getAllTags()
-        );
-
         this.setupAuthListener();
+        this.checkForUrlData();
     }
 
-    showLoader() {
-        if (this.loaderElement) this.loaderElement.classList.remove('hidden');
-    }
+    setupComponents() {
+        this.modalTagInput = new TagInput(document.getElementById('itemTagsWrapper'), () => this.store.getAllTags());
+        this.bulkTagInput = new TagInput(document.getElementById('bulkTagsWrapper'), () => this.store.getAllTags());
 
-    hideLoader() {
-        if (this.loaderElement) this.loaderElement.classList.add('hidden');
-    }
-
-    // --- LÓGICA DE DATOS ---
-
-    async loadData() {
-        this.showLoader();
-        try {
-            const data = await window.storage.loadAll();
-            this.items = data.items || [];
-            this.settings = data.settings || { autoSaveVoice: false, theme: 'default', lastCategory: 'todos', customCategories: [], categoryTags: {} };
-            if (!this.settings.categoryTags) this.settings.categoryTags = {};
-        } catch (error) {
-            console.error('Error loading data:', error);
-            this.items = [];
-            this.settings = { autoSaveVoice: false, theme: 'default', lastCategory: 'todos', customCategories: [], categoryTags: {} };
-        } finally {
-            this.hideLoader();
-        }
-    }
-
-    async saveDataSettings() {
-        try {
-            await window.storage.saveAll({ settings: this.settings });
-        } catch (error) {
-            console.error('Error saving settings:', error);
-            this.showToast('Error al guardar la configuración', 'error');
-        }
-    }
-
-    async performItemUpdates(operations) {
-        this.showLoader();
-        try {
-            if (window.storage.adapter.type === 'local') {
-                const newItems = await window.storage.performBatchUpdate(operations, this.items);
-                this.items = newItems;
-                await window.storage.saveAll({ items: this.items, settings: this.settings });
-            } else {
-                await window.storage.performBatchUpdate(operations);
-                await this.loadData();
-            }
-            this.selectedItems.clear();
-            this.renderAll();
-        } catch (error) {
-            console.error("Error performing item updates:", error);
-            this.showToast("Error al actualizar los datos.", "error");
-            await this.loadData();
-            this.renderAll();
-        } finally {
-            this.hideLoader();
-        }
-    }
-
-    async handleFormSubmit(e) {
-        e.preventDefault();
-
-        let finalCategory = document.getElementById('itemCategory').value;
-        if (finalCategory === '__new_category__') {
-            const newCustomCategory = document.getElementById('newItemCategory').value.trim();
-            if (!newCustomCategory) {
-                this.showToast('El nombre de la nueva categoría es obligatorio.', 'error');
-                return;
-            }
-            finalCategory = newCustomCategory.toLowerCase();
-            if (!(this.settings.customCategories || []).includes(finalCategory)) {
-                this.settings.customCategories.push(finalCategory);
-                await this.saveDataSettings();
-            }
-        }
-
-        const finalTags = this.modalTagInput.getTags();
-        if (!this.settings.categoryTags[finalCategory]) {
-            this.settings.categoryTags[finalCategory] = [];
-        }
-        finalTags.forEach(tag => {
-            if (!this.settings.categoryTags[finalCategory].includes(tag)) {
-                this.settings.categoryTags[finalCategory].push(tag);
-            }
-        });
-
-        const itemData = {
-            categoria: finalCategory,
-            titulo: document.getElementById('itemTitle').value.trim(),
-            descripcion: document.getElementById('itemDescription').value.trim(),
-            url: document.getElementById('itemUrl').value.trim(),
-            anclado: document.getElementById('itemPinned').checked,
-            etiquetas: finalTags,
-            tareas: Array.from(document.querySelectorAll('#tasksList .task-item')).map(item => ({
-                id: window.storage.generateId(),
-                titulo: item.querySelector('.task-input').value.trim(),
-                completado: item.querySelector('.task-checkbox').checked
-            })).filter(t => t.titulo)
-        };
-
-        if (!itemData.titulo || !itemData.categoria) {
-            this.showToast('El título y la categoría son obligatorios.', 'error');
-            return;
-        }
-
-        let operation;
-        if (this.currentEditId) {
-            operation = { type: 'update', id: this.currentEditId, data: itemData };
-            this.showToast('Elemento actualizado', 'success');
-        } else {
-            const newItem = {
-                ...itemData,
-                fecha_creacion: new Date().toISOString(),
-                fecha_finalizacion: null,
-                meta: {}
-            };
-            operation = { type: 'add', data: newItem };
-            this.showToast('Elemento creado', 'success');
-        }
-
-        await this.performItemUpdates([operation]);
-
-        this.closeModal();
-        this.renderNavigationTabs();
-        this.populateCategorySelector(document.getElementById('itemCategory'), true);
-        this.populateCategorySelector(document.getElementById('bulkCategorySelector'));
-        this.switchCategory(itemData.categoria);
-    }
-
-    async deleteItem(id) {
-        await this.performItemUpdates([{ type: 'delete', id }]);
-        this.showToast('Elemento eliminado', 'success');
-    }
-
-    async togglePinned(id) {
-        const item = this.items.find(item => item.id === id);
-        if (item) {
-            await this.performItemUpdates([{ type: 'update', id, data: { anclado: !item.anclado } }]);
-        }
-    }
-
-    async convertToLogro(id) {
-        await this.performItemUpdates([{ type: 'update', id, data: { categoria: 'logros', fecha_finalizacion: new Date().toISOString() } }]);
-        this.showToast('Elemento convertido a logro', 'success');
-        this.switchCategory('logros');
-    }
-
-    async toggleTask(itemId, taskId) {
-        const item = this.items.find(i => i.id === itemId);
-        if (item) {
-            const newTasks = item.tareas.map(t =>
-                t.id === taskId ? { ...t, completado: !t.completado } : t
-            );
-            await this.performItemUpdates([{ type: 'update', id: itemId, data: { tareas: newTasks } }]);
-        }
-    }
-
-    async bulkTogglePinned() {
-        const firstSelectedIsPinned = this.items.find(item => this.selectedItems.has(item.id))?.anclado;
-        const targetState = !firstSelectedIsPinned;
-        const operations = Array.from(this.selectedItems).map(id => ({ type: 'update', id, data: { anclado: targetState } }));
-        await this.performItemUpdates(operations);
-        this.showToast('Elementos anclados/desanclados', 'success');
-    }
-
-    async handleBulkChangeCategory() {
-        const newCategory = document.getElementById('bulkCategorySelector').value;
-        if (!newCategory) return;
-        const operations = Array.from(this.selectedItems).map(id => ({ type: 'update', id, data: { categoria: newCategory } }));
-        await this.performItemUpdates(operations);
-        this.closeBulkCategoryModal();
-        this.showToast('Categoría cambiada', 'success');
-    }
-
-    async handleBulkChangeTags() {
-        const newTags = this.bulkTagInput.getTags();
-        const operations = Array.from(this.selectedItems).map(id => ({ type: 'update', id, data: { etiquetas: newTags } }));
-        await this.performItemUpdates(operations);
-        this.closeBulkTagsModal();
-        this.showToast('Etiquetas actualizadas', 'success');
-    }
-
-    async bulkDelete() {
-        const operations = Array.from(this.selectedItems).map(id => ({ type: 'delete', id }));
-        await this.performItemUpdates(operations);
-        this.showToast('Elementos eliminados', 'success');
-    }
-
-    // --- LÓGICA DE UI Y EVENTOS ---
-
-    setupApplication() {
-        this.setupSidebar();
-        this.setupChatUI();
-        // this.renderAll(); // Removed to avoid double render (called by auth listener)
-        this.processUrlData();
-        this.setupFilterChips();
-    }
-
-    setupSidebar() {
+        // Sidebar
         const sidebar = document.getElementById('sidebar');
         const toggleBtn = document.getElementById('toggleSidebarBtn');
         const closeBtn = document.getElementById('closeSidebarBtn');
-
-        const toggleSidebar = () => {
-            if (window.innerWidth <= 768) {
-                sidebar.classList.toggle('open');
-            } else {
-                sidebar.classList.toggle('hidden');
-            }
-        };
-
-        if (toggleBtn) toggleBtn.addEventListener('click', toggleSidebar);
-        if (closeBtn) closeBtn.addEventListener('click', () => sidebar.classList.remove('open'));
-    }
-
-    setupChatUI() {
-        const chatInput = document.getElementById('chat-input');
-        if (chatInput) {
-            chatInput.addEventListener('input', function () {
-                this.style.height = 'auto';
-                this.style.height = (this.scrollHeight) + 'px';
-            });
-
-            chatInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    document.getElementById('chat-form').dispatchEvent(new Event('submit'));
-                }
-            });
-        }
-    }
-
-    setupFilterChips() {
-        document.querySelectorAll('.filter-chip').forEach(chip => {
-            chip.addEventListener('click', () => {
-                document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-                chip.classList.add('active');
-                this.switchCategory(chip.dataset.category);
-            });
+        if (toggleBtn) toggleBtn.addEventListener('click', () => {
+            if (window.innerWidth <= 768) sidebar.classList.toggle('open'); else sidebar.classList.toggle('hidden');
         });
+        if (closeBtn) closeBtn.addEventListener('click', () => sidebar.classList.remove('open'));
     }
 
     setupAuthListener() {
         onAuthStateChanged(auth, (user) => {
-            this.user = user;
-            const loginBtn = document.getElementById('loginBtn');
-            const logoutBtn = document.getElementById('logoutBtn');
-            const userProfile = document.getElementById('userProfile');
-            const userAvatar = document.getElementById('userAvatar');
-            const userName = document.getElementById('userName');
+            const elements = {
+                loginBtn: document.getElementById('loginBtn'),
+                logoutBtn: document.getElementById('logoutBtn'),
+                userProfile: document.getElementById('userProfile'),
+                userAvatar: document.getElementById('userAvatar'),
+                userName: document.getElementById('userName')
+            };
 
             if (user) {
-                loginBtn.classList.add('hidden');
-                logoutBtn.classList.remove('hidden');
-                userProfile.classList.remove('hidden');
-
-                if (user.photoURL) userAvatar.src = user.photoURL;
-                if (user.displayName) userName.textContent = user.displayName.split(' ')[0]; // First name only
-
-                window.storage.setAdapter('firebase', user.uid);
+                elements.loginBtn.classList.add('hidden');
+                elements.logoutBtn.classList.remove('hidden');
+                elements.userProfile.classList.remove('hidden');
+                if (user.photoURL) elements.userAvatar.src = user.photoURL;
+                if (user.displayName) elements.userName.textContent = user.displayName.split(' ')[0];
                 this.showToast(`Hola, ${user.displayName || 'Viajero'} 👋`, 'success');
             } else {
-                loginBtn.classList.remove('hidden');
-                logoutBtn.classList.add('hidden');
-                userProfile.classList.add('hidden');
-                window.storage.setAdapter('local');
+                elements.loginBtn.classList.remove('hidden');
+                elements.logoutBtn.classList.add('hidden');
+                elements.userProfile.classList.add('hidden');
             }
 
-            // Reload data and Render (Do NOT call setupApplication again)
-            this.loadData()
-                .then(() => {
-                    this.renderAll();
-                })
-                .catch(err => {
-                    console.error('Error post-auth load:', err);
-                    this.showToast('Error al cargar datos', 'error');
-                })
-                .finally(() => {
-                    this.hideLoader(); // Force hide loader
-                });
+            this.store.setUser(user);
+            document.getElementById('loader').classList.remove('hidden');
+            this.store.loadData()
+                .then(() => this.processUrlData())
+                .finally(() => document.getElementById('loader').classList.add('hidden'));
         });
     }
 
-    checkForUrlData() {
-        const params = new URLSearchParams(window.location.search);
-        // Se generaliza para aceptar tanto el bookmarklet como el share target
-        if (params.has('title') || params.has('text') || params.has('url')) {
-            this.bookmarkletData = {
-                title: params.get('title') || '',
-                url: params.get('url') || '',
-                text: params.get('text') || '', // Se añade el campo text por si viene del share
-                category: params.get('category') || 'directorio' // Categoría por defecto
-            };
-            // Limpia la URL para evitar que se procese de nuevo al recargar
-            const cleanUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}`;
-            window.history.replaceState({}, document.title, cleanUrl);
-        }
-    }
-
-    async processUrlData() {
-        if (this.bookmarkletData) {
-            this.openModal();
-
-            // Lógica para Share Target: Detectar URL en el texto si el campo URL está vacío (común en Android)
-            let targetUrl = this.bookmarkletData.url;
-            if (!targetUrl && this.bookmarkletData.text) {
-                const urlRegex = /(https?:\/\/[^\s]+)/g;
-                const match = this.bookmarkletData.text.match(urlRegex);
-                if (match) {
-                    targetUrl = match[0];
-                }
-            }
-
-            // Si hay una URL, llamamos a la API gratuita de Microlink
-            if (targetUrl) {
-                document.getElementById('itemTitle').value = '';
-                document.getElementById('itemDescription').value = '';
-                document.getElementById('itemUrl').value = targetUrl;
-
-                this.showLoader();
-
-                try {
-                    // Llamada a API gratuita Microlink para obtener metadatos (título, descripción, imagen)
-                    const response = await fetch(`https://api.microlink.io?url=${encodeURIComponent(targetUrl)}`);
-                    const json = await response.json();
-
-                    if (json.status === 'success') {
-                        const metadata = json.data;
-
-                        if (metadata.title) {
-                            document.getElementById('itemTitle').value = metadata.title;
-                        }
-
-                        if (metadata.description) {
-                            document.getElementById('itemDescription').value = metadata.description;
-                        } else if (this.bookmarkletData.text) {
-                            // Si no hay descripción meta, usamos el texto compartido (limpiando la URL si estaba ahí)
-                            const textWithoutUrl = this.bookmarkletData.text.replace(targetUrl, '').trim();
-                            if (textWithoutUrl) {
-                                document.getElementById('itemDescription').value = textWithoutUrl;
-                            }
-                        }
-
-                        if (metadata.url) {
-                            document.getElementById('itemUrl').value = metadata.url;
-                        }
-                    } else {
-                        throw new Error('Microlink status not success');
-                    }
-
-                } catch (error) {
-                    console.error("Error scraping (Microlink):", error);
-                    this.showToast("No se pudo obtener info automática", "info");
-                    // Fallback
-                    document.getElementById('itemTitle').value = this.bookmarkletData.title || 'Enlace compartido';
-                    document.getElementById('itemDescription').value = this.bookmarkletData.text || '';
-                } finally {
-                    this.hideLoader();
-                }
-
-            } else {
-                // Si no hay URL, solo rellenamos con lo que tengamos
-                document.getElementById('itemTitle').value = this.bookmarkletData.title || '';
-                document.getElementById('itemDescription').value = this.bookmarkletData.text || '';
-            }
-
-            const categorySelector = document.getElementById('itemCategory');
-            const categoryExists = [...categorySelector.options].some(opt => opt.value === this.bookmarkletData.category);
-            categorySelector.value = categoryExists ? this.bookmarkletData.category : 'directorio';
-
-            this.bookmarkletData = null;
-        }
-    }
-
-    async loginWithGoogle() {
-        this.showLoader();
+    // --- Core Action Wrapper ---
+    async performItemUpdates(operations) {
+        document.getElementById('loader').classList.remove('hidden');
         try {
-            await signInWithGoogle();
-            this.showToast('Inicio de sesión exitoso', 'success');
-        } catch (error) {
-            this.showToast(`Error al iniciar sesión: ${error.message}`, 'error');
+            await this.store.performUpdates(operations);
+            this.selectedItems.clear();
+        } catch (e) {
+            console.error(e);
+            this.showToast('Error en la operación', 'error');
         } finally {
-            this.hideLoader();
+            document.getElementById('loader').classList.add('hidden');
         }
     }
 
-    async logout() {
-        this.showLoader();
-        try {
-            await signOutUser();
-            this.showToast('Sesión cerrada', 'info');
-        } catch (error) {
-            this.showToast(`Error al cerrar sesión: ${error.message}`, 'error');
-        } finally {
-            this.hideLoader();
-        }
-    }
+    // --- Logic & Event Handling ---
 
     addSafeListener(id, event, handler) {
         const el = document.getElementById(id);
-        if (el) {
-            el.addEventListener(event, handler);
-        } else {
-            console.warn(`Element with ID '${id}' not found. Skipping '${event}' listener.`);
-        }
+        if (el) el.addEventListener(event, handler);
+        // else console.warn(`App: Element ${id} missing.`);
     }
 
     setupEventListeners() {
-        console.log('PanelMariaApp: Setting up event listeners...');
-        this.addSafeListener('loginBtn', 'click', () => this.loginWithGoogle());
-        this.addSafeListener('logoutBtn', 'click', () => this.logout());
-        this.addSafeListener('settingsBtn', 'click', () => this.openSettingsModal());
+        // Auth
+        this.addSafeListener('loginBtn', 'click', () => signInWithGoogle().catch(e => this.showToast('Error login', 'error')));
+        this.addSafeListener('logoutBtn', 'click', () => signOutUser().catch(e => this.showToast('Error logout', 'error')));
+
+        // Main Modals
         this.addSafeListener('addItemBtn', 'click', () => this.openModal());
         this.addSafeListener('emptyStateAddBtn', 'click', () => this.openModal());
+        this.addSafeListener('closeModalBtn', 'click', () => this.closeModal());
+        this.addSafeListener('cancelBtn', 'click', () => this.closeModal());
 
-        const searchInput = document.getElementById('searchInput');
-        let searchTimeout;
-        if (searchInput) {
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    this.filters.search = e.target.value.toLowerCase();
-                    this.renderAll();
-                }, 300);
-            });
-        }
+        // Settings
+        this.addSafeListener('settingsBtn', 'click', () => this.openSettingsModal());
+        this.addSafeListener('settingsCloseBtn', 'click', () => this.closeSettingsModal());
+        this.addSafeListener('autoSaveVoice', 'change', (e) => { this.store.settings.autoSaveVoice = e.target.checked; this.store.saveSettings(); });
+        this.addSafeListener('themeSelect', 'change', (e) => { this.store.settings.theme = e.target.value; this.store.saveSettings(); this.renderer.applyTheme(e.target.value); });
 
+        // Import/Export
+        this.addSafeListener('exportDataBtn', 'click', () => window.storage.exportData());
+        this.addSafeListener('importDataBtn', 'click', () => document.getElementById('importFile').click());
+        this.addSafeListener('importFile', 'change', (e) => this.handleImportFile(e));
+
+        // Item Form
+        this.addSafeListener('itemForm', 'submit', (e) => this.handleFormSubmit(e));
+        this.addSafeListener('addTaskBtn', 'click', () => this.renderer.addTaskField());
+        this.addSafeListener('itemCategory', 'change', (e) => this.renderer.toggleNewCategoryInput(e.target.value));
+
+        // Custom Categories
+        this.addSafeListener('newCategoryCreateBtn', 'click', () => this.addCustomCategory(document.getElementById('newCategoryNameInput').value));
+        this.addSafeListener('newCategoryCloseBtn', 'click', () => document.getElementById('newCategoryModal').classList.add('hidden'));
+        this.addSafeListener('newCategoryCancelBtn', 'click', () => document.getElementById('newCategoryModal').classList.add('hidden'));
+
+        // Confirm Modal
+        this.addSafeListener('confirmCancelBtn', 'click', () => this.renderer.closeConfirmModal());
+        // confirmOkBtn is handled dynamically in renderer.showConfirmModal
+
+        // Filters
+        this.addSafeListener('searchInput', 'input', (e) => setTimeout(() => this.store.setSearch(e.target.value), 300));
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            chip.addEventListener('click', () => this.store.setCategory(chip.dataset.category || 'todos'));
+        });
+        this.addSafeListener('sortSelect', 'change', (e) => this.store.setSort(e.target.value));
+
+        // Bulk
         this.addSafeListener('selectAllCheckbox', 'change', (e) => this.toggleSelectAll(e.target.checked));
         this.addSafeListener('bulkChangeCategoryBtn', 'click', () => this.openBulkCategoryModal());
         this.addSafeListener('bulkChangeTagsBtn', 'click', () => this.openBulkTagsModal());
         this.addSafeListener('bulkPinBtn', 'click', () => this.bulkTogglePinned());
         this.addSafeListener('bulkDeleteBtn', 'click', () => this.confirmBulkDelete());
 
-        this.addSafeListener('closeModalBtn', 'click', () => this.closeModal());
-        this.addSafeListener('cancelBtn', 'click', () => this.closeModal());
-        this.addSafeListener('itemForm', 'submit', (e) => this.handleFormSubmit(e));
-        this.addSafeListener('itemCategory', 'change', (e) => this.handleCategoryChange(e));
-
-        this.addSafeListener('addTaskBtn', 'click', () => this.addTaskField());
-        this.addSafeListener('confirmCancelBtn', 'click', () => this.closeConfirmModal());
-        this.addSafeListener('confirmOkBtn', 'click', () => this.executeConfirmAction());
-
-        this.addSafeListener('bulkCategoryCancelBtn', 'click', () => this.closeBulkCategoryModal());
+        // Bulk Modals
         this.addSafeListener('bulkCategoryOkBtn', 'click', () => this.handleBulkChangeCategory());
-        this.addSafeListener('bulkCategoryCloseBtn', 'click', () => this.closeBulkCategoryModal()); // Added close btn
+        this.addSafeListener('bulkCategoryCancelBtn', 'click', () => document.getElementById('bulkCategoryModal').classList.add('hidden'));
+        this.addSafeListener('bulkCategoryCloseBtn', 'click', () => document.getElementById('bulkCategoryModal').classList.add('hidden'));
 
-        this.addSafeListener('bulkTagsCancelBtn', 'click', () => this.closeBulkTagsModal());
         this.addSafeListener('bulkTagsOkBtn', 'click', () => this.handleBulkChangeTags());
-        this.addSafeListener('bulkTagsCloseBtn', 'click', () => this.closeBulkTagsModal()); // Added close btn
+        this.addSafeListener('bulkTagsCancelBtn', 'click', () => document.getElementById('bulkTagsModal').classList.add('hidden'));
+        this.addSafeListener('bulkTagsCloseBtn', 'click', () => document.getElementById('bulkTagsModal').classList.add('hidden'));
 
-        this.addSafeListener('settingsCloseBtn', 'click', () => this.closeSettingsModal());
+        // Grid delegation
+        document.getElementById('itemsContainer').addEventListener('click', (e) => this.handleGridClick(e));
 
-        this.addSafeListener('autoSaveVoice', 'change', (e) => { this.settings.autoSaveVoice = e.target.checked; this.saveDataSettings(); });
-        this.addSafeListener('themeSelect', 'change', (e) => { this.settings.theme = e.target.value; this.applyTheme(); this.saveDataSettings(); });
-        this.addSafeListener('exportDataBtn', 'click', () => window.storage.exportData());
-        this.addSafeListener('importDataBtn', 'click', () => document.getElementById('importFile').click()); // importDataBtn might be missing?
-        this.addSafeListener('importFile', 'change', (e) => this.handleImportFile(e));
-
-        this.addSafeListener('sortSelect', 'change', (e) => {
-            this.sortBy = e.target.value;
-            this.renderAll();
-        });
-
-        document.getElementById('newCategoryCloseBtn').addEventListener('click', () => this.closeNewCategoryModal());
-        document.getElementById('newCategoryCancelBtn').addEventListener('click', () => this.closeNewCategoryModal());
-        document.getElementById('newCategoryCreateBtn').addEventListener('click', () => this.addCustomCategory(document.getElementById('newCategoryNameInput').value));
-
-        const itemsContainer = document.getElementById('itemsContainer');
-        itemsContainer.addEventListener('click', (event) => {
-            const target = event.target;
-            const actionElement = target.closest('[data-action]');
-
-            if (!actionElement) return;
-
-            const action = actionElement.dataset.action;
-            const card = actionElement.closest('.card');
-
-            if (!card && action !== 'filter-by-tag') return;
-
-            const id = card ? card.dataset.id : null;
-
-            if (action !== 'handle-card-click') {
-                event.stopPropagation();
-            }
-
-            switch (action) {
-                case 'handle-card-click':
-                    if (target.closest('a, button, input[type="checkbox"], .card__tag')) return;
-                    this.openModal(id);
-                    break;
-                case 'toggle-selection':
-                    this.toggleSelection(id);
-                    break;
-                case 'toggle-pinned':
-                    this.togglePinned(id);
-                    break;
-                case 'open-link':
-                    break;
-                case 'filter-by-tag':
-                    this.filterByTag(actionElement.dataset.tag);
-                    break;
-                case 'open-modal':
-                    this.openModal(id);
-                    break;
-                case 'convert-to-logro':
-                    this.convertToLogro(id);
-                    break;
-                case 'confirm-delete':
-                    this.confirmDeleteItem(id);
-                    break;
-                case 'toggle-task':
-                    const taskId = actionElement.dataset.taskId;
-                    if (id && taskId) {
-                        this.toggleTask(id, taskId);
-                    }
-                    break;
+        // Shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.closeModal();
+                this.closeSettingsModal();
             }
         });
     }
 
-    // --- MÉTODOS DE RENDERIZADO ---
+    // --- Grid Logic ---
+    handleGridClick(e) {
+        const actionEl = e.target.closest('[data-action]');
+        if (!actionEl) return;
+        const card = actionEl.closest('.card');
+        const id = card ? card.dataset.id : null;
+        if (actionEl.dataset.action !== 'handle-card-click') e.stopPropagation();
 
-    switchCategory(category) {
-        this.currentCategory = category;
-        this.settings.lastCategory = category;
-        this.saveDataSettings();
-        document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.category === category));
-        this.selectedItems.clear();
-        this.filters.tag = null;
-        this.renderAll();
-    }
-
-    renderAll() {
-        this.renderItems();
-        this.updateSelectionUI();
-        this.updateEmptyState();
-        // Tag filters temporarily disabled or moved to Search
-    }
-
-    /* renderNavigationTabs removed */
-
-    createItemCard(item) {
-        const isSelected = this.selectedItems.has(item.id);
-        const date = new Date(item.fecha_creacion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
-        const categoryIcon = this.getCategoryIcon(item.categoria);
-
-        return `
-            <div class="card ${isSelected ? 'selected' : ''}" data-id="${item.id}" data-action="handle-card-click">
-                <div class="card__header">
-                    <span class="card__cat-icon material-symbols-outlined">${categoryIcon}</span>
-                    <button class="card__pin ${item.anclado ? 'pinned' : ''}" data-action="toggle-pinned" title="Anclar">
-                        <span class="material-symbols-outlined">push_pin</span>
-                    </button>
-                </div>
-                <h3 class="card__title">${this.escapeHtml(item.titulo)}</h3>
-                <p class="card__snippet">
-                    ${this.escapeHtml(item.descripcion || item.url || 'Sin descripción')}
-                </p>
-                <div class="card__footer">
-                    <span class="card__date">${date}</span>
-                    ${item.url ? '<span class="material-symbols-outlined" style="font-size: 1rem; color: var(--accent-blue);">link</span>' : ''}
-                </div>
-            </div>`;
-    }
-
-    filterByTag(tag) { this.filters.tag = this.filters.tag === tag ? null : tag; this.renderAll(); }
-    renderItems() { const container = document.getElementById('itemsContainer'); const filteredItems = this.getFilteredItems(); container.innerHTML = filteredItems.length > 0 ? filteredItems.map(item => this.createItemCard(item)).join('') : ''; }
-    getFilteredItems() {
-        let items = [...this.items]; // Crear una copia para no mutar el original
-
-        // 1. Filtrado
-        if (this.currentCategory !== 'todos') {
-            items = items.filter(item => item.categoria.toLowerCase() === this.currentCategory.toLowerCase());
-        }
-        if (this.filters.search) {
-            const term = this.filters.search;
-            items = items.filter(item =>
-                item.titulo.toLowerCase().includes(term) ||
-                (item.descripcion && item.descripcion.toLowerCase().includes(term)) ||
-                (item.etiquetas && item.etiquetas.some(tag => tag.toLowerCase().includes(term))) ||
-                (item.url && item.url.toLowerCase().includes(term))
-            );
-        }
-        if (this.filters.tag) {
-            items = items.filter(item => item.etiquetas && item.etiquetas.some(tag => tag.toLowerCase() === this.filters.tag.toLowerCase()));
-        }
-
-        // 2. Ordenación
-        const sortedItems = items.sort((a, b) => {
-            // Prioridad máxima para los anclados
-            if (a.anclado !== b.anclado) {
-                return a.anclado ? -1 : 1;
-            }
-
-            // Criterio de ordenación secundario
-            switch (this.sortBy) {
-                case 'recientes':
-                    return new Date(b.fecha_creacion) - new Date(a.fecha_creacion);
-                case 'antiguos':
-                    return new Date(a.fecha_creacion) - new Date(b.fecha_creacion);
-                case 'titulo-asc':
-                    return a.titulo.localeCompare(b.titulo);
-                case 'titulo-desc':
-                    return b.titulo.localeCompare(a.titulo);
-                default:
-                    return 0;
-            }
-        });
-
-        return sortedItems;
-    }
-    updateSelectionUI() {
-        const bulkActions = document.getElementById('bulkActions');
-        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-        const selectionCount = document.getElementById('selectionCount');
-
-        if (bulkActions && selectionCount) {
-            if (this.selectedItems.size > 0) {
-                bulkActions.classList.remove('hidden');
-                selectionCount.textContent = this.selectedItems.size;
-            } else {
-                bulkActions.classList.add('hidden');
-            }
-        }
-
-        if (selectAllCheckbox) {
-            const filteredItems = this.getFilteredItems();
-            if (filteredItems.length > 0) {
-                const allVisibleSelected = filteredItems.every(item => this.selectedItems.has(item.id));
-                selectAllCheckbox.checked = allVisibleSelected;
-                selectAllCheckbox.indeterminate = !allVisibleSelected && filteredItems.some(item => this.selectedItems.has(item.id));
-            } else {
-                selectAllCheckbox.checked = false;
-                selectAllCheckbox.indeterminate = false;
-            }
+        switch (actionEl.dataset.action) {
+            case 'handle-card-click': this.openModal(id); break;
+            case 'toggle-pinned':
+                if (id) { const i = this.store.getItem(id); if (i) this.store.updateItem(id, { anclado: !i.anclado }); }
+                break;
+            case 'toggle-task':
+                const taskId = actionEl.dataset.taskId;
+                if (id && taskId) this.toggleTask(id, taskId);
+                break;
         }
     }
-    updateEmptyState() { const emptyState = document.getElementById('emptyState'); const hasItems = document.getElementById('itemsContainer').children.length > 0; emptyState.classList.toggle('hidden', !hasItems); if (!hasItems) { emptyState.querySelector('.empty-state__title').textContent = `No hay elementos en "${this.formatCategoryName(this.currentCategory)}"`; } }
 
+    async toggleTask(itemId, taskId) {
+        const item = this.store.getItem(itemId);
+        if (item) {
+            const newTasks = item.tareas.map(t => t.id === taskId ? { ...t, completado: !t.completado } : t);
+            await this.store.updateItem(itemId, { tareas: newTasks });
+        }
+    }
+
+    toggleSelectAll(checked) {
+        if (checked) {
+            const visible = this.store.getFilteredItems();
+            visible.forEach(i => this.selectedItems.add(i.id));
+        } else {
+            this.selectedItems.clear();
+        }
+        this.store.notify();
+    }
+
+    // --- Modal Logic ---
     openModal(id = null) {
-        this.currentEditId = id;
-        const modal = document.getElementById('itemModal');
+        this.renderer.clearItemModal();
         if (id) {
-            const item = this.items.find(i => i.id === id);
+            const item = this.store.getItem(id);
             if (item) {
+                this.renderer.populateItemModal(item);
+                this.modalTagInput.setTags(item.etiquetas);
                 document.getElementById('modalTitle').textContent = 'Editar Elemento';
-                this.populateModalForm(item);
-                this.modalTagInput.setTags(item.etiquetas || []);
+                this.currentEditId = id;
             }
         } else {
-            document.getElementById('modalTitle').textContent = 'Agregar Nuevo Elemento';
-            this.clearModalForm();
+            document.getElementById('modalTitle').textContent = 'Nuevo Elemento';
+            this.currentEditId = null;
             this.modalTagInput.setTags([]);
         }
-        modal.classList.remove('hidden');
-        document.getElementById('itemTitle').focus();
+        document.getElementById('itemModal').classList.remove('hidden');
     }
 
-    closeModal() { document.getElementById('itemModal').classList.add('hidden'); }
-    populateModalForm(item) { document.getElementById('itemTitle').value = item?.titulo || ''; document.getElementById('itemDescription').value = item?.descripcion || ''; document.getElementById('itemUrl').value = item?.url || ''; document.getElementById('itemPinned').checked = item?.anclado || false; const categorySelector = document.getElementById('itemCategory'); categorySelector.value = item?.categoria || this.currentCategory || 'directorio'; this.handleCategoryChange({ target: categorySelector }); document.getElementById('tasksList').innerHTML = ''; if (item?.tareas?.length) { item.tareas.forEach(task => this.addTaskField(task)); } else { this.addTaskField(); } }
-    clearModalForm() { document.getElementById('itemForm').reset(); document.getElementById('tasksList').innerHTML = ''; this.addTaskField(); document.getElementById('newCategoryInputGroup').style.display = 'none'; }
-    handleCategoryChange(event) { document.getElementById('newCategoryInputGroup').style.display = event.target.value === '__new_category__' ? 'block' : 'none'; }
-    addTaskField(task = null) { const list = document.getElementById('tasksList'); const item = document.createElement('div'); item.className = 'task-item'; item.innerHTML = `<input type="checkbox" class="checkbox-field task-checkbox" ${task?.completado ? 'checked' : ''}><input type="text" class="input-field task-input" value="${this.escapeHtml(task?.titulo || '')}" placeholder="Nueva tarea"><button type="button" class="btn btn--icon remove-task"><span class="material-symbols-outlined">remove</span></button>`; item.querySelector('.remove-task').addEventListener('click', () => { if (list.children.length > 1) item.remove(); else { item.querySelector('.task-input').value = ''; item.querySelector('.task-checkbox').checked = false; } }); list.appendChild(item); }
-    confirmBulkDelete() { this.showConfirmModal(`Eliminar ${this.selectedItems.size} elementos`, '¿Estás seguro? Esta acción no se puede deshacer.', () => this.bulkDelete()); }
-    confirmDeleteItem(id) { this.showConfirmModal('Eliminar Elemento', '¿Estás seguro de que quieres eliminar este elemento?', () => this.deleteItem(id)); }
-    showConfirmModal(title, message, onConfirm) { document.getElementById('confirmTitle').textContent = title; document.getElementById('confirmMessage').textContent = message; this.confirmAction = onConfirm; document.getElementById('confirmModal').classList.remove('hidden'); }
-    closeConfirmModal() { document.getElementById('confirmModal').classList.add('hidden'); }
-    executeConfirmAction() { if (this.confirmAction) this.confirmAction(); this.closeConfirmModal(); }
-    escapeHtml(text) { if (typeof text !== 'string') return ''; return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
-    formatCategoryName(name) { return name.charAt(0).toUpperCase() + name.slice(1); }
-    getCategoryIcon(category) { switch (category) { case 'directorio': return 'folder'; case 'ideas': return 'lightbulb'; case 'proyectos': return 'work'; case 'logros': return 'emoji_events'; case 'todos': return 'select_all'; default: return 'category'; } }
-    truncateUrl(url) {
-        const maxLength = 30; if (url.length <= maxLength) return url;
-        const domain = new URL(url).hostname;
-        if (domain.length <= maxLength) return domain;
-        return `${domain.substring(0, maxLength - 3)}...`;
-    }
-    createProgressBar(item) {
-        const totalTasks = item.tareas.length;
-        const completedTasks = item.tareas.filter(task => task.completado).length;
-        const percentage = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
-        return `
-            <div class="progress-bar-container">
-                <div class="progress-bar" style="width: ${percentage}%;"></div>
-                <span class="progress-text">${completedTasks}/${totalTasks} tareas (${percentage}%)</span>
-            </div>
-        `;
-    }
-    createTasksContent(item) {
-        return `
-            <div class="card__tasks">
-                ${item.tareas.map(task => `
-                    <div class="task-item-card">
-                        <input type="checkbox" class="task-checkbox-card" data-action="toggle-task" data-task-id="${task.id}" ${task.completado ? 'checked' : ''}>
-                        <span class="task-title-card ${task.completado ? 'completed' : ''}">${this.escapeHtml(task.titulo)}</span>
-                    </div>
-                `).join('')}
-            </div>
-        `;
+    closeModal() {
+        document.getElementById('itemModal').classList.add('hidden');
+        this.currentEditId = null;
     }
 
-    populateCategorySelector(selector, includeNewOption = false) { selector.innerHTML = ''; const predefinedCategories = ['directorio', 'ideas', 'proyectos', 'logros']; const allCategories = [...new Set([...predefinedCategories, ...(this.settings.customCategories || [])])]; allCategories.forEach(category => { const option = document.createElement('option'); option.value = category; option.textContent = this.formatCategoryName(category); selector.appendChild(option); }); if (includeNewOption) { const newOption = document.createElement('option'); newOption.value = '__new_category__'; newOption.textContent = 'Crear nueva categoría...'; selector.appendChild(newOption); } }
-    addCustomCategory(categoryName) { const normalizedName = categoryName.trim().toLowerCase(); if (!normalizedName) { this.showToast('El nombre de la categoría no puede estar vacío.', 'error'); return; } if (this.settings.customCategories.includes(normalizedName)) { this.showToast('Esa categoría ya existe.', 'info'); return; } this.settings.customCategories.push(normalizedName); this.saveDataSettings(); this.populateCategorySelector(document.getElementById('itemCategory'), true); this.populateCategorySelector(document.getElementById('bulkCategorySelector')); this.showToast('Categoría creada.', 'success'); this.closeNewCategoryModal(); }
-    openNewCategoryModal() { document.getElementById('newCategoryModal').classList.remove('hidden'); document.getElementById('newCategoryNameInput').value = ''; document.getElementById('newCategoryNameInput').focus(); }
-    closeNewCategoryModal() { document.getElementById('newCategoryModal').classList.add('hidden'); }
-    openBulkCategoryModal() { this.populateCategorySelector(document.getElementById('bulkCategorySelector')); document.getElementById('bulkCategoryModal').classList.remove('hidden'); }
-    closeBulkCategoryModal() { document.getElementById('bulkCategoryModal').classList.add('hidden'); }
-    openBulkTagsModal() { this.bulkTagInput.setTags([]); setTimeout(() => { document.getElementById('bulkTagsInput').focus(); }, 50); }
-    closeBulkTagsModal() { document.getElementById('bulkTagsModal').classList.add('hidden'); }
-    openSettingsModal() { document.getElementById('autoSaveVoice').checked = this.settings.autoSaveVoice; document.getElementById('themeSelect').value = this.settings.theme; this.renderCustomCategoriesInSettings(); this.renderGlobalTagsInSettings(); document.getElementById('settingsModal').classList.remove('hidden'); }
-    closeSettingsModal() {
-        console.log('Closing Settings Modal');
-        document.getElementById('settingsModal').classList.add('hidden');
+    async handleFormSubmit(e) {
+        e.preventDefault();
+
+        // Handle new category creation from modal
+        let finalCategory = document.getElementById('itemCategory').value;
+        if (finalCategory === '__new_category__') {
+            const newCatName = document.getElementById('newItemCategory').value.trim();
+            if (!newCatName) { this.showToast('Nombre de categoría inválido', 'error'); return; }
+            finalCategory = newCatName.toLowerCase();
+            this.addCustomCategoryInternal(finalCategory); // Add to store without reload
+        }
+
+        const formData = {
+            titulo: document.getElementById('itemTitle').value.trim(),
+            descripcion: document.getElementById('itemDescription').value.trim(),
+            url: document.getElementById('itemUrl').value.trim(),
+            categoria: finalCategory,
+            etiquetas: this.modalTagInput.getTags(),
+            anclado: document.getElementById('itemPinned').checked,
+            tareas: Array.from(document.querySelectorAll('.task-item')).map(div => ({
+                titulo: div.querySelector('.task-input').value,
+                completado: div.querySelector('.task-checkbox').checked,
+                id: div.querySelector('.task-checkbox').dataset.id || this.store.generateId() // Ensure task ID
+            })).filter(t => t.titulo)
+        };
+
+        if (!formData.titulo) { this.showToast('Título requerido', 'error'); return; }
+
+        if (this.currentEditId) {
+            await this.store.updateItem(this.currentEditId, formData);
+        } else {
+            await this.store.addItem(formData);
+        }
+        this.closeModal();
+        this.showToast('Guardado', 'success');
     }
-    applyTheme() { document.body.className = ''; document.body.classList.add(`theme-${this.settings.theme}`); }
-    showToast(message, type = 'info') { const toastContainer = document.getElementById('toastContainer'); const toast = document.createElement('div'); toast.className = `toast toast--${type}`; toast.textContent = message; toastContainer.appendChild(toast); setTimeout(() => { toast.remove(); }, 3000); }
-    toggleSelectAll(checked) { const filteredItems = this.getFilteredItems(); this.selectedItems.clear(); if (checked) { filteredItems.forEach(item => this.selectedItems.add(item.id)); } this.renderItems(); this.updateSelectionUI(); }
-    toggleSelection(id) { if (this.selectedItems.has(id)) { this.selectedItems.delete(id); } else { this.selectedItems.add(id); } this.renderItems(); this.updateSelectionUI(); }
 
+    // --- Settings & Categories Logic ---
 
+    openSettingsModal() {
+        document.getElementById('autoSaveVoice').checked = this.store.settings.autoSaveVoice;
+        document.getElementById('themeSelect').value = this.store.settings.theme;
+        this.renderer.renderCustomCategories(this.store.settings.customCategories);
+        this.renderer.renderGlobalTags(this.store.getAllTags()); // Pass all tags
+        document.getElementById('settingsModal').classList.remove('hidden');
+    }
+    closeSettingsModal() { document.getElementById('settingsModal').classList.add('hidden'); }
 
-    handleImportFile(event) {
+    // Callback used by Renderer
+    confirmDeleteCategory(category) {
+        this.renderer.showConfirmModal(
+            'Eliminar Categoría',
+            `¿Borrar categoría "${category}"? Los elementos irán a Directorio.`,
+            () => this.deleteCustomCategory(category)
+        );
+    }
+
+    // Callback used by Renderer
+    confirmDeleteTag(tag) {
+        this.renderer.showConfirmModal(
+            'Eliminar Etiqueta',
+            `¿Borrar etiqueta "${tag}" de todos los elementos?`,
+            () => this.deleteGlobalTag(tag)
+        );
+    }
+
+    async addCustomCategory(name) {
+        if (!name) return;
+        this.addCustomCategoryInternal(name);
+        this.store.saveSettings(); // Persist
+        document.getElementById('newCategoryModal').classList.add('hidden');
+        this.showToast('Categoría creada', 'success');
+        // Refresh selectors
+        this.renderer.populateCategorySelector(document.getElementById('itemCategory'), true);
+        this.renderer.populateCategorySelector(document.getElementById('bulkCategorySelector'));
+    }
+
+    addCustomCategoryInternal(name) {
+        const n = name.toLowerCase().trim();
+        if (!this.store.settings.customCategories.includes(n)) {
+            this.store.settings.customCategories.push(n);
+        }
+    }
+
+    async deleteCustomCategory(category) {
+        // 1. Remove from settings
+        this.store.settings.customCategories = this.store.settings.customCategories.filter(c => c !== category);
+
+        // 2. Move items to 'directorio'
+        const itemsToMove = this.store.items.filter(i => i.categoria === category);
+        const operations = itemsToMove.map(i => ({ type: 'update', id: i.id, data: { categoria: 'directorio' } }));
+
+        // 3. Save
+        await this.store.saveSettings();
+        if (operations.length > 0) await this.store.performUpdates(operations);
+
+        this.showToast('Categoría eliminada', 'success');
+        this.openSettingsModal(); // Refresh list
+    }
+
+    async deleteGlobalTag(tag) {
+        const itemsWithTag = this.store.items.filter(i => i.etiquetas && i.etiquetas.includes(tag));
+        const operations = itemsWithTag.map(i => ({
+            type: 'update',
+            id: i.id,
+            data: { etiquetas: i.etiquetas.filter(t => t !== tag) }
+        }));
+
+        if (operations.length > 0) await this.store.performUpdates(operations);
+        this.showToast('Etiqueta eliminada', 'success');
+        this.openSettingsModal(); // Refresh list
+    }
+
+    // --- Bulk Logic ---
+    openBulkCategoryModal() {
+        this.renderer.populateCategorySelector(document.getElementById('bulkCategorySelector'));
+        document.getElementById('bulkCategoryModal').classList.remove('hidden');
+    }
+    openBulkTagsModal() {
+        this.bulkTagInput.setTags([]);
+        document.getElementById('bulkTagsModal').classList.remove('hidden');
+    }
+
+    async handleBulkChangeCategory() {
+        const cat = document.getElementById('bulkCategorySelector').value;
+        const ops = Array.from(this.selectedItems).map(id => ({ type: 'update', id, data: { categoria: cat } }));
+        await this.performItemUpdates(ops);
+        document.getElementById('bulkCategoryModal').classList.add('hidden');
+    }
+
+    async handleBulkChangeTags() {
+        const tags = this.bulkTagInput.getTags();
+        const ops = Array.from(this.selectedItems).map(id => ({ type: 'update', id, data: { etiquetas: tags } }));
+        await this.performItemUpdates(ops);
+        document.getElementById('bulkTagsModal').classList.add('hidden');
+    }
+
+    async bulkTogglePinned() {
+        const first = this.store.getItem([...this.selectedItems][0]);
+        const target = !first.anclado;
+        const ops = Array.from(this.selectedItems).map(id => ({ type: 'update', id, data: { anclado: target } }));
+        await this.performItemUpdates(ops);
+    }
+
+    confirmBulkDelete() {
+        this.renderer.showConfirmModal(
+            'Eliminar Elementos',
+            `¿Borrar ${this.selectedItems.size} elementos seleccionados?`,
+            () => {
+                const ops = Array.from(this.selectedItems).map(id => ({ type: 'delete', id }));
+                this.performItemUpdates(ops);
+            }
+        );
+    }
+
+    // --- Import / URL --- 
+    checkForUrlData() {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('title') || params.has('text') || params.has('url')) {
+            this.pendingShare = {
+                title: params.get('title'),
+                text: params.get('text'),
+                url: params.get('url')
+            };
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }
+
+    async processUrlData() {
+        if (!this.pendingShare) return;
+        this.openModal();
+        document.getElementById('itemTitle').value = this.pendingShare.title || '';
+        document.getElementById('itemDescription').value = this.pendingShare.text || '';
+        document.getElementById('itemUrl').value = this.pendingShare.url || '';
+        this.pendingShare = null;
+    }
+
+    async handleImportFile(event) {
         const file = event.target.files[0];
         if (!file) return;
 
-        this.showLoader();
+        this.showToast('Procesando archivo...', 'info');
         const reader = new FileReader();
         reader.onload = async (e) => {
             try {
                 const content = e.target.result;
-                let importedData;
+                let importedData = [];
 
                 if (file.name.endsWith('.json')) {
-                    importedData = JSON.parse(content);
+                    const json = JSON.parse(content);
+                    importedData = Array.isArray(json) ? json : (json.items || []);
                 } else if (file.name.endsWith('.html')) {
+                    // Simple HTML Bookmark parser
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(content, 'text/html');
-                    const bookmarks = [];
-
-                    const traverseBookmarks = (node, currentTags = []) => {
-                        if (node.nodeName === 'DT') {
-                            const h3 = node.querySelector('H3');
-                            const link = node.querySelector('A');
-                            const dl = node.querySelector('DL');
-
-                            if (h3) {
-                                const folderName = h3.textContent.trim();
-                                if (dl) {
-                                    Array.from(dl.children).forEach(child => {
-                                        traverseBookmarks(child, [...currentTags, folderName]);
-                                    });
-                                }
-                            } else if (link) {
-                                bookmarks.push({
-                                    id: window.storage.generateId(),
-                                    categoria: 'directorio',
-                                    titulo: link.textContent.trim(),
-                                    url: link.href,
-                                    fecha_creacion: new Date().toISOString(),
-                                    etiquetas: [...new Set(currentTags)],
-                                    tareas: [],
-                                    anclado: false,
-                                    fecha_finalizacion: null,
-                                    meta: {}
-                                });
-                            }
-                        } else if (node.nodeName === 'A') {
-                            bookmarks.push({
-                                id: window.storage.generateId(),
-                                categoria: 'directorio',
-                                titulo: node.textContent.trim(),
-                                url: node.href,
-                                fecha_creacion: new Date().toISOString(),
-                                etiquetas: [...new Set(currentTags)],
-                                tareas: [],
-                                anclado: false,
-                                fecha_finalizacion: null,
-                                meta: {}
-                            });
-                        }
-                    };
-
-                    const rootDl = doc.querySelector('DL');
-                    if (rootDl) {
-                        Array.from(rootDl.children).forEach(child => traverseBookmarks(child));
-                    }
-
-                    importedData = bookmarks;
-
-                } else {
-                    this.showToast('Formato de archivo no soportado.', 'error');
-                    return;
+                    doc.querySelectorAll('a').forEach(a => {
+                        importedData.push({
+                            titulo: a.textContent,
+                            url: a.href,
+                            categoria: 'directorio',
+                            fecha_creacion: new Date().toISOString()
+                        });
+                    });
                 }
 
-                if (Array.isArray(importedData)) {
-                    const newItems = [];
-                    for (const importedItem of importedData) {
-                        const existingItem = this.items.find(item => item.url && item.url === importedItem.url);
-                        if (!existingItem) {
-                            newItems.push(importedItem);
+                if (importedData.length > 0) {
+                    // Batch Add
+                    const ops = importedData.map(d => ({
+                        type: 'add',
+                        data: {
+                            ...d,
+                            id: this.store.generateId(),
+                            meta: {},
+                            tareas: [],
+                            etiquetas: [] // Simplified for robustness
                         }
-                    }
-                    if (newItems.length > 0) {
-                        await window.storage.performBatchUpdate(newItems.map(item => ({ type: 'add', data: item })));
-                        await this.loadData();
-                        this.renderAll();
-                        this.showToast(`Importados ${newItems.length} elementos.`, 'success');
-                    } else {
-                        this.showToast('No se encontraron nuevos elementos para importar o ya existen.', 'info');
-                    }
-                } else if (importedData.items && Array.isArray(importedData.items)) {
-                    await window.storage.saveAll(importedData);
-                    await this.loadData();
-                    this.renderAll();
-                    this.showToast('Datos importados exitosamente.', 'success');
+                    }));
+                    await this.store.performUpdates(ops);
+                    this.showToast(`Importados ${importedData.length} elementos`, 'success');
                 } else {
-                    this.showToast('Formato de datos importados inválido.', 'error');
+                    this.showToast('No se encontraron datos válidos', 'error');
                 }
-            } catch (parseError) {
-                console.error('Error parsing imported file:', parseError);
-                this.showToast('Error al procesar el archivo importado.', 'error');
-            } finally {
-                this.hideLoader();
+            } catch (err) {
+                console.error(err);
+                this.showToast('Error al importar', 'error');
             }
         };
         reader.readAsText(file);
     }
-    renderCustomCategoriesInSettings() {
-        const container = document.getElementById('customCategoriesList');
-        if (!container) return;
 
-        container.innerHTML = '';
-
-        const customCategories = this.settings.customCategories || [];
-
-        if (customCategories.length === 0) {
-            container.innerHTML = '<p>No hay categorías personalizadas.</p>';
-            return;
-        }
-
-        customCategories.forEach(category => {
-            const categoryDiv = document.createElement('div');
-            categoryDiv.className = 'custom-category-item';
-            categoryDiv.innerHTML = `
-                <span>${this.formatCategoryName(category)}</span>
-                <button class="btn btn--icon btn--danger delete-category-btn" data-category="${category}" title="Eliminar categoría">
-                    <span class="material-symbols-outlined">delete</span>
-                </button>
-            `;
-            container.appendChild(categoryDiv);
-        });
-
-        container.querySelectorAll('.delete-category-btn').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const categoryToDelete = e.currentTarget.dataset.category;
-                this.confirmDeleteItem('Eliminar Categoría', `¿Estás seguro de que quieres eliminar la categoría "${this.formatCategoryName(categoryToDelete)}"? Todos los elementos en esta categoría se moverán a "Directorio".`, () => this.deleteCustomCategory(categoryToDelete));
-            });
-        });
-    }
-
-    async deleteCustomCategory(categoryName) {
-        console.log('deleteCustomCategory: Before modification, settings:', JSON.parse(JSON.stringify(this.settings)));
-        this.settings.customCategories = this.settings.customCategories.filter(cat => cat !== categoryName);
-
-        if (this.settings.categoryTags && this.settings.categoryTags[categoryName]) {
-            delete this.settings.categoryTags[categoryName];
-        }
-        console.log('deleteCustomCategory: After modification, settings:', JSON.parse(JSON.stringify(this.settings)));
-
-        const operations = [];
-        this.items.forEach(item => {
-            if (item.categoria === categoryName) {
-                operations.push({ type: 'update', id: item.id, data: { categoria: 'directorio' } });
-            }
-        });
-
-        if (operations.length > 0) {
-            console.log('deleteCustomCategory: Calling performItemUpdates with operations:', operations);
-            await this.performItemUpdates(operations);
-        } else {
-            console.log('deleteCustomCategory: No item operations, saving all data directly.');
-            await window.storage.saveAll({ items: this.items, settings: this.settings });
-            console.log('deleteCustomCategory: Data saved directly. Loading and rendering all.');
-            await this.loadData();
-            this.renderAll();
-            console.log('deleteCustomCategory: After direct save and reload, settings:', JSON.parse(JSON.stringify(this.settings)));
-        }
-
-        this.renderNavigationTabs();
-        this.populateCategorySelector(document.getElementById('itemCategory'), true);
-        this.populateCategorySelector(document.getElementById('bulkCategorySelector'));
-        this.renderCustomCategoriesInSettings();
-        this.showToast(`Categoría "${this.formatCategoryName(categoryName)}" eliminada.`, 'success');
-    }
-
-    renderGlobalTagsInSettings() {
-        const container = document.getElementById('globalTagsList');
-        if (!container) return;
-
-        container.innerHTML = '';
-
-        const allTags = new Set();
-        this.items.forEach(item => (item.etiquetas || []).forEach(tag => allTags.add(tag)));
-
-        if (allTags.size === 0) {
-            container.innerHTML = '<p>No hay etiquetas globales.</p>';
-            return;
-        }
-
-        Array.from(allTags).sort().forEach(tag => {
-            const tagDiv = document.createElement('div');
-            tagDiv.className = 'custom-category-item';
-            tagDiv.innerHTML = `
-                <span>${formatTagText(tag)}</span>
-                <button class="btn btn--icon btn--danger delete-tag-btn" data-tag="${tag}" title="Eliminar etiqueta">
-                    <span class="material-symbols-outlined">delete</span>
-                </button>
-            `;
-            container.appendChild(tagDiv);
-        });
-
-        container.querySelectorAll('.delete-tag-btn').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const tagToDelete = e.currentTarget.dataset.tag;
-                this.confirmDeleteItem('Eliminar Etiqueta', `¿Estás seguro de que quieres eliminar la etiqueta "${formatTagText(tagToDelete)}"? Se eliminará de todos los elementos.`, () => this.deleteGlobalTag(tagToDelete));
-            });
-        });
-    }
-
-    async deleteGlobalTag(tagName) {
-        console.log('deleteGlobalTag: Before modification, settings:', JSON.parse(JSON.stringify(this.settings)));
-        const operations = [];
-        this.items.forEach(item => {
-            if (item.etiquetas && item.etiquetas.includes(tagName)) {
-                const newTags = item.etiquetas.filter(tag => tag !== tagName);
-                operations.push({ type: 'update', id: item.id, data: { etiquetas: newTags } });
-            }
-        });
-
-        // Remove the tag from categoryTags in settings if it exists there
-        for (const category in this.settings.categoryTags) {
-            if (Array.isArray(this.settings.categoryTags[category])) { // Ensure it's an array before filtering
-                this.settings.categoryTags[category] = this.settings.categoryTags[category].filter(tag => tag !== tagName);
-            }
-        }
-        console.log('deleteGlobalTag: After modification, settings:', JSON.parse(JSON.stringify(this.settings)));
-
-        if (operations.length > 0) {
-            console.log('deleteGlobalTag: Calling performItemUpdates with operations:', operations);
-            await this.performItemUpdates(operations);
-        } else {
-            console.log('deleteGlobalTag: No item operations, saving all data directly.');
-            await window.storage.saveAll({ items: this.items, settings: this.settings });
-            console.log('deleteGlobalTag: Data saved directly. Loading and rendering all.');
-            await this.loadData();
-            this.renderAll();
-            console.log('deleteGlobalTag: After direct save and reload, settings:', JSON.parse(JSON.stringify(this.settings)));
-        }
-
-        this.showToast(`Etiqueta "${formatTagText(tagName)}" eliminada de todos los elementos.`, 'success');
-        this.renderGlobalTagsInSettings();
+    showToast(msg, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast toast--${type}`;
+        toast.textContent = msg;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
     }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    window.app = new PanelMariaApp();
+    window.app.init();
+});
