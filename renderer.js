@@ -2,90 +2,123 @@ export class Renderer {
     constructor(appContext) {
         this.app = appContext;
         this.containers = {
-            grid: document.getElementById('itemsContainer'),
-            tagTabs: document.getElementById('tagTabs'),
-            kaiCard: document.getElementById('kaiCard')
+            grid: document.getElementById('gallery'), // New ID
+            tagTabs: document.getElementById('tagFilters'), // New ID
+            kaiCard: null // Kai Card is now dynamic in render
         };
     }
 
     render(store, selectedItems) {
         const items = store.getFilteredItems();
-        this.renderGrid(items, selectedItems);
-        this.renderTagTabs(store.getAllTags(), store.filters.tag);
+        const activeTag = store.filters.tag || 'all';
+
+        this.renderSidebarContent(items, activeTag, store.items.length === 0, selectedItems);
+        this.renderTagTabs(store.getAllTags(), activeTag);
+
+        // Update Auth Visuals
+        const user = store.user;
+        const authSection = document.getElementById('authSection');
+        if (user) {
+            document.getElementById('loginBtn').classList.add('hidden');
+            document.getElementById('userProfile').classList.remove('hidden');
+            document.getElementById('userAvatar').src = user.photoURL;
+            document.getElementById('userName').textContent = user.displayName.split(' ')[0];
+            document.getElementById('statusInfo').textContent = 'ONLINE';
+            document.getElementById('statusInfo').style.background = '#00FF00';
+            document.getElementById('statusInfo').style.color = '#000';
+        } else {
+            document.getElementById('loginBtn').classList.remove('hidden');
+            document.getElementById('userProfile').classList.add('hidden');
+            document.getElementById('statusInfo').textContent = 'OFFLINE';
+            document.getElementById('statusInfo').style.background = '#000';
+            document.getElementById('statusInfo').style.color = '#FFF';
+        }
     }
 
-    renderGrid(items, selectedItems) {
+    renderSidebarContent(items, activeTag, isEmpty, selectedItems) {
         if (!this.containers.grid) return;
 
-        // Items Map
-        this.containers.grid.innerHTML = items.map(item => this.createItemCard(item, selectedItems.has(item.id))).join('');
+        let html = '';
+
+        // 1. KAI CARD (Always First)
+        // Check if we are in "Kai View" (no specific item selected)
+        const isKaiActive = this.app.currentId === null;
+
+        // Logic: Show Kai if current filter is 'all' or specific search
+        if (activeTag === 'all') {
+            html += `
+            <div class="neo-card kai-card ${isKaiActive ? 'active-card' : ''}" data-action="open-kai">
+                <span class="card-tag">#ASISTENTE</span>
+                <div class="card-title">KAI CHAT ⚡</div>
+            </div>`;
+        }
+
+        // 2. ITEMS
+        html += items.map(item => this.createItemCard(item, selectedItems.has(item.id))).join('');
+
+        this.containers.grid.innerHTML = html;
     }
 
     createItemCard(item, isSelected) {
-        const date = new Date(item.fecha_creacion).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-        // Generate random color for avatar base on char code
-        const colors = ['#FF9800', '#F44336', '#2196F3', '#4CAF50', '#9C27B0'];
-        const color = colors[item.titulo.charCodeAt(0) % colors.length] || '#9E9E9E';
+        // Tag Logic: Take first tag or 'General'
+        const tag = (item.etiquetas && item.etiquetas.length > 0) ? item.etiquetas[0] : 'NOTA';
 
         return `
-            <div class="card ${isSelected ? 'selected' : ''}" data-id="${item.id}" data-action="open-item">
-                <div class="card__avatar" style="background-color: ${color}">
-                    ${item.titulo.charAt(0).toUpperCase()}
-                </div>
-                <div class="card__content">
-                    <div class="card__header">
-                        <h3 class="card__title">${item.titulo || 'Sin Título'}</h3>
-                        <span class="card__time">${date}</span>
-                    </div>
-                    <p class="card__preview">${item.descripcion || 'Sin contenido adicional...'}</p>
-                </div>
+            <div class="neo-card ${isSelected ? 'active-card' : ''}" data-id="${item.id}" data-action="open-item">
+                <span class="card-tag">#${tag.toUpperCase()}</span>
+                <div class="card-title">${item.titulo || 'Sin Título'}</div>
+                <div style="font-size: 0.8rem; margin-top:5px; opacity:0.8;">${item.descripcion ? item.descripcion.substring(0, 50) + '...' : ''}</div>
             </div>`;
     }
 
     renderTagTabs(allTags, activeTag) {
-        const tabsFn = (tag, label) => `
-            <button class="tab-chip ${activeTag === tag ? 'active' : ''}" 
-                data-action="filter-tag" data-tag="${tag || ''}">
-                ${label}
-            </button>`;
+        if (!this.containers.tagTabs) return;
 
-        let html = tabsFn(null, 'Todo'); // 'Todo' tab
-        Array.from(allTags).forEach(tag => {
-            html += tabsFn(tag, `#${tag}`);
+        let html = `<button class="filter-chip ${!activeTag || activeTag === 'all' ? 'active' : ''}" data-action="filter-tag" data-tag="all">Todo</button>`;
+
+        Array.from(allTags).sort().forEach(tag => {
+            html += `<button class="filter-chip ${activeTag === tag ? 'active' : ''}" data-action="filter-tag" data-tag="${tag}">#${tag.toUpperCase().substring(0, 5)}</button>`;
         });
 
-        if (this.containers.tagTabs) this.containers.tagTabs.innerHTML = html;
+        this.containers.tagTabs.innerHTML = html;
     }
 
-    // UNIFIED VIEW TOGGLER (Mobile Slider Logic)
-    toggleView(view, viewId = null) {
-        // IDs: 'kai', 'workspace'
-        const app = document.querySelector('.app-container');
-        const chat = document.getElementById('mainChat');
-        const ws = document.getElementById('workspacePanel');
-        const kaiCard = document.getElementById('kaiCard');
+    // VIEW TOGGLER
+    toggleView(view) {
+        const kaiView = document.getElementById('kaiView');
+        const editorView = document.getElementById('editorView');
+        const headerTitle = document.getElementById('headerTitle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
 
-        // Reset Card Selection Visuals
-        document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
-        if (view === 'kai') kaiCard.classList.add('selected');
-
-        // Panel Visibility (Desktop & Mobile)
         if (view === 'kai') {
-            chat.classList.remove('hidden');
-            ws.classList.add('hidden');
-        } else if (view === 'workspace') {
-            chat.classList.add('hidden');
-            ws.classList.remove('hidden');
+            kaiView.classList.remove('hidden');
+            editorView.classList.add('hidden');
+            headerTitle.textContent = "KAI CHAT";
+        } else if (view === 'editor') {
+            kaiView.classList.add('hidden');
+            editorView.classList.remove('hidden');
+            // Title updated by openWorkspace
         }
 
-        // Mobile Slide Move
-        if (view === 'list') {
-            app.classList.remove('show-chat');
-            app.classList.add('show-list');
-        } else {
-            app.classList.remove('show-list');
-            app.classList.add('show-chat'); // 'show-chat' implies showing RIGHT panel
-        }
+        // Mobile Sidebar Close
+        sidebar.classList.remove('show');
+        overlay.classList.remove('active');
+
+        // Re-render to update active card state
+        this.app.store.notify();
+    }
+
+    // TASKS RENDERER (Checklist)
+    renderChecklist(tasks) {
+        const container = document.getElementById('checklistContainer');
+        if (!container) return;
+        container.innerHTML = (tasks || []).map((task, idx) => `
+            <div class="checklist-item">
+                <input type="checkbox" ${task.completado ? 'checked' : ''} data-index="${idx}" data-action="toggle-task">
+                <input type="text" value="${task.titulo}" class="neo-input-flat" data-index="${idx}" data-action="edit-task" style="border-bottom: 1px dotted #ccc;">
+            </div>
+        `).join('');
     }
 
     // HELPERS & MODALS (Simplified)

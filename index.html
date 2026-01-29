@@ -4,305 +4,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel María - Organizador Personal</title>
+    <title>Panel-María & Kai | Neo-Brutalismo</title>
+    <!-- Google Fonts: Poppins (Regulares y Bolds) -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
-        rel="stylesheet" />
-    <link rel="icon" href="data:,">
     <link rel="manifest" href="manifest.json">
-
-    <script>
-        // Global Error Handler for Debugging
-        window.onerror = function (msg, url, line, col, error) {
-            console.error("Global Error:", msg, line, error);
-            // alert("Error Crítico: " + msg); // Disabled for production feel
-            return false;
-        };
-        window.addEventListener('unhandledrejection', function (event) {
-            console.error("Unhandled Rejection:", event.reason);
-        });
-
-        // SW Registration
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('SW Registered'))
-                    .catch(err => console.log('SW Fail', err));
-            });
-        }
-    </script>
 </head>
 
 <body>
-    <!-- App Container: Sidebar + Main Content -->
-    <div class="app-container">
 
-        <!-- Sidebar: Unified List (Kai + Items) -->
-        <aside id="sidebar" class="sidebar">
-            <div class="sidebar__header">
-                <!-- Telegram-Style Search & Menu -->
-                <button id="mainMenuBtn" class="btn btn--icon"><span
-                        class="material-symbols-outlined">menu</span></button>
-                <div class="search-bar-wrapper">
-                    <span class="material-symbols-outlined search-icon">search</span>
-                    <input type="text" id="gallerySearchInput" placeholder="Buscar..." autocomplete="off">
+    <div class="overlay" id="overlay"></div>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-area">
+                <h1>PANEL-MARÍA</h1>
+            </div>
+        </div>
+
+        <div class="controls-container">
+            <!-- Auth Status Section -->
+            <div id="authSection" class="auth-section">
+                <div id="userProfile" class="user-profile hidden">
+                    <img id="userAvatar" src="" class="user-avatar-mini">
+                    <span id="userName" class="user-name-mini"></span>
+                    <button id="logoutBtn" class="btn-text-small">(Salir)</button>
                 </div>
+                <button id="loginBtn" class="btn-neo-small bg-yellow">LOGIN CON GOOGLE</button>
             </div>
 
-            <!-- Tags Tabs (Telegram Folders) -->
-            <div id="tagTabs" class="tag-tabs-container">
-                <button class="tab-chip active" data-tag="all">Todo</button>
-                <!-- Dynamic tags injected here -->
+            <input type="text" id="searchInput" class="neo-input" placeholder="Buscar notas...">
+            <div class="tag-filters" id="tagFilters">
+                <button class="filter-chip active" data-filter="all">Todo</button>
+                <!-- Dynamic Tags Here -->
             </div>
+        </div>
+        <div class="blocks-gallery" id="gallery">
+            <!-- Cards Injected Here -->
+        </div>
 
-            <!-- Unified List Container -->
-            <div class="list-container">
-                <!-- 1. KAI (Pinned Chat) -->
-                <div id="kaiCard" class="card card--kai pinned-chat" data-action="open-kai">
-                    <div class="card__avatar">
-                        <span class="material-symbols-outlined">smart_toy</span>
-                    </div>
-                    <div class="card__content">
-                        <div class="card__header">
-                            <h3 class="card__title">Kai ⚡</h3>
-                            <span class="card__time">Ahora</span>
-                        </div>
-                        <p class="card__preview">Asistente Personal</p>
-                    </div>
-                </div>
+        <!-- Sidebar Footer Action -->
+        <div class="sidebar-footer" style="padding: 15px; border-top: 3px solid #000; background: #C1E7FF;">
+            <button id="addItemBtn" class="btn-neo bg-pink" style="width: 100%;">+ NUEVO BLOQUE</button>
+        </div>
+    </aside>
 
-                <!-- 2. Items List -->
-                <div id="itemsContainer" class="items-list">
-                    <!-- Items injected here by Renderer -->
-                </div>
-
-                <!-- Empty State -->
-                <div id="emptyState" class="empty-state hidden">
-                    <p class="empty-state__text">No hay notas con esta etiqueta.</p>
-                </div>
+    <!-- ÁREA DE TRABAJO -->
+    <main class="main-content">
+        <header class="panel-header">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <button class="btn-neo mobile-menu-btn bg-yellow" id="openSidebarBtn">
+                    <i data-lucide="menu"></i>
+                </button>
+                <button class="btn-neo bg-yellow" id="homeBtn">
+                    <i data-lucide="home"></i> <span class="btn-text">Inicio</span>
+                </button>
+                <span id="headerTitle" style="font-weight: 800; font-size: 0.9rem; text-transform: uppercase;">Kai
+                    Chat</span>
             </div>
+            <div id="statusInfo" class="status-badge">OFFLINE</div>
+        </header>
 
-            <!-- Sidebar Footer (Settings/Actions) -->
-            <div class="sidebar__footer">
-                <!-- Auth Status Mini -->
-                <div id="authStatusMini" class="auth-mini">
-                    <span class="status-dot offline" id="authDot"></span>
-                    <span id="authText">Offline</span>
-                </div>
-                <button id="addItemBtn" class="btn btn--icon btn--filled-icon" title="Nuevo Bloque">+</button>
-            </div>
-        </aside>
-
-        <!-- Right Panel: Swaps between MainChat and Workspace -->
-        <div id="rightPanel" class="right-panel">
-
-            <!-- 1. MAIN CHAT (Kai) -->
-            <main id="mainChat" class="content-view visible">
-                <header class="view-header">
-                    <button id="backToSidebarBtn" class="btn btn--icon mobile-only"><span
-                            class="material-symbols-outlined">arrow_back</span></button>
-                    <div class="header-info">
-                        <span class="header-title">Kai ⚡</span>
-                        <span class="header-status">En línea</span>
-                    </div>
-                    <div class="header-actions">
-                        <button id="loginBtn" class="btn btn--small btn--outlined">Login</button>
-                        <button id="logoutBtn" class="btn btn--icon hidden" title="Salir"><span
-                                class="material-symbols-outlined">logout</span></button>
-                    </div>
-                </header>
-
-                <div id="chat-messages" class="chat-area">
-                    <div class="chat-message ia">
-                        <div class="content">Hola, soy Kai. Tu cerebro externo. 🧠⚡<br>Tus datos se adaptarán
-                            automáticamente al iniciar sesión.</div>
+        <!-- VISTA: CHAT DE KAI -->
+        <div class="view-container" id="kaiView">
+            <div class="kai-chat-container">
+                <div class="kai-messages" id="kaiMessages">
+                    <div class="msg msg-kai">
+                        ¡Hola María! 👋 Soy Kai.
+                        <br>Inicia sesión para ver tus cosas o cuéntame algo ahora.
                     </div>
                 </div>
-
-                <div class="input-area">
-                    <form id="chat-form" class="chat-bar">
-                        <button type="button" id="voiceBtn" class="btn btn--icon"><span
-                                class="material-symbols-outlined">mic</span></button>
-                        <input type="text" id="chat-input" placeholder="Mensaje a Kai..." autocomplete="off">
-                        <button type="submit" class="btn btn--icon btn--send"><span
-                                class="material-symbols-outlined">send</span></button>
-                    </form>
-                </div>
-            </main>
-
-            <!-- 2. WORKSPACE (Item Editor) -->
-            <div id="workspacePanel" class="content-view hidden">
-                <header class="view-header">
-                    <button id="backToListBtn" class="btn btn--icon mobile-only"><span
-                            class="material-symbols-outlined">arrow_back</span></button>
-                    <div class="header-info">
-                        <input type="text" id="wsTitle" class="header-title-input" placeholder="Sin Título">
-                        <span id="wsStatus" class="header-status">Guardado</span>
-                    </div>
-                    <div class="header-actions">
-                        <button id="wsDeleteBtn" class="btn btn--icon btn--danger"><span
-                                class="material-symbols-outlined">delete</span></button>
-                    </div>
-                </header>
-
-                <div class="editor-body">
-                    <!-- Meta: Tags & URL -->
-                    <div class="editor-meta">
-                        <div class="meta-row">
-                            <span class="material-symbols-outlined icon">link</span>
-                            <input type="text" id="wsUrl" class="meta-input" placeholder="Enlace (http://)...">
-                            <a id="wsOpenLinkBtn" href="#" target="_blank" class="btn btn--icon btn--small hidden"><span
-                                    class="material-symbols-outlined">open_in_new</span></a>
-                        </div>
-                        <div class="meta-row">
-                            <span class="material-symbols-outlined icon">label</span>
-                            <div id="wsTagsWrapper" class="tags-wrapper">
-                                <input type="text" id="wsTagsInput" class="tags-input" placeholder="Etiquetas...">
-                            </div>
-                        </div>
-                    </div>
-
-                    <textarea id="wsDescription" class="editor-textarea"
-                        placeholder="Escribe aquí tu nota, idea o proyecto..."></textarea>
+                <div class="chat-input-area">
+                    <button class="btn-audio" id="voiceBtn" title="Grabar audio">
+                        <i data-lucide="mic" id="micIcon" style="width: 24px; height: 24px;"></i>
+                    </button>
+                    <input type="text" id="kaiInput" class="neo-input" placeholder="Escribe o graba un pensamiento...">
+                    <button class="btn-neo bg-green" id="sendToKaiBtn">ENVIAR</button>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- MODALS -->
-
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="modal-overlay hidden">
-        <div class="modal">
-            <div class="modal__header">
-                <h2>Configuración</h2>
-                <button id="settingsCloseBtn" class="btn btn--icon"><span
-                        class="material-symbols-outlined">close</span></button>
-            </div>
-            <div class="modal__body">
-                <div class="form-group-inline">
-                    <input type="checkbox" id="autoSaveVoice" class="checkbox-field">
-                    <label for="autoSaveVoice">Guardado automático por voz</label>
-                </div>
-                <div class="form-group">
-                    <label>Tema</label>
-                    <select id="themeSelect" class="input-field">
-                        <option value="default">Claro</option>
-                        <option value="dark">Oscuro</option>
-                    </select>
+        <!-- VISTA: EDITOR DE BLOQUE -->
+        <div class="view-container hidden" id="editorView">
+            <div class="editor-paper">
+                <div class="editor-actions-top"
+                    style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <span id="saveStatus" style="font-size:0.7rem; font-weight:800; color:#888;">GUARDADO</span>
+                    <button id="deleteBlockBtn" class="btn-icon-danger"><i data-lucide="trash-2"></i></button>
                 </div>
 
-                <hr class="modal-divider">
+                <input type="text" id="editTitle" class="edit-title" placeholder="TÍTULO">
 
-                <div class="form-group">
-                    <label class="flex-label">
-                        Categorías Personalizadas
-                        <button id="addCustomCatBtn" class="btn btn--text btn--small">+ Añadir</button>
-                    </label>
-                    <div id="customCategoriesList" class="settings-list"></div>
+                <!-- Meta Inputs -->
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <div style="flex:1;">
+                        <input type="text" id="editUrl" class="neo-input-flat"
+                            placeholder="http://enlace-principal.com">
+                    </div>
+                    <div style="flex:1;">
+                        <input type="text" id="editTags" class="neo-input-flat" placeholder="#etiquetas, #separadas">
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label>Etiquetas Globales</label>
-                    <div id="globalTagsList" class="settings-list"></div>
-                </div>
+                <textarea id="editBody" class="edit-body" rows="8"
+                    placeholder="Cuéntame más sobre este bloque..."></textarea>
+
+                <div class="section-title">Tareas</div>
+                <div id="checklistContainer"></div>
+                <button class="btn-neo" id="addTaskBtn" style="font-size: 0.7rem; margin-top: 8px;">+ AGREGAR
+                    TAREA</button>
             </div>
         </div>
-    </div>
+    </main>
 
-    <!-- New Category Modal -->
-    <div id="newCategoryModal" class="modal-overlay hidden">
-        <div class="modal">
-            <div class="modal__header">
-                <h2>Nueva Categoría</h2>
-                <button id="newCategoryCloseBtn" class="btn btn--icon"><span
-                        class="material-symbols-outlined">close</span></button>
-            </div>
-            <div class="modal__body">
-                <div class="form-group">
-                    <label>Nombre</label>
-                    <input type="text" id="newCategoryNameInput" class="input-field" placeholder="Ej: Viajes">
-                </div>
-                <div class="modal__footer">
-                    <button id="newCategoryCancelBtn" class="btn btn--text">Cancelar</button>
-                    <button id="newCategoryCreateBtn" class="btn btn--filled">Crear</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bulk Modals -->
-    <div id="bulkCategoryModal" class="modal-overlay hidden">
-        <div class="modal">
-            <div class="modal__header">
-                <h2>Mover Elementos</h2>
-                <button id="bulkCategoryCloseBtn" class="btn btn--icon"><span
-                        class="material-symbols-outlined">close</span></button>
-            </div>
-            <div class="modal__body">
-                <div class="form-group">
-                    <select id="bulkCategorySelector" class="input-field"></select>
-                </div>
-                <div class="modal__footer">
-                    <button id="bulkCategoryCancelBtn" class="btn btn--text">Cancelar</button>
-                    <button id="bulkCategoryOkBtn" class="btn btn--filled">Mover</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="bulkTagsModal" class="modal-overlay hidden">
-        <div class="modal">
-            <div class="modal__header">
-                <h2>Etiquetas en Lote</h2>
-                <button id="bulkTagsCloseBtn" class="btn btn--icon"><span
-                        class="material-symbols-outlined">close</span></button>
-            </div>
-            <div class="modal__body">
-                <div id="bulkTagsWrapper" class="tags-input-wrapper">
-                    <input type="text" id="bulkTagsInput" class="tags-input-field" placeholder="Etiquetas...">
-                </div>
-                <div class="tag-suggestions"></div>
-                <div class="modal__footer">
-                    <button id="bulkTagsCancelBtn" class="btn btn--text">Cancelar</button>
-                    <button id="bulkTagsOkBtn" class="btn btn--filled">Guardar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Confirm Modal -->
-    <div id="confirmModal" class="modal-overlay hidden">
-        <div class="modal modal--confirm">
-            <div class="modal__body">
-                <h3 id="confirmTitle">¿Seguro?</h3>
-                <p id="confirmMessage">Esta acción es irreversible.</p>
-                <div class="modal__footer">
-                    <button id="confirmCancelBtn" class="btn btn--text">Cancelar</button>
-                    <button id="confirmOkBtn" class="btn btn--danger">Confirmar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast Container -->
-    <div id="toastContainer" class="toast-container"></div>
-
-    <!-- Loader -->
-    <div id="loader" class="loader-overlay hidden">
-        <div class="loader-spinner"></div>
-    </div>
-
-    <!-- Scripts -->
-    <script src="storage.js" type="module"></script>
-    <script src="auth.js" type="module"></script>
-    <script src="store.js" type="module"></script>
-    <script src="renderer.js" type="module"></script>
-    <script src="chat.js" type="module"></script>
-    <script src="app.js" type="module"></script>
+    <!-- SCRIPTS -->
+    <!-- Important: Load order matters -->
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="app.js"></script>
+    <script>
+        // Init Icons
+        window.addEventListener('load', () => {
+            if (window.lucide) window.lucide.createIcons();
+        });
+    </script>
 </body>
 
 </html>

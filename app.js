@@ -62,76 +62,170 @@ class PanelMariaApp {
     }
 
     setupListeners() {
+        // Helper
         const on = (id, evt, fn) => {
             const el = document.getElementById(id);
             if (el) el.addEventListener(evt, fn);
         };
 
-        // UI Navigation Listeners
-        on('backToSidebarBtn', 'click', () => this.renderer.toggleView('list'));
-        on('backToListBtn', 'click', () => this.renderer.toggleView('list'));
+        // --- NAVIGATION ---
+        on('openSidebarBtn', 'click', () => {
+            document.getElementById('sidebar').classList.add('show');
+            document.getElementById('overlay').classList.add('active');
+        });
+        on('overlay', 'click', () => {
+            document.getElementById('sidebar').classList.remove('show');
+            document.getElementById('overlay').classList.remove('active');
+        });
+        on('homeBtn', 'click', () => this.openKaiChat());
 
-        on('kaiCard', 'click', () => this.renderer.toggleView('kai'));
-        on('addItemBtn', 'click', () => {
-            const id = this.store.generateId();
-            this.store.addItem({ titulo: 'Nueva Nota', id }).then(() => this.openWorkspace(id));
+        // --- GALLERY INTERACTIONS ---
+        document.getElementById('gallery').addEventListener('click', (e) => {
+            const card = e.target.closest('.neo-card');
+            if (!card) return;
+
+            if (card.dataset.action === 'open-kai') {
+                this.openKaiChat();
+            } else if (card.dataset.action === 'open-item') {
+                this.openWorkspace(card.dataset.id);
+            }
         });
 
-        // Auth
-        on('loginBtn', 'click', () => signInWithGoogle());
-        on('logoutBtn', 'click', () => signOutUser());
-
-        // Tag Tabs (Event Delegation)
-        document.getElementById('tagTabs').addEventListener('click', (e) => {
+        // --- TAGS ---
+        document.getElementById('tagFilters').addEventListener('click', (e) => {
             if (e.target.dataset.action === 'filter-tag') {
                 const tag = e.target.dataset.tag;
                 this.store.setTagFilter(tag === 'all' ? null : tag);
             }
         });
 
-        // Item Click (Event Delegation)
-        document.getElementById('itemsContainer').addEventListener('click', (e) => {
-            const card = e.target.closest('.card');
-            if (card && card.dataset.action === 'open-item') {
-                this.openWorkspace(card.dataset.id);
-            }
-        });
+        // --- SEARCH ---
+        on('searchInput', 'input', (e) => this.store.setSearch(e.target.value));
 
-        // Workspace Auto-Save
+        // --- AUTH ---
+        on('loginBtn', 'click', () => signInWithGoogle());
+        on('logoutBtn', 'click', () => signOutUser());
+
+        // --- KAI CHAT ---
+        on('sendToKaiBtn', 'click', (e) => {
+            e.preventDefault();
+            this.handleKaiMessage();
+        });
+        on('voiceBtn', 'click', () => this.toggleVoiceRecording());
+
+        // --- EDITOR ACTIONS ---
+        on('addItemBtn', 'click', () => this.createNewItem());
+        on('deleteBlockBtn', 'click', () => this.deleteCurrentItem());
+        on('addTaskBtn', 'click', () => this.addTaskToCurrent());
+
+        // --- EDITOR AUTO-SAVE ---
         const autoSave = this.debounce(() => this.saveWorkspace(), 500);
-        ['wsTitle', 'wsDescription', 'wsUrl', 'wsTagsInput'].forEach(id => on(id, 'input', autoSave));
-        on('wsDeleteBtn', 'click', () => this.deleteCurrentItem());
+        ['editTitle', 'editBody', 'editUrl', 'editTags'].forEach(id => on(id, 'input', autoSave));
+
+        // Checklist Delegation
+        document.getElementById('checklistContainer').addEventListener('change', (e) => {
+            // Handle Checkbox or Text change
+            autoSave();
+        });
     }
 
-    // ACTIONS
+    // --- ACTIONS ---
+
+    openKaiChat() {
+        this.currentId = null;
+        this.renderer.toggleView('kai');
+    }
+
+    createNewItem() {
+        const id = this.store.generateId();
+        this.store.addItem({ titulo: 'NUEVA NOTA', id }).then(() => this.openWorkspace(id));
+    }
+
     openWorkspace(id) {
         this.currentId = id;
         const item = this.store.getItem(id);
         if (!item) return;
 
-        document.getElementById('wsTitle').value = item.titulo || '';
-        document.getElementById('wsDescription').value = item.descripcion || '';
-        document.getElementById('wsUrl').value = item.url || '';
-        document.getElementById('wsTagsInput').value = (item.etiquetas || []).join(', ');
+        document.getElementById('editTitle').value = item.titulo || '';
+        document.getElementById('editBody').value = item.descripcion || '';
+        document.getElementById('editUrl').value = item.url || '';
+        document.getElementById('editTags').value = (item.etiquetas || []).join(', ');
+        document.getElementById('headerTitle').textContent = item.titulo || 'BLOQUE';
 
-        this.renderer.toggleView('workspace');
+        this.renderer.renderChecklist(item.tareas);
+        this.renderer.toggleView('editor');
     }
 
     saveWorkspace() {
         if (!this.currentId) return;
+
+        // Parse Tags
+        const tagsInput = document.getElementById('editTags').value;
+        const tags = tagsInput.split(',').map(t => t.trim().toLowerCase()).filter(t => t.length > 0);
+
+        // Parse Tasks 
+        const taskEls = document.querySelectorAll('#checklistContainer .checklist-item');
+        const tasks = Array.from(taskEls).map(el => {
+            return {
+                titulo: el.querySelector('input[type="text"]').value,
+                completado: el.querySelector('input[type="checkbox"]').checked
+            };
+        });
+
         const data = {
-            titulo: document.getElementById('wsTitle').value,
-            descripcion: document.getElementById('wsDescription').value,
-            url: document.getElementById('wsUrl').value,
-            // categoria removed
+            titulo: document.getElementById('editTitle').value,
+            descripcion: document.getElementById('editBody').value,
+            url: document.getElementById('editUrl').value,
+            etiquetas: tags,
+            tareas: tasks
         };
+
         this.store.updateItem(this.currentId, data);
+        document.getElementById('saveStatus').textContent = 'GUARDANDO...';
+        setTimeout(() => document.getElementById('saveStatus').textContent = 'GUARDADO', 800);
+    }
+
+    addTaskToCurrent() {
+        if (!this.currentId) return;
+        const item = this.store.getItem(this.currentId);
+        const tasks = item.tareas || [];
+        tasks.push({ titulo: '', completado: false });
+        this.store.updateItem(this.currentId, { tareas: tasks });
+        // Force re-render of checklist
+        this.renderer.renderChecklist(tasks);
+    }
+
+    handleKaiMessage() {
+        const input = document.getElementById('kaiInput');
+        const text = input.value.trim();
+        if (!text) return;
+
+        // 1. Show User Msg
+        const container = document.getElementById('kaiMessages');
+        container.innerHTML += `<div class="msg msg-user">${text}</div>`;
+        input.value = '';
+        container.scrollTop = container.scrollHeight;
+
+        // 2. Logic (Mock for now, or connect to chat.js later)
+        setTimeout(() => {
+            container.innerHTML += `<div class="msg msg-kai">He guardado esa idea. 🧠</div>`;
+            container.scrollTop = container.scrollHeight;
+        }, 600);
+    }
+
+    toggleVoiceRecording() {
+        const btn = document.getElementById('voiceBtn');
+        btn.classList.toggle('recording');
+        // Logic for speech API here (can reuse previous chat.js logic)
     }
 
     deleteCurrentItem() {
         if (!this.currentId) return;
         this.store.deleteItem(this.currentId);
-        this.closeWorkspace();
+        // The new flow might not close the workspace immediately after deletion,
+        // or it might navigate back to the list view.
+        // For now, we'll keep it as is, assuming the UI handles navigation.
+        // If a closeWorkspace() is needed, it should be added here or in the calling context.
     }
 
     // CATEGORIES (Removed)
