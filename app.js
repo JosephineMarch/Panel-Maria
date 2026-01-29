@@ -150,7 +150,7 @@ class PanelMariaApp {
         this.loaderElement = document.getElementById('loader');
 
         window.appController = {
-             requestDataRefresh: async () => {
+            requestDataRefresh: async () => {
                 await this.loadData();
                 this.renderAll();
             }
@@ -171,7 +171,7 @@ class PanelMariaApp {
         this.checkForUrlData();
         this.setupEventListeners();
         initChat(this);
-        
+
         this.modalTagInput = new TagInput(
             document.getElementById('itemTagsWrapper'),
             () => this.getAllTags()
@@ -244,7 +244,7 @@ class PanelMariaApp {
 
     async handleFormSubmit(e) {
         e.preventDefault();
-        
+
         let finalCategory = document.getElementById('itemCategory').value;
         if (finalCategory === '__new_category__') {
             const newCustomCategory = document.getElementById('newItemCategory').value.trim();
@@ -258,7 +258,7 @@ class PanelMariaApp {
                 await this.saveDataSettings();
             }
         }
-        
+
         const finalTags = this.modalTagInput.getTags();
         if (!this.settings.categoryTags[finalCategory]) {
             this.settings.categoryTags[finalCategory] = [];
@@ -287,7 +287,7 @@ class PanelMariaApp {
             this.showToast('El título y la categoría son obligatorios.', 'error');
             return;
         }
-        
+
         let operation;
         if (this.currentEditId) {
             operation = { type: 'update', id: this.currentEditId, data: itemData };
@@ -302,9 +302,9 @@ class PanelMariaApp {
             operation = { type: 'add', data: newItem };
             this.showToast('Elemento creado', 'success');
         }
-        
+
         await this.performItemUpdates([operation]);
-        
+
         this.closeModal();
         this.renderNavigationTabs();
         this.populateCategorySelector(document.getElementById('itemCategory'), true);
@@ -333,7 +333,7 @@ class PanelMariaApp {
     async toggleTask(itemId, taskId) {
         const item = this.items.find(i => i.id === itemId);
         if (item) {
-            const newTasks = item.tareas.map(t => 
+            const newTasks = item.tareas.map(t =>
                 t.id === taskId ? { ...t, completado: !t.completado } : t
             );
             await this.performItemUpdates([{ type: 'update', id: itemId, data: { tareas: newTasks } }]);
@@ -372,34 +372,73 @@ class PanelMariaApp {
     }
 
     // --- LÓGICA DE UI Y EVENTOS ---
-    
+
     setupApplication() {
-        this.renderNavigationTabs();
-        this.populateCategorySelector(document.getElementById('itemCategory'), true);
-        this.switchCategory(this.settings.lastCategory || 'directorio');
-        this.applyTheme();
+        this.setupSidebar();
+        this.setupChatUI();
+        this.renderAll(); // Renders Bento Grid
         this.processUrlData();
+        this.setupFilterChips();
+    }
+
+    setupSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('toggleSidebarBtn');
+        const closeBtn = document.getElementById('closeSidebarBtn');
+
+        const toggleSidebar = () => {
+            if (window.innerWidth <= 768) {
+                sidebar.classList.toggle('open');
+            } else {
+                sidebar.classList.toggle('hidden');
+            }
+        };
+
+        if (toggleBtn) toggleBtn.addEventListener('click', toggleSidebar);
+        if (closeBtn) closeBtn.addEventListener('click', () => sidebar.classList.remove('open'));
+    }
+
+    setupChatUI() {
+        const chatInput = document.getElementById('chat-input');
+        if (chatInput) {
+            chatInput.addEventListener('input', function () {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+
+            chatInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    document.getElementById('chat-form').dispatchEvent(new Event('submit'));
+                }
+            });
+        }
+    }
+
+    setupFilterChips() {
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                this.switchCategory(chip.dataset.category);
+            });
+        });
     }
 
     setupAuthListener() {
         onAuthStateChanged(auth, (user) => {
             this.user = user;
-            const authSection = document.getElementById('auth-section');
-            const appContent = document.getElementById('app-content');
+            const loginBtn = document.getElementById('loginBtn');
             const logoutBtn = document.getElementById('logoutBtn');
-            const addItemBtn = document.getElementById('addItemBtn');
+            const authStatusDiv = document.getElementById('auth-status');
 
             if (user) {
-                authSection.classList.add('hidden');
-                appContent.classList.remove('hidden');
+                loginBtn.classList.add('hidden');
                 logoutBtn.classList.remove('hidden');
-                addItemBtn.classList.remove('hidden');
                 window.storage.setAdapter('firebase', user.uid);
             } else {
-                authSection.classList.remove('hidden');
-                appContent.classList.add('hidden');
+                loginBtn.classList.remove('hidden');
                 logoutBtn.classList.add('hidden');
-                addItemBtn.classList.add('hidden');
                 window.storage.setAdapter('local');
             }
 
@@ -441,24 +480,24 @@ class PanelMariaApp {
 
             // Si hay una URL, llamamos a la API gratuita de Microlink
             if (targetUrl) {
-                document.getElementById('itemTitle').value = ''; 
+                document.getElementById('itemTitle').value = '';
                 document.getElementById('itemDescription').value = '';
                 document.getElementById('itemUrl').value = targetUrl;
-                
-                this.showLoader(); 
-                
+
+                this.showLoader();
+
                 try {
                     // Llamada a API gratuita Microlink para obtener metadatos (título, descripción, imagen)
                     const response = await fetch(`https://api.microlink.io?url=${encodeURIComponent(targetUrl)}`);
                     const json = await response.json();
-                    
+
                     if (json.status === 'success') {
                         const metadata = json.data;
-                        
+
                         if (metadata.title) {
                             document.getElementById('itemTitle').value = metadata.title;
                         }
-                        
+
                         if (metadata.description) {
                             document.getElementById('itemDescription').value = metadata.description;
                         } else if (this.bookmarkletData.text) {
@@ -483,19 +522,19 @@ class PanelMariaApp {
                     document.getElementById('itemTitle').value = this.bookmarkletData.title || 'Enlace compartido';
                     document.getElementById('itemDescription').value = this.bookmarkletData.text || '';
                 } finally {
-                    this.hideLoader(); 
+                    this.hideLoader();
                 }
 
             } else {
-                 // Si no hay URL, solo rellenamos con lo que tengamos
+                // Si no hay URL, solo rellenamos con lo que tengamos
                 document.getElementById('itemTitle').value = this.bookmarkletData.title || '';
                 document.getElementById('itemDescription').value = this.bookmarkletData.text || '';
             }
-            
+
             const categorySelector = document.getElementById('itemCategory');
             const categoryExists = [...categorySelector.options].some(opt => opt.value === this.bookmarkletData.category);
             categorySelector.value = categoryExists ? this.bookmarkletData.category : 'directorio';
-            
+
             this.bookmarkletData = null;
         }
     }
@@ -523,14 +562,14 @@ class PanelMariaApp {
             this.hideLoader();
         }
     }
-    
+
     setupEventListeners() {
         document.getElementById('loginBtn').addEventListener('click', () => this.loginWithGoogle());
         document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
         document.getElementById('settingsBtn').addEventListener('click', () => this.openSettingsModal());
         document.getElementById('addItemBtn').addEventListener('click', () => this.openModal());
         document.getElementById('emptyStateAddBtn').addEventListener('click', () => this.openModal());
-        
+
         let searchTimeout;
         document.getElementById('searchInput').addEventListener('input', (e) => {
             clearTimeout(searchTimeout);
@@ -539,13 +578,13 @@ class PanelMariaApp {
                 this.renderAll();
             }, 300);
         });
-        
+
         document.getElementById('selectAllCheckbox').addEventListener('change', (e) => this.toggleSelectAll(e.target.checked));
         document.getElementById('bulkChangeCategoryBtn').addEventListener('click', () => this.openBulkCategoryModal());
         document.getElementById('bulkChangeTagsBtn').addEventListener('click', () => this.openBulkTagsModal());
         document.getElementById('bulkPinBtn').addEventListener('click', () => this.bulkTogglePinned());
         document.getElementById('bulkDeleteBtn').addEventListener('click', () => this.confirmBulkDelete());
-        
+
         document.getElementById('closeModalBtn').addEventListener('click', () => this.closeModal());
         document.getElementById('cancelBtn').addEventListener('click', () => this.closeModal());
         document.getElementById('itemForm').addEventListener('submit', (e) => this.handleFormSubmit(e));
@@ -570,7 +609,7 @@ class PanelMariaApp {
             this.sortBy = e.target.value;
             this.renderAll();
         });
-        
+
         document.getElementById('newCategoryCloseBtn').addEventListener('click', () => this.closeNewCategoryModal());
         document.getElementById('newCategoryCancelBtn').addEventListener('click', () => this.closeNewCategoryModal());
         document.getElementById('newCategoryCreateBtn').addEventListener('click', () => this.addCustomCategory(document.getElementById('newCategoryNameInput').value));
@@ -584,8 +623,8 @@ class PanelMariaApp {
 
             const action = actionElement.dataset.action;
             const card = actionElement.closest('.card');
-            
-            if (!card && action !== 'filter-by-tag') return; 
+
+            if (!card && action !== 'filter-by-tag') return;
 
             const id = card ? card.dataset.id : null;
 
@@ -627,9 +666,9 @@ class PanelMariaApp {
             }
         });
     }
-    
+
     // --- MÉTODOS DE RENDERIZADO ---
-    
+
     switchCategory(category) {
         this.currentCategory = category;
         this.settings.lastCategory = category;
@@ -639,61 +678,36 @@ class PanelMariaApp {
         this.filters.tag = null;
         this.renderAll();
     }
-    
+
     renderAll() {
         this.renderItems();
         this.updateSelectionUI();
         this.updateEmptyState();
-        this.renderTagFilters();
+        // Tag filters temporarily disabled or moved to Search
     }
 
-    renderNavigationTabs() {
-        const navContainer = document.querySelector('.nav-tabs .nav-tabs__inner');
-        const predefinedCategories = ['directorio', 'ideas', 'proyectos', 'logros'];
-        const allCategories = [...new Set([...predefinedCategories, ...(this.settings.customCategories || [])])];
+    /* renderNavigationTabs removed */
 
-        navContainer.innerHTML = `
-            ${allCategories.map(category => `
-                <button class="nav-tab" data-category="${category}">
-                    <span class="material-symbols-outlined">${this.getCategoryIcon(category)}</span>
-                    ${this.formatCategoryName(category)}
-                </button>
-            `).join('')}
-            <button id="newCategoryNavBtn" class="btn btn--text"><span class="material-symbols-outlined">add</span> Nueva</button>
-        `;
-
-        navContainer.querySelectorAll('.nav-tab').forEach(tab => {
-            tab.addEventListener('click', () => this.switchCategory(tab.dataset.category));
-        });
-        document.getElementById('newCategoryNavBtn').addEventListener('click', () => this.openNewCategoryModal());
-        navContainer.querySelector(`[data-category="${this.currentCategory}"]`)?.classList.add('active');
-    }
-    
     createItemCard(item) {
         const isSelected = this.selectedItems.has(item.id);
-        const date = new Date(item.fecha_creacion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
-        const progress = (item.tareas && item.tareas.length > 0) ? this.createProgressBar(item) : '';
+        const date = new Date(item.fecha_creacion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+        const categoryIcon = this.getCategoryIcon(item.categoria);
+
         return `
             <div class="card ${isSelected ? 'selected' : ''}" data-id="${item.id}" data-action="handle-card-click">
-                <input type="checkbox" class="card__checkbox" data-action="toggle-selection" ${isSelected ? 'checked' : ''}>
                 <div class="card__header">
-                    <h3 class="card__title">${this.escapeHtml(item.titulo)}</h3>
-                    <button class="card__pin ${item.anclado ? 'pinned' : ''}" data-action="toggle-pinned" title="Anclar"><span class="material-symbols-outlined">push_pin</span></button>
+                    <span class="card__cat-icon material-symbols-outlined">${categoryIcon}</span>
+                    <button class="card__pin ${item.anclado ? 'pinned' : ''}" data-action="toggle-pinned" title="Anclar">
+                        <span class="material-symbols-outlined">push_pin</span>
+                    </button>
                 </div>
-                <div class="card__body">
-                    ${item.descripcion ? `<p class="card__description">${this.escapeHtml(item.descripcion)}</p>` : ''}
-                    ${item.url ? `<div class="card__urls"><a href="${this.escapeHtml(item.url)}" target="_blank" class="card__url" data-action="open-link">${this.escapeHtml(this.truncateUrl(item.url))}</a></div>` : ''}
-                    ${item.tareas && item.tareas.length > 0 ? this.createTasksContent(item) : ''}
-                    ${progress}
-                </div>
-                ${item.etiquetas && item.etiquetas.length > 0 ? `<div class="card__tags">${item.etiquetas.map(tag => `<span class="card__tag" data-action="filter-by-tag" data-tag="${this.escapeHtml(tag)}">${formatTagText(this.escapeHtml(tag))}</span>`).join('')}</div>` : ''}
+                <h3 class="card__title">${this.escapeHtml(item.titulo)}</h3>
+                <p class="card__snippet">
+                    ${this.escapeHtml(item.descripcion || item.url || 'Sin descripción')}
+                </p>
                 <div class="card__footer">
-                    <span class="card__date">${date} ${item.fecha_finalizacion ? ` (Completado)`: ''}</span>
-                    <div class="card__actions">
-                        <button class="btn btn--text" data-action="open-modal" title="Editar"><span class="material-symbols-outlined">edit</span></button>
-                        ${item.categoria !== 'logros' ? `<button class="btn btn--text" data-action="convert-to-logro" title="Convertir a logro"><span class="material-symbols-outlined">emoji_events</span></button>` : ''}
-                        <button class="btn btn--text" data-action="confirm-delete" title="Eliminar"><span class="material-symbols-outlined">delete</span></button>
-                    </div>
+                    <span class="card__date">${date}</span>
+                    ${item.url ? '<span class="material-symbols-outlined" style="font-size: 1rem; color: var(--accent-blue);">link</span>' : ''}
                 </div>
             </div>`;
     }
@@ -709,10 +723,10 @@ class PanelMariaApp {
         }
         if (this.filters.search) {
             const term = this.filters.search;
-            items = items.filter(item => 
-                item.titulo.toLowerCase().includes(term) || 
-                (item.descripcion && item.descripcion.toLowerCase().includes(term)) || 
-                (item.etiquetas && item.etiquetas.some(tag => tag.toLowerCase().includes(term))) || 
+            items = items.filter(item =>
+                item.titulo.toLowerCase().includes(term) ||
+                (item.descripcion && item.descripcion.toLowerCase().includes(term)) ||
+                (item.etiquetas && item.etiquetas.some(tag => tag.toLowerCase().includes(term))) ||
                 (item.url && item.url.toLowerCase().includes(term))
             );
         }
@@ -746,7 +760,7 @@ class PanelMariaApp {
     }
     updateSelectionUI() { const bulkActions = document.getElementById('bulkActions'); const selectAllCheckbox = document.getElementById('selectAllCheckbox'); const selectionCount = document.getElementById('selectionCount'); if (this.selectedItems.size > 0) { bulkActions.classList.remove('hidden'); selectionCount.textContent = this.selectedItems.size; } else { bulkActions.classList.add('hidden'); } const filteredItems = this.getFilteredItems(); if (filteredItems.length > 0) { const allVisibleSelected = filteredItems.every(item => this.selectedItems.has(item.id)); selectAllCheckbox.checked = allVisibleSelected; selectAllCheckbox.indeterminate = !allVisibleSelected && filteredItems.some(item => this.selectedItems.has(item.id)); } else { selectAllCheckbox.checked = false; selectAllCheckbox.indeterminate = false; } }
     updateEmptyState() { const emptyState = document.getElementById('emptyState'); const hasItems = document.getElementById('itemsContainer').children.length > 0; emptyState.classList.toggle('hidden', !hasItems); if (!hasItems) { emptyState.querySelector('.empty-state__title').textContent = `No hay elementos en "${this.formatCategoryName(this.currentCategory)}"`; } }
-    
+
     openModal(id = null) {
         this.currentEditId = id;
         const modal = document.getElementById('itemModal');
@@ -779,20 +793,25 @@ class PanelMariaApp {
     escapeHtml(text) { if (typeof text !== 'string') return ''; return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
     formatCategoryName(name) { return name.charAt(0).toUpperCase() + name.slice(1); }
     getCategoryIcon(category) { switch (category) { case 'directorio': return 'folder'; case 'ideas': return 'lightbulb'; case 'proyectos': return 'work'; case 'logros': return 'emoji_events'; case 'todos': return 'select_all'; default: return 'category'; } }
-    truncateUrl(url) { const maxLength = 30; if (url.length <= maxLength) return url;
- const domain = new URL(url).hostname;
- if (domain.length <= maxLength) return domain;
- return `${domain.substring(0, maxLength - 3)}...`; }
-    createProgressBar(item) { const totalTasks = item.tareas.length;
- const completedTasks = item.tareas.filter(task => task.completado).length;
- const percentage = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
- return `
+    truncateUrl(url) {
+        const maxLength = 30; if (url.length <= maxLength) return url;
+        const domain = new URL(url).hostname;
+        if (domain.length <= maxLength) return domain;
+        return `${domain.substring(0, maxLength - 3)}...`;
+    }
+    createProgressBar(item) {
+        const totalTasks = item.tareas.length;
+        const completedTasks = item.tareas.filter(task => task.completado).length;
+        const percentage = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+        return `
             <div class="progress-bar-container">
                 <div class="progress-bar" style="width: ${percentage}%;"></div>
                 <span class="progress-text">${completedTasks}/${totalTasks} tareas (${percentage}%)</span>
             </div>
-        `; }
-    createTasksContent(item) { return `
+        `;
+    }
+    createTasksContent(item) {
+        return `
             <div class="card__tasks">
                 ${item.tareas.map(task => `
                     <div class="task-item-card">
@@ -801,7 +820,8 @@ class PanelMariaApp {
                     </div>
                 `).join('')}
             </div>
-        `; }
+        `;
+    }
 
     populateCategorySelector(selector, includeNewOption = false) { selector.innerHTML = ''; const predefinedCategories = ['directorio', 'ideas', 'proyectos', 'logros']; const allCategories = [...new Set([...predefinedCategories, ...(this.settings.customCategories || [])])]; allCategories.forEach(category => { const option = document.createElement('option'); option.value = category; option.textContent = this.formatCategoryName(category); selector.appendChild(option); }); if (includeNewOption) { const newOption = document.createElement('option'); newOption.value = '__new_category__'; newOption.textContent = 'Crear nueva categoría...'; selector.appendChild(newOption); } }
     addCustomCategory(categoryName) { const normalizedName = categoryName.trim().toLowerCase(); if (!normalizedName) { this.showToast('El nombre de la categoría no puede estar vacío.', 'error'); return; } if (this.settings.customCategories.includes(normalizedName)) { this.showToast('Esa categoría ya existe.', 'info'); return; } this.settings.customCategories.push(normalizedName); this.saveDataSettings(); this.populateCategorySelector(document.getElementById('itemCategory'), true); this.populateCategorySelector(document.getElementById('bulkCategorySelector')); this.showToast('Categoría creada.', 'success'); this.closeNewCategoryModal(); }
@@ -850,7 +870,7 @@ class PanelMariaApp {
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(content, 'text/html');
                     const bookmarks = [];
-                    
+
                     const traverseBookmarks = (node, currentTags = []) => {
                         if (node.nodeName === 'DT') {
                             const h3 = node.querySelector('H3');
@@ -879,7 +899,7 @@ class PanelMariaApp {
                                 });
                             }
                         } else if (node.nodeName === 'A') {
-                             bookmarks.push({
+                            bookmarks.push({
                                 id: window.storage.generateId(),
                                 categoria: 'directorio',
                                 titulo: node.textContent.trim(),
@@ -898,7 +918,7 @@ class PanelMariaApp {
                     if (rootDl) {
                         Array.from(rootDl.children).forEach(child => traverseBookmarks(child));
                     }
-                    
+
                     importedData = bookmarks;
 
                 } else {

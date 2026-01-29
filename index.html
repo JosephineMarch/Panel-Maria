@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,242 +9,243 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
+        rel="stylesheet" />
     <link rel="icon" href="data:,">
 
     <link rel="manifest" href="manifest.json">
 
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js')
-        .then(reg => console.log('Service Worker registrado', reg))
-        .catch(err => console.log('Error al registrar SW', err));
-    });
-  }
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Service Worker registrado', reg))
+                    .catch(err => console.log('Error al registrar SW', err));
+            });
+        }
 
-  // Lógica para capturar lo compartido
-  window.addEventListener('DOMContentLoaded', () => {
-    const parsedUrl = new URL(window.location);
-    const sharedTitle = parsedUrl.searchParams.get('title');
-    const sharedText = parsedUrl.searchParams.get('text');
-    const sharedUrl = parsedUrl.searchParams.get('url');
+        // Lógica para capturar lo compartido
+        window.addEventListener('DOMContentLoaded', () => {
+            const parsedUrl = new URL(window.location);
+            const sharedTitle = parsedUrl.searchParams.get('title');
+            const sharedText = parsedUrl.searchParams.get('text');
+            const sharedUrl = parsedUrl.searchParams.get('url');
 
-    if (sharedTitle || sharedText || sharedUrl) {
-      // Aquí es donde tu app recibe la info. 
-      // Puedes hacer un alert o llamar a tu función de Firebase para guardar
-      console.log("Recibido para guardar:", { sharedTitle, sharedText, sharedUrl });
-      alert("¡Recibido! Guardando: " + (sharedTitle || sharedUrl));
-      
-      // Ejemplo: si tienes una función guardarEnFirebase(data), la llamarías aquí
-    }
-  });
-</script>
-    
+            if (sharedTitle || sharedText || sharedUrl) {
+                // Aquí es donde tu app recibe la info. 
+                // Puedes hacer un alert o llamar a tu función de Firebase para guardar
+                console.log("Recibido para guardar:", { sharedTitle, sharedText, sharedUrl });
+                alert("¡Recibido! Guardando: " + (sharedTitle || sharedUrl));
+
+                // Ejemplo: si tienes una función guardarEnFirebase(data), la llamarías aquí
+            }
+        });
+    </script>
+
 </head>
+
 <body>
-    <!-- App Bar -->
-    <header class="app-bar">
-        <div class="container">
-            <div class="app-bar__inner">
-                <div class="app-bar__title-group">
-                    <div class="app-bar__icon-wrapper">
-                        <span class="material-symbols-outlined">dashboard</span>
-                    </div>
-                    <div>
-                        <h1 class="app-bar__title">Panel María</h1>
-                        <p class="app-bar__subtitle">Organiza tus recursos, ideas, proyectos y logros</p>
-                    </div>
+    <!-- App Container: Sidebar + Main Content -->
+    <div class="app-container">
+
+        <!-- Sidebar: Block Gallery / Navigation -->
+        <aside id="sidebar" class="sidebar hidden-mobile">
+            <div class="sidebar__header">
+                <h2 class="sidebar__title">Archivo de Bloques</h2>
+                <button id="closeSidebarBtn" class="btn btn--icon mobile-only"><span
+                        class="material-symbols-outlined">close</span></button>
+            </div>
+
+            <!-- Bento Grid Gallery -->
+            <div class="gallery-container">
+                <!-- Filters -->
+                <div class="gallery-filters">
+                    <button class="filter-chip active" data-category="todos">Todo</button>
+                    <button class="filter-chip" data-category="directorio">Directorio</button>
+                    <button class="filter-chip" data-category="ideas">Ideas</button>
+                    <button class="filter-chip" data-category="proyectos">Proyectos</button>
+                    <button class="filter-chip" data-category="logros">Logros</button>
                 </div>
-                <div class="app-bar__actions">
-                    <button id="settingsBtn" class="btn btn--text">
-                        <span class="material-symbols-outlined">settings</span>
+
+                <!-- Search in Gallery -->
+                <div class="gallery-search">
+                    <span class="material-symbols-outlined">search</span>
+                    <input type="text" id="gallerySearchInput" placeholder="Buscar bloques...">
+                </div>
+
+                <!-- Items Grid (Bento) -->
+                <div id="itemsContainer" class="items-grid bento-grid">
+                    <!-- Items injected here by app.js -->
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="empty-state hidden">
+                    <span class="material-symbols-outlined empty-state__icon">grid_off</span>
+                    <p class="empty-state__text">No hay nada por aquí.</p>
+                </div>
+            </div>
+
+            <!-- Sidebar Footer -->
+            <div class="sidebar__footer">
+                <button id="settingsBtn" class="btn btn--text"><span class="material-symbols-outlined">settings</span>
+                    Configuración</button>
+                <button id="exportDataBtn" class="btn btn--text"><span class="material-symbols-outlined">download</span>
+                    Backup</button>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="main-chat">
+            <!-- Chat Header -->
+            <header class="chat-header-main">
+                <button id="toggleSidebarBtn" class="btn btn--icon"><span
+                        class="material-symbols-outlined">menu</span></button>
+                <div class="chat-header-info">
+                    <h1 class="assistant-name">Kai ⚡</h1>
+                    <span id="connectionStatus" class="status-indicator online">En línea</span>
+                </div>
+                <!-- Auth / Profile -->
+                <div id="auth-status" class="auth-status">
+                    <button id="loginBtn" class="btn btn--small btn--outlined">Login</button>
+                    <button id="logoutBtn" class="btn btn--small btn--text hidden"><span
+                            class="material-symbols-outlined">logout</span></button>
+                </div>
+            </header>
+
+            <!-- Chat Messages Area -->
+            <div id="chat-messages" class="chat-messages-area">
+                <!-- Messages injected here by chat.js -->
+                <div class="chat-message ia">
+                    <div class="icon"><span class="material-symbols-outlined">smart_toy</span></div>
+                    <div class="content">¡Epa! Soy Kai ⚡. ¿Qué caos vamos a dominar hoy? ¡Suéltalo!</div>
+                </div>
+            </div>
+
+            <!-- Bottom Input Bar -->
+            <div class="chat-input-bar">
+                <form id="chat-form" class="chat-form">
+                    <button type="button" id="voiceBtn" class="btn btn--icon btn--voice" title="Hablar con Kai">
+                        <span class="material-symbols-outlined">mic</span>
                     </button>
-                    <button id="addItemBtn" class="btn btn--filled hidden">
-                        <span class="material-symbols-outlined">add</span> Nuevo
+                    <div class="input-wrapper">
+                        <textarea id="chat-input" placeholder="Escribe algo, pega un link o una foto..."
+                            rows="1"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn--icon btn--send">
+                        <span class="material-symbols-outlined">send</span>
                     </button>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <!-- Auth Section -->
-    <div id="auth-section" class="auth-section">
-        <div class="auth-card">
-            <h2>Bienvenido a Panel María</h2>
-            <p>Inicia sesión con Google para sincronizar tus datos en la nube, o continúa de forma local.</p>
-            <button id="loginBtn" class="btn btn--filled">
-                <span class="material-symbols-outlined">login</span> Iniciar sesión con Google
-            </button>
-        </div>
-    </div>
-
-    <!-- Main App Content -->
-    <div id="app-content" class="hidden">
-        <!-- Navigation Tabs -->
-        <nav class="nav-tabs">
-            <div class="container">
-                <div class="nav-tabs__inner">
-                    <!-- Las pestañas se generan dinámicamente -->
-                </div>
-            </div>
-        </nav>
-
-        <!-- Main Content -->
-        <main class="container">
-            <!-- Search and Filters -->
-            <div class="filters-bar">
-                <div class="search-wrapper">
-                    <span class="material-symbols-outlined search-icon">search</span>
-                    <input type="text" id="searchInput" placeholder="Buscar..." class="input-field">
-                </div>
-                <div id="tagFilters" class="tag-filters"></div>
-                <div class="sort-wrapper">
-                    <label for="sortSelect" class="form-label">Ordenar por:</label>
-                    <select id="sortSelect" class="input-field">
-                        <option value="recientes">Más recientes</option>
-                        <option value="antiguos">Más antiguos</option>
-                        <option value="titulo-asc">Título (A-Z)</option>
-                        <option value="titulo-desc">Título (Z-A)</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- Bulk Actions Bar -->
-            <div id="bulkActions" class="bulk-actions-bar hidden">
-                <div class="selection-controls">
-                    <input type="checkbox" id="selectAllCheckbox" class="checkbox-field">
-                    <label for="selectAllCheckbox">Seleccionar todo</label>
-                    <span id="selectionCount" class="selection-count">0</span>
-                </div>
-                <div class="actions">
-                    <button id="bulkChangeCategoryBtn" class="btn btn--secondary">Cambiar Categoría</button>
-                    <button id="bulkChangeTagsBtn" class="btn btn--secondary">Cambiar Etiquetas</button>
-                    <button id="bulkPinBtn" class="btn btn--secondary">Anclar/Desanclar</button>
-                    <button id="bulkDeleteBtn" class="btn btn--danger">Eliminar</button>
-                </div>
-            </div>
-
-            <!-- Items Grid -->
-            <div id="itemsContainer" class="items-grid">
-                <!-- Tarjetas de items se inyectan aquí -->
-            </div>
-
-            <!-- Empty State -->
-            <div id="emptyState" class="empty-state hidden">
-                <span class="material-symbols-outlined empty-state__icon">add_circle</span>
-                <h3 class="empty-state__title">No hay elementos en esta categoría</h3>
-                <p class="empty-state__text">Comienza agregando tu primer elemento.</p>
-                <button id="emptyStateAddBtn" class="btn btn--filled">
-                    <span class="material-symbols-outlined">add</span>
-                    Agregar Primer Elemento
-                </button>
+                </form>
             </div>
         </main>
     </div>
 
-    <!-- Modal for Add/Edit Item -->
+    <!-- Hidden Modals (Preserved for functionality) -->
     <div id="itemModal" class="modal-overlay hidden">
         <div class="modal">
             <div class="modal__header">
-                <h2 id="modalTitle" class="modal__title">Agregar Nuevo Elemento</h2>
-                <button id="closeModalBtn" class="btn btn--icon"><span class="material-symbols-outlined">close</span></button>
+                <h2 id="modalTitle" class="modal__title">Detalle del Bloque</h2>
+                <button id="closeModalBtn" class="btn btn--icon"><span
+                        class="material-symbols-outlined">close</span></button>
             </div>
             <form id="itemForm" class="modal__body">
+                <input type="hidden" id="itemId">
                 <div class="form-group">
-                    <label for="itemCategory" class="form-label">Categoría *</label>
-                    <select id="itemCategory" required class="input-field"></select>
-                </div>
-                <div class="form-group" id="newCategoryInputGroup" style="display: none;">
-                    <label for="newItemCategory" class="form-label">Nombre de la nueva categoría *</label>
-                    <input type="text" id="newItemCategory" class="input-field" placeholder="Ej: Recetas, Viajes">
+                    <label class="form-label">Título</label>
+                    <input type="text" id="itemTitle" class="input-field" required>
                 </div>
                 <div class="form-group">
-                    <label for="itemTitle" class="form-label">Título *</label>
-                    <input type="text" id="itemTitle" required class="input-field" placeholder="Título del elemento">
+                    <label class="form-label">Descripción / Notas</label>
+                    <textarea id="itemDescription" class="input-field" rows="3"></textarea>
                 </div>
                 <div class="form-group">
-                    <label for="itemDescription" class="form-label">Descripción</label>
-                    <textarea id="itemDescription" rows="3" class="input-field" placeholder="Descripción opcional"></textarea>
+                    <label class="form-label">URL</label>
+                    <input type="url" id="itemUrl" class="input-field">
                 </div>
                 <div class="form-group">
-                    <label for="itemUrl" class="form-label">URL</label>
-                    <input type="url" id="itemUrl" class="input-field" placeholder="https://ejemplo.com">
-                </div>
-                <div class="form-group">
-                    <label for="itemTagsInput" class="form-label">Etiquetas</label>
-                    <div id="itemTagsWrapper" class="tags-input-wrapper">
-                        <input type="text" id="itemTagsInput" class="tags-input-field" placeholder="Añade o crea etiquetas...">
-                    </div>
-                    <div id="tagSuggestions" class="tag-suggestions"></div>
+                    <label class="form-label">Categoría</label>
+                    <select id="itemCategory" class="input-field">
+                        <option value="directorio">Directorio</option>
+                        <option value="ideas">Ideas</option>
+                        <option value="proyectos">Proyectos</option>
+                        <option value="logros">Logros</option>
+                    </select>
                 </div>
                 <div id="tasksSection" class="form-group">
                     <label class="form-label">Tareas</label>
                     <div id="tasksList" class="tasks-list"></div>
-                    <button type="button" id="addTaskBtn" class="btn btn--text"><span class="material-symbols-outlined">add</span> Agregar Tarea</button>
+                    <button type="button" id="addTaskBtn" class="btn btn--text btn--small">+ Tarea</button>
                 </div>
-                <div class="form-group-inline">
-                    <input type="checkbox" id="itemPinned" class="checkbox-field">
-                    <label for="itemPinned">Anclar este elemento</label>
+                <!-- Tags (Auto-generated usually, but editable) -->
+                <div class="form-group">
+                    <label class="form-label">Etiquetas</label>
+                    <div id="itemTagsWrapper" class="tags-input-wrapper">
+                        <input type="text" id="itemTagsInput" class="tags-input-field" placeholder="Añadir etiqueta...">
+                    </div>
+                    <div id="tagSuggestions" class="tag-suggestions"></div>
                 </div>
                 <div class="modal__footer">
-                    <button type="button" id="cancelBtn" class="btn btn--text">Cancelar</button>
-                    <button type="submit" id="saveBtn" class="btn btn--filled">Guardar</button>
+                    <button type="button" id="deleteBtn" class="btn btn--danger btn--text">Eliminar</button>
+                    <button type="submit" id="saveBtn" class="btn btn--filled">Guardar Cambios</button>
                 </div>
             </form>
         </div>
     </div>
-    
-    <!-- Modals (Bulk, Confirm, Settings, etc.) -->
-    <div id="bulkCategoryModal" class="modal-overlay hidden"><div class="modal"><div class="modal__header"><h2 class="modal__title">Cambiar Categoría en Lote</h2><button id="bulkCategoryCancelBtn" class="btn btn--icon"><span class="material-symbols-outlined">close</span></button></div><div class="modal__body"><p class="modal__text">Selecciona la nueva categoría.</p><select id="bulkCategorySelector" class="input-field"></select></div><div class="modal__footer"><button type="button" id="bulkCategoryOkBtn" class="btn btn--filled">Aplicar</button></div></div></div>
-    <div id="bulkTagsModal" class="modal-overlay hidden"><div class="modal"><div class="modal__header"><h2 class="modal__title">Cambiar Etiquetas en Lote</h2><button id="bulkTagsCancelBtn" class="btn btn--icon"><span class="material-symbols-outlined">close</span></button></div><div class="modal__body"><p class="modal__text">Establece las nuevas etiquetas para los elementos seleccionados.</p><div id="bulkTagsWrapper" class="tags-input-wrapper"><input type="text" id="bulkTagsInput" class="tags-input-field" placeholder="Añade etiquetas..."></div><div id="bulkTagSuggestions" class="tag-suggestions"></div></div><div class="modal__footer"><button type="button" id="bulkTagsOkBtn" class="btn btn--filled">Aplicar</button></div></div></div>
-    <div id="confirmModal" class="modal-overlay hidden"><div class="modal modal--confirm"><div class="modal__body"><h3 id="confirmTitle" class="modal__title">Confirmar</h3><p id="confirmMessage" class="modal__confirm-text">¿Estás seguro?</p><div class="modal__footer"><button id="confirmCancelBtn" class="btn btn--text">Cancelar</button><button id="confirmOkBtn" class="btn btn--danger">Confirmar</button></div></div></div></div>
-    <div id="settingsModal" class="modal-overlay hidden"><div class="modal"><div class="modal__header"><h2 class="modal__title">Configuración</h2><button id="settingsCloseBtn" class="btn btn--icon"><span class="material-symbols-outlined">close</span></button></div><div class="modal__body"><div class="form-group-inline"><input type="checkbox" id="autoSaveVoice" class="checkbox-field"><label for="autoSaveVoice">Guardado automático por voz</label></div><div class="form-group"><label for="themeSelect" class="form-label">Tema</label><select id="themeSelect" class="input-field"><option value="default">Por defecto</option><option value="dark">Oscuro</option><option value="colorful">Colorido</option></select></div>                <div class="form-group"><button id="exportDataBtn" class="btn btn--secondary">Exportar Datos</button><button id="importDataBtn" class="btn btn--secondary">Importar Datos</button><input type="file" id="importFile" accept=".json,.html" class="hidden"></div>
-                <div class="form-group">
-                    <label class="form-label">Gestionar Categorías Personalizadas</label>
-                    <div id="customCategoriesList"></div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Gestionar Etiquetas Globales</label>
-                    <div id="globalTagsList"></div>
-                </div>
-                <div class="form-group">
-                    <button id="logoutBtn" class="btn btn--text">
-                        <span class="material-symbols-outlined">logout</span> Salir
-                    </button>
-                </div></div></div></div></div></div></div>
-    <div id="newCategoryModal" class="modal-overlay hidden"><div class="modal modal--confirm"><div class="modal__header"><h2 class="modal__title">Crear Nueva Categoría</h2><button id="newCategoryCloseBtn" class="btn btn--icon"><span class="material-symbols-outlined">close</span></button></div><div class="modal__body"><div class="form-group"><label for="newCategoryNameInput" class="form-label">Nombre de la categoría</label><input type="text" id="newCategoryNameInput" class="input-field" placeholder="Ej: Trabajo, Personal"></div></div><div class="modal__footer"><button type="button" id="newCategoryCancelBtn" class="btn btn--text">Cancelar</button><button type="button" id="newCategoryCreateBtn" class="btn btn--filled">Crear</button></div></div></div>
 
-    <!-- Chat: Botón Flotante y Ventana -->
-    <button id="chat-fab" class="fab"><span class="material-symbols-outlined">smart_toy</span></button>
-    <div id="chat-container" class="chat-container hidden">
-        <div class="chat-header">
-            <h3>Asistente IA</h3>
-            <div class="chat-header-actions">
-                <button id="chat-minimize" class="btn btn--icon" title="Minimizar"><span class="material-symbols-outlined">expand_more</span></button>
-                <button id="chat-close" class="btn btn--icon" title="Cerrar"><span class="material-symbols-outlined">close</span></button>
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal__header">
+                <h2>Configuración</h2>
+                <button id="settingsCloseBtn" class="btn btn--icon"><span
+                        class="material-symbols-outlined">close</span></button>
+            </div>
+            <div class="modal__body">
+                <div class="form-group-inline">
+                    <input type="checkbox" id="autoSaveVoice" class="checkbox-field">
+                    <label for="autoSaveVoice">Guardado automático por voz</label>
+                </div>
+                <div class="form-group">
+                    <label>Tema</label>
+                    <select id="themeSelect" class="input-field">
+                        <option value="default">Claro</option>
+                        <option value="dark">Oscuro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Importar Datos</label>
+                    <input type="file" id="importFile" accept=".json" class="input-field">
+                </div>
             </div>
         </div>
-        <div id="chat-messages" class="chat-messages"></div>
-        <form id="chat-form" class="chat-input-area">
-            <textarea id="chat-input" placeholder="Escribe un comando o pregunta..." rows="1"></textarea>
-            <button type="submit" class="btn btn--icon"><span class="material-symbols-outlined">send</span></button>
-        </form>
     </div>
 
-    <!-- Loading Spinner -->
+    <!-- Confirm Modal -->
+    <div id="confirmModal" class="modal-overlay hidden">
+        <div class="modal modal--confirm">
+            <div class="modal__body">
+                <h3>¿Seguro?</h3>
+                <p id="confirmMessage">Esta acción es irreversible.</p>
+                <div class="modal__footer">
+                    <button id="confirmCancelBtn" class="btn btn--text">Cancelar</button>
+                    <button id="confirmOkBtn" class="btn btn--danger">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Loader -->
     <div id="loader" class="loader-overlay hidden">
         <div class="loader-spinner"></div>
     </div>
 
-    <!-- Toast & Context Menu -->
-    <div id="toastContainer" class="toast-container"></div>
-    <div id="contextMenu" class="context-menu hidden"><ul><li id="contextMenuDelete">Eliminar</li></ul></div>
-    
     <!-- Scripts -->
     <script src="storage.js" type="module"></script>
     <script src="auth.js" type="module"></script>
     <script src="chat.js" type="module"></script>
     <script src="app.js" type="module"></script>
 </body>
+
 </html>

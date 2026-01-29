@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { getFirestore, enableIndexedDbPersistence } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { getAuth } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
 const firebaseConfig = {
@@ -18,6 +18,17 @@ let auth;
 try {
   app = initializeApp(firebaseConfig);
   db = getFirestore(app);
+
+  // Habilitar persistencia offline
+  enableIndexedDbPersistence(db)
+    .catch((err) => {
+      if (err.code == 'failed-precondition') {
+        console.warn('Persistencia falló: Multiples pestañas abiertas.');
+      } else if (err.code == 'unimplemented') {
+        console.warn('Persistencia no soportada por el navegador.');
+      }
+    });
+
   auth = getAuth(app);
   console.log('Firebase config loaded and initialized successfully.');
 } catch (error) {
