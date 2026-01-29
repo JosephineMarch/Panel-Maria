@@ -79,8 +79,8 @@ async function callCerebras(messages) {
             model: MODEL,
             messages: messages,
             temperature: 0.7,
-            max_tokens: 1000,
-            response_format: { type: "json_object" } // Force JSON mode mostly
+            max_tokens: 4096, // Increased for bulk operations
+            response_format: { type: "json_object" }
         })
     });
 
@@ -100,17 +100,38 @@ async function handleKaiResponse(rawText) {
     try {
         parsed = JSON.parse(rawText);
     } catch (e) {
-        appendMessage('kai', rawText);
-        return;
+        // Try repair for truncation
+        const repaired = tryRepairJSON(rawText);
+        if (repaired) {
+            parsed = repaired;
+        } else {
+            console.error('JSON Parse Error:', e);
+            if (rawText.trim().startsWith('{')) {
+                appendMessage('kai', '¡Uf! María, intenté organizar demasiadas cosas a la vez y mi cerebro se llenó. 🤯\n\n¿Podemos intentarlo con menos notas? Prueba pidiéndome: "Organiza solo mis 10 notas más recientes".');
+            } else {
+                appendMessage('kai', rawText);
+            }
+            return;
+        }
     }
 
     const { action, data, id, updates, response } = parsed;
 
     // --- ORCHESTRATOR ---
 
-    // 1. BULK UPDATE (Organización Masiva)
+    // 0. SEQUENTIAL CLEANUP (NUEVO: Poco a poco)
+    if (action === 'start_global_cleanup') {
+        runSequentialCleanup();
+        return;
+    }
+
+    // 1. BULK UPDATE
     if (action === 'bulk_update' || (updates && Array.isArray(updates))) {
         const jobs = updates || [];
+        if (jobs.length === 0) {
+            appendMessage('kai', 'He revisado todo y... ¡tus etiquetas ya están impecables! No he necesitado cambiar nada. ✨');
+            return;
+        }
         appendMessage('kai', `¡Entendido! Voy a reorganizar <b>${jobs.length}</b> notas para que todo esté impecable. 🪄`);
 
         for (const update of jobs) {
@@ -118,17 +139,17 @@ async function handleKaiResponse(rawText) {
                 await appInstance.store.updateItem(update.id, update.data);
             }
         }
-        appendMessage('kai', `¡Listo! He re-etiquetado y organizado tu información. ¿Qué tal se ve ahora? ✨`);
+        appendMessage('kai', `¡Listo! He re-etiquetado y organizado esa parte de tu información. ✅`);
 
         // 2. CREATE
     } else if (action === 'create') {
         const newItem = {
             id: appInstance.store.generateId(),
-            titulo: data.titulo || 'Nota de Kai',
-            descripcion: data.descripcion || '',
-            url: data.url || '',
-            etiquetas: data.etiquetas || [],
-            tareas: data.tareas || [],
+            titulo: data?.titulo || 'Nota de Kai',
+            descripcion: data?.descripcion || '',
+            url: data?.url || '',
+            etiquetas: data?.etiquetas || [],
+            tareas: data?.tareas || [],
             fecha_creacion: new Date().toISOString()
         };
         await appInstance.store.addItem(newItem);
@@ -136,20 +157,102 @@ async function handleKaiResponse(rawText) {
 
         // 3. SINGLE UPDATE
     } else if (action === 'update') {
-        if (!id) return appendMessage('kai', 'Mmm, no encontré el ID para ese cambio. ¿Podrías decirme el título?');
+        if (!id) return;
         await appInstance.store.updateItem(id, data);
-        appendMessage('kai', `He actualizado "<b>${data.titulo || 'el bloque'}</b>" como me pediste. ✅`);
+        appendMessage('kai', `He actualizado "<b>${data.titulo || 'el bloque'}</b>". ✅`);
 
         // 4. DELETE
     } else if (action === 'delete') {
         if (!id) return;
         await appInstance.store.deleteItem(id);
-        appendMessage('kai', `Borrando... ¡y listo! Desapareció. 🗑️`);
+        appendMessage('kai', `Borrado. Desapareció. 🗑️`);
 
-        // 5. CHAT / RESPONSE
+        // 5. CHAT / FALLBACK
     } else {
-        appendMessage('kai', response || parsed.data?.mensaje || rawText);
+        appendMessage('kai', response || parsed.data?.mensaje || "Dime María, ¿en qué más puedo ayudarte? ⚡");
     }
+}
+
+function tryRepairJSON(jsonString) {
+    let str = jsonString.trim();
+    if (!str.startsWith('{')) return null;
+
+    // Common truncation patterns
+    const completions = [
+        str + ']}',
+        str + '}]}',
+        str + '"}]}',
+        str + '"]}]}',
+        str + '}]}]}'
+    ];
+
+    for (const alt of completions) {
+        try {
+            const p = JSON.parse(alt);
+            if (p.action) return p;
+        } catch (e) { }
+    }
+    return null;
+}
+
+// --- SEQUENTIAL CLEANUP LOGIC ---
+
+async function runSequentialCleanup() {
+    const items = appInstance.store.items;
+    if (!items || items.length === 0) {
+        appendMessage('kai', 'No hay nada que organizar todavía. ¡Vuelve cuando tengas más notas! ✨');
+        return;
+    }
+
+    appendMessage('kai', `🚀 <b>Iniciando Organización Inteligente</b>... Iré bloque por bloque como me pediste. ¡Te aviso al terminar!`);
+
+    const BATCH_SIZE = 10;
+    let processed = 0;
+
+    for (let i = 0; i < items.length; i += BATCH_SIZE) {
+        const batch = items.slice(i, i + BATCH_SIZE);
+        const batchLabel = `Bloques ${i + 1} a ${Math.min(i + BATCH_SIZE, items.length)}`;
+
+        console.log(`Kai: Processing ${batchLabel}`);
+
+        // Prepare Batch Prompt
+        const batchContext = batch.map(item => `(ID: ${item.id}) [${item.titulo}] Tags actuales: #${(item.etiquetas || []).join(', #')}`).join('\n');
+
+        const prompt = `
+        TAREA: Optimiza y limpia las etiquetas de estos ${batch.length} bloques. 
+        REGLAS:
+        - Usa etiquetas temáticas claras (#Trabajo, #Ideas, #Video, #Salud, etc.).
+        - Solo responde con el JSON de bulk_update.
+        
+        BLOQUES A PROCESAR:
+        ${batchContext}
+        `;
+
+        try {
+            const resText = await callCerebras([{ role: 'system', content: buildSystemPrompt('') }, { role: 'user', content: prompt }]);
+            const parsed = JSON.parse(resText);
+
+            if (parsed.updates) {
+                for (const upd of parsed.updates) {
+                    await appInstance.store.updateItem(upd.id, upd.data);
+                }
+            }
+
+            processed += batch.length;
+            // Update UI with a small progress note every 2 batches or so to not spam
+            if (i % 20 === 0) {
+                appendMessage('kai', `⌚ Procesando... (${Math.min(processed, items.length)}/${items.length} bloques analizados)`);
+            }
+
+        } catch (e) {
+            console.error('Batch error:', e);
+        }
+
+        // Small delay to keep UI smooth
+        await new Promise(r => setTimeout(r, 500));
+    }
+
+    appendMessage('kai', `🏆 <b>¡Misión cumplida!</b> He revisado toda tu información y he optimizado el etiquetado. ¡Todo está en su sitio! 🧠✨`);
 }
 
 function appendMessage(sender, html) {

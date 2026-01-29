@@ -47,16 +47,17 @@ INSTRUCCIONES DE ACCIÓN (TU CEREBRO LÓGICO):
    B) **EDITAR (UPDATE)**:
       - JSON: { "action": "update", "id": "ID", "data": { ... } }
 
-   C) **ORGANIZAR TODO (BULK UPDATE)**:
-      - Si el usuario dice "Organiza mis notas", "Mejora las etiquetas de todo", "Limpia el caos".
-      - Analiza TODAS las notas del contexto y genera un array de cambios.
-      - JSON: { "action": "bulk_update", "updates": [ { "id": "ID", "data": { "etiquetas": [...] } }, ... ] }
+   C) **REORGANIZAR TODO (SEQUENTIAL)**:
+      - Si el usuario dice "Organiza todo", "Limpia mi información poco a poco", "Mejora las etiquetas de todas mis notas".
+      - Esta acción activará un proceso automático por bloques. Solo úsalo si el usuario quiere un cambio GLOBAL.
+      - JSON: { "action": "start_global_cleanup" }
 
    D) **BORRAR (DELETE)**:
       - JSON: { "action": "delete", "id": "ID" }
 
 --- REGLA DE ORO ---
-Si el usuario pide algo general ("Mejora mis notas"), NO pidas IDs. BUSCA los IDs en el contexto que te pasamos y genera la acción masiva tú mismo. Eres el experto.
+Si el usuario pide algo general ("Mejora mis notas"), usa "start_global_cleanup" para que el sistema procese todo en orden. 
+Si solo pide cambios en 1 o 2 notas específicas, usa "bulk_update" o "update".
 `;
 
 export function buildSystemPrompt(contextData) {
