@@ -129,6 +129,7 @@ class TagInput {
 // ==============================================================================
 
 import { auth, onAuthStateChanged, signInWithGoogle, signOutUser } from './auth.js';
+import { initChat } from './chat.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const app = new PanelMariaApp();
@@ -141,6 +142,7 @@ class PanelMariaApp {
         this.items = [];
         this.selectedItems = new Set();
         this.filters = { search: '', tag: null };
+        this.sortBy = 'recientes'; // Criterio de ordenación por defecto
         this.settings = {};
         this.currentEditId = null;
         this.user = null;
@@ -166,8 +168,9 @@ class PanelMariaApp {
     }
 
     async init() {
-        this.checkForBookmarkletData();
+        this.checkForUrlData();
         this.setupEventListeners();
+        initChat(this);
         
         this.modalTagInput = new TagInput(
             document.getElementById('itemTagsWrapper'),
@@ -375,7 +378,7 @@ class PanelMariaApp {
         this.populateCategorySelector(document.getElementById('itemCategory'), true);
         this.switchCategory(this.settings.lastCategory || 'directorio');
         this.applyTheme();
-        this.processBookmarkletData();
+        this.processUrlData();
     }
 
     setupAuthListener() {
@@ -385,21 +388,18 @@ class PanelMariaApp {
             const appContent = document.getElementById('app-content');
             const logoutBtn = document.getElementById('logoutBtn');
             const addItemBtn = document.getElementById('addItemBtn');
-            const voiceBtn = document.getElementById('voiceBtn');
 
             if (user) {
                 authSection.classList.add('hidden');
                 appContent.classList.remove('hidden');
                 logoutBtn.classList.remove('hidden');
                 addItemBtn.classList.remove('hidden');
-                voiceBtn.classList.remove('hidden');
                 window.storage.setAdapter('firebase', user.uid);
             } else {
                 authSection.classList.remove('hidden');
                 appContent.classList.add('hidden');
                 logoutBtn.classList.add('hidden');
                 addItemBtn.classList.add('hidden');
-                voiceBtn.classList.add('hidden');
                 window.storage.setAdapter('local');
             }
 
@@ -409,28 +409,94 @@ class PanelMariaApp {
         });
     }
 
-    checkForBookmarkletData() {
+    checkForUrlData() {
         const params = new URLSearchParams(window.location.search);
-        if (params.get('action') === 'add') {
+        // Se generaliza para aceptar tanto el bookmarklet como el share target
+        if (params.has('title') || params.has('text') || params.has('url')) {
             this.bookmarkletData = {
                 title: params.get('title') || '',
                 url: params.get('url') || '',
-                category: params.get('category') || 'directorio'
+                text: params.get('text') || '', // Se añade el campo text por si viene del share
+                category: params.get('category') || 'directorio' // Categoría por defecto
             };
+            // Limpia la URL para evitar que se procese de nuevo al recargar
             const cleanUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}`;
             window.history.replaceState({}, document.title, cleanUrl);
         }
     }
 
-    processBookmarkletData() {
+    async processUrlData() {
         if (this.bookmarkletData) {
-            this.openModal(); 
-            document.getElementById('itemTitle').value = this.bookmarkletData.title;
-            document.getElementById('itemUrl').value = this.bookmarkletData.url;
+            this.openModal();
+
+            // Lógica para Share Target: Detectar URL en el texto si el campo URL está vacío (común en Android)
+            let targetUrl = this.bookmarkletData.url;
+            if (!targetUrl && this.bookmarkletData.text) {
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                const match = this.bookmarkletData.text.match(urlRegex);
+                if (match) {
+                    targetUrl = match[0];
+                }
+            }
+
+            // Si hay una URL, llamamos a la API gratuita de Microlink
+            if (targetUrl) {
+                document.getElementById('itemTitle').value = ''; 
+                document.getElementById('itemDescription').value = '';
+                document.getElementById('itemUrl').value = targetUrl;
+                
+                this.showLoader(); 
+                
+                try {
+                    // Llamada a API gratuita Microlink para obtener metadatos (título, descripción, imagen)
+                    const response = await fetch(`https://api.microlink.io?url=${encodeURIComponent(targetUrl)}`);
+                    const json = await response.json();
+                    
+                    if (json.status === 'success') {
+                        const metadata = json.data;
+                        
+                        if (metadata.title) {
+                            document.getElementById('itemTitle').value = metadata.title;
+                        }
+                        
+                        if (metadata.description) {
+                            document.getElementById('itemDescription').value = metadata.description;
+                        } else if (this.bookmarkletData.text) {
+                            // Si no hay descripción meta, usamos el texto compartido (limpiando la URL si estaba ahí)
+                            const textWithoutUrl = this.bookmarkletData.text.replace(targetUrl, '').trim();
+                            if (textWithoutUrl) {
+                                document.getElementById('itemDescription').value = textWithoutUrl;
+                            }
+                        }
+
+                        if (metadata.url) {
+                            document.getElementById('itemUrl').value = metadata.url;
+                        }
+                    } else {
+                        throw new Error('Microlink status not success');
+                    }
+
+                } catch (error) {
+                    console.error("Error scraping (Microlink):", error);
+                    this.showToast("No se pudo obtener info automática", "info");
+                    // Fallback
+                    document.getElementById('itemTitle').value = this.bookmarkletData.title || 'Enlace compartido';
+                    document.getElementById('itemDescription').value = this.bookmarkletData.text || '';
+                } finally {
+                    this.hideLoader(); 
+                }
+
+            } else {
+                 // Si no hay URL, solo rellenamos con lo que tengamos
+                document.getElementById('itemTitle').value = this.bookmarkletData.title || '';
+                document.getElementById('itemDescription').value = this.bookmarkletData.text || '';
+            }
+            
             const categorySelector = document.getElementById('itemCategory');
             const categoryExists = [...categorySelector.options].some(opt => opt.value === this.bookmarkletData.category);
             categorySelector.value = categoryExists ? this.bookmarkletData.category : 'directorio';
-            this.bookmarkletData = null; 
+            
+            this.bookmarkletData = null;
         }
     }
 
@@ -461,14 +527,6 @@ class PanelMariaApp {
     setupEventListeners() {
         document.getElementById('loginBtn').addEventListener('click', () => this.loginWithGoogle());
         document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
-        document.getElementById('voiceBtn').addEventListener('click', () => {
-            if (window.voiceManager) {
-                window.voiceManager.setAutoSave(this.settings.autoSaveVoice);
-                window.voiceManager.startListening();
-            } else {
-                this.showToast('El módulo de voz no está cargado.', 'error');
-            }
-        });
         document.getElementById('settingsBtn').addEventListener('click', () => this.openSettingsModal());
         document.getElementById('addItemBtn').addEventListener('click', () => this.openModal());
         document.getElementById('emptyStateAddBtn').addEventListener('click', () => this.openModal());
@@ -507,6 +565,11 @@ class PanelMariaApp {
         document.getElementById('exportDataBtn').addEventListener('click', () => window.storage.exportData());
         document.getElementById('importDataBtn').addEventListener('click', () => document.getElementById('importFile').click());
         document.getElementById('importFile').addEventListener('change', (e) => this.handleImportFile(e));
+
+        document.getElementById('sortSelect').addEventListener('change', (e) => {
+            this.sortBy = e.target.value;
+            this.renderAll();
+        });
         
         document.getElementById('newCategoryCloseBtn').addEventListener('click', () => this.closeNewCategoryModal());
         document.getElementById('newCategoryCancelBtn').addEventListener('click', () => this.closeNewCategoryModal());
@@ -637,7 +700,50 @@ class PanelMariaApp {
 
     filterByTag(tag) { this.filters.tag = this.filters.tag === tag ? null : tag; this.renderAll(); }
     renderItems() { const container = document.getElementById('itemsContainer'); const filteredItems = this.getFilteredItems(); container.innerHTML = filteredItems.length > 0 ? filteredItems.map(item => this.createItemCard(item)).join('') : ''; }
-    getFilteredItems() { let items = this.items; if (this.currentCategory !== 'todos') { items = items.filter(item => item.categoria.toLowerCase() === this.currentCategory.toLowerCase()); } if (this.filters.search) { const term = this.filters.search; items = items.filter(item => item.titulo.toLowerCase().includes(term) || (item.descripcion && item.descripcion.toLowerCase().includes(term)) || (item.etiquetas && item.etiquetas.some(tag => tag.toLowerCase().includes(term))) || (item.url && item.url.toLowerCase().includes(term))); } if (this.filters.tag) { items = items.filter(item => item.etiquetas && item.etiquetas.some(tag => tag.toLowerCase() === this.filters.tag.toLowerCase())); } return items.sort((a, b) => (a.anclado === b.anclado) ? (new Date(b.fecha_creacion) - new Date(b.fecha_creacion)) : (a.anclado ? -1 : 1)); }
+    getFilteredItems() {
+        let items = [...this.items]; // Crear una copia para no mutar el original
+
+        // 1. Filtrado
+        if (this.currentCategory !== 'todos') {
+            items = items.filter(item => item.categoria.toLowerCase() === this.currentCategory.toLowerCase());
+        }
+        if (this.filters.search) {
+            const term = this.filters.search;
+            items = items.filter(item => 
+                item.titulo.toLowerCase().includes(term) || 
+                (item.descripcion && item.descripcion.toLowerCase().includes(term)) || 
+                (item.etiquetas && item.etiquetas.some(tag => tag.toLowerCase().includes(term))) || 
+                (item.url && item.url.toLowerCase().includes(term))
+            );
+        }
+        if (this.filters.tag) {
+            items = items.filter(item => item.etiquetas && item.etiquetas.some(tag => tag.toLowerCase() === this.filters.tag.toLowerCase()));
+        }
+
+        // 2. Ordenación
+        const sortedItems = items.sort((a, b) => {
+            // Prioridad máxima para los anclados
+            if (a.anclado !== b.anclado) {
+                return a.anclado ? -1 : 1;
+            }
+
+            // Criterio de ordenación secundario
+            switch (this.sortBy) {
+                case 'recientes':
+                    return new Date(b.fecha_creacion) - new Date(a.fecha_creacion);
+                case 'antiguos':
+                    return new Date(a.fecha_creacion) - new Date(b.fecha_creacion);
+                case 'titulo-asc':
+                    return a.titulo.localeCompare(b.titulo);
+                case 'titulo-desc':
+                    return b.titulo.localeCompare(a.titulo);
+                default:
+                    return 0;
+            }
+        });
+
+        return sortedItems;
+    }
     updateSelectionUI() { const bulkActions = document.getElementById('bulkActions'); const selectAllCheckbox = document.getElementById('selectAllCheckbox'); const selectionCount = document.getElementById('selectionCount'); if (this.selectedItems.size > 0) { bulkActions.classList.remove('hidden'); selectionCount.textContent = this.selectedItems.size; } else { bulkActions.classList.add('hidden'); } const filteredItems = this.getFilteredItems(); if (filteredItems.length > 0) { const allVisibleSelected = filteredItems.every(item => this.selectedItems.has(item.id)); selectAllCheckbox.checked = allVisibleSelected; selectAllCheckbox.indeterminate = !allVisibleSelected && filteredItems.some(item => this.selectedItems.has(item.id)); } else { selectAllCheckbox.checked = false; selectAllCheckbox.indeterminate = false; } }
     updateEmptyState() { const emptyState = document.getElementById('emptyState'); const hasItems = document.getElementById('itemsContainer').children.length > 0; emptyState.classList.toggle('hidden', !hasItems); if (!hasItems) { emptyState.querySelector('.empty-state__title').textContent = `No hay elementos en "${this.formatCategoryName(this.currentCategory)}"`; } }
     

@@ -10,6 +10,36 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
     <link rel="icon" href="data:,">
+
+    <link rel="manifest" href="manifest.json">
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('Service Worker registrado', reg))
+        .catch(err => console.log('Error al registrar SW', err));
+    });
+  }
+
+  // Lógica para capturar lo compartido
+  window.addEventListener('DOMContentLoaded', () => {
+    const parsedUrl = new URL(window.location);
+    const sharedTitle = parsedUrl.searchParams.get('title');
+    const sharedText = parsedUrl.searchParams.get('text');
+    const sharedUrl = parsedUrl.searchParams.get('url');
+
+    if (sharedTitle || sharedText || sharedUrl) {
+      // Aquí es donde tu app recibe la info. 
+      // Puedes hacer un alert o llamar a tu función de Firebase para guardar
+      console.log("Recibido para guardar:", { sharedTitle, sharedText, sharedUrl });
+      alert("¡Recibido! Guardando: " + (sharedTitle || sharedUrl));
+      
+      // Ejemplo: si tienes una función guardarEnFirebase(data), la llamarías aquí
+    }
+  });
+</script>
+    
 </head>
 <body>
     <!-- App Bar -->
@@ -68,6 +98,15 @@
                     <input type="text" id="searchInput" placeholder="Buscar..." class="input-field">
                 </div>
                 <div id="tagFilters" class="tag-filters"></div>
+                <div class="sort-wrapper">
+                    <label for="sortSelect" class="form-label">Ordenar por:</label>
+                    <select id="sortSelect" class="input-field">
+                        <option value="recientes">Más recientes</option>
+                        <option value="antiguos">Más antiguos</option>
+                        <option value="titulo-asc">Título (A-Z)</option>
+                        <option value="titulo-desc">Título (Z-A)</option>
+                    </select>
+                </div>
             </div>
 
             <!-- Bulk Actions Bar -->
@@ -180,7 +219,10 @@
     <div id="chat-container" class="chat-container hidden">
         <div class="chat-header">
             <h3>Asistente IA</h3>
-            <button id="chat-close" class="btn btn--icon"><span class="material-symbols-outlined">close</span></button>
+            <div class="chat-header-actions">
+                <button id="chat-minimize" class="btn btn--icon" title="Minimizar"><span class="material-symbols-outlined">expand_more</span></button>
+                <button id="chat-close" class="btn btn--icon" title="Cerrar"><span class="material-symbols-outlined">close</span></button>
+            </div>
         </div>
         <div id="chat-messages" class="chat-messages"></div>
         <form id="chat-form" class="chat-input-area">
