@@ -257,10 +257,12 @@ body {
 /* --- VISTAS --- */
 .view-container {
     flex: 1;
-    overflow-y: auto;
-    padding: 25px;
     display: flex;
     flex-direction: column;
+    padding: 0;
+    /* REMOVED PADDING */
+    overflow: hidden;
+    /* Container doesn't scroll, children do */
 }
 
 /* --- ESTILOS DEL CHAT KAI --- */
@@ -269,20 +271,24 @@ body {
     flex-direction: column;
     height: 100%;
     width: 100%;
-    background: var(--white);
+    background: transparent;
+    /* TRANSPARENT to show main-content dots */
     /* Removed borders, shadows, and max-width for full utilization */
     border-radius: 0;
+    border: none;
+    box-shadow: none;
 }
 
 .kai-messages {
     flex: 1;
     overflow-y: auto;
-    padding: 15px;
-    /* Reduced padding */
+    padding: 15px 5%;
+    /* Horizontal padding for readability */
     display: flex;
     flex-direction: column;
-    gap: 18px;
-    background: var(--bg-color);
+    gap: 12px;
+    background: transparent;
+    /* Show dots */
 }
 
 .msg {
@@ -364,14 +370,19 @@ body {
 
 /* --- EDITOR DE NOTAS --- */
 .editor-paper {
-    background: var(--white);
+    background: transparent;
+    /* Show dots */
     /* Removed borders, shadows, and max-width */
-    padding: 25px;
-    /* Reduced padding */
+    padding: 20px 5%;
+    /* Horizontal padding */
     width: 100%;
     height: 100%;
     display: flex;
     flex-direction: column;
+    border: none;
+    box-shadow: none;
+    overflow-y: auto;
+    /* Editor itself scrolls */
 }
 
 .edit-title {
