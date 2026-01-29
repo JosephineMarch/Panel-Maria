@@ -1,17 +1,28 @@
-```javascript
 // Módulo de Inteligencia Artificial - KAI (Cerebras Powered)
 import { CEREBRAS_API_KEY } from './config.js';
 import { buildSystemPrompt } from './kai-persona.js'; // Import Persona
 
 let appInstance = null;
+let chatMessages, chatInput, voiceBtn; // Global refs
 const API_ENDPOINT = 'https://api.cerebras.ai/v1/chat/completions';
-const MODEL = 'llama-3.3-70b'; // High capability model for instructions
-
+const MODEL = 'llama-3.3-70b';
 
 // --- MAIN FUNCTION ---
 export async function initChat(app) {
     appInstance = app;
-    console.log('Kai AI Module Initialized (Persona Loaded)');
+
+    // Bind DOM Elements
+    chatMessages = document.querySelector('.kai-messages'); // Fixed selector
+    if (!chatMessages) chatMessages = document.getElementById('kaiMessages'); // Fallback
+
+    chatInput = document.getElementById('kaiInput');
+    voiceBtn = document.getElementById('voiceBtn');
+
+    if (voiceBtn) {
+        voiceBtn.addEventListener('click', toggleVoiceInput);
+    }
+
+    console.log('Kai AI Module Initialized (Persona Loaded & Listeners Ready)');
 }
 
 // --- PUBLIC API ---
@@ -20,7 +31,7 @@ export async function sendMessageToKai(text) {
 
     // 1. Get Context
     const context = getContextSummary(appInstance.store);
-    
+
     // 2. Build Prompt using Persona
     const systemPrompt = buildSystemPrompt(context);
 
@@ -44,14 +55,14 @@ export async function sendMessageToKai(text) {
 function getContextSummary(store) {
     // Summarize last 40 items with IDs
     const tags = Array.from(store.getAllTags()).join(', ');
-    const items = store.items.slice(0, 40).map(i => `(ID: ${ i.id })[${ i.titulo }]#${ (i.etiquetas || []).join(',') } `).join('\n');
+    const items = store.items.slice(0, 40).map(i => `(ID: ${i.id})[${i.titulo}]#${(i.etiquetas || []).join(',')} `).join('\n');
 
     return `
 CONTEXTO(TUS DATOS):
-    Etiquetas Globales: ${ tags }
+    Etiquetas Globales: ${tags}
     
     ITEMS RECIENTES(Úsalos para editar / borrar):
-    ${ items }
+    ${items}
 `;
 }
 
@@ -62,7 +73,7 @@ async function callCerebras(messages) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${ CEREBRAS_API_KEY } `
+            'Authorization': `Bearer ${CEREBRAS_API_KEY} `
         },
         body: JSON.stringify({
             model: MODEL,
@@ -75,7 +86,7 @@ async function callCerebras(messages) {
 
     if (!res.ok) {
         const err = await res.text();
-        throw new Error(`API Error: ${ err } `);
+        throw new Error(`API Error: ${err} `);
     }
 
     const data = await res.json();
@@ -117,7 +128,7 @@ async function handleKaiResponse(rawText) {
             return;
         }
         await appInstance.store.updateItem(id, data);
-        appendMessage('kai', `Actualizado.Renové el item ${ id.substr(0, 4) }... ✨`);
+        appendMessage('kai', `Actualizado.Renové el item ${id.substr(0, 4)}... ✨`);
 
         // 3. DELETE
     } else if (action === 'delete') {
@@ -143,7 +154,7 @@ function appendMessage(sender, html) {
     if (!container) return;
 
     const div = document.createElement('div');
-    div.className = `msg msg - ${ sender } `;
+    div.className = `msg msg - ${sender} `;
     div.innerHTML = html;
     container.appendChild(div);
     container.scrollTop = container.scrollHeight;

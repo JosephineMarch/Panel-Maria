@@ -196,8 +196,12 @@ class PanelMariaApp {
     }
 
     async handleKaiMessage() {
+        console.log('App: handleKaiMessage triggered');
         const input = document.getElementById('kaiInput');
+        if (!input) { console.error('App: Kai Input not found!'); return; }
+
         const text = input.value.trim();
+        console.log('App: Input text:', text);
         if (!text) return;
 
         // 1. Show User Msg immediately
@@ -207,8 +211,15 @@ class PanelMariaApp {
         container.scrollTop = container.scrollHeight;
 
         // 2. Delegate to AI Module
-        const { sendMessageToKai } = await import('./chat.js');
-        sendMessageToKai(text);
+        try {
+            console.log('App: Importing chat.js...');
+            const { sendMessageToKai } = await import('./chat.js');
+            console.log('App: Calling sendMessageToKai...');
+            sendMessageToKai(text);
+        } catch (e) {
+            console.error('App: Error in AI delegation:', e);
+            container.innerHTML += `<div class="msg msg-kai">Error interno: ${e.message}</div>`;
+        }
     }
 
     // Voice handled in chat.js
