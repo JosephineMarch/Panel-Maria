@@ -106,8 +106,9 @@ async function handleKaiResponse(rawText) {
             parsed = repaired;
         } else {
             console.error('JSON Parse Error:', e);
+            // If it starts with a bracket but failed, it's a technical glitch. Don't show it to Maria.
             if (rawText.trim().startsWith('{')) {
-                appendMessage('kai', '¡Uf! María, intenté organizar demasiadas cosas a la vez y mi cerebro se llenó. 🤯\n\n¿Podemos intentarlo con menos notas? Prueba pidiéndome: "Organiza solo mis 10 notas más recientes".');
+                appendMessage('kai', '¡Uy! Me he liado un poco intentando procesar eso. 🧠🌀 ¿Podemos probar por partes?');
             } else {
                 appendMessage('kai', rawText);
             }
@@ -119,8 +120,9 @@ async function handleKaiResponse(rawText) {
 
     // --- ORCHESTRATOR ---
 
-    // 0. SEQUENTIAL CLEANUP (NUEVO: Poco a poco)
+    // 0. SEQUENTIAL CLEANUP
     if (action === 'start_global_cleanup') {
+        if (response) appendMessage('kai', response);
         runSequentialCleanup();
         return;
     }
@@ -129,17 +131,19 @@ async function handleKaiResponse(rawText) {
     if (action === 'bulk_update' || (updates && Array.isArray(updates))) {
         const jobs = updates || [];
         if (jobs.length === 0) {
-            appendMessage('kai', 'He revisado todo y... ¡tus etiquetas ya están impecables! No he necesitado cambiar nada. ✨');
+            appendMessage('kai', response || 'He revisado todo y... ¡tus etiquetas ya están impecables! No he necesitado cambiar nada. ✨');
             return;
         }
-        appendMessage('kai', `¡Entendido! Voy a reorganizar <b>${jobs.length}</b> notas para que todo esté impecable. 🪄`);
+
+        // Show Response FIRST if provided
+        if (response) appendMessage('kai', response);
 
         for (const update of jobs) {
             if (update.id && update.data) {
                 await appInstance.store.updateItem(update.id, update.data);
             }
         }
-        appendMessage('kai', `¡Listo! He re-etiquetado y organizado esa parte de tu información. ✅`);
+        if (!response) appendMessage('kai', `¡Listo! He re-etiquetado y organizado esa parte de tu información. ✅`);
 
         // 2. CREATE
     } else if (action === 'create') {
@@ -153,23 +157,23 @@ async function handleKaiResponse(rawText) {
             fecha_creacion: new Date().toISOString()
         };
         await appInstance.store.addItem(newItem);
-        appendMessage('kai', `He guardado "<b>${newItem.titulo}</b>" en tus bloques. 🧠`);
+        appendMessage('kai', response || `¡Guardado! He anotado "<b>${newItem.titulo}</b>" en tus bloques. 🧠`);
 
         // 3. SINGLE UPDATE
     } else if (action === 'update') {
         if (!id) return;
         await appInstance.store.updateItem(id, data);
-        appendMessage('kai', `He actualizado "<b>${data.titulo || 'el bloque'}</b>". ✅`);
+        appendMessage('kai', response || `He actualizado "<b>${data.titulo || 'el bloque'}</b>". ✅`);
 
         // 4. DELETE
     } else if (action === 'delete') {
         if (!id) return;
         await appInstance.store.deleteItem(id);
-        appendMessage('kai', `Borrado. Desapareció. 🗑️`);
+        appendMessage('kai', response || `Borrado. ¡Espacio liberado! 🗑️`);
 
         // 5. CHAT / FALLBACK
     } else {
-        appendMessage('kai', response || parsed.data?.mensaje || "Dime María, ¿en qué más puedo ayudarte? ⚡");
+        appendMessage('kai', response || "Dime María, ¿en qué más puedo ayudarte? ⚡");
     }
 }
 
