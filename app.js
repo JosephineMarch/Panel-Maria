@@ -67,77 +67,43 @@ class PanelMariaApp {
             if (el) el.addEventListener(evt, fn);
         };
 
-        // Navigation
-        on('toggleSidebarBtn', 'click', () => {
-            const sb = document.getElementById('sidebar');
-            if (window.innerWidth <= 768) {
-                // Mobile: toggle visibility if hidden
-                const app = document.querySelector('.app-container');
-                if (app.classList.contains('view-content')) {
-                    this.renderer.toggleMainView('sidebar');
-                } else {
-                    this.renderer.toggleMainView('chat');
-                }
-            }
+        // UI Navigation Listeners
+        on('backToSidebarBtn', 'click', () => this.renderer.toggleView('list'));
+        on('backToListBtn', 'click', () => this.renderer.toggleView('list'));
+
+        on('kaiCard', 'click', () => this.renderer.toggleView('kai'));
+        on('addItemBtn', 'click', () => {
+            const id = this.store.generateId();
+            this.store.addItem({ titulo: 'Nueva Nota', id }).then(() => this.openWorkspace(id));
         });
-        on('closeSidebarBtn', 'click', () => this.renderer.toggleMainView('chat'));
-        on('backToChatBtn', 'click', () => this.closeWorkspace());
 
         // Auth
         on('loginBtn', 'click', () => signInWithGoogle());
         on('logoutBtn', 'click', () => signOutUser());
 
-        // Actions
-        on('addItemBtn', 'click', () => {
-            const id = this.store.generateId();
-            this.store.addItem({ titulo: '', categoria: 'ideas', id }).then(() => this.openWorkspace(id));
-        });
-
-        // Workspace
-        const autoSave = this.debounce(() => this.saveWorkspace(), 1000);
-        ['wsTitle', 'wsDescription', 'wsUrl', 'wsCategory'].forEach(id => on(id, 'input', autoSave));
-        on('wsCategory', 'change', (e) => {
-            if (e.target.value === '__new_category__') {
-                document.getElementById('newCategoryModal').classList.remove('hidden');
-            } else {
-                autoSave();
+        // Tag Tabs (Event Delegation)
+        document.getElementById('tagTabs').addEventListener('click', (e) => {
+            if (e.target.dataset.action === 'filter-tag') {
+                const tag = e.target.dataset.tag;
+                this.store.setTagFilter(tag === 'all' ? null : tag);
             }
         });
-        on('wsDeleteBtn', 'click', () => this.deleteCurrentItem());
 
-        // Settings / Modals
-        on('settingsBtn', 'click', () => document.getElementById('settingsModal').classList.remove('hidden'));
-        on('settingsCloseBtn', 'click', () => document.getElementById('settingsModal').classList.add('hidden'));
-        on('newCategoryCreateBtn', 'click', () => this.createCustomCategory());
-        on('newCategoryCancelBtn', 'click', () => document.getElementById('newCategoryModal').classList.add('hidden'));
-        on('newCategoryCloseBtn', 'click', () => document.getElementById('newCategoryModal').classList.add('hidden'));
-
-        // Grid Interactions
+        // Item Click (Event Delegation)
         document.getElementById('itemsContainer').addEventListener('click', (e) => {
             const card = e.target.closest('.card');
-            if (e.target.dataset.action === 'filter-by-tag') return; // let tag click bubble to filter
-
-            if (card) {
-                const id = card.dataset.id;
-                this.openWorkspace(id);
+            if (card && card.dataset.action === 'open-item') {
+                this.openWorkspace(card.dataset.id);
             }
         });
 
-        // Tag Filter
-        document.getElementById('tagFilterBar').addEventListener('click', (e) => {
-            if (e.target.dataset.tag) {
-                const t = e.target.dataset.tag;
-                this.store.setTagFilter(this.store.filters.tag === t ? null : t);
-            }
-        });
-
-        // Filters
-        document.querySelectorAll('.filter-chip').forEach(btn => {
-            btn.addEventListener('click', () => this.store.setCategory(btn.dataset.category));
-        });
+        // Workspace Auto-Save
+        const autoSave = this.debounce(() => this.saveWorkspace(), 500);
+        ['wsTitle', 'wsDescription', 'wsUrl', 'wsTagsInput'].forEach(id => on(id, 'input', autoSave));
+        on('wsDeleteBtn', 'click', () => this.deleteCurrentItem());
     }
 
-    // WORKSPACE
+    // ACTIONS
     openWorkspace(id) {
         this.currentId = id;
         const item = this.store.getItem(id);
@@ -146,15 +112,9 @@ class PanelMariaApp {
         document.getElementById('wsTitle').value = item.titulo || '';
         document.getElementById('wsDescription').value = item.descripcion || '';
         document.getElementById('wsUrl').value = item.url || '';
-        this.renderer.populateCategorySelector(document.getElementById('wsCategory'), true);
-        document.getElementById('wsCategory').value = item.categoria;
+        document.getElementById('wsTagsInput').value = (item.etiquetas || []).join(', ');
 
-        this.renderer.toggleMainView('workspace');
-    }
-
-    closeWorkspace() {
-        this.currentId = null;
-        this.renderer.toggleMainView('sidebar');
+        this.renderer.toggleView('workspace');
     }
 
     saveWorkspace() {
@@ -163,7 +123,7 @@ class PanelMariaApp {
             titulo: document.getElementById('wsTitle').value,
             descripcion: document.getElementById('wsDescription').value,
             url: document.getElementById('wsUrl').value,
-            categoria: document.getElementById('wsCategory').value
+            // categoria removed
         };
         this.store.updateItem(this.currentId, data);
     }
@@ -174,23 +134,7 @@ class PanelMariaApp {
         this.closeWorkspace();
     }
 
-    // CATEGORIES
-    createCustomCategory() {
-        const name = document.getElementById('newCategoryNameInput').value;
-        if (name) {
-            this.store.settings.customCategories.push(name.toLowerCase());
-            this.store.saveSettings();
-            document.getElementById('newCategoryModal').classList.add('hidden');
-            this.renderer.populateCategorySelector(document.getElementById('wsCategory'), true); // Refresh
-        }
-    }
-
-    confirmDeleteCategory(c) {
-        this.renderer.showConfirmModal('Borrar Categoría', `¿Borrar ${c}?`, () => {
-            this.store.settings.customCategories = this.store.settings.customCategories.filter(cat => cat !== c);
-            this.store.saveSettings();
-        });
-    }
+    // CATEGORIES (Removed)
 
     confirmDeleteTag(t) {
         this.renderer.showConfirmModal('Borrar Etiqueta', `¿Quitar #${t} de todo?`, () => {

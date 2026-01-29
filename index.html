@@ -40,162 +40,133 @@
     <!-- App Container: Sidebar + Main Content -->
     <div class="app-container">
 
-        <!-- Sidebar: Block Gallery / Navigation -->
+        <!-- Sidebar: Unified List (Kai + Items) -->
         <aside id="sidebar" class="sidebar">
             <div class="sidebar__header">
-                <h2 class="sidebar__title">Archivo</h2>
-                <button id="closeSidebarBtn" class="btn btn--icon mobile-only"><span
-                        class="material-symbols-outlined">close</span></button>
+                <!-- Telegram-Style Search & Menu -->
+                <button id="mainMenuBtn" class="btn btn--icon"><span
+                        class="material-symbols-outlined">menu</span></button>
+                <div class="search-bar-wrapper">
+                    <span class="material-symbols-outlined search-icon">search</span>
+                    <input type="text" id="gallerySearchInput" placeholder="Buscar..." autocomplete="off">
+                </div>
             </div>
 
-            <!-- Gallery Container -->
-            <div class="gallery-container">
-                <!-- Filters -->
-                <div class="gallery-filters">
-                    <button class="filter-chip active" data-category="todos">Todo</button>
-                    <button class="filter-chip" data-category="directorio">Directorio</button>
-                    <button class="filter-chip" data-category="ideas">Ideas</button>
-                    <button class="filter-chip" data-category="proyectos">Proyectos</button>
-                    <button class="filter-chip" data-category="logros">Logros</button>
-                </div>
+            <!-- Tags Tabs (Telegram Folders) -->
+            <div id="tagTabs" class="tag-tabs-container">
+                <button class="tab-chip active" data-tag="all">Todo</button>
+                <!-- Dynamic tags injected here -->
+            </div>
 
-                <!-- Tag Filter Bar -->
-                <div id="tagFilterBar" class="tag-filter-bar"></div>
-
-                <!-- Search & Actions -->
-                <div class="gallery-search">
-                    <input type="checkbox" id="selectAllCheckbox" title="Seleccionar todo">
-                    <span class="material-symbols-outlined">search</span>
-                    <input type="text" id="gallerySearchInput" placeholder="Buscar...">
-                </div>
-
-                <!-- Bulk Actions Toolbar -->
-                <div id="bulkActions" class="bulk-actions hidden">
-                    <div class="bulk-info">
-                        <span id="selectionCount">0</span> seleccionados
+            <!-- Unified List Container -->
+            <div class="list-container">
+                <!-- 1. KAI (Pinned Chat) -->
+                <div id="kaiCard" class="card card--kai pinned-chat" data-action="open-kai">
+                    <div class="card__avatar">
+                        <span class="material-symbols-outlined">smart_toy</span>
                     </div>
-                    <div class="bulk-buttons">
-                        <button id="bulkPinBtn" class="btn btn--icon btn--small" title="Anclar"><span
-                                class="material-symbols-outlined">push_pin</span></button>
-                        <button id="bulkChangeCategoryBtn" class="btn btn--icon btn--small" title="Mover"><span
-                                class="material-symbols-outlined">folder</span></button>
-                        <button id="bulkChangeTagsBtn" class="btn btn--icon btn--small" title="Etiquetas"><span
-                                class="material-symbols-outlined">label</span></button>
-                        <button id="bulkDeleteBtn" class="btn btn--icon btn--small btn--danger" title="Eliminar"><span
-                                class="material-symbols-outlined">delete</span></button>
+                    <div class="card__content">
+                        <div class="card__header">
+                            <h3 class="card__title">Kai ⚡</h3>
+                            <span class="card__time">Ahora</span>
+                        </div>
+                        <p class="card__preview">Asistente Personal</p>
                     </div>
                 </div>
 
-                <!-- Items Grid (List View) -->
-                <div id="itemsContainer" class="items-grid bento-grid">
+                <!-- 2. Items List -->
+                <div id="itemsContainer" class="items-list">
                     <!-- Items injected here by Renderer -->
                 </div>
 
                 <!-- Empty State -->
                 <div id="emptyState" class="empty-state hidden">
-                    <span class="material-symbols-outlined empty-state__icon">grid_off</span>
-                    <p class="empty-state__text">No hay nada por aquí.</p>
+                    <p class="empty-state__text">No hay notas con esta etiqueta.</p>
                 </div>
             </div>
 
-            <!-- Sidebar Footer -->
+            <!-- Sidebar Footer (Settings/Actions) -->
             <div class="sidebar__footer">
-                <button id="settingsBtn" class="btn btn--text"><span class="material-symbols-outlined">settings</span>
-                    Configuración</button>
-                <button id="exportDataBtn" class="btn btn--text"><span class="material-symbols-outlined">download</span>
-                    Backup</button>
-                <!-- Hidden Import Trigger -->
-                <input type="file" id="importFile" accept=".json" class="hidden">
-                <button id="importDataBtn" class="btn btn--text"><span class="material-symbols-outlined">upload</span>
-                    Importar</button>
+                <!-- Auth Status Mini -->
+                <div id="authStatusMini" class="auth-mini">
+                    <span class="status-dot offline" id="authDot"></span>
+                    <span id="authText">Offline</span>
+                </div>
+                <button id="addItemBtn" class="btn btn--icon btn--filled-icon" title="Nuevo Bloque">+</button>
             </div>
         </aside>
 
-        <!-- Main Chat Area (Default View on Desktop) -->
-        <main id="mainChat" class="main-chat">
-            <!-- Chat Header -->
-            <header class="chat-header-main">
-                <button id="toggleSidebarBtn" class="btn btn--icon"><span
-                        class="material-symbols-outlined">menu</span></button>
-                <div class="chat-header-info">
-                    <div class="assistant-name">Kai ⚡</div>
-                    <span id="connectionStatus" class="status-indicator online">En línea</span>
-                </div>
-                <!-- Auth / Profile -->
-                <div id="auth-status" class="auth-status">
-                    <button id="loginBtn" class="btn btn--small btn--outlined">Login</button>
-                    <div id="userProfile" class="user-profile hidden">
-                        <img id="userAvatar" src="" alt="User" class="user-avatar">
-                        <span id="userName" class="user-name mobile-hidden"></span>
-                        <button id="logoutBtn" class="btn btn--icon btn--small" title="Cerrar sesión"><span
+        <!-- Right Panel: Swaps between MainChat and Workspace -->
+        <div id="rightPanel" class="right-panel">
+
+            <!-- 1. MAIN CHAT (Kai) -->
+            <main id="mainChat" class="content-view visible">
+                <header class="view-header">
+                    <button id="backToSidebarBtn" class="btn btn--icon mobile-only"><span
+                            class="material-symbols-outlined">arrow_back</span></button>
+                    <div class="header-info">
+                        <span class="header-title">Kai ⚡</span>
+                        <span class="header-status">En línea</span>
+                    </div>
+                    <div class="header-actions">
+                        <button id="loginBtn" class="btn btn--small btn--outlined">Login</button>
+                        <button id="logoutBtn" class="btn btn--icon hidden" title="Salir"><span
                                 class="material-symbols-outlined">logout</span></button>
                     </div>
-                </div>
-                <!-- Add Item Shortcut -->
-                <button id="addItemBtn" class="btn btn--icon btn--filled-icon" title="Nuevo Bloque">+</button>
-            </header>
+                </header>
 
-            <!-- Chat Messages Area -->
-            <div id="chat-messages" class="chat-messages-area">
-                <div class="chat-message ia">
-                    <div class="icon"><span class="material-symbols-outlined">smart_toy</span></div>
-                    <div class="content">¡Epa! Soy Kai ⚡. Todo listo. ¿Qué organizamos hoy?</div>
-                </div>
-            </div>
-
-            <!-- Bottom Input Bar -->
-            <div class="chat-input-bar">
-                <form id="chat-form" class="chat-form">
-                    <button type="button" id="voiceBtn" class="btn btn--icon btn--voice" title="Hablar con Kai">
-                        <span class="material-symbols-outlined">mic</span>
-                    </button>
-                    <div class="input-wrapper">
-                        <textarea id="chat-input" placeholder="Escribe algo, pega un link o una foto..."
-                            rows="1"></textarea>
+                <div id="chat-messages" class="chat-area">
+                    <div class="chat-message ia">
+                        <div class="content">Hola, soy Kai. Tu cerebro externo. 🧠⚡<br>Tus datos se adaptarán
+                            automáticamente al iniciar sesión.</div>
                     </div>
-                    <button type="submit" class="btn btn--icon btn--send">
-                        <span class="material-symbols-outlined">send</span>
-                    </button>
-                </form>
-            </div>
-        </main>
-
-        <!-- Workspace Editor Panel (Split View - Hidden by default) -->
-        <div id="workspacePanel" class="workspace-panel hidden">
-            <div class="workspace-header">
-                <button id="backToChatBtn" class="btn btn--text btn--small"><span
-                        class="material-symbols-outlined">arrow_back</span> Volver</button>
-                <div class="workspace-actions">
-                    <button id="wsPinBtn" class="btn btn--icon btn--small" title="Anclar"><span
-                            class="material-symbols-outlined">push_pin</span></button>
-                    <button id="wsDeleteBtn" class="btn btn--icon btn--small btn--danger" title="Eliminar"><span
-                            class="material-symbols-outlined">delete</span></button>
-                </div>
-            </div>
-            <div class="workspace-body">
-                <!-- Note Editor -->
-                <input type="text" id="wsTitle" class="ws-title-input" placeholder="Sin Título" autocomplete="off">
-
-                <div class="ws-meta-row">
-                    <select id="wsCategory" class="ws-select">
-                        <!-- Populated dynamically -->
-                    </select>
-                    <input type="text" id="wsUrl" class="ws-input-flat" placeholder="http://...">
                 </div>
 
-                <div class="ws-tags-row">
-                    <div id="wsTagsWrapper" class="tags-input-wrapper simple">
-                        <input type="text" id="wsTagsInput" class="tags-input-field" placeholder="#etiqueta...">
+                <div class="input-area">
+                    <form id="chat-form" class="chat-bar">
+                        <button type="button" id="voiceBtn" class="btn btn--icon"><span
+                                class="material-symbols-outlined">mic</span></button>
+                        <input type="text" id="chat-input" placeholder="Mensaje a Kai..." autocomplete="off">
+                        <button type="submit" class="btn btn--icon btn--send"><span
+                                class="material-symbols-outlined">send</span></button>
+                    </form>
+                </div>
+            </main>
+
+            <!-- 2. WORKSPACE (Item Editor) -->
+            <div id="workspacePanel" class="content-view hidden">
+                <header class="view-header">
+                    <button id="backToListBtn" class="btn btn--icon mobile-only"><span
+                            class="material-symbols-outlined">arrow_back</span></button>
+                    <div class="header-info">
+                        <input type="text" id="wsTitle" class="header-title-input" placeholder="Sin Título">
+                        <span id="wsStatus" class="header-status">Guardado</span>
                     </div>
-                    <div id="wsTagSuggestions" class="tag-suggestions"></div>
-                </div>
+                    <div class="header-actions">
+                        <button id="wsDeleteBtn" class="btn btn--icon btn--danger"><span
+                                class="material-symbols-outlined">delete</span></button>
+                    </div>
+                </header>
 
-                <textarea id="wsDescription" class="ws-textarea" placeholder="Escribe aquí..."></textarea>
+                <div class="editor-body">
+                    <!-- Meta: Tags & URL -->
+                    <div class="editor-meta">
+                        <div class="meta-row">
+                            <span class="material-symbols-outlined icon">link</span>
+                            <input type="text" id="wsUrl" class="meta-input" placeholder="Enlace (http://)...">
+                            <a id="wsOpenLinkBtn" href="#" target="_blank" class="btn btn--icon btn--small hidden"><span
+                                    class="material-symbols-outlined">open_in_new</span></a>
+                        </div>
+                        <div class="meta-row">
+                            <span class="material-symbols-outlined icon">label</span>
+                            <div id="wsTagsWrapper" class="tags-wrapper">
+                                <input type="text" id="wsTagsInput" class="tags-input" placeholder="Etiquetas...">
+                            </div>
+                        </div>
+                    </div>
 
-                <div id="wsTasksSection" class="ws-tasks-section">
-                    <h4>Tareas</h4>
-                    <div id="wsTasksList" class="tasks-list"></div>
-                    <button id="wsAddTaskBtn" class="btn btn--text btn--small">+ Tarea</button>
+                    <textarea id="wsDescription" class="editor-textarea"
+                        placeholder="Escribe aquí tu nota, idea o proyecto..."></textarea>
                 </div>
             </div>
         </div>
