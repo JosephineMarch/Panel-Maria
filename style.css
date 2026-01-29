@@ -343,226 +343,227 @@ button {
         width: 100%;
         height: 100%;
     }
+}
 
-    /* BULK ACTIONS & SELECTION */
-    .gallery-search {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.75rem 1rem;
-        border-bottom: 1px solid var(--border-color);
-        background: var(--surface-low);
+/* BULK ACTIONS & SELECTION */
+.gallery-search {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--surface-low);
+}
+
+.gallery-search input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent-purple);
+    cursor: pointer;
+}
+
+.bulk-actions {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--accent-purple);
+    color: white;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 20;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+    animation: slideUp 0.3s ease-out;
+}
+
+.bulk-actions.hidden {
+    display: none;
+}
+
+.bulk-info {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.bulk-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.bulk-buttons .btn {
+    color: white;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+}
+
+.bulk-buttons .btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
     }
 
-    .gallery-search input[type="checkbox"] {
-        width: 18px;
-        height: 18px;
-        accent-color: var(--accent-purple);
-        cursor: pointer;
+    to {
+        transform: translateY(0);
+        opacity: 1;
     }
+}
 
-    .bulk-actions {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: var(--accent-purple);
-        color: white;
-        padding: 0.75rem 1rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        z-index: 20;
-        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
-        animation: slideUp 0.3s ease-out;
-    }
+/* 7. SPLIT VIEW & WORKSPACE CSS */
+.workspace-panel {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-main);
+    position: relative;
+    height: 100%;
+}
 
-    .bulk-actions.hidden {
-        display: none;
-    }
+.workspace-header {
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-main);
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px);
+}
 
-    .bulk-info {
-        font-weight: 600;
-        font-size: 0.9rem;
-    }
+.workspace-body {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 2rem 1.5rem;
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
 
-    .bulk-buttons {
-        display: flex;
-        gap: 0.5rem;
-    }
+/* Note Styling */
+.ws-title-input {
+    font-size: 2.5rem;
+    font-weight: 700;
+    border: none;
+    background: transparent;
+    width: 100%;
+    color: var(--text-main);
+    outline: none;
+    line-height: 1.2;
+}
 
-    .bulk-buttons .btn {
-        color: white;
-        background: rgba(255, 255, 255, 0.2);
-        border: none;
-    }
+.ws-title-input::placeholder {
+    color: var(--border-main);
+}
 
-    .bulk-buttons .btn:hover {
-        background: rgba(255, 255, 255, 0.3);
-    }
+.ws-meta-row {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
 
-    @keyframes slideUp {
-        from {
-            transform: translateY(100%);
-            opacity: 0;
-        }
+.ws-select {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
 
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
-    }
+.ws-select:hover {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: var(--border-main);
+}
 
-    /* 7. SPLIT VIEW & WORKSPACE CSS */
-    .workspace-panel {
-        flex-grow: 1;
-        display: flex;
-        flex-direction: column;
-        background-color: var(--bg-main);
-        position: relative;
-        height: 100%;
-    }
+.ws-input-flat {
+    border: none;
+    background: transparent;
+    font-size: 0.9rem;
+    color: var(--accent-blue);
+    width: 100%;
+    outline: none;
+}
 
-    .workspace-header {
-        padding: 1rem 1.5rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        border-bottom: 1px solid var(--border-main);
-        background: rgba(255, 255, 255, 0.5);
-        backdrop-filter: blur(10px);
-    }
+.ws-textarea {
+    width: 100%;
+    min-height: 200px;
+    border: none;
+    background: transparent;
+    resize: none;
+    font-size: 1.1rem;
+    line-height: 1.7;
+    color: var(--text-main);
+    font-family: inherit;
+    outline: none;
+}
 
-    .workspace-body {
-        flex-grow: 1;
-        overflow-y: auto;
-        padding: 2rem 1.5rem;
-        max-width: 800px;
-        margin: 0 auto;
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-    }
+/* Filter Bar in Sidebar */
+.tag-filter-bar {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    overflow-x: auto;
+    background: var(--bg-sidebar);
+    border-bottom: 1px solid var(--border-main);
+    scrollbar-width: none;
+}
 
-    /* Note Styling */
-    .ws-title-input {
-        font-size: 2.5rem;
-        font-weight: 700;
-        border: none;
-        background: transparent;
-        width: 100%;
-        color: var(--text-main);
-        outline: none;
-        line-height: 1.2;
-    }
+.tag-chip {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-main);
+    border-radius: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+}
 
-    .ws-title-input::placeholder {
-        color: var(--border-main);
-    }
+.tag-chip:hover,
+.tag-chip.active {
+    background: var(--text-main);
+    color: white;
+    border-color: var(--text-main);
+}
 
-    .ws-meta-row {
-        display: flex;
-        gap: 1rem;
-        align-items: center;
-    }
+/* Tasks in Workspace */
+.ws-tasks-section h4 {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.05em;
+}
 
-    .ws-select {
-        padding: 0.25rem 0.5rem;
-        border: 1px solid transparent;
-        border-radius: 4px;
-        background: transparent;
-        font-size: 0.9rem;
-        color: var(--text-secondary);
-        cursor: pointer;
-    }
+.task-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
 
-    .ws-select:hover {
-        background: rgba(0, 0, 0, 0.03);
-        border-color: var(--border-main);
-    }
+.task-checkbox:checked+.task-input {
+    text-decoration: line-through;
+    color: var(--text-secondary);
+}
 
-    .ws-input-flat {
-        border: none;
-        background: transparent;
-        font-size: 0.9rem;
-        color: var(--accent-blue);
-        width: 100%;
-        outline: none;
-    }
+.task-input {
+    border: none;
+    background: transparent;
+    width: 100%;
+    font-size: 1rem;
+    color: var(--text-main);
+}
 
-    .ws-textarea {
-        width: 100%;
-        min-height: 200px;
-        border: none;
-        background: transparent;
-        resize: none;
-        font-size: 1.1rem;
-        line-height: 1.7;
-        color: var(--text-main);
-        font-family: inherit;
-        outline: none;
-    }
-
-    /* Filter Bar in Sidebar */
-    .tag-filter-bar {
-        display: flex;
-        gap: 0.5rem;
-        padding: 0.5rem 1rem;
-        overflow-x: auto;
-        background: var(--bg-sidebar);
-        border-bottom: 1px solid var(--border-main);
-        scrollbar-width: none;
-    }
-
-    .tag-chip {
-        font-size: 0.75rem;
-        padding: 2px 8px;
-        background: var(--bg-card);
-        border: 1px solid var(--border-main);
-        border-radius: 12px;
-        color: var(--text-secondary);
-        cursor: pointer;
-        white-space: nowrap;
-    }
-
-    .tag-chip:hover,
-    .tag-chip.active {
-        background: var(--text-main);
-        color: white;
-        border-color: var(--text-main);
-    }
-
-    /* Tasks in Workspace */
-    .ws-tasks-section h4 {
-        font-size: 0.9rem;
-        text-transform: uppercase;
-        color: var(--text-secondary);
-        margin-bottom: 0.5rem;
-        letter-spacing: 0.05em;
-    }
-
-    .task-item {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 0;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    }
-
-    .task-checkbox:checked+.task-input {
-        text-decoration: line-through;
-        color: var(--text-secondary);
-    }
-
-    .task-input {
-        border: none;
-        background: transparent;
-        width: 100%;
-        font-size: 1rem;
-        color: var(--text-main);
-    }
-
-    .task-input:focus {
-        outline: none;
-    }
+.task-input:focus {
+    outline: none;
+}
