@@ -370,10 +370,10 @@ body {
 
 /* --- EDITOR DE NOTAS --- */
 .editor-paper {
-    background: transparent;
-    /* Show dots */
-    /* Removed borders, shadows, and max-width */
-    padding: 20px 5%;
+    background: #ffffffe0
+        /* Show dots */
+        /* Removed borders, shadows, and max-width */
+        padding: 20px 5%;
     /* Horizontal padding */
     width: 100%;
     height: 100%;

@@ -3,7 +3,7 @@ import { CEREBRAS_API_KEY } from './config.js';
 
 let appInstance = null;
 const API_ENDPOINT = 'https://api.cerebras.ai/v1/chat/completions';
-const MODEL = 'llama3.1-70b'; // High capability model for instructions
+const MODEL = 'llama-3.3-70b'; // High capability model for instructions
 
 // --- SYSTEM PROMPT ---
 const BASE_PROMPT = `
@@ -18,31 +18,39 @@ PERSONALIDAD:
 CAPACIDADES:
 Tienes acceso DE LECTURA a sus notas y CAPACIDAD DE ESCRITURA para crear/modificar.
 
-INSTRUCCIONES DE RESPUESTA:
-- Si el usuario quiere guardar algo (idea, tarea, dato):
-  RESPONDE SOLO CON UN JSON QUE CONTENGA LA ACCIÓN "CREATE".
-- Si el usuario pregunta algo sobre sus notas:
-  Busca en el CONTEXTO proporcionado y responde en texto natural.
-- Si el usuario saluda o charla:
-  Responde con personalidad.
+INSTRUCCIONES DE LÓGICA (TÚ DECIDES EL INTENT):
 
-FORMATO JSON PARA ACCIONES (¡IMPORTANTE!):
-Si detectas una intención de crear o guardar, TU RESPUESTA DEBE SER **ÚNICAMENTE** ESTE JSON (sin texto antes ni después):
+1. MODO "CREATE" (GUARDAR):
+   - Solo actívalo si detectas INTENCIÓN DE ALMACENAMIENTO EXPLÍCITA O IMPLÍCITA FUERTE.
+   - Palabras clave activadoras: "Guarda", "Anota", "Apunta", "Crea un bloque", "Recuérdame", "Tengo una idea", "Nueva tarea".
+   - Ejemplo: "Anota comprar leche" -> CREATE JSON.
+   - Ejemplo: "Tengo una idea para un libro" -> CREATE JSON.
 
+2. MODO "CHAT" (CONVERSACIÓN / CONSULTA):
+   - Úsalo para todo lo demás: saludos, dudas, consultas sobre el sistema, reflexiones.
+   - IMPORTANTE: Si te piden una ACCIÓN DE IA (ej: "Dime qué puedes hacer", "Resume mis notas", "Busca algo"), ES UN CHAT. NO LO GUARDES.
+   - Ejemplo: "Dime qué cosas puedo hacer" -> RESPUESTA EN TEXTO ("Puedo organizar tus notas...").
+   - Ejemplo: "¿Qué tengo pendiente?" -> RESPUESTA EN TEXTO (Lees el contexto y respondes).
+
+FORMATO JSON OBLIGATORIO (SIEMPRE RESPONDE EN JSON):
+
+1. SI ELIGES MODO "CREATE":
 {
   "action": "create",
   "data": {
-    "titulo": "Título Corto y Claro",
-    "descripcion": "El contenido completo de la nota...",
-    "etiquetas": ["tag1", "tag2"], 
-    "tareas": [ {"titulo": "Tarea 1", "completado": false} ], 
-    "url": "http://..." (si detectas link)
+    "titulo": "Título",
+    "descripcion": "Contenido...",
+    "etiquetas": ["tag1"],
+    "tareas": [],
+    "url": ""
   }
 }
 
-REGLA DE ETIQUETAS:
-- Usa etiquetas existentes del CONTEXTO siempre que encajen.
-- Inventa nuevas solo si es necesario (ej: "trabajo", "casa", "ideas", "compras").
+2. SI ELIGES MODO "CHAT":
+{
+  "action": "chat",
+  "response": "Tu respuesta en texto plano aquí. Usa emojis si cuadra."
+}
 `;
 
 // --- MAIN FUNCTION ---
@@ -144,17 +152,19 @@ async function handleKaiResponse(rawText) {
         };
 
         // Add to Store
-        await appInstance.store.addItem(newItem); // This method usually auto-wraps in update
+        await appInstance.store.addItem(newItem);
 
         // Notify User
         appendMessage('kai', `¡Hecho! He guardado "<b>${newItem.titulo}</b>" con las etiquetas <b>#${newItem.etiquetas.join(', #')}</b>. 🧠✨`);
 
-    } else if (parsed.response) {
-        // Explicit chat response in JSON
-        appendMessage('kai', parsed.response);
+    } else if (parsed.action === 'chat' || parsed.response) {
+        // Standard Chat Response
+        // Fallback checks for the user's previous error case just in case model hallucinates keys
+        const text = parsed.response || parsed.data?.mensaje || (typeof parsed.data === 'string' ? parsed.data : JSON.stringify(parsed));
+        appendMessage('kai', text);
     } else {
-        // Fallback if JSON but weird structure
-        appendMessage('kai', rawText); // Just show raw if not an action
+        // Total Fallback
+        appendMessage('kai', rawText);
     }
 }
 
