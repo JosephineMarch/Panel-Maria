@@ -12,7 +12,6 @@ const PRECACHE_ASSETS = [
   './storage.js',
   './config.js',
   './firebase-config.js',
-  './main-prompt.txt',
   './icon-192.png', // Asumiendo que existen
   './icon-512.png'
 ];

@@ -12,48 +12,28 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
         rel="stylesheet" />
     <link rel="icon" href="data:,">
-
     <link rel="manifest" href="manifest.json">
 
     <script>
         // Global Error Handler for Debugging
         window.onerror = function (msg, url, line, col, error) {
-            alert("Error Crítico: " + msg + "\nLínea: " + line);
-            console.error("Global Error:", error);
+            console.error("Global Error:", msg, line, error);
+            // alert("Error Crítico: " + msg); // Disabled for production feel
             return false;
         };
         window.addEventListener('unhandledrejection', function (event) {
-            alert("Promesa rechazada sin manejo: " + event.reason);
             console.error("Unhandled Rejection:", event.reason);
         });
-    </script>
-    <script>
+
+        // SW Registration
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('Service Worker registrado', reg))
-                    .catch(err => console.log('Error al registrar SW', err));
+                    .then(reg => console.log('SW Registered'))
+                    .catch(err => console.log('SW Fail', err));
             });
         }
-
-        // Lógica para capturar lo compartido
-        window.addEventListener('DOMContentLoaded', () => {
-            const parsedUrl = new URL(window.location);
-            const sharedTitle = parsedUrl.searchParams.get('title');
-            const sharedText = parsedUrl.searchParams.get('text');
-            const sharedUrl = parsedUrl.searchParams.get('url');
-
-            if (sharedTitle || sharedText || sharedUrl) {
-                // Aquí es donde tu app recibe la info. 
-                // Puedes hacer un alert o llamar a tu función de Firebase para guardar
-                console.log("Recibido para guardar:", { sharedTitle, sharedText, sharedUrl });
-                alert("¡Recibido! Guardando: " + (sharedTitle || sharedUrl));
-
-                // Ejemplo: si tienes una función guardarEnFirebase(data), la llamarías aquí
-            }
-        });
     </script>
-
 </head>
 
 <body>
@@ -61,14 +41,14 @@
     <div class="app-container">
 
         <!-- Sidebar: Block Gallery / Navigation -->
-        <aside id="sidebar" class="sidebar hidden-mobile">
+        <aside id="sidebar" class="sidebar">
             <div class="sidebar__header">
-                <h2 class="sidebar__title">Archivo de Bloques</h2>
+                <h2 class="sidebar__title">Archivo</h2>
                 <button id="closeSidebarBtn" class="btn btn--icon mobile-only"><span
                         class="material-symbols-outlined">close</span></button>
             </div>
 
-            <!-- Bento Grid Gallery -->
+            <!-- Gallery Container -->
             <div class="gallery-container">
                 <!-- Filters -->
                 <div class="gallery-filters">
@@ -77,23 +57,19 @@
                     <button class="filter-chip" data-category="ideas">Ideas</button>
                     <button class="filter-chip" data-category="proyectos">Proyectos</button>
                     <button class="filter-chip" data-category="logros">Logros</button>
-                    <button class="filter-chip" data-category="logros">Logros</button>
                 </div>
 
-                <!-- Tag Filter Bar (New) -->
-                <div id="tagFilterBar" class="tag-filter-bar">
-                    <!-- Chips injected by renderer -->
-                </div>
+                <!-- Tag Filter Bar -->
+                <div id="tagFilterBar" class="tag-filter-bar"></div>
 
-                <!-- Search in Gallery -->
-                <!-- Search in Gallery -->
+                <!-- Search & Actions -->
                 <div class="gallery-search">
                     <input type="checkbox" id="selectAllCheckbox" title="Seleccionar todo">
                     <span class="material-symbols-outlined">search</span>
-                    <input type="text" id="gallerySearchInput" placeholder="Buscar bloques...">
+                    <input type="text" id="gallerySearchInput" placeholder="Buscar...">
                 </div>
 
-                <!-- Icons bar for Bulk Actions -->
+                <!-- Bulk Actions Toolbar -->
                 <div id="bulkActions" class="bulk-actions hidden">
                     <div class="bulk-info">
                         <span id="selectionCount">0</span> seleccionados
@@ -110,9 +86,9 @@
                     </div>
                 </div>
 
-                <!-- Items Grid (Bento) -->
+                <!-- Items Grid (List View) -->
                 <div id="itemsContainer" class="items-grid bento-grid">
-                    <!-- Items injected here by app.js -->
+                    <!-- Items injected here by Renderer -->
                 </div>
 
                 <!-- Empty State -->
@@ -128,80 +104,42 @@
                     Configuración</button>
                 <button id="exportDataBtn" class="btn btn--text"><span class="material-symbols-outlined">download</span>
                     Backup</button>
+                <!-- Hidden Import Trigger -->
+                <input type="file" id="importFile" accept=".json" class="hidden">
+                <button id="importDataBtn" class="btn btn--text"><span class="material-symbols-outlined">upload</span>
+                    Importar</button>
             </div>
         </aside>
 
-        <!-- Main Chat Area -->
-        <main class="main-chat">
+        <!-- Main Chat Area (Default View on Desktop) -->
+        <main id="mainChat" class="main-chat">
             <!-- Chat Header -->
             <header class="chat-header-main">
                 <button id="toggleSidebarBtn" class="btn btn--icon"><span
                         class="material-symbols-outlined">menu</span></button>
                 <div class="chat-header-info">
-                    <h1 class="assistant-name">Kai ⚡</h1>
+                    <div class="assistant-name">Kai ⚡</div>
                     <span id="connectionStatus" class="status-indicator online">En línea</span>
                 </div>
                 <!-- Auth / Profile -->
                 <div id="auth-status" class="auth-status">
+                    <button id="loginBtn" class="btn btn--small btn--outlined">Login</button>
                     <div id="userProfile" class="user-profile hidden">
                         <img id="userAvatar" src="" alt="User" class="user-avatar">
                         <span id="userName" class="user-name mobile-hidden"></span>
+                        <button id="logoutBtn" class="btn btn--icon btn--small" title="Cerrar sesión"><span
+                                class="material-symbols-outlined">logout</span></button>
                     </div>
-                    <button id="loginBtn" class="btn btn--small btn--outlined">Login</button>
-                    <button id="logoutBtn" class="btn btn--small btn--text hidden" title="Cerrar sesión">
-                        <span class="material-symbols-outlined">logout</span>
-                    </button>
                 </div>
+                <!-- Add Item Shortcut -->
+                <button id="addItemBtn" class="btn btn--icon btn--filled-icon" title="Nuevo Bloque">+</button>
             </header>
 
             <!-- Chat Messages Area -->
             <div id="chat-messages" class="chat-messages-area">
-                <!-- Messages injected here by chat.js -->
                 <div class="chat-message ia">
                     <div class="icon"><span class="material-symbols-outlined">smart_toy</span></div>
-                    <div class="content">¡Epa! Soy Kai ⚡. ¿Qué caos vamos a dominar hoy? ¡Suéltalo!</div>
-                </div>
-            </div>
-
-            <!-- Workspace Editor Panel (New Split View) -->
-            <div id="workspacePanel" class="workspace-panel hidden">
-                <div class="workspace-header">
-                    <button id="backToChatBtn" class="btn btn--text btn--small"><span
-                            class="material-symbols-outlined">arrow_back</span> Volver al Chat</button>
-                    <div class="workspace-actions">
-                        <button id="wsPinBtn" class="btn btn--icon btn--small" title="Anclar"><span
-                                class="material-symbols-outlined">push_pin</span></button>
-                        <button id="wsDeleteBtn" class="btn btn--icon btn--small btn--danger" title="Eliminar"><span
-                                class="material-symbols-outlined">delete</span></button>
-                    </div>
-                </div>
-                <div class="workspace-body">
-                    <!-- Note Style Editor -->
-                    <input type="text" id="wsTitle" class="ws-title-input" placeholder="Título de la nota..."
-                        autocomplete="off">
-
-                    <div class="ws-meta-row">
-                        <select id="wsCategory" class="ws-select">
-                            <!-- Populated dynamically -->
-                        </select>
-                        <input type="text" id="wsUrl" class="ws-input-flat" placeholder="Añadir URL (opcional)...">
-                    </div>
-
-                    <div class="ws-tags-row">
-                        <div id="wsTagsWrapper" class="tags-input-wrapper simple">
-                            <input type="text" id="wsTagsInput" class="tags-input-field" placeholder="#etiqueta...">
-                        </div>
-                        <div id="wsTagSuggestions" class="tag-suggestions"></div>
-                    </div>
-
-                    <textarea id="wsDescription" class="ws-textarea"
-                        placeholder="Escribe aquí tus ideas, notas o descripción..."></textarea>
-
-                    <div id="wsTasksSection" class="ws-tasks-section">
-                        <h4>Tareas</h4>
-                        <div id="wsTasksList" class="tasks-list"></div>
-                        <button id="wsAddTaskBtn" class="btn btn--text btn--small">+ Añadir tarea</button>
-                    </div>
+                    <div class="content">¡Epa! Soy Kai ⚡. Todo listo. ¿Qué organizamos hoy?</div>
                 </div>
             </div>
 
@@ -221,68 +159,49 @@
                 </form>
             </div>
         </main>
-    </div>
 
-    <!-- Hidden Modals (Preserved for functionality) -->
-    <div id="itemModal" class="modal-overlay hidden">
-        <div class="modal">
-            <div class="modal__header">
-                <h2 id="modalTitle" class="modal__title">Detalle del Bloque</h2>
-                <button id="closeModalBtn" class="btn btn--icon"><span
-                        class="material-symbols-outlined">close</span></button>
+        <!-- Workspace Editor Panel (Split View - Hidden by default) -->
+        <div id="workspacePanel" class="workspace-panel hidden">
+            <div class="workspace-header">
+                <button id="backToChatBtn" class="btn btn--text btn--small"><span
+                        class="material-symbols-outlined">arrow_back</span> Volver</button>
+                <div class="workspace-actions">
+                    <button id="wsPinBtn" class="btn btn--icon btn--small" title="Anclar"><span
+                            class="material-symbols-outlined">push_pin</span></button>
+                    <button id="wsDeleteBtn" class="btn btn--icon btn--small btn--danger" title="Eliminar"><span
+                            class="material-symbols-outlined">delete</span></button>
+                </div>
             </div>
-            <form id="itemForm" class="modal__body">
-                <input type="hidden" id="itemId">
-                <div class="form-group-inline"
-                    style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                    <input type="checkbox" id="itemPinned" class="checkbox-field">
-                    <label for="itemPinned" style="cursor: pointer;">Anclar al inicio</label>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Título</label>
-                    <input type="text" id="itemTitle" class="input-field" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Descripción / Notas</label>
-                    <textarea id="itemDescription" class="input-field" rows="3"></textarea>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">URL</label>
-                    <input type="url" id="itemUrl" class="input-field">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Categoría</label>
-                    <select id="itemCategory" class="input-field">
-                        <option value="directorio">Directorio</option>
-                        <option value="ideas">Ideas</option>
-                        <option value="proyectos">Proyectos</option>
-                        <option value="logros">Logros</option>
+            <div class="workspace-body">
+                <!-- Note Editor -->
+                <input type="text" id="wsTitle" class="ws-title-input" placeholder="Sin Título" autocomplete="off">
+
+                <div class="ws-meta-row">
+                    <select id="wsCategory" class="ws-select">
+                        <!-- Populated dynamically -->
                     </select>
+                    <input type="text" id="wsUrl" class="ws-input-flat" placeholder="http://...">
                 </div>
-                <div id="newCategoryInputGroup" class="form-group hidden" style="display:none;">
-                    <input type="text" id="newItemCategory" class="input-field"
-                        placeholder="Nombre de la nueva categoría">
-                </div>
-                <div id="tasksSection" class="form-group">
-                    <label class="form-label">Tareas</label>
-                    <div id="tasksList" class="tasks-list"></div>
-                    <button type="button" id="addTaskBtn" class="btn btn--text btn--small">+ Tarea</button>
-                </div>
-                <!-- Tags (Auto-generated usually, but editable) -->
-                <div class="form-group">
-                    <label class="form-label">Etiquetas</label>
-                    <div id="itemTagsWrapper" class="tags-input-wrapper">
-                        <input type="text" id="itemTagsInput" class="tags-input-field" placeholder="Añadir etiqueta...">
+
+                <div class="ws-tags-row">
+                    <div id="wsTagsWrapper" class="tags-input-wrapper simple">
+                        <input type="text" id="wsTagsInput" class="tags-input-field" placeholder="#etiqueta...">
                     </div>
-                    <div id="tagSuggestions" class="tag-suggestions"></div>
+                    <div id="wsTagSuggestions" class="tag-suggestions"></div>
                 </div>
-                <div class="modal__footer">
-                    <button type="button" id="deleteBtn" class="btn btn--danger btn--text">Eliminar</button>
-                    <button type="submit" id="saveBtn" class="btn btn--filled">Guardar Cambios</button>
+
+                <textarea id="wsDescription" class="ws-textarea" placeholder="Escribe aquí..."></textarea>
+
+                <div id="wsTasksSection" class="ws-tasks-section">
+                    <h4>Tareas</h4>
+                    <div id="wsTasksList" class="tasks-list"></div>
+                    <button id="wsAddTaskBtn" class="btn btn--text btn--small">+ Tarea</button>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
+
+    <!-- MODALS -->
 
     <!-- Settings Modal -->
     <div id="settingsModal" class="modal-overlay hidden">
@@ -304,15 +223,47 @@
                         <option value="dark">Oscuro</option>
                     </select>
                 </div>
+
+                <hr class="modal-divider">
+
                 <div class="form-group">
-                    <label>Importar Datos</label>
-                    <input type="file" id="importFile" accept=".json" class="input-field">
+                    <label class="flex-label">
+                        Categorías Personalizadas
+                        <button id="addCustomCatBtn" class="btn btn--text btn--small">+ Añadir</button>
+                    </label>
+                    <div id="customCategoriesList" class="settings-list"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Etiquetas Globales</label>
+                    <div id="globalTagsList" class="settings-list"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Bulk Category Modal -->
+    <!-- New Category Modal -->
+    <div id="newCategoryModal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal__header">
+                <h2>Nueva Categoría</h2>
+                <button id="newCategoryCloseBtn" class="btn btn--icon"><span
+                        class="material-symbols-outlined">close</span></button>
+            </div>
+            <div class="modal__body">
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input type="text" id="newCategoryNameInput" class="input-field" placeholder="Ej: Viajes">
+                </div>
+                <div class="modal__footer">
+                    <button id="newCategoryCancelBtn" class="btn btn--text">Cancelar</button>
+                    <button id="newCategoryCreateBtn" class="btn btn--filled">Crear</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Modals -->
     <div id="bulkCategoryModal" class="modal-overlay hidden">
         <div class="modal">
             <div class="modal__header">
@@ -322,13 +273,7 @@
             </div>
             <div class="modal__body">
                 <div class="form-group">
-                    <label>Nueva Categoría</label>
-                    <select id="bulkCategorySelect" class="input-field">
-                        <option value="directorio">Directorio</option>
-                        <option value="ideas">Ideas</option>
-                        <option value="proyectos">Proyectos</option>
-                        <option value="logros">Logros</option>
-                    </select>
+                    <select id="bulkCategorySelector" class="input-field"></select>
                 </div>
                 <div class="modal__footer">
                     <button id="bulkCategoryCancelBtn" class="btn btn--text">Cancelar</button>
@@ -338,24 +283,18 @@
         </div>
     </div>
 
-    <!-- Bulk Tags Modal -->
     <div id="bulkTagsModal" class="modal-overlay hidden">
         <div class="modal">
             <div class="modal__header">
-                <h2>Editar Etiquetas en Lote</h2>
+                <h2>Etiquetas en Lote</h2>
                 <button id="bulkTagsCloseBtn" class="btn btn--icon"><span
                         class="material-symbols-outlined">close</span></button>
             </div>
             <div class="modal__body">
-                <div class="form-group">
-                    <label>Añadir/Quitar Etiquetas</label>
-                    <div id="bulkTagsWrapper" class="tags-input-wrapper">
-                        <input type="text" id="bulkTagsInput" class="tags-input-field"
-                            placeholder="Escribe etiquetas...">
-                    </div>
-                    <div class="tag-suggestions"></div>
-                    <small>Las etiquetas se añadirán a los items seleccionados.</small>
+                <div id="bulkTagsWrapper" class="tags-input-wrapper">
+                    <input type="text" id="bulkTagsInput" class="tags-input-field" placeholder="Etiquetas...">
                 </div>
+                <div class="tag-suggestions"></div>
                 <div class="modal__footer">
                     <button id="bulkTagsCancelBtn" class="btn btn--text">Cancelar</button>
                     <button id="bulkTagsOkBtn" class="btn btn--filled">Guardar</button>
@@ -368,7 +307,7 @@
     <div id="confirmModal" class="modal-overlay hidden">
         <div class="modal modal--confirm">
             <div class="modal__body">
-                <h3>¿Seguro?</h3>
+                <h3 id="confirmTitle">¿Seguro?</h3>
                 <p id="confirmMessage">Esta acción es irreversible.</p>
                 <div class="modal__footer">
                     <button id="confirmCancelBtn" class="btn btn--text">Cancelar</button>
