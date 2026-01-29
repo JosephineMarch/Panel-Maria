@@ -169,11 +169,38 @@ class PanelMariaApp {
         this.addSafeListener('loginBtn', 'click', () => signInWithGoogle().catch(e => this.showToast('Error login', 'error')));
         this.addSafeListener('logoutBtn', 'click', () => signOutUser().catch(e => this.showToast('Error logout', 'error')));
 
-        // Main Modals
-        this.addSafeListener('addItemBtn', 'click', () => this.openModal());
-        this.addSafeListener('emptyStateAddBtn', 'click', () => this.openModal());
-        this.addSafeListener('closeModalBtn', 'click', () => this.closeModal());
-        this.addSafeListener('cancelBtn', 'click', () => this.closeModal());
+        // Workspace Navigation
+        this.addSafeListener('backToChatBtn', 'click', () => this.closeWorkspace());
+        this.addSafeListener('addItemBtn', 'click', () => {
+            // Create blank item then open workspace
+            const id = this.store.generateId();
+            this.store.addItem({ categoria: 'ideas', titulo: '', id }).then(() => this.openWorkspace(id));
+        });
+
+        // Workspace Editor
+        const autoSave = this.debounce(() => this.saveCurrentWorkspace(), 1000);
+        ['wsTitle', 'wsDescription', 'wsUrl'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', autoSave);
+        });
+
+        this.addSafeListener('wsCategory', 'change', (e) => {
+            if (e.target.value === '__new_category__') {
+                this.openSettingsModal(); // Reuse settings for new cat for now or ask
+            } else {
+                this.saveCurrentWorkspace();
+            }
+        });
+
+        this.addSafeListener('wsAddTaskBtn', 'click', () => { this.addWsTaskField(); });
+
+        // Tag Filter Bar
+        document.getElementById('tagFilterBar').addEventListener('click', (e) => {
+            if (e.target.classList.contains('tag-chip')) {
+                const tag = e.target.dataset.tag;
+                this.store.setTagFilter(tag === this.store.filters.tag ? null : tag);
+            }
+        });
 
         // Settings
         this.addSafeListener('settingsBtn', 'click', () => this.openSettingsModal());
@@ -186,19 +213,8 @@ class PanelMariaApp {
         this.addSafeListener('importDataBtn', 'click', () => document.getElementById('importFile').click());
         this.addSafeListener('importFile', 'change', (e) => this.handleImportFile(e));
 
-        // Item Form
-        this.addSafeListener('itemForm', 'submit', (e) => this.handleFormSubmit(e));
-        this.addSafeListener('addTaskBtn', 'click', () => this.renderer.addTaskField());
-        this.addSafeListener('itemCategory', 'change', (e) => this.renderer.toggleNewCategoryInput(e.target.value));
-
-        // Custom Categories
-        this.addSafeListener('newCategoryCreateBtn', 'click', () => this.addCustomCategory(document.getElementById('newCategoryNameInput').value));
-        this.addSafeListener('newCategoryCloseBtn', 'click', () => document.getElementById('newCategoryModal').classList.add('hidden'));
-        this.addSafeListener('newCategoryCancelBtn', 'click', () => document.getElementById('newCategoryModal').classList.add('hidden'));
-
         // Confirm Modal
         this.addSafeListener('confirmCancelBtn', 'click', () => this.renderer.closeConfirmModal());
-        // confirmOkBtn is handled dynamically in renderer.showConfirmModal
 
         // Filters
         this.addSafeListener('searchInput', 'input', (e) => setTimeout(() => this.store.setSearch(e.target.value), 300));
@@ -218,7 +234,6 @@ class PanelMariaApp {
         this.addSafeListener('bulkCategoryOkBtn', 'click', () => this.handleBulkChangeCategory());
         this.addSafeListener('bulkCategoryCancelBtn', 'click', () => document.getElementById('bulkCategoryModal').classList.add('hidden'));
         this.addSafeListener('bulkCategoryCloseBtn', 'click', () => document.getElementById('bulkCategoryModal').classList.add('hidden'));
-
         this.addSafeListener('bulkTagsOkBtn', 'click', () => this.handleBulkChangeTags());
         this.addSafeListener('bulkTagsCancelBtn', 'click', () => document.getElementById('bulkTagsModal').classList.add('hidden'));
         this.addSafeListener('bulkTagsCloseBtn', 'click', () => document.getElementById('bulkTagsModal').classList.add('hidden'));
@@ -229,7 +244,7 @@ class PanelMariaApp {
         // Shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                this.closeModal();
+                this.closeWorkspace();
                 this.closeSettingsModal();
             }
         });
@@ -244,13 +259,15 @@ class PanelMariaApp {
         if (actionEl.dataset.action !== 'handle-card-click') e.stopPropagation();
 
         switch (actionEl.dataset.action) {
-            case 'handle-card-click': this.openModal(id); break;
+            case 'handle-card-click':
+                this.openWorkspace(id); // Opens workspace
+                break;
             case 'toggle-pinned':
                 if (id) { const i = this.store.getItem(id); if (i) this.store.updateItem(id, { anclado: !i.anclado }); }
                 break;
-            case 'toggle-task':
-                const taskId = actionEl.dataset.taskId;
-                if (id && taskId) this.toggleTask(id, taskId);
+            case 'filter-by-tag':
+                const tag = actionEl.dataset.tag;
+                if (tag) this.store.setTagFilter(tag);
                 break;
         }
     }
@@ -273,65 +290,92 @@ class PanelMariaApp {
         this.store.notify();
     }
 
-    // --- Modal Logic ---
-    openModal(id = null) {
-        this.renderer.clearItemModal();
-        if (id) {
-            const item = this.store.getItem(id);
-            if (item) {
-                this.renderer.populateItemModal(item);
-                this.modalTagInput.setTags(item.etiquetas);
-                document.getElementById('modalTitle').textContent = 'Editar Elemento';
-                this.currentEditId = id;
-            }
-        } else {
-            document.getElementById('modalTitle').textContent = 'Nuevo Elemento';
-            this.currentEditId = null;
-            this.modalTagInput.setTags([]);
+    // --- Workspace Logic (The "Note" System) ---
+
+    openWorkspace(id) {
+        if (!id) return;
+        const item = this.store.getItem(id);
+        if (!item) return;
+
+        this.currentEditId = id;
+
+        // Populate Workspace
+        document.getElementById('wsTitle').value = item.titulo || '';
+        document.getElementById('wsDescription').value = item.descripcion || '';
+        document.getElementById('wsUrl').value = item.url || '';
+
+        // Populate Categories
+        const catSelect = document.getElementById('wsCategory');
+        this.renderer.populateCategorySelector(catSelect, true);
+        catSelect.value = item.categoria;
+
+        // Populate Tags 
+        if (!this.wsTagInput) {
+            this.wsTagInput = new TagInput(document.getElementById('wsTagsWrapper'), () => this.store.getAllTags());
         }
-        document.getElementById('itemModal').classList.remove('hidden');
+        this.wsTagInput.setTags(item.etiquetas);
+
+        // Populate Tasks
+        const taskList = document.getElementById('wsTasksList');
+        taskList.innerHTML = '';
+        item.tareas.forEach(t => this.addWsTaskField(t));
+
+        this.renderer.toggleMainView('workspace');
     }
 
-    closeModal() {
-        document.getElementById('itemModal').classList.add('hidden');
+    addWsTaskField(task = null) {
+        const list = document.getElementById('wsTasksList');
+        const div = document.createElement('div');
+        div.className = 'task-item';
+        div.innerHTML = `
+            <input type="checkbox" class="task-checkbox" ${task && task.completado ? 'checked' : ''}>
+            <input type="text" class="task-input input-field" placeholder="Tarea..." value="${(task?.titulo || '').replace(/"/g, '&quot;')}" ${task ? 'data-id="' + task.id + '"' : ''}>
+            <button type="button" class="btn btn--icon btn--text btn--danger remove-task-btn"><span class="material-symbols-outlined">delete</span></button>
+         `;
+        // Auto-save on change
+        const save = () => this.saveCurrentWorkspace();
+        div.querySelector('.task-checkbox').addEventListener('change', save);
+        div.querySelector('.task-input').addEventListener('input', this.debounce(save, 1000));
+        div.querySelector('.remove-task-btn').addEventListener('click', () => { div.remove(); save(); });
+
+        list.appendChild(div);
+    }
+
+    closeWorkspace() {
         this.currentEditId = null;
+        this.renderer.toggleMainView('chat');
     }
 
-    async handleFormSubmit(e) {
-        e.preventDefault();
+    // Auto-Save Implementation
+    debounce(func, wait) {
+        let timeout;
+        return (...args) => {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
 
-        // Handle new category creation from modal
-        let finalCategory = document.getElementById('itemCategory').value;
-        if (finalCategory === '__new_category__') {
-            const newCatName = document.getElementById('newItemCategory').value.trim();
-            if (!newCatName) { this.showToast('Nombre de categoría inválido', 'error'); return; }
-            finalCategory = newCatName.toLowerCase();
-            this.addCustomCategoryInternal(finalCategory); // Add to store without reload
-        }
+    async saveCurrentWorkspace() {
+        if (!this.currentEditId) return;
 
-        const formData = {
-            titulo: document.getElementById('itemTitle').value.trim(),
-            descripcion: document.getElementById('itemDescription').value.trim(),
-            url: document.getElementById('itemUrl').value.trim(),
-            categoria: finalCategory,
-            etiquetas: this.modalTagInput.getTags(),
-            anclado: document.getElementById('itemPinned').checked,
-            tareas: Array.from(document.querySelectorAll('.task-item')).map(div => ({
+        const data = {
+            titulo: document.getElementById('wsTitle').value,
+            descripcion: document.getElementById('wsDescription').value,
+            url: document.getElementById('wsUrl').value,
+            categoria: document.getElementById('wsCategory').value,
+            etiquetas: this.wsTagInput.getTags(),
+            tareas: Array.from(document.querySelectorAll('#wsTasksList .task-item')).map(div => ({
+                id: div.querySelector('.task-input').dataset.id || this.store.generateId(),
                 titulo: div.querySelector('.task-input').value,
-                completado: div.querySelector('.task-checkbox').checked,
-                id: div.querySelector('.task-checkbox').dataset.id || this.store.generateId() // Ensure task ID
+                completado: div.querySelector('.task-checkbox').checked
             })).filter(t => t.titulo)
         };
 
-        if (!formData.titulo) { this.showToast('Título requerido', 'error'); return; }
+        if (data.categoria === '__new_category__') return; // Wait for real cat
 
-        if (this.currentEditId) {
-            await this.store.updateItem(this.currentEditId, formData);
-        } else {
-            await this.store.addItem(formData);
-        }
-        this.closeModal();
-        this.showToast('Guardado', 'success');
+        // Silent update
+        await this.store.updateItem(this.currentEditId, data);
+        console.log('Workspace autosaved');
     }
 
     // --- Settings & Categories Logic ---
