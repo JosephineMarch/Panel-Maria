@@ -70,6 +70,14 @@ export class Renderer {
                 <p class="card__snippet">
                     ${escape(item.descripcion || item.url || 'Sin descripción')}
                 </p>
+                
+                ${item.etiquetas && item.etiquetas.length > 0 ? `
+                <div class="card__tags">
+                    ${item.etiquetas.slice(0, 3).map(tag => `<span class="card__tag" data-action="filter-by-tag" data-tag="${tag}">#${tag}</span>`).join('')}
+                    ${item.etiquetas.length > 3 ? `<span class="card__tag">+${item.etiquetas.length - 3}</span>` : ''}
+                </div>
+                ` : ''}
+
                 <div class="card__footer">
                     <span class="card__date">${date}</span>
                     ${item.url ? '<span class="material-symbols-outlined" style="font-size: 1rem; color: var(--accent-blue);">link</span>' : ''}

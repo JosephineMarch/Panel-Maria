@@ -185,6 +185,11 @@
             </div>
             <form id="itemForm" class="modal__body">
                 <input type="hidden" id="itemId">
+                <div class="form-group-inline"
+                    style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" id="itemPinned" class="checkbox-field">
+                    <label for="itemPinned" style="cursor: pointer;">Anclar al inicio</label>
+                </div>
                 <div class="form-group">
                     <label class="form-label">Título</label>
                     <input type="text" id="itemTitle" class="input-field" required>
@@ -205,6 +210,10 @@
                         <option value="proyectos">Proyectos</option>
                         <option value="logros">Logros</option>
                     </select>
+                </div>
+                <div id="newCategoryInputGroup" class="form-group hidden" style="display:none;">
+                    <input type="text" id="newItemCategory" class="input-field"
+                        placeholder="Nombre de la nueva categoría">
                 </div>
                 <div id="tasksSection" class="form-group">
                     <label class="form-label">Tareas</label>

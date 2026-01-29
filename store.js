@@ -60,7 +60,19 @@ export class Store {
     async loadData() {
         try {
             const data = await window.storage.loadAll();
-            this.items = data.items || [];
+            // Data Normalization Loop
+            this.items = (data.items || []).map(item => ({
+                ...item,
+                // Ensure defaults for critical fields
+                categoria: item.categoria || 'directorio',
+                titulo: item.titulo || 'Sin Título',
+                etiquetas: Array.isArray(item.etiquetas) ? item.etiquetas : [],
+                tareas: Array.isArray(item.tareas) ? item.tareas : [],
+                anclado: !!item.anclado,
+                url: item.url || '',
+                descripcion: item.descripcion || ''
+            }));
+
             this.settings = { ...this.settings, ...(data.settings || {}) };
 
             // Restore last category if valid
