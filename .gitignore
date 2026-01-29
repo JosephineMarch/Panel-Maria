@@ -11,7 +11,7 @@ firebase-debug.*.log*
 .firebase/
 
 # Firebase config
-firebase-config.js
+
 
 # App-specific config
 config.js
