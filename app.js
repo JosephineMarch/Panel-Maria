@@ -168,7 +168,7 @@ class PanelMariaApp {
     }
 
     async init() {
-        this.checkForBookmarkletData();
+        this.checkForUrlData();
         this.setupEventListeners();
         initChat(this);
         
@@ -378,7 +378,7 @@ class PanelMariaApp {
         this.populateCategorySelector(document.getElementById('itemCategory'), true);
         this.switchCategory(this.settings.lastCategory || 'directorio');
         this.applyTheme();
-        this.processBookmarkletData();
+        this.processUrlData();
     }
 
     setupAuthListener() {
@@ -409,28 +409,94 @@ class PanelMariaApp {
         });
     }
 
-    checkForBookmarkletData() {
+    checkForUrlData() {
         const params = new URLSearchParams(window.location.search);
-        if (params.get('action') === 'add') {
+        // Se generaliza para aceptar tanto el bookmarklet como el share target
+        if (params.has('title') || params.has('text') || params.has('url')) {
             this.bookmarkletData = {
                 title: params.get('title') || '',
                 url: params.get('url') || '',
-                category: params.get('category') || 'directorio'
+                text: params.get('text') || '', // Se añade el campo text por si viene del share
+                category: params.get('category') || 'directorio' // Categoría por defecto
             };
+            // Limpia la URL para evitar que se procese de nuevo al recargar
             const cleanUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}`;
             window.history.replaceState({}, document.title, cleanUrl);
         }
     }
 
-    processBookmarkletData() {
+    async processUrlData() {
         if (this.bookmarkletData) {
-            this.openModal(); 
-            document.getElementById('itemTitle').value = this.bookmarkletData.title;
-            document.getElementById('itemUrl').value = this.bookmarkletData.url;
+            this.openModal();
+
+            // Lógica para Share Target: Detectar URL en el texto si el campo URL está vacío (común en Android)
+            let targetUrl = this.bookmarkletData.url;
+            if (!targetUrl && this.bookmarkletData.text) {
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                const match = this.bookmarkletData.text.match(urlRegex);
+                if (match) {
+                    targetUrl = match[0];
+                }
+            }
+
+            // Si hay una URL, llamamos a la API gratuita de Microlink
+            if (targetUrl) {
+                document.getElementById('itemTitle').value = ''; 
+                document.getElementById('itemDescription').value = '';
+                document.getElementById('itemUrl').value = targetUrl;
+                
+                this.showLoader(); 
+                
+                try {
+                    // Llamada a API gratuita Microlink para obtener metadatos (título, descripción, imagen)
+                    const response = await fetch(`https://api.microlink.io?url=${encodeURIComponent(targetUrl)}`);
+                    const json = await response.json();
+                    
+                    if (json.status === 'success') {
+                        const metadata = json.data;
+                        
+                        if (metadata.title) {
+                            document.getElementById('itemTitle').value = metadata.title;
+                        }
+                        
+                        if (metadata.description) {
+                            document.getElementById('itemDescription').value = metadata.description;
+                        } else if (this.bookmarkletData.text) {
+                            // Si no hay descripción meta, usamos el texto compartido (limpiando la URL si estaba ahí)
+                            const textWithoutUrl = this.bookmarkletData.text.replace(targetUrl, '').trim();
+                            if (textWithoutUrl) {
+                                document.getElementById('itemDescription').value = textWithoutUrl;
+                            }
+                        }
+
+                        if (metadata.url) {
+                            document.getElementById('itemUrl').value = metadata.url;
+                        }
+                    } else {
+                        throw new Error('Microlink status not success');
+                    }
+
+                } catch (error) {
+                    console.error("Error scraping (Microlink):", error);
+                    this.showToast("No se pudo obtener info automática", "info");
+                    // Fallback
+                    document.getElementById('itemTitle').value = this.bookmarkletData.title || 'Enlace compartido';
+                    document.getElementById('itemDescription').value = this.bookmarkletData.text || '';
+                } finally {
+                    this.hideLoader(); 
+                }
+
+            } else {
+                 // Si no hay URL, solo rellenamos con lo que tengamos
+                document.getElementById('itemTitle').value = this.bookmarkletData.title || '';
+                document.getElementById('itemDescription').value = this.bookmarkletData.text || '';
+            }
+            
             const categorySelector = document.getElementById('itemCategory');
             const categoryExists = [...categorySelector.options].some(opt => opt.value === this.bookmarkletData.category);
             categorySelector.value = categoryExists ? this.bookmarkletData.category : 'directorio';
-            this.bookmarkletData = null; 
+            
+            this.bookmarkletData = null;
         }
     }
 

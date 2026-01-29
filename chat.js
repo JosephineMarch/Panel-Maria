@@ -88,7 +88,7 @@ export async function initChat(app) {
     chatInput.addEventListener('input', autoResizeTextarea);
     chatInput.addEventListener('keydown', handleTextareaKeydown);
 
-    addMessage('ia', '¡Hola! Soy María AI. ¿Qué te gustaría organizar o crear hoy?');
+    addMessage('ia', '¡Epa! Soy Kai ⚡. ¿Qué caos vamos a dominar hoy? ¡Venga, suéltalo!');
 }
 
 /**
