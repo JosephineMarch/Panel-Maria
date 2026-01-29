@@ -142,8 +142,9 @@ class PanelMariaApp {
         this.items = [];
         this.selectedItems = new Set();
         this.filters = { search: '', tag: null };
-        this.sortBy = 'recientes'; // Criterio de ordenación por defecto
-        this.settings = {};
+        this.sortBy = 'recientes';
+        // Provide defaults immediately to prevent crashes before loadData
+        this.settings = { autoSaveVoice: false, theme: 'default', lastCategory: 'todos', customCategories: [], categoryTags: {} };
         this.currentEditId = null;
         this.user = null;
         this.bookmarkletData = null;
@@ -158,6 +159,8 @@ class PanelMariaApp {
 
         this.modalTagInput = null;
         this.bulkTagInput = null;
+
+        console.log('PanelMariaApp: Constructor initialized');
     }
 
     getAllTags() {
@@ -583,6 +586,7 @@ class PanelMariaApp {
     }
 
     setupEventListeners() {
+        console.log('PanelMariaApp: Setting up event listeners...');
         document.getElementById('loginBtn').addEventListener('click', () => this.loginWithGoogle());
         document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
         document.getElementById('settingsBtn').addEventListener('click', () => this.openSettingsModal());
@@ -851,7 +855,10 @@ class PanelMariaApp {
     openBulkTagsModal() { this.bulkTagInput.setTags([]); setTimeout(() => { document.getElementById('bulkTagsInput').focus(); }, 50); }
     closeBulkTagsModal() { document.getElementById('bulkTagsModal').classList.add('hidden'); }
     openSettingsModal() { document.getElementById('autoSaveVoice').checked = this.settings.autoSaveVoice; document.getElementById('themeSelect').value = this.settings.theme; this.renderCustomCategoriesInSettings(); this.renderGlobalTagsInSettings(); document.getElementById('settingsModal').classList.remove('hidden'); }
-    closeSettingsModal() { document.getElementById('settingsModal').classList.add('hidden'); }
+    closeSettingsModal() {
+        console.log('Closing Settings Modal');
+        document.getElementById('settingsModal').classList.add('hidden');
+    }
     applyTheme() { document.body.className = ''; document.body.classList.add(`theme-${this.settings.theme}`); }
     showToast(message, type = 'info') { const toastContainer = document.getElementById('toastContainer'); const toast = document.createElement('div'); toast.className = `toast toast--${type}`; toast.textContent = message; toastContainer.appendChild(toast); setTimeout(() => { toast.remove(); }, 3000); }
     toggleSelectAll(checked) { const filteredItems = this.getFilteredItems(); this.selectedItems.clear(); if (checked) { filteredItems.forEach(item => this.selectedItems.add(item.id)); } this.renderItems(); this.updateSelectionUI(); }

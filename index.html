@@ -16,6 +16,18 @@
     <link rel="manifest" href="manifest.json">
 
     <script>
+        // Global Error Handler for Debugging
+        window.onerror = function (msg, url, line, col, error) {
+            alert("Error Crítico: " + msg + "\nLínea: " + line);
+            console.error("Global Error:", error);
+            return false;
+        };
+        window.addEventListener('unhandledrejection', function (event) {
+            alert("Promesa rechazada sin manejo: " + event.reason);
+            console.error("Unhandled Rejection:", event.reason);
+        });
+    </script>
+    <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
