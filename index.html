@@ -42,31 +42,6 @@
     
 </head>
 <body>
-    <!-- App Bar -->
-    <header class="app-bar">
-        <div class="container">
-            <div class="app-bar__inner">
-                <div class="app-bar__title-group">
-                    <div class="app-bar__icon-wrapper">
-                        <span class="material-symbols-outlined">dashboard</span>
-                    </div>
-                    <div>
-                        <h1 class="app-bar__title">Panel María</h1>
-                        <p class="app-bar__subtitle">Organiza tus recursos, ideas, proyectos y logros</p>
-                    </div>
-                </div>
-                <div class="app-bar__actions">
-                    <button id="settingsBtn" class="btn btn--text">
-                        <span class="material-symbols-outlined">settings</span>
-                    </button>
-                    <button id="addItemBtn" class="btn btn--filled hidden">
-                        <span class="material-symbols-outlined">add</span> Nuevo
-                    </button>
-                </div>
-            </div>
-        </div>
-    </header>
-
     <!-- Auth Section -->
     <div id="auth-section" class="auth-section">
         <div class="auth-card">
@@ -78,19 +53,49 @@
         </div>
     </div>
 
-    <!-- Main App Content -->
-    <div id="app-content" class="hidden">
+    <!-- Main Layout (Sidebar + Chat) -->
+    <div id="main-layout" class="main-layout hidden">
+        
+        <!-- Sidebar: Archivo de Bloques (Antiguo App Content) -->
+        <aside id="app-content" class="sidebar">
+            <!-- Sidebar Header -->
+            <header class="sidebar-header">
+                <div class="app-bar__title-group">
+                    <div class="app-bar__icon-wrapper">
+                        <span class="material-symbols-outlined">dashboard</span>
+                    </div>
+                    <div>
+                        <h1 class="app-bar__title">Archivo</h1>
+                    </div>
+                </div>
+                <div class="app-bar__actions">
+                    <button id="settingsBtn" class="btn btn--icon" title="Configuración">
+                        <span class="material-symbols-outlined">settings</span>
+                    </button>
+                    <!-- Botón cerrar sidebar en móvil -->
+                    <button id="closeSidebarBtn" class="btn btn--icon mobile-only">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="sidebar-content">
+                <!-- Botón manual (por si acaso) -->
+                <div style="padding: 0 1.5rem; margin-bottom: 1rem;">
+                    <button id="addItemBtn" class="btn btn--filled full-width hidden">
+                        <span class="material-symbols-outlined">add</span> Nuevo Bloque Manual
+                    </button>
+                </div>
+
         <!-- Navigation Tabs -->
         <nav class="nav-tabs">
-            <div class="container">
                 <div class="nav-tabs__inner">
                     <!-- Las pestañas se generan dinámicamente -->
                 </div>
-            </div>
         </nav>
 
         <!-- Main Content -->
-        <main class="container">
+        <div class="container">
             <!-- Search and Filters -->
             <div class="filters-bar">
                 <div class="search-wrapper">
@@ -139,8 +144,35 @@
                     Agregar Primer Elemento
                 </button>
             </div>
+        </div>
+            </div> <!-- Fin sidebar-content -->
+        </aside>
+
+        <!-- Chat Interface (Vista Principal) -->
+        <main id="chat-container" class="chat-view">
+            <div class="chat-header">
+                <button id="toggleSidebarBtn" class="btn btn--icon" title="Ver Archivo">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
+                <div class="chat-header-title">
+                    <h3>Kai ⚡</h3>
+                    <span class="status-dot"></span>
+                </div>
+                <div class="chat-header-actions">
+                    <!-- Botones de acción del chat -->
+                </div>
+            </div>
+            
+            <div id="chat-messages" class="chat-messages"></div>
+            
+            <form id="chat-form" class="chat-input-area">
+                <button type="button" id="voiceBtn" class="btn btn--voice" title="Hablar con Kai"><span class="material-symbols-outlined">mic</span></button>
+                <textarea id="chat-input" placeholder="Cuéntame algo, María..." rows="1"></textarea>
+                <button type="submit" class="btn btn--send"><span class="material-symbols-outlined">arrow_upward</span></button>
+            </form>
         </main>
-    </div>
+
+    </div> <!-- Fin Main Layout -->
 
     <!-- Modal for Add/Edit Item -->
     <div id="itemModal" class="modal-overlay hidden">
@@ -213,23 +245,6 @@
                     </button>
                 </div></div></div></div></div></div></div>
     <div id="newCategoryModal" class="modal-overlay hidden"><div class="modal modal--confirm"><div class="modal__header"><h2 class="modal__title">Crear Nueva Categoría</h2><button id="newCategoryCloseBtn" class="btn btn--icon"><span class="material-symbols-outlined">close</span></button></div><div class="modal__body"><div class="form-group"><label for="newCategoryNameInput" class="form-label">Nombre de la categoría</label><input type="text" id="newCategoryNameInput" class="input-field" placeholder="Ej: Trabajo, Personal"></div></div><div class="modal__footer"><button type="button" id="newCategoryCancelBtn" class="btn btn--text">Cancelar</button><button type="button" id="newCategoryCreateBtn" class="btn btn--filled">Crear</button></div></div></div>
-
-    <!-- Chat: Botón Flotante y Ventana -->
-    <button id="chat-fab" class="fab"><span class="material-symbols-outlined">smart_toy</span></button>
-    <div id="chat-container" class="chat-container hidden">
-        <div class="chat-header">
-            <h3>Asistente IA</h3>
-            <div class="chat-header-actions">
-                <button id="chat-minimize" class="btn btn--icon" title="Minimizar"><span class="material-symbols-outlined">expand_more</span></button>
-                <button id="chat-close" class="btn btn--icon" title="Cerrar"><span class="material-symbols-outlined">close</span></button>
-            </div>
-        </div>
-        <div id="chat-messages" class="chat-messages"></div>
-        <form id="chat-form" class="chat-input-area">
-            <textarea id="chat-input" placeholder="Escribe un comando o pregunta..." rows="1"></textarea>
-            <button type="submit" class="btn btn--icon"><span class="material-symbols-outlined">send</span></button>
-        </form>
-    </div>
 
     <!-- Loading Spinner -->
     <div id="loader" class="loader-overlay hidden">

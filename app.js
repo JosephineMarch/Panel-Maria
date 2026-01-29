@@ -385,19 +385,19 @@ class PanelMariaApp {
         onAuthStateChanged(auth, (user) => {
             this.user = user;
             const authSection = document.getElementById('auth-section');
-            const appContent = document.getElementById('app-content');
+            const mainLayout = document.getElementById('main-layout'); // Cambiado a main-layout
             const logoutBtn = document.getElementById('logoutBtn');
             const addItemBtn = document.getElementById('addItemBtn');
 
             if (user) {
                 authSection.classList.add('hidden');
-                appContent.classList.remove('hidden');
+                mainLayout.classList.remove('hidden'); // Mostrar el layout completo
                 logoutBtn.classList.remove('hidden');
                 addItemBtn.classList.remove('hidden');
                 window.storage.setAdapter('firebase', user.uid);
             } else {
                 authSection.classList.remove('hidden');
-                appContent.classList.add('hidden');
+                mainLayout.classList.add('hidden');
                 logoutBtn.classList.add('hidden');
                 addItemBtn.classList.add('hidden');
                 window.storage.setAdapter('local');
@@ -530,6 +530,24 @@ class PanelMariaApp {
         document.getElementById('settingsBtn').addEventListener('click', () => this.openSettingsModal());
         document.getElementById('addItemBtn').addEventListener('click', () => this.openModal());
         document.getElementById('emptyStateAddBtn').addEventListener('click', () => this.openModal());
+
+        // Sidebar Toggles
+        const sidebar = document.getElementById('app-content');
+        const toggleBtn = document.getElementById('toggleSidebarBtn');
+        const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+
+        if(toggleBtn) toggleBtn.addEventListener('click', () => sidebar.classList.add('open'));
+        if(closeSidebarBtn) closeSidebarBtn.addEventListener('click', () => sidebar.classList.remove('open'));
+        
+        // Cerrar sidebar al hacer click fuera en móvil (opcional pero recomendado)
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth <= 900 && 
+                sidebar.classList.contains('open') && 
+                !sidebar.contains(e.target) && 
+                !toggleBtn.contains(e.target)) {
+                sidebar.classList.remove('open');
+            }
+        });
         
         let searchTimeout;
         document.getElementById('searchInput').addEventListener('input', (e) => {

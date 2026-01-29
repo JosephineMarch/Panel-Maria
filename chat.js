@@ -1,5 +1,6 @@
 // Módulo para gestionar la funcionalidad del chat con IA (Arquitectura de Prompt Unificado)
-import { CEREBRAS_API_KEY } from './config.js';
+// import { CEREBRAS_API_KEY } from './config.js';
+const CEREBRAS_API_KEY = 'TU_CLAVE_CEREBRAS_AQUI'; // <--- BORRA ESTO Y PEGA TU CLAVE REAL ENTRE LAS COMILLAS
 
 // Referencia a la instancia principal de la aplicación
 let appInstance = null;
@@ -9,10 +10,11 @@ let mainPrompt = '';
 
 // Elementos del DOM
 let chatFab, chatContainer, chatClose, chatMinimize, chatMessages, chatForm, chatInput;
+let chatContainer, chatMessages, chatForm, chatInput;
 
 // Configuración de la API
 const API_ENDPOINT = 'https://api.cerebras.ai/v1/chat/completions';
-const API_MODEL = 'gpt-oss-120b';
+const API_MODEL = 'llama3.1-70b';
 
 /**
  * Llama a la API de Cerebras con un prompt específico.
@@ -20,8 +22,8 @@ const API_MODEL = 'gpt-oss-120b';
  * @returns {Promise<string>} - La respuesta de texto de la IA.
  */
 async function callCerebrasAPI(prompt) {
-    if (!CEREBRAS_API_KEY || CEREBRAS_API_KEY === 'YOUR_CEREBRAS_API_KEY_HERE') {
-        throw new Error('La clave de API de Cerebras no está configurada en config.js');
+    if (!CEREBRAS_API_KEY || CEREBRAS_API_KEY === 'TU_CLAVE_CEREBRAS_AQUI') {
+        throw new Error('Falta la API Key en chat.js. Edita el archivo y pega tu clave en la línea 3.');
     }
 
     try {
