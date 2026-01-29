@@ -109,7 +109,7 @@ class PanelMariaApp {
         on('settingsBtn', 'click', () => document.getElementById('settingsModal').classList.remove('hidden'));
         on('settingsCloseBtn', 'click', () => document.getElementById('settingsModal').classList.add('hidden'));
         on('newCategoryCreateBtn', 'click', () => this.createCustomCategory());
-        on('newCategoryCancelBtn', 'click', () => document.getElementById('newCategoryModal').classList.add('hidden')); \
+        on('newCategoryCancelBtn', 'click', () => document.getElementById('newCategoryModal').classList.add('hidden'));
         on('newCategoryCloseBtn', 'click', () => document.getElementById('newCategoryModal').classList.add('hidden'));
 
         // Grid Interactions
