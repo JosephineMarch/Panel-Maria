@@ -77,6 +77,12 @@
                     <button class="filter-chip" data-category="ideas">Ideas</button>
                     <button class="filter-chip" data-category="proyectos">Proyectos</button>
                     <button class="filter-chip" data-category="logros">Logros</button>
+                    <button class="filter-chip" data-category="logros">Logros</button>
+                </div>
+
+                <!-- Tag Filter Bar (New) -->
+                <div id="tagFilterBar" class="tag-filter-bar">
+                    <!-- Chips injected by renderer -->
                 </div>
 
                 <!-- Search in Gallery -->
@@ -154,6 +160,48 @@
                 <div class="chat-message ia">
                     <div class="icon"><span class="material-symbols-outlined">smart_toy</span></div>
                     <div class="content">¡Epa! Soy Kai ⚡. ¿Qué caos vamos a dominar hoy? ¡Suéltalo!</div>
+                </div>
+            </div>
+
+            <!-- Workspace Editor Panel (New Split View) -->
+            <div id="workspacePanel" class="workspace-panel hidden">
+                <div class="workspace-header">
+                    <button id="backToChatBtn" class="btn btn--text btn--small"><span
+                            class="material-symbols-outlined">arrow_back</span> Volver al Chat</button>
+                    <div class="workspace-actions">
+                        <button id="wsPinBtn" class="btn btn--icon btn--small" title="Anclar"><span
+                                class="material-symbols-outlined">push_pin</span></button>
+                        <button id="wsDeleteBtn" class="btn btn--icon btn--small btn--danger" title="Eliminar"><span
+                                class="material-symbols-outlined">delete</span></button>
+                    </div>
+                </div>
+                <div class="workspace-body">
+                    <!-- Note Style Editor -->
+                    <input type="text" id="wsTitle" class="ws-title-input" placeholder="Título de la nota..."
+                        autocomplete="off">
+
+                    <div class="ws-meta-row">
+                        <select id="wsCategory" class="ws-select">
+                            <!-- Populated dynamically -->
+                        </select>
+                        <input type="text" id="wsUrl" class="ws-input-flat" placeholder="Añadir URL (opcional)...">
+                    </div>
+
+                    <div class="ws-tags-row">
+                        <div id="wsTagsWrapper" class="tags-input-wrapper simple">
+                            <input type="text" id="wsTagsInput" class="tags-input-field" placeholder="#etiqueta...">
+                        </div>
+                        <div id="wsTagSuggestions" class="tag-suggestions"></div>
+                    </div>
+
+                    <textarea id="wsDescription" class="ws-textarea"
+                        placeholder="Escribe aquí tus ideas, notas o descripción..."></textarea>
+
+                    <div id="wsTasksSection" class="ws-tasks-section">
+                        <h4>Tareas</h4>
+                        <div id="wsTasksList" class="tasks-list"></div>
+                        <button id="wsAddTaskBtn" class="btn btn--text btn--small">+ Añadir tarea</button>
+                    </div>
                 </div>
             </div>
 

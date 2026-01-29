@@ -124,6 +124,42 @@ export class Renderer {
         });
     }
 
+    renderTagFilterBar(allTags, activeTag) {
+        const container = document.getElementById('tagFilterBar');
+        if (!container) return;
+
+        if (allTags.size === 0) {
+            container.innerHTML = '';
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = 'flex';
+        // Convert to array and sort
+        const tags = Array.from(allTags).sort();
+
+        container.innerHTML = tags.map(tag => {
+            const isActive = tag === activeTag;
+            return `<span class="tag-chip ${isActive ? 'active' : ''}" data-action="filter-by-tag-bar" data-tag="${tag}">#${tag}</span>`;
+        }).join('');
+    }
+
+    toggleMainView(view) {
+        const chatPanel = document.getElementById('chat-messages'); // chat messages area
+        const inputBar = document.querySelector('.chat-input-bar'); // chat input
+        const wsPanel = document.getElementById('workspacePanel');
+
+        if (view === 'workspace') {
+            chatPanel.classList.add('hidden');
+            inputBar.classList.add('hidden');
+            wsPanel.classList.remove('hidden');
+        } else {
+            chatPanel.classList.remove('hidden');
+            inputBar.classList.remove('hidden');
+            wsPanel.classList.add('hidden');
+        }
+    }
+
     // --- Helpers ---
     getCategoryIcon(category) {
         switch (category) {

@@ -82,6 +82,8 @@ class PanelMariaApp {
             this.renderer.render(storeInstance, this.selectedItems);
             // Also apply theme if settings changed
             this.renderer.applyTheme(storeInstance.settings.theme);
+            // Update Tag Filter Bar
+            this.renderer.renderTagFilterBar(storeInstance.getAllTags(), storeInstance.filters.tag);
         });
 
         console.log('App: Initialized (Modular v2.1)');
