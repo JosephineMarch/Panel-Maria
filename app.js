@@ -169,6 +169,7 @@ class PanelMariaApp {
 
     async init() {
         this.checkForUrlData();
+        this.setupApplication(); // Initialize logic once
         this.setupEventListeners();
         initChat(this);
 
@@ -376,7 +377,7 @@ class PanelMariaApp {
     setupApplication() {
         this.setupSidebar();
         this.setupChatUI();
-        this.renderAll(); // Renders Bento Grid
+        // this.renderAll(); // Removed to avoid double render (called by auth listener)
         this.processUrlData();
         this.setupFilterChips();
     }
@@ -430,20 +431,30 @@ class PanelMariaApp {
             this.user = user;
             const loginBtn = document.getElementById('loginBtn');
             const logoutBtn = document.getElementById('logoutBtn');
-            const authStatusDiv = document.getElementById('auth-status');
+            const userProfile = document.getElementById('userProfile');
+            const userAvatar = document.getElementById('userAvatar');
+            const userName = document.getElementById('userName');
 
             if (user) {
                 loginBtn.classList.add('hidden');
                 logoutBtn.classList.remove('hidden');
+                userProfile.classList.remove('hidden');
+
+                if (user.photoURL) userAvatar.src = user.photoURL;
+                if (user.displayName) userName.textContent = user.displayName.split(' ')[0]; // First name only
+
                 window.storage.setAdapter('firebase', user.uid);
+                this.showToast(`Hola, ${user.displayName || 'Viajero'} 👋`, 'success');
             } else {
                 loginBtn.classList.remove('hidden');
                 logoutBtn.classList.add('hidden');
+                userProfile.classList.add('hidden');
                 window.storage.setAdapter('local');
             }
 
+            // Reload data and Render (Do NOT call setupApplication again)
             this.loadData().then(() => {
-                this.setupApplication();
+                this.renderAll();
             });
         });
     }

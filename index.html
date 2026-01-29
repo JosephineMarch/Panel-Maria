@@ -106,9 +106,14 @@
                 </div>
                 <!-- Auth / Profile -->
                 <div id="auth-status" class="auth-status">
+                    <div id="userProfile" class="user-profile hidden">
+                        <img id="userAvatar" src="" alt="User" class="user-avatar">
+                        <span id="userName" class="user-name mobile-hidden"></span>
+                    </div>
                     <button id="loginBtn" class="btn btn--small btn--outlined">Login</button>
-                    <button id="logoutBtn" class="btn btn--small btn--text hidden"><span
-                            class="material-symbols-outlined">logout</span></button>
+                    <button id="logoutBtn" class="btn btn--small btn--text hidden" title="Cerrar sesión">
+                        <span class="material-symbols-outlined">logout</span>
+                    </button>
                 </div>
             </header>
 
