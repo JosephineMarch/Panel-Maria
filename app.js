@@ -838,20 +838,7 @@ class PanelMariaApp {
     toggleSelectAll(checked) { const filteredItems = this.getFilteredItems(); this.selectedItems.clear(); if (checked) { filteredItems.forEach(item => this.selectedItems.add(item.id)); } this.renderItems(); this.updateSelectionUI(); }
     toggleSelection(id) { if (this.selectedItems.has(id)) { this.selectedItems.delete(id); } else { this.selectedItems.add(id); } this.renderItems(); this.updateSelectionUI(); }
 
-    renderTagFilters() {
-        const tagFiltersContainer = document.getElementById('tagFilters');
-        tagFiltersContainer.innerHTML = '';
-        const allTags = new Set();
-        this.getFilteredItems().forEach(item => (item.etiquetas || []).forEach(tag => allTags.add(tag)));
 
-        Array.from(allTags).sort().forEach(tag => {
-            const tagElement = document.createElement('span');
-            tagElement.className = `tag-filter ${this.filters.tag === tag ? 'active' : ''}`;
-            tagElement.textContent = formatTagText(tag);
-            tagElement.addEventListener('click', () => this.filterByTag(tag));
-            tagFiltersContainer.appendChild(tagElement);
-        });
-    }
 
     handleImportFile(event) {
         const file = event.target.files[0];
