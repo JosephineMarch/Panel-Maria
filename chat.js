@@ -100,18 +100,31 @@ async function handleKaiResponse(rawText) {
     try {
         parsed = JSON.parse(rawText);
     } catch (e) {
-        appendMessage('kai', rawText); // Fallback
+        appendMessage('kai', rawText);
         return;
     }
 
-    // --- ROUTER DE ACCIONES ---
-    const { action, data, id, response } = parsed;
+    const { action, data, id, updates, response } = parsed;
 
-    // 1. CREATE
-    if (action === 'create') {
+    // --- ORCHESTRATOR ---
+
+    // 1. BULK UPDATE (Organización Masiva)
+    if (action === 'bulk_update' || (updates && Array.isArray(updates))) {
+        const jobs = updates || [];
+        appendMessage('kai', `¡Entendido! Voy a reorganizar <b>${jobs.length}</b> notas para que todo esté impecable. 🪄`);
+
+        for (const update of jobs) {
+            if (update.id && update.data) {
+                await appInstance.store.updateItem(update.id, update.data);
+            }
+        }
+        appendMessage('kai', `¡Listo! He re-etiquetado y organizado tu información. ¿Qué tal se ve ahora? ✨`);
+
+        // 2. CREATE
+    } else if (action === 'create') {
         const newItem = {
             id: appInstance.store.generateId(),
-            titulo: data.titulo || 'Sin Título',
+            titulo: data.titulo || 'Nota de Kai',
             descripcion: data.descripcion || '',
             url: data.url || '',
             etiquetas: data.etiquetas || [],
@@ -119,33 +132,23 @@ async function handleKaiResponse(rawText) {
             fecha_creacion: new Date().toISOString()
         };
         await appInstance.store.addItem(newItem);
-        appendMessage('kai', `He guardado "<b>${newItem.titulo}</b>" ⚡`);
+        appendMessage('kai', `He guardado "<b>${newItem.titulo}</b>" en tus bloques. 🧠`);
 
-        // 2. UPDATE
+        // 3. SINGLE UPDATE
     } else if (action === 'update') {
-        if (!id) {
-            appendMessage('kai', 'Necesito un ID para editar, pero no lo encontré. 😵');
-            return;
-        }
+        if (!id) return appendMessage('kai', 'Mmm, no encontré el ID para ese cambio. ¿Podrías decirme el título?');
         await appInstance.store.updateItem(id, data);
-        appendMessage('kai', `Actualizado.Renové el item ${id.substr(0, 4)}... ✨`);
+        appendMessage('kai', `He actualizado "<b>${data.titulo || 'el bloque'}</b>" como me pediste. ✅`);
 
-        // 3. DELETE
+        // 4. DELETE
     } else if (action === 'delete') {
-        if (!id) {
-            appendMessage('kai', 'No sé qué ID borrar. 😵');
-            return;
-        }
+        if (!id) return;
         await appInstance.store.deleteItem(id);
-        appendMessage('kai', `Borrado.Desapareció en el vacío. 🗑️`);
+        appendMessage('kai', `Borrando... ¡y listo! Desapareció. 🗑️`);
 
-        // 4. CHAT
-    } else if (action === 'chat' || response) {
-        const text = response || data?.mensaje || (typeof data === 'string' ? data : "...");
-        appendMessage('kai', text);
-
+        // 5. CHAT / RESPONSE
     } else {
-        appendMessage('kai', rawText);
+        appendMessage('kai', response || parsed.data?.mensaje || rawText);
     }
 }
 

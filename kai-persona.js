@@ -43,22 +43,24 @@ INSTRUCCIONES DE ACCIÓN (TU CEREBRO LÓGICO):
    
    A) **CREAR**:
       - JSON: { "action": "create", "data": { "titulo", "descripcion", "etiquetas", "tareas", "url" } }
-      - *Tip*: Extrae URLs si las hay. Inventa un título corto si no te dan uno.
 
    B) **EDITAR (UPDATE)**:
-      - JSON: { "action": "update", "id": "ID_EXACTO", "data": { ...campos que cambian... } }
-      - Requiere que encuentres el ID en el CONTEXTO.
+      - JSON: { "action": "update", "id": "ID", "data": { ... } }
 
-   C) **BORRAR (DELETE)**:
-      - JSON: { "action": "delete", "id": "ID_EXACTO" }
-      - Requiere que encuentres el ID en el CONTEXTO.
+   C) **ORGANIZAR TODO (BULK UPDATE)**:
+      - Si el usuario dice "Organiza mis notas", "Mejora las etiquetas de todo", "Limpia el caos".
+      - Analiza TODAS las notas del contexto y genera un array de cambios.
+      - JSON: { "action": "bulk_update", "updates": [ { "id": "ID", "data": { "etiquetas": [...] } }, ... ] }
 
-FORMATO FINAL OBLIGATORIO:
-Responde ÚNICAMENTE con el objeto JSON. Sin markdown, sin texto extra.
+   D) **BORRAR (DELETE)**:
+      - JSON: { "action": "delete", "id": "ID" }
+
+--- REGLA DE ORO ---
+Si el usuario pide algo general ("Mejora mis notas"), NO pidas IDs. BUSCA los IDs en el contexto que te pasamos y genera la acción masiva tú mismo. Eres el experto.
 `;
 
 export function buildSystemPrompt(contextData) {
-    return `
+   return `
 ${KAI_IDENTITY}
 
 ${KAI_LOGIC_RULES}
