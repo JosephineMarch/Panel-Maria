@@ -268,20 +268,17 @@ body {
     display: flex;
     flex-direction: column;
     height: 100%;
-    max-width: 850px;
     width: 100%;
-    margin: 0 auto;
     background: var(--white);
-    border: var(--border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    overflow: hidden;
+    /* Removed borders, shadows, and max-width for full utilization */
+    border-radius: 0;
 }
 
 .kai-messages {
     flex: 1;
     overflow-y: auto;
-    padding: 25px;
+    padding: 15px;
+    /* Reduced padding */
     display: flex;
     flex-direction: column;
     gap: 18px;
@@ -319,7 +316,7 @@ body {
 }
 
 .chat-input-area {
-    padding: 20px;
+    padding: 15px;
     border-top: var(--border);
     display: flex;
     gap: 12px;
@@ -368,13 +365,11 @@ body {
 /* --- EDITOR DE NOTAS --- */
 .editor-paper {
     background: var(--white);
-    border: var(--border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    padding: 35px;
-    max-width: 850px;
+    /* Removed borders, shadows, and max-width */
+    padding: 25px;
+    /* Reduced padding */
     width: 100%;
-    margin: 0 auto;
+    height: 100%;
     display: flex;
     flex-direction: column;
 }

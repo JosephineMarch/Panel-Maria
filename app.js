@@ -111,7 +111,7 @@ class PanelMariaApp {
             e.preventDefault();
             this.handleKaiMessage();
         });
-        on('voiceBtn', 'click', () => this.toggleVoiceRecording());
+        // on('voiceBtn', 'click', () => this.toggleVoiceRecording()); // Handled by chat.js
 
         // --- EDITOR ACTIONS ---
         on('addItemBtn', 'click', () => this.createNewItem());
@@ -195,29 +195,23 @@ class PanelMariaApp {
         this.renderer.renderChecklist(tasks);
     }
 
-    handleKaiMessage() {
+    async handleKaiMessage() {
         const input = document.getElementById('kaiInput');
         const text = input.value.trim();
         if (!text) return;
 
-        // 1. Show User Msg
+        // 1. Show User Msg immediately
         const container = document.getElementById('kaiMessages');
         container.innerHTML += `<div class="msg msg-user">${text}</div>`;
         input.value = '';
         container.scrollTop = container.scrollHeight;
 
-        // 2. Logic (Mock for now, or connect to chat.js later)
-        setTimeout(() => {
-            container.innerHTML += `<div class="msg msg-kai">He guardado esa idea. 🧠</div>`;
-            container.scrollTop = container.scrollHeight;
-        }, 600);
+        // 2. Delegate to AI Module
+        const { sendMessageToKai } = await import('./chat.js');
+        sendMessageToKai(text);
     }
 
-    toggleVoiceRecording() {
-        const btn = document.getElementById('voiceBtn');
-        btn.classList.toggle('recording');
-        // Logic for speech API here (can reuse previous chat.js logic)
-    }
+    // Voice handled in chat.js
 
     deleteCurrentItem() {
         if (!this.currentId) return;
