@@ -343,7 +343,9 @@ class PanelMariaApp {
 
     closeWorkspace() {
         this.currentEditId = null;
-        this.renderer.toggleMainView('chat');
+        // On mobile, this should go back to list. On desktop, back to chat.
+        // Renderer handles the distinction via screen width check in 'sidebar' mode.
+        this.renderer.toggleMainView('sidebar');
     }
 
     // Auto-Save Implementation
