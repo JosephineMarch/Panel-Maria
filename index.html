@@ -11,6 +11,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#3b82f6">
+    <link rel="apple-touch-icon" href="icon-192.png">
 </head>
 
 <body>
@@ -145,6 +147,15 @@
         window.addEventListener('load', () => {
             if (window.lucide) window.lucide.createIcons();
         });
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('SW registrado', reg))
+                    .catch(err => console.log('Error al registrar SW', err));
+            });
+        }
     </script>
 </body>
 

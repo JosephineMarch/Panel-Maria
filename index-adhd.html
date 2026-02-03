@@ -1,0 +1,131 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel-Mar├¡a & Kai | Neo-Brutalismo</title>
+    <!-- Google Fonts: Poppins (Regulares y Bolds) -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+
+<body>
+
+    <div class="overlay" id="overlay"></div>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-area">
+                <h1>PANEL-MAR├ìA</h1>
+            </div>
+        </div>
+
+        <div class="controls-container">
+            <!-- Auth Status Section -->
+            <div id="authSection" class="auth-section">
+                <div id="userProfile" class="user-profile hidden">
+                    <img id="userAvatar" src="" class="user-avatar-mini">
+                    <span id="userName" class="user-name-mini"></span>
+                    <button id="logoutBtn" class="btn-text-small">(Salir)</button>
+                </div>
+                <button id="loginBtn" class="btn-neo-small bg-yellow">LOGIN CON GOOGLE</button>
+            </div>
+
+            <input type="text" id="searchInput" class="neo-input" placeholder="Buscar notas...">
+            <div class="tag-filters" id="tagFilters">
+                <button class="filter-chip active" data-filter="all">Todo</button>
+                <!-- Dynamic Tags Here -->
+            </div>
+        </div>
+        <div class="blocks-gallery" id="gallery">
+            <!-- Cards Injected Here -->
+        </div>
+    </aside>
+
+    <!-- ├üREA DE TRABAJO -->
+    <main class="main-content">
+        <header class="panel-header">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <button class="btn-neo mobile-menu-btn bg-yellow" id="openSidebarBtn">
+                    <i data-lucide="menu"></i>
+                </button>
+                <button class="btn-neo bg-yellow" id="homeBtn">
+                    <i data-lucide="home"></i> <span class="btn-text">Inicio</span>
+                </button>
+                <span id="headerTitle" style="font-weight: 800; font-size: 0.9rem; text-transform: uppercase;">Kai
+                    Chat</span>
+            </div>
+            <div id="statusInfo" class="status-badge">OFFLINE</div>
+        </header>
+
+        <!-- VISTA: CHAT DE KAI -->
+        <div class="view-container" id="kaiView">
+            <div class="kai-chat-container">
+                <div class="kai-messages" id="kaiMessages">
+                    <div class="msg msg-kai">
+                        ┬íHola Mar├¡a! ­ƒæï Soy Kai.
+                        <br>Inicia sesi├│n para ver tus cosas o cu├®ntame algo ahora.
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <button class="btn-audio" id="voiceBtn" title="Grabar audio">
+                        <i data-lucide="mic" id="micIcon" style="width: 24px; height: 24px;"></i>
+                    </button>
+                    <input type="text" id="kaiInput" class="neo-input" placeholder="Escribe o graba un pensamiento...">
+                    <button class="btn-neo bg-green" id="sendToKaiBtn">ENVIAR</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA: EDITOR DE BLOQUE -->
+        <div class="view-container hidden" id="editorView">
+            <div class="editor-paper">
+                <div class="editor-actions-top"
+                    style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <span id="saveStatus" style="font-size:0.7rem; font-weight:800; color:#888;">GUARDADO</span>
+                    <button id="deleteBlockBtn" class="btn-icon-danger"><i data-lucide="trash-2"></i></button>
+                </div>
+
+                <input type="text" id="editTitle" class="edit-title" placeholder="T├ìTULO">
+
+                <!-- Meta Inputs -->
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <div style="flex:1;">
+                        <input type="text" id="editUrl" class="neo-input-flat"
+                            placeholder="http://enlace-principal.com">
+                    </div>
+                    <div style="flex:1;">
+                        <input type="text" id="editTags" class="neo-input-flat" placeholder="#etiquetas, #separadas">
+                    </div>
+                </div>
+
+                <textarea id="editBody" class="edit-body" rows="8"
+                    placeholder="Cu├®ntame m├ís sobre este bloque..."></textarea>
+
+                <div class="section-title">Tareas</div>
+                <div id="checklistContainer"></div>
+                <button class="btn-neo" id="addTaskBtn" style="font-size: 0.7rem; margin-top: 8px;">+ AGREGAR
+                    TAREA</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- SCRIPTS -->
+    <!-- Important: Load order matters -->
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="storage.js"></script>
+    <script type="module" src="app.js"></script>
+    <script>
+        // Init Icons
+        window.addEventListener('load', () => {
+            if (window.lucide) window.lucide.createIcons();
+        });
+    </script>
+</body>
+
+</html>
