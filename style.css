@@ -489,6 +489,10 @@ body {
     background: var(--accent-yellow);
 }
 
+.bg-blue {
+    background: var(--accent-blue);
+}
+
 .btn-icon-danger {
     background: var(--accent-red);
     border: var(--border);

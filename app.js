@@ -105,6 +105,7 @@ class PanelMariaApp {
         // --- AUTH ---
         on('loginBtn', 'click', () => signInWithGoogle());
         on('logoutBtn', 'click', () => signOutUser());
+        on('exportDataBtn', 'click', () => window.storage.exportData());
 
         // --- KAI CHAT ---
         on('sendToKaiBtn', 'click', (e) => {

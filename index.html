@@ -36,7 +36,13 @@
                 <button id="loginBtn" class="btn-neo-small bg-yellow">LOGIN CON GOOGLE</button>
             </div>
 
-            <input type="text" id="searchInput" class="neo-input" placeholder="Buscar notas...">
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="text" id="searchInput" class="neo-input" placeholder="Buscar notas...">
+                <button id="exportDataBtn" class="btn-neo-small bg-blue" title="Exportar JSON"
+                    style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">
+                    <i data-lucide="download"></i>
+                </button>
+            </div>
             <div class="tag-filters" id="tagFilters">
                 <button class="filter-chip active" data-filter="all">Todo</button>
                 <!-- Dynamic Tags Here -->
