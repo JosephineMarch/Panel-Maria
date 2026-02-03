@@ -12,6 +12,8 @@ class StorageAdapter {
     async saveAll(data) { throw new Error('saveAll must be implemented'); }
     generateId() { throw new Error('generateId must be implemented'); }
     async performBatchUpdate(operations, currentItems) { throw new Error('performBatchUpdate must be implemented'); }
+    async getPendingOperations() { return []; }
+    async clearPendingOperations() { }
 }
 
 class LocalStorageAdapter extends StorageAdapter {
@@ -128,7 +130,7 @@ class FirebaseAdapter extends StorageAdapter {
         const batch = writeBatch(db);
         operations.forEach(op => {
             if (op.type === 'add') {
-                const newDocRef = doc(this.itemsCollectionRef); // Firestore genera el ID
+                const newDocRef = op.id ? doc(this.itemsCollectionRef, op.id) : doc(this.itemsCollectionRef);
                 batch.set(newDocRef, op.data);
             } else if (op.type === 'update') {
                 const docRef = doc(this.itemsCollectionRef, op.id);
@@ -142,25 +144,196 @@ class FirebaseAdapter extends StorageAdapter {
     }
 }
 
+class IndexedDBAdapter extends StorageAdapter {
+    constructor() {
+        super();
+        this.dbName = 'PanelMariaDB';
+        this.dbVersion = 1;
+        this.storeName = 'items';
+        this.opsStoreName = 'pendingOperations';
+        this.db = null;
+        this.type = 'indexeddb';
+    }
+
+    async init() {
+        if (this.db) return;
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(this.dbName, this.dbVersion);
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => {
+                this.db = request.result;
+                resolve();
+            };
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains(this.storeName)) {
+                    db.createObjectStore(this.storeName, { keyPath: 'id' });
+                }
+                if (!db.objectStoreNames.contains(this.opsStoreName)) {
+                    db.createObjectStore(this.opsStoreName, { keyPath: 'id', autoIncrement: true });
+                }
+            };
+        });
+    }
+
+    async loadAll() {
+        await this.init();
+        const items = await this.getAllFromStore(this.storeName);
+        const settings = JSON.parse(localStorage.getItem('panelSettings') || '{}');
+        return { items, settings };
+    }
+
+    async saveAll(data) {
+        if (data.settings) {
+            localStorage.setItem('panelSettings', JSON.stringify(data.settings));
+        }
+        // Items are saved individually via performBatchUpdate for efficiency
+    }
+
+    async getAllFromStore(storeName) {
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(storeName, 'readonly');
+            const store = transaction.objectStore(storeName);
+            const request = store.getAll();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    generateId() {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+    }
+
+    async performBatchUpdate(operations, currentItems) {
+        await this.init();
+        const transaction = this.db.transaction([this.storeName, this.opsStoreName], 'readwrite');
+        const itemStore = transaction.objectStore(this.storeName);
+        const opsStore = transaction.objectStore(this.opsStoreName);
+
+        for (const op of operations) {
+            if (op.type === 'add') {
+                const item = { ...op.data, id: op.data.id || this.generateId() };
+                itemStore.put(item);
+            } else if (op.type === 'update') {
+                const item = currentItems.find(i => i.id === op.id);
+                if (item) itemStore.put({ ...item, ...op.data });
+            } else if (op.type === 'delete') {
+                itemStore.delete(op.id);
+            }
+            opsStore.add(op);
+        }
+
+        return new Promise((resolve) => {
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = (e) => {
+                console.error('IDB Transaction Error:', e);
+                resolve();
+            };
+        });
+    }
+
+    async getPendingOperations() {
+        await this.init();
+        return this.getAllFromStore(this.opsStoreName);
+    }
+
+    async clearPendingOperations() {
+        await this.init();
+        return new Promise((resolve) => {
+            const transaction = this.db.transaction(this.opsStoreName, 'readwrite');
+            const store = transaction.objectStore(this.opsStoreName);
+            const request = store.clear();
+            request.onsuccess = () => resolve();
+        });
+    }
+}
+
 class Storage {
     constructor() {
-        this.adapter = new LocalStorageAdapter();
+        this.localAdapter = new IndexedDBAdapter();
+        this.remoteAdapter = null;
+        this.isOnline = navigator.onLine;
+        this.setupSync();
     }
 
     setAdapter(mode, userId = null) {
         if (mode === 'firebase' && userId) {
-            this.adapter = new FirebaseAdapter(userId);
+            this.remoteAdapter = new FirebaseAdapter(userId);
         } else {
-            this.adapter = new LocalStorageAdapter();
+            this.remoteAdapter = null;
         }
-        console.log(`Storage adapter set to: ${this.adapter.type}`);
     }
 
-    async loadAll() { return this.adapter.loadAll(); }
-    async saveAll(data) { return this.adapter.saveAll(data); }
-    generateId() { return this.adapter.generateId(); }
+    async loadAll() {
+        const localData = await this.localAdapter.loadAll();
+        if (this.remoteAdapter && this.isOnline) {
+            try {
+                const remoteData = await this.remoteAdapter.loadAll();
+                // Merge logic could be here, but for now we trust remote as source of truth if online
+                // and update local to match
+                await this.syncLocalWithRemote(remoteData.items);
+                return remoteData;
+            } catch (e) {
+                console.error('Remote load failed, using local:', e);
+            }
+        }
+        return localData;
+    }
+
+    async syncLocalWithRemote(remoteItems) {
+        await this.localAdapter.init();
+        const transaction = this.localAdapter.db.transaction(this.localAdapter.storeName, 'readwrite');
+        const store = transaction.objectStore(this.localAdapter.storeName);
+        store.clear();
+        remoteItems.forEach(item => store.put(item));
+    }
+
+    async saveAll(data) {
+        await this.localAdapter.saveAll(data);
+        if (this.remoteAdapter && this.isOnline) {
+            await this.remoteAdapter.saveAll(data);
+        }
+    }
+
+    generateId() { return this.localAdapter.generateId(); }
+
     async performBatchUpdate(operations, currentItems) {
-        return this.adapter.performBatchUpdate(operations, currentItems);
+        // Always record locally first
+        await this.localAdapter.performBatchUpdate(operations, currentItems);
+
+        if (this.remoteAdapter && this.isOnline) {
+            try {
+                await this.remoteAdapter.performBatchUpdate(operations);
+                await this.localAdapter.clearPendingOperations();
+            } catch (e) {
+                console.error('Remote sync failed, will retry later:', e);
+            }
+        }
+    }
+
+    setupSync() {
+        window.addEventListener('online', () => {
+            this.isOnline = true;
+            this.syncPending();
+        });
+        window.addEventListener('offline', () => {
+            this.isOnline = false;
+        });
+    }
+
+    async syncPending() {
+        if (!this.remoteAdapter || !this.isOnline) return;
+        const ops = await this.localAdapter.getPendingOperations();
+        if (ops.length === 0) return;
+
+        console.log(`Syncing ${ops.length} pending operations...`);
+        try {
+            await this.remoteAdapter.performBatchUpdate(ops);
+            await this.localAdapter.clearPendingOperations();
+            console.log('Sync complete.');
+        } catch (e) {
+            console.error('Sync failed:', e);
+        }
     }
 
     async exportData() {
@@ -187,15 +360,9 @@ class Storage {
                     const data = JSON.parse(event.target.result);
                     if (!data || !data.items) return reject(new Error('Formato de archivo inválido.'));
 
-                    const currentData = await this.loadAll();
-                    const existingIds = new Set(currentData.items.map(i => i.id));
-                    const itemsToImport = data.items.filter(i => !existingIds.has(i.id));
-
-                    if (itemsToImport.length > 0) {
-                        const operations = itemsToImport.map(item => ({ type: 'add', data: item }));
-                        await this.performBatchUpdate(operations);
-                    }
-                    resolve({ importedCount: itemsToImport.length });
+                    const operations = data.items.map(item => ({ type: 'add', data: item }));
+                    await this.performBatchUpdate(operations, []);
+                    resolve({ importedCount: data.items.length });
                 } catch (e) {
                     reject(new Error("Error al leer el archivo JSON."));
                 }

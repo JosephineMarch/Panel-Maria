@@ -17,7 +17,7 @@
 
     <div class="overlay" id="overlay"></div>
 
-    <!-- SIDEBAR -->
+    <!-- SIDEBAR (Navegación) -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo-area">
@@ -25,92 +25,112 @@
             </div>
         </div>
 
-        <div class="controls-container">
-            <!-- Auth Status Section -->
-            <div id="authSection" class="auth-section">
-                <div id="userProfile" class="user-profile hidden">
-                    <img id="userAvatar" src="" class="user-avatar-mini">
-                    <span id="userName" class="user-name-mini"></span>
-                    <button id="logoutBtn" class="btn-text-small">(Salir)</button>
-                </div>
-                <button id="loginBtn" class="btn-neo-small bg-yellow">LOGIN CON GOOGLE</button>
-            </div>
+        <nav class="sidebar-nav">
+            <button class="nav-btn active" id="btnChatView">
+                <i data-lucide="message-circle"></i> <span>KAI CHAT</span>
+            </button>
+            <button class="nav-btn" id="btnGalleryView">
+                <i data-lucide="layout"></i> <span>MIS BLOQUES</span>
+            </button>
+            <button class="nav-btn" id="btnSyncStatus">
+                <i data-lucide="refresh-cw"></i> <span>ESTADO</span>
+            </button>
+        </nav>
 
-            <input type="text" id="searchInput" class="neo-input" placeholder="Buscar notas...">
-            <div class="tag-filters" id="tagFilters">
-                <button class="filter-chip active" data-filter="all">Todo</button>
-                <!-- Dynamic Tags Here -->
+        <div class="auth-box" id="authSection">
+            <div id="userProfile" class="user-profile hidden">
+                <img id="userAvatar" src="" class="user-avatar-mini">
+                <span id="userName" class="user-name-mini"></span>
+                <button id="logoutBtn" class="btn-text-small">(Salir)</button>
             </div>
-        </div>
-        <div class="blocks-gallery" id="gallery">
-            <!-- Cards Injected Here -->
+            <button id="loginBtn" class="btn-neo-small bg-yellow">LOGIN</button>
         </div>
     </aside>
 
-    <!-- ÁREA DE TRABAJO -->
+    <!-- CONTENIDO PRINCIPAL -->
     <main class="main-content">
         <header class="panel-header">
             <div style="display: flex; align-items: center; gap: 12px;">
                 <button class="btn-neo mobile-menu-btn bg-yellow" id="openSidebarBtn">
                     <i data-lucide="menu"></i>
                 </button>
-                <button class="btn-neo bg-yellow" id="homeBtn">
-                    <i data-lucide="home"></i> <span class="btn-text">Inicio</span>
-                </button>
-                <span id="headerTitle" style="font-weight: 800; font-size: 0.9rem; text-transform: uppercase;">Kai
-                    Chat</span>
+                <h2 id="viewTitle" style="text-transform: uppercase; font-size: 0.9rem;">KAI CHAT</h2>
             </div>
-            <div id="statusInfo" class="status-badge">OFFLINE</div>
+            <div id="statusInfo" class="status-badge">ONLINE</div>
         </header>
 
-        <!-- VISTA: CHAT DE KAI -->
+        <!-- VISTA: CHAT (Centro de la experiencia) -->
         <div class="view-container" id="kaiView">
             <div class="kai-chat-container">
                 <div class="kai-messages" id="kaiMessages">
                     <div class="msg msg-kai">
-                        ¡Hola María! 👋 Soy Kai.
-                        <br>Inicia sesión para ver tus cosas o cuéntame algo ahora.
+                        ¡Hola María! 👋 Soy Kai. <br>¡Estoy listo para ayudarte a organizar tu día!
                     </div>
                 </div>
                 <div class="chat-input-area">
-                    <button class="btn-audio" id="voiceBtn" title="Grabar audio">
-                        <i data-lucide="mic" id="micIcon" style="width: 24px; height: 24px;"></i>
+                    <button class="btn-audio" id="voiceBtn">
+                        <i data-lucide="mic"></i>
                     </button>
-                    <input type="text" id="kaiInput" class="neo-input" placeholder="Escribe o graba un pensamiento...">
+                    <input type="text" id="kaiInput" class="neo-input" placeholder="Escribe o graba algo...">
                     <button class="btn-neo bg-green" id="sendToKaiBtn">ENVIAR</button>
                 </div>
             </div>
         </div>
 
-        <!-- VISTA: EDITOR DE BLOQUE -->
+        <!-- VISTA: GALERÍA BENTO -->
+        <div class="view-container hidden" id="galleryView">
+            <div class="gallery-controls">
+                <input type="text" id="searchInput" class="neo-input" placeholder="Buscar en mi cerebro...">
+                <div class="tag-filters" id="tagFilters">
+                    <button class="filter-chip active" data-tag="all">Todo</button>
+                </div>
+            </div>
+            <div class="bento-grid" id="gallery">
+                <!-- Bento Cards Injected Here -->
+            </div>
+            <button class="btn-float-add" id="addItemBtn">
+                <i data-lucide="plus"></i>
+            </button>
+        </div>
+
+        <!-- VISTA: EDITOR -->
         <div class="view-container hidden" id="editorView">
             <div class="editor-paper">
-                <div class="editor-actions-top"
-                    style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                    <span id="saveStatus" style="font-size:0.7rem; font-weight:800; color:#888;">GUARDADO</span>
+                <div class="editor-header">
+                    <button id="backToGallery" class="btn-neo bg-yellow"><i data-lucide="arrow-left"></i></button>
+                    <span id="saveStatus">GUARDADO</span>
                     <button id="deleteBlockBtn" class="btn-icon-danger"><i data-lucide="trash-2"></i></button>
                 </div>
 
                 <input type="text" id="editTitle" class="edit-title" placeholder="TÍTULO">
 
-                <!-- Meta Inputs -->
-                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                    <div style="flex:1;">
-                        <input type="text" id="editUrl" class="neo-input-flat"
-                            placeholder="http://enlace-principal.com">
-                    </div>
-                    <div style="flex:1;">
-                        <input type="text" id="editTags" class="neo-input-flat" placeholder="#etiquetas, #separadas">
-                    </div>
+                <div class="editor-meta">
+                    <select id="editTipo" class="neo-select">
+                        <option value="chispa">Chispa (Idea)</option>
+                        <option value="hormiga">Hormiga (Tarea)</option>
+                        <option value="referencia">Referencia (Link)</option>
+                        <option value="salud">Salud (Bitácora)</option>
+                        <option value="logro">Logro</option>
+                    </select>
+                    <select id="editEstado" class="neo-select">
+                        <option value="planeacion">🔴 Planeación</option>
+                        <option value="proceso">🟢 En Proceso</option>
+                        <option value="terminado">🔵 Terminado</option>
+                    </select>
                 </div>
 
-                <textarea id="editBody" class="edit-body" rows="8"
-                    placeholder="Cuéntame más sobre este bloque..."></textarea>
+                <div class="editor-meta">
+                    <input type="text" id="editUrl" class="neo-input-flat" placeholder="URL / Link">
+                    <input type="text" id="editTags" class="neo-input-flat" placeholder="#etiquetas">
+                </div>
 
-                <div class="section-title">Tareas</div>
-                <div id="checklistContainer"></div>
-                <button class="btn-neo" id="addTaskBtn" style="font-size: 0.7rem; margin-top: 8px;">+ AGREGAR
-                    TAREA</button>
+                <textarea id="editBody" class="edit-body" placeholder="Descripción..."></textarea>
+
+                <div class="tasks-section">
+                    <div class="section-title">Micro-Pasos</div>
+                    <div id="checklistContainer"></div>
+                    <button class="btn-neo" id="addTaskBtn">+ PASO</button>
+                </div>
             </div>
         </div>
     </main>

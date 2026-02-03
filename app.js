@@ -1,251 +1,211 @@
 /*
 ================================================================================
-|       PANEL MARÍA - APP ORCHESTRATOR (Refactored v3.0)                       |
+|       PANEL MARÍA - APP ORCHESTRATOR (v3.0 TDAH Edition)                      |
 ================================================================================
 */
 import { Store } from './store.js';
 import { Renderer } from './renderer.js';
-import { initChat } from './chat.js';
+import { initChat, sendMessageToKai, appendMessage } from './chat.js';
 import { auth, onAuthStateChanged, signInWithGoogle, signOutUser } from './auth.js';
+import { GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 class PanelMariaApp {
     constructor() {
         this.store = new Store();
         this.renderer = new Renderer(this);
-        this.selectedItems = new Set();
+        this.currentEditingId = null;
+        this.saveTimeout = null;
 
         // Subscribe to Store
-        this.store.subscribe((s) => {
-            this.renderer.render(s, this.selectedItems);
-            this.renderer.renderCustomCategories(s.settings.customCategories);
-            this.renderer.renderGlobalTags(s.getAllTags());
-        });
-
-        console.log('App: V3.0 Rebuild Initialized');
+        this.store.subscribe(() => this.renderer.render(this.store));
     }
 
     async init() {
-        this.setupComponents();
+        console.log('App: Initializing TDAH 3...');
         this.setupAuth();
+        this.setupNavigation();
         this.setupListeners();
+
+        // Init Kai
         initChat(this);
-    }
 
-    setupComponents() {
-        // Tag Inputs Logic (Simplified)
-        this.setupTagInput('wsTagsWrapper', 'wsTagsInput');
-        this.setupTagInput('bulkTagsWrapper', 'bulkTagsInput');
-    }
-
-    setupTagInput(wrapperId, inputId) {
-        // Basic tag handling implementation
-        // For brevity in this rebuild, we delegate to simple text splitting or custom class if needed
-        // Assuming simple comma separated for now to ensure stability, or existing robust class
+        // Initial Data Load
+        await this.store.loadData();
     }
 
     setupAuth() {
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                document.getElementById('loginBtn').classList.add('hidden');
-                document.getElementById('userProfile').classList.remove('hidden');
-                document.getElementById('userAvatar').src = user.photoURL || '';
-                document.getElementById('userName').textContent = user.displayName;
                 this.store.setUser(user);
-                this.store.loadData();
+                window.storage.setAdapter('firebase', user.uid);
             } else {
-                document.getElementById('loginBtn').classList.remove('hidden');
-                document.getElementById('userProfile').classList.add('hidden');
-                this.store.items = []; // Clear local
-                this.store.notify();
+                this.store.setUser(null);
+                window.storage.setAdapter('local');
             }
+            this.store.loadData();
+        });
+
+        document.getElementById('loginBtn')?.addEventListener('click', () => {
+            const provider = new GoogleAuthProvider();
+            signInWithPopup(auth, provider);
+        });
+
+        document.getElementById('logoutBtn')?.addEventListener('click', () => {
+            signOut(auth);
+        });
+    }
+
+    setupNavigation() {
+        const btns = {
+            'btnChatView': 'kaiView',
+            'btnGalleryView': 'galleryView'
+        };
+
+        Object.entries(btns).forEach(([btnId, viewId]) => {
+            document.getElementById(btnId)?.addEventListener('click', () => {
+                this.renderer.showView(viewId);
+            });
+        });
+
+        document.getElementById('openSidebarBtn')?.addEventListener('click', () => {
+            document.getElementById('sidebar').classList.add('show');
+            document.getElementById('overlay').classList.add('active');
+        });
+
+        document.getElementById('overlay')?.addEventListener('click', () => {
+            document.getElementById('sidebar').classList.remove('show');
+            document.getElementById('overlay').classList.remove('active');
+        });
+
+        document.getElementById('addItemBtn')?.addEventListener('click', () => {
+            this.openEditor(null);
+        });
+
+        document.getElementById('backToGallery')?.addEventListener('click', () => {
+            this.renderer.showView('galleryView');
         });
     }
 
     setupListeners() {
-        // Helper
-        const on = (id, evt, fn) => {
-            const el = document.getElementById(id);
-            if (el) el.addEventListener(evt, fn);
+        // Kai Chat
+        document.getElementById('sendToKaiBtn')?.addEventListener('click', () => this.handleKaiInput());
+        document.getElementById('kaiInput')?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') this.handleKaiInput();
+        });
+
+        // Search
+        document.getElementById('searchInput')?.addEventListener('input', (e) => {
+            this.store.setSearch(e.target.value);
+        });
+
+        // Custom Event from Renderer
+        window.addEventListener('edit-item', (e) => {
+            this.openEditor(e.detail.id);
+        });
+
+        // Editor Auto-save
+        const inputs = ['editTitle', 'editBody', 'editUrl', 'editTags', 'editTipo', 'editEstado'];
+        inputs.forEach(id => {
+            document.getElementById(id)?.addEventListener('input', () => this.debounceSave());
+            document.getElementById(id)?.addEventListener('change', () => this.saveCurrentBlock());
+        });
+
+        document.getElementById('addTaskBtn')?.addEventListener('click', () => {
+            const tasks = this.getCurrentEditorTasks();
+            tasks.push({ titulo: '', completado: false });
+            this.renderer.renderChecklist(tasks);
+            this.saveCurrentBlock();
+        });
+
+        document.getElementById('checklistContainer')?.addEventListener('input', (e) => {
+            if (e.target.classList.contains('task-title')) this.debounceSave();
+        });
+
+        document.getElementById('checklistContainer')?.addEventListener('change', (e) => {
+            this.saveCurrentBlock();
+        });
+
+        document.getElementById('deleteBlockBtn')?.addEventListener('click', () => {
+            if (this.currentEditingId && confirm('¿Seguro que quieres borrar este bloque?')) {
+                this.store.deleteItem(this.currentEditingId);
+                this.renderer.showView('galleryView');
+            }
+        });
+    }
+
+    async handleKaiInput() {
+        const input = document.getElementById('kaiInput');
+        const text = input.value;
+        if (!text.trim()) return;
+
+        appendMessage('user', text);
+        input.value = '';
+        await sendMessageToKai(text);
+    }
+
+    openEditor(id) {
+        this.currentEditingId = id;
+        const item = id ? this.store.items.find(i => i.id === id) : {
+            titulo: '', descripcion: '', tipo: 'chispa', estado: 'planeacion', url: '', etiquetas: [], tareas: []
         };
 
-        // --- NAVIGATION ---
-        on('openSidebarBtn', 'click', () => {
-            document.getElementById('sidebar').classList.add('show');
-            document.getElementById('overlay').classList.add('active');
-        });
-        on('overlay', 'click', () => {
-            document.getElementById('sidebar').classList.remove('show');
-            document.getElementById('overlay').classList.remove('active');
-        });
-        on('homeBtn', 'click', () => this.openKaiChat());
-
-        // --- GALLERY INTERACTIONS ---
-        document.getElementById('gallery').addEventListener('click', (e) => {
-            const card = e.target.closest('.neo-card');
-            if (!card) return;
-
-            if (card.dataset.action === 'open-kai') {
-                this.openKaiChat();
-            } else if (card.dataset.action === 'open-item') {
-                this.openWorkspace(card.dataset.id);
-            }
-        });
-
-        // --- TAGS ---
-        document.getElementById('tagFilters').addEventListener('click', (e) => {
-            if (e.target.dataset.action === 'filter-tag') {
-                const tag = e.target.dataset.tag;
-                this.store.setTagFilter(tag === 'all' ? null : tag);
-            }
-        });
-
-        // --- SEARCH ---
-        on('searchInput', 'input', (e) => this.store.setSearch(e.target.value));
-
-        // --- AUTH ---
-        on('loginBtn', 'click', () => signInWithGoogle());
-        on('logoutBtn', 'click', () => signOutUser());
-
-        // --- KAI CHAT ---
-        on('sendToKaiBtn', 'click', (e) => {
-            e.preventDefault();
-            this.handleKaiMessage();
-        });
-        // on('voiceBtn', 'click', () => this.toggleVoiceRecording()); // Handled by chat.js
-
-        // --- EDITOR ACTIONS ---
-        on('addItemBtn', 'click', () => this.createNewItem());
-        on('deleteBlockBtn', 'click', () => this.deleteCurrentItem());
-        on('addTaskBtn', 'click', () => this.addTaskToCurrent());
-
-        // --- EDITOR AUTO-SAVE ---
-        const autoSave = this.debounce(() => this.saveWorkspace(), 500);
-        ['editTitle', 'editBody', 'editUrl', 'editTags'].forEach(id => on(id, 'input', autoSave));
-
-        // Checklist Delegation
-        document.getElementById('checklistContainer').addEventListener('change', (e) => {
-            // Handle Checkbox or Text change
-            autoSave();
-        });
-    }
-
-    // --- ACTIONS ---
-
-    openKaiChat() {
-        this.currentId = null;
-        this.renderer.toggleView('kai');
-    }
-
-    createNewItem() {
-        const id = this.store.generateId();
-        this.store.addItem({ titulo: 'NUEVA NOTA', id }).then(() => this.openWorkspace(id));
-    }
-
-    openWorkspace(id) {
-        this.currentId = id;
-        const item = this.store.getItem(id);
         if (!item) return;
 
         document.getElementById('editTitle').value = item.titulo || '';
         document.getElementById('editBody').value = item.descripcion || '';
         document.getElementById('editUrl').value = item.url || '';
         document.getElementById('editTags').value = (item.etiquetas || []).join(', ');
-        document.getElementById('headerTitle').textContent = item.titulo || 'BLOQUE';
+        document.getElementById('editTipo').value = item.tipo || 'chispa';
+        document.getElementById('editEstado').value = item.estado || 'planeacion';
 
         this.renderer.renderChecklist(item.tareas);
-        this.renderer.toggleView('editor');
+        this.renderer.showView('editorView');
     }
 
-    saveWorkspace() {
-        if (!this.currentId) return;
-
-        // Parse Tags
-        const tagsInput = document.getElementById('editTags').value;
-        const tags = tagsInput.split(',').map(t => t.trim().toLowerCase()).filter(t => t.length > 0);
-
-        // Parse Tasks 
-        const taskEls = document.querySelectorAll('#checklistContainer .checklist-item');
-        const tasks = Array.from(taskEls).map(el => {
-            return {
-                titulo: el.querySelector('input[type="text"]').value,
-                completado: el.querySelector('input[type="checkbox"]').checked
-            };
+    getCurrentEditorTasks() {
+        const container = document.getElementById('checklistContainer');
+        const tasks = [];
+        container.querySelectorAll('.checklist-item').forEach(row => {
+            tasks.push({
+                titulo: row.querySelector('.task-title').value,
+                completado: row.querySelector('.task-check').checked
+            });
         });
+        return tasks;
+    }
 
+    debounceSave() {
+        if (this.saveTimeout) clearTimeout(this.saveTimeout);
+        this.saveTimeout = setTimeout(() => this.saveCurrentBlock(), 1500);
+    }
+
+    async saveCurrentBlock() {
         const data = {
             titulo: document.getElementById('editTitle').value,
             descripcion: document.getElementById('editBody').value,
             url: document.getElementById('editUrl').value,
-            etiquetas: tags,
-            tareas: tasks
+            etiquetas: document.getElementById('editTags').value.split(',').map(s => s.trim()).filter(s => s),
+            tipo: document.getElementById('editTipo').value,
+            estado: document.getElementById('editEstado').value,
+            tareas: this.getCurrentEditorTasks()
         };
 
-        this.store.updateItem(this.currentId, data);
-        document.getElementById('saveStatus').textContent = 'GUARDANDO...';
-        setTimeout(() => document.getElementById('saveStatus').textContent = 'GUARDADO', 800);
-    }
-
-    addTaskToCurrent() {
-        if (!this.currentId) return;
-        const item = this.store.getItem(this.currentId);
-        const tasks = item.tareas || [];
-        tasks.push({ titulo: '', completado: false });
-        this.store.updateItem(this.currentId, { tareas: tasks });
-        // Force re-render of checklist
-        this.renderer.renderChecklist(tasks);
-    }
-
-    async handleKaiMessage() {
-        console.log('App: handleKaiMessage triggered');
-        const input = document.getElementById('kaiInput');
-        if (!input) { console.error('App: Kai Input not found!'); return; }
-
-        const text = input.value.trim();
-        console.log('App: Input text:', text);
-        if (!text) return;
-
-        // 1. Show User Msg immediately
-        const container = document.getElementById('kaiMessages');
-        container.innerHTML += `<div class="msg msg-user">${text}</div>`;
-        input.value = '';
-        container.scrollTop = container.scrollHeight;
-
-        // 2. Delegate to AI Module
-        try {
-            console.log('App: Importing chat.js...');
-            const { sendMessageToKai } = await import('./chat.js');
-            console.log('App: Calling sendMessageToKai...');
-            sendMessageToKai(text);
-        } catch (e) {
-            console.error('App: Error in AI delegation:', e);
-            container.innerHTML += `<div class="msg msg-kai">Error interno: ${e.message}</div>`;
+        if (this.currentEditingId) {
+            await this.store.updateItem(this.currentEditingId, data);
+        } else {
+            // Se crea al cerrar o si Kai lo decide, pero aquí permitimos creación manual también
+            if (data.titulo || data.descripcion) {
+                const newId = this.store.generateId();
+                await this.store.addItem({ ...data, id: newId });
+                this.currentEditingId = newId;
+            }
         }
-    }
 
-    // Voice handled in chat.js
-
-    deleteCurrentItem() {
-        if (!this.currentId) return;
-        this.store.deleteItem(this.currentId);
-        // The new flow might not close the workspace immediately after deletion,
-        // or it might navigate back to the list view.
-        // For now, we'll keep it as is, assuming the UI handles navigation.
-        // If a closeWorkspace() is needed, it should be added here or in the calling context.
-    }
-
-    // CATEGORIES (Removed)
-
-    confirmDeleteTag(t) {
-        this.renderer.showConfirmModal('Borrar Etiqueta', `¿Quitar #${t} de todo?`, () => {
-            // Logic to strip tags from all items would go here
-            // For safety in rebuild, just remove from UI/Store view
-        });
-    }
-
-    // UTILS
-    debounce(fn, ms) {
-        let timer;
-        return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn.apply(this, args), ms); };
+        const status = document.getElementById('saveStatus');
+        if (status) {
+            status.textContent = 'GUARDADO...';
+            setTimeout(() => status.textContent = 'GUARDADO', 1000);
+        }
     }
 }
 

@@ -16,7 +16,9 @@ export class Store {
         this.user = null;
         this.filters = {
             search: '',
-            tag: null
+            tag: null,
+            tipo: null,
+            estado: null
         };
         this.sortBy = 'recientes';
         this.listeners = [];
@@ -48,13 +50,16 @@ export class Store {
                     ...item,
                     id: item.id,
                     titulo: item.titulo || 'Sin Título',
-                    // Flatten: we treat everything as 'generic' internally now, but keep field for legacy compat if needed
-                    categoria: 'general',
+                    descripcion: item.descripcion || '',
+                    tipo: item.tipo || item.categoria || 'chispa', // Map legacy or default
+                    categoria: item.categoria || 'general',
+                    estado: item.estado || 'planeacion',
                     etiquetas: Array.from(tags),
                     tareas: Array.isArray(item.tareas) ? item.tareas : [],
                     anclado: !!item.anclado,
                     url: item.url || '',
-                    descripcion: item.descripcion || ''
+                    fecha_creacion: item.fecha_creacion || new Date().toISOString(),
+                    fecha_finalizacion: item.fecha_finalizacion || null
                 };
             });
 
@@ -91,7 +96,9 @@ export class Store {
             ...data,
             id: this.generateId(),
             fecha_creacion: new Date().toISOString(),
-            categoria: 'general' // Default internal category
+            tipo: data.tipo || 'chispa',
+            estado: data.estado || 'planeacion',
+            categoria: data.categoria || 'general'
         };
         await this.performUpdates([{ type: 'add', data: newItem }]);
     }
@@ -110,6 +117,8 @@ export class Store {
 
     setSearch(term) { this.filters.search = term.toLowerCase(); this.notify(); }
     setTagFilter(tag) { this.filters.tag = this.filters.tag === tag ? null : tag; this.notify(); }
+    setTipoFilter(tipo) { this.filters.tipo = this.filters.tipo === tipo ? null : tipo; this.notify(); }
+    setEstadoFilter(estado) { this.filters.estado = this.filters.estado === estado ? null : estado; this.notify(); }
     setSort(s) { this.sortBy = s; this.notify(); }
 
     getFilteredItems() {
@@ -129,6 +138,16 @@ export class Store {
         if (this.filters.tag) {
             const t = this.filters.tag.toLowerCase();
             items = items.filter(i => (i.etiquetas || []).some(tag => tag.toLowerCase() === t));
+        }
+
+        // 3. Tipo Filter
+        if (this.filters.tipo) {
+            items = items.filter(i => i.tipo === this.filters.tipo);
+        }
+
+        // 4. Estado Filter
+        if (this.filters.estado) {
+            items = items.filter(i => i.estado === this.filters.estado);
         }
 
         return items.sort((a, b) => {

@@ -1,38 +1,33 @@
-// Módulo de Inteligencia Artificial - KAI (Cerebras Powered)
-import { CEREBRAS_API_KEY } from './config.js';
-import { buildSystemPrompt } from './kai-persona.js'; // Import Persona
+// Módulo de Inteligencia Artificial - KAI (Flexible AI Powered)
+import { CEREBRAS_API_KEY, GEMINI_API_KEY, ACTIVE_AI_PROVIDER } from './config.js';
+import { buildSystemPrompt } from './kai-persona.js';
 
 let appInstance = null;
-let chatMessages, chatInput, voiceBtn; // Global refs
-const API_ENDPOINT = 'https://api.cerebras.ai/v1/chat/completions';
-const MODEL = 'llama-3.3-70b';
+let chatMessages, chatInput, voiceBtn;
+const CEREBRAS_ENDPOINT = 'https://api.cerebras.ai/v1/chat/completions';
+const MODEL_CEREBRAS = 'llama-3.3-70b';
 
 // --- MAIN FUNCTION ---
 export async function initChat(app) {
     appInstance = app;
-
-    // Bind DOM Elements
-    chatMessages = document.querySelector('.kai-messages'); // Fixed selector
-    if (!chatMessages) chatMessages = document.getElementById('kaiMessages'); // Fallback
-
+    chatMessages = document.getElementById('kaiMessages');
     chatInput = document.getElementById('kaiInput');
     voiceBtn = document.getElementById('voiceBtn');
 
     if (voiceBtn) {
         voiceBtn.addEventListener('click', toggleVoiceInput);
     }
-
-    console.log('Kai AI Module Initialized (Persona Loaded & Listeners Ready)');
+    console.log('Kai AI Module Initialized (TDAH 3 Edition)');
 }
 
 // --- PUBLIC API ---
 export async function sendMessageToKai(text) {
     if (!text.trim()) return;
 
-    // 1. Get Context
-    const context = getContextSummary(appInstance.store);
+    // 1. Get Context (RAG Lite)
+    const context = getExpandedContext(appInstance.store);
 
-    // 2. Build Prompt using Persona
+    // 2. Build Prompt
     const systemPrompt = buildSystemPrompt(context);
 
     // 3. Prepare Messages
@@ -42,282 +37,152 @@ export async function sendMessageToKai(text) {
     ];
 
     try {
-        const responseText = await callCerebras(messages);
-        await handleKaiResponse(responseText);
+        const responseJson = await callAI(messages);
+        await handleKaiResponse(responseJson);
     } catch (error) {
         console.error('Kai Brain Freeze:', error);
-        appendMessage('kai', 'Ups, mi cerebro digital se congeló un segundo. 🥶 Intenta otra vez.');
+        appendMessage('kai', '¡Uy! Mi cerebro digital se congeló un segundo. 🥶 ¿Lo repetimos?');
     }
 }
 
-// --- INTERNAL HELPERS ---
-
-function getContextSummary(store) {
-    // Summarize last 40 items with IDs
-    const tags = Array.from(store.getAllTags()).join(', ');
-    const items = store.items.slice(0, 40).map(i => `(ID: ${i.id})[${i.titulo}]#${(i.etiquetas || []).join(',')} `).join('\n');
-
-    return `
-CONTEXTO(TUS DATOS):
-    Etiquetas Globales: ${tags}
-    
-    ITEMS RECIENTES(Úsalos para editar / borrar):
-    ${items}
-`;
+// --- AI ORCHESTRATOR ---
+async function callAI(messages) {
+    if (ACTIVE_AI_PROVIDER === 'cerebras') {
+        return callCerebras(messages);
+    } else if (ACTIVE_AI_PROVIDER === 'gemini') {
+        // Placeholder for Gemini implementation
+        throw new Error("Gemini Provider not yet implemented fully.");
+    }
 }
 
 async function callCerebras(messages) {
-    if (!CEREBRAS_API_KEY) throw new Error("Falta API KEY");
+    if (!CEREBRAS_API_KEY) throw new Error("Falta API KEY de Cerebras");
 
-    const res = await fetch(API_ENDPOINT, {
+    const res = await fetch(CEREBRAS_ENDPOINT, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${CEREBRAS_API_KEY} `
+            'Authorization': `Bearer ${CEREBRAS_API_KEY}`
         },
         body: JSON.stringify({
-            model: MODEL,
+            model: MODEL_CEREBRAS,
             messages: messages,
             temperature: 0.7,
-            max_tokens: 4096, // Increased for bulk operations
             response_format: { type: "json_object" }
         })
     });
 
-    if (!res.ok) {
-        const err = await res.text();
-        throw new Error(`API Error: ${err} `);
-    }
-
+    if (!res.ok) throw new Error(`API Error: ${await res.text()}`);
     const data = await res.json();
     return data.choices[0].message.content;
 }
 
-async function handleKaiResponse(rawText) {
-    console.log('Kai Raw Response:', rawText);
+// --- KAI VOICE (Web Speech API) ---
+function speak(text) {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel(); // Parar lo anterior
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'es-ES';
+    utterance.rate = 1.1;
+    utterance.pitch = 1.0;
+    window.speechSynthesis.speak(utterance);
+}
 
+// --- CORE LOGIC ---
+async function handleKaiResponse(rawText) {
+    console.log('Kai Response:', rawText);
     let parsed;
     try {
         parsed = JSON.parse(rawText);
     } catch (e) {
-        // Try repair for truncation
-        const repaired = tryRepairJSON(rawText);
-        if (repaired) {
-            parsed = repaired;
-        } else {
-            console.error('JSON Parse Error:', e);
-            // If it starts with a bracket but failed, it's a technical glitch. Don't show it to Maria.
-            if (rawText.trim().startsWith('{')) {
-                appendMessage('kai', '¡Uy! Me he liado un poco intentando procesar eso. 🧠🌀 ¿Podemos probar por partes?');
-            } else {
-                appendMessage('kai', rawText);
-            }
-            return;
-        }
-    }
-
-    const { action, data, id, updates, response } = parsed;
-
-    // --- ORCHESTRATOR ---
-
-    // 0. SEQUENTIAL CLEANUP
-    if (action === 'start_global_cleanup') {
-        if (response) appendMessage('kai', response);
-        runSequentialCleanup();
+        appendMessage('kai', rawText); // Fallback to raw if not JSON
         return;
     }
 
-    // 1. BULK UPDATE
-    if (action === 'bulk_update' || (updates && Array.isArray(updates))) {
-        const jobs = updates || [];
-        if (jobs.length === 0) {
-            appendMessage('kai', response || 'He revisado todo y... ¡tus etiquetas ya están impecables! No he necesitado cambiar nada. ✨');
-            return;
-        }
+    const { action, data, id, response } = parsed;
 
-        // Show Response FIRST if provided
-        if (response) appendMessage('kai', response);
+    if (response) {
+        appendMessage('kai', response);
+        speak(response.replace(/<[^>]*>/g, '')); // Hablar sin HTML
+    }
 
-        for (const update of jobs) {
-            if (update.id && update.data) {
-                await appInstance.store.updateItem(update.id, update.data);
-            }
-        }
-        if (!response) appendMessage('kai', `¡Listo! He re-etiquetado y organizado esa parte de tu información. ✅`);
-
-        // 2. CREATE
-    } else if (action === 'create') {
-        const newItem = {
-            id: appInstance.store.generateId(),
-            titulo: data?.titulo || 'Nota de Kai',
-            descripcion: data?.descripcion || '',
-            url: data?.url || '',
-            etiquetas: data?.etiquetas || [],
-            tareas: data?.tareas || [],
-            fecha_creacion: new Date().toISOString()
-        };
-        await appInstance.store.addItem(newItem);
-        appendMessage('kai', response || `¡Guardado! He anotado "<b>${newItem.titulo}</b>" en tus bloques. 🧠`);
-
-        // 3. SINGLE UPDATE
-    } else if (action === 'update') {
-        if (!id) return;
-        await appInstance.store.updateItem(id, data);
-        appendMessage('kai', response || `He actualizado "<b>${data.titulo || 'el bloque'}</b>". ✅`);
-
-        // 4. DELETE
-    } else if (action === 'delete') {
-        if (!id) return;
-        await appInstance.store.deleteItem(id);
-        appendMessage('kai', response || `Borrado. ¡Espacio liberado! 🗑️`);
-
-        // 5. CHAT / FALLBACK
-    } else {
-        appendMessage('kai', response || "Dime María, ¿en qué más puedo ayudarte? ⚡");
+    // --- Actions ---
+    switch (action) {
+        case 'create':
+            await appInstance.store.addItem({
+                ...data,
+                id: appInstance.store.generateId(),
+                fecha_creacion: new Date().toISOString()
+            });
+            break;
+        case 'update':
+            if (id) await appInstance.store.updateItem(id, data);
+            break;
+        case 'delete':
+            if (id) await appInstance.store.deleteItem(id);
+            break;
+        default:
+            console.log('Action not handled:', action);
     }
 }
 
-function tryRepairJSON(jsonString) {
-    let str = jsonString.trim();
-    if (!str.startsWith('{')) return null;
+function getExpandedContext(store) {
+    // Proporcionar un resumen de TODO para "memoria global"
+    const items = store.items.map(i =>
+        `[ID: ${i.id}] ${i.titulo} (${i.tipo}) - Estado: ${i.estado} - Tags: #${(i.etiquetas || []).join(', #')}`
+    ).join('\n');
 
-    // Common truncation patterns
-    const completions = [
-        str + ']}',
-        str + '}]}',
-        str + '"}]}',
-        str + '"]}]}',
-        str + '}]}]}'
-    ];
-
-    for (const alt of completions) {
-        try {
-            const p = JSON.parse(alt);
-            if (p.action) return p;
-        } catch (e) { }
-    }
-    return null;
+    return `
+ESTADO ACTUAL DE LA APP:
+Items guardados: ${store.items.length}
+Lista de items:
+${items}
+`;
 }
 
-// --- SEQUENTIAL CLEANUP LOGIC ---
-
-async function runSequentialCleanup() {
-    const items = appInstance.store.items;
-    if (!items || items.length === 0) {
-        appendMessage('kai', 'No hay nada que organizar todavía. ¡Vuelve cuando tengas más notas! ✨');
-        return;
-    }
-
-    appendMessage('kai', `🚀 <b>Iniciando Organización Inteligente</b>... Iré bloque por bloque como me pediste. ¡Te aviso al terminar!`);
-
-    const BATCH_SIZE = 10;
-    let processed = 0;
-
-    for (let i = 0; i < items.length; i += BATCH_SIZE) {
-        const batch = items.slice(i, i + BATCH_SIZE);
-        const batchLabel = `Bloques ${i + 1} a ${Math.min(i + BATCH_SIZE, items.length)}`;
-
-        console.log(`Kai: Processing ${batchLabel}`);
-
-        // Prepare Batch Prompt
-        const batchContext = batch.map(item => `(ID: ${item.id}) [${item.titulo}] Tags actuales: #${(item.etiquetas || []).join(', #')}`).join('\n');
-
-        const prompt = `
-        TAREA: Optimiza y limpia las etiquetas de estos ${batch.length} bloques. 
-        REGLAS:
-        - Usa etiquetas temáticas claras (#Trabajo, #Ideas, #Video, #Salud, etc.).
-        - Solo responde con el JSON de bulk_update.
-        
-        BLOQUES A PROCESAR:
-        ${batchContext}
-        `;
-
-        try {
-            const resText = await callCerebras([{ role: 'system', content: buildSystemPrompt('') }, { role: 'user', content: prompt }]);
-            const parsed = JSON.parse(resText);
-
-            if (parsed.updates) {
-                for (const upd of parsed.updates) {
-                    await appInstance.store.updateItem(upd.id, upd.data);
-                }
-            }
-
-            processed += batch.length;
-            // Update UI with a small progress note every 2 batches or so to not spam
-            if (i % 20 === 0) {
-                appendMessage('kai', `⌚ Procesando... (${Math.min(processed, items.length)}/${items.length} bloques analizados)`);
-            }
-
-        } catch (e) {
-            console.error('Batch error:', e);
-        }
-
-        // Small delay to keep UI smooth
-        await new Promise(r => setTimeout(r, 500));
-    }
-
-    appendMessage('kai', `🏆 <b>¡Misión cumplida!</b> He revisado toda tu información y he optimizado el etiquetado. ¡Todo está en su sitio! 🧠✨`);
-}
-
-function appendMessage(sender, html) {
+export function appendMessage(sender, html) {
     const container = document.getElementById('kaiMessages');
     if (!container) return;
 
     const div = document.createElement('div');
-    div.className = `msg msg - ${sender} `;
+    div.className = `msg msg-${sender}`;
     div.innerHTML = html;
     container.appendChild(div);
     container.scrollTop = container.scrollHeight;
 }
 
-// --- VOICE INPUT (Web Speech API) ---
+// --- VOICE INPUT ---
 let recognition = null;
 let isListening = false;
 
 function toggleVoiceInput() {
-    // Check support
     if (!('webkitSpeechRecognition' in window)) {
-        alert('Tu navegador no soporta entrada de voz. Prueba Chrome o Edge.');
+        alert('Tu navegador no soporta entrada de voz.');
         return;
     }
 
-    // Init Recognition if not exists
     if (!recognition) {
         recognition = new webkitSpeechRecognition();
         recognition.lang = 'es-ES';
-        recognition.continuous = false;
-        recognition.interimResults = false;
-
         recognition.onstart = () => {
             isListening = true;
-            if (voiceBtn) voiceBtn.classList.add('recording');
+            voiceBtn.classList.add('recording');
         };
-
         recognition.onresult = (event) => {
             const transcript = event.results[0][0].transcript;
-            if (chatInput) {
-                chatInput.value = transcript;
-                // Optional: Auto-send? Let's let user confirm for now.
-                chatInput.focus();
-            }
+            chatInput.value = transcript;
+            chatInput.focus();
         };
-
-        recognition.onerror = (event) => {
-            console.error('Voice Error:', event.error);
+        recognition.onerror = () => {
             isListening = false;
-            if (voiceBtn) voiceBtn.classList.remove('recording');
+            voiceBtn.classList.remove('recording');
         };
-
         recognition.onend = () => {
             isListening = false;
-            if (voiceBtn) voiceBtn.classList.remove('recording');
+            voiceBtn.classList.remove('recording');
         };
     }
 
-    // Toggle
-    if (isListening) {
-        recognition.stop();
-    } else {
-        recognition.start();
-    }
+    if (isListening) recognition.stop();
+    else recognition.start();
 }
