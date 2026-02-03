@@ -84,6 +84,10 @@ class PanelMariaApp {
         document.getElementById('backToGallery')?.addEventListener('click', () => {
             this.renderer.showView('galleryView');
         });
+
+        document.getElementById('exportDataBtn')?.addEventListener('click', () => {
+            window.storage.exportData();
+        });
     }
 
     setupListeners() {

@@ -5,6 +5,7 @@
 */
 
 import { auth } from './auth.js';
+import { sampleItems } from './seed-data.js';
 
 export class Store {
     constructor() {
@@ -64,6 +65,12 @@ export class Store {
             });
 
             this.settings = { ...this.settings, ...(data.settings || {}) };
+
+            if (this.items.length === 0 && !this.user) {
+                console.log('Store: Seeding default items for guest mode...');
+                await this.seedSamples();
+            }
+
             this.notify();
             return true;
         } catch (error) {
@@ -79,15 +86,12 @@ export class Store {
     // --- CRUD ---
     async performUpdates(operations) {
         try {
-            if (window.storage.adapter.type === 'local') {
-                this.items = await window.storage.performBatchUpdate(operations, this.items);
-                await window.storage.saveAll({ items: this.items, settings: this.settings });
-            } else {
-                await window.storage.performBatchUpdate(operations);
-                await this.loadData();
-            }
-            this.notify();
-        } catch (e) { console.error(e); }
+            // En TDAH-3, el manager storage maneja local/remoto internamente
+            await window.storage.performBatchUpdate(operations, this.items);
+            await this.loadData();
+        } catch (e) {
+            console.error('Store: Error en performUpdates', e);
+        }
     }
 
     async addItem(data) {
@@ -105,6 +109,21 @@ export class Store {
 
     async updateItem(id, data) { await this.performUpdates([{ type: 'update', id, data }]); }
     async deleteItem(id) { await this.performUpdates([{ type: 'delete', id }]); }
+
+    async seedSamples() {
+        const ops = sampleItems.map(item => ({
+            type: 'add',
+            data: {
+                ...item,
+                id: this.generateId(),
+                fecha_creacion: new Date().toISOString(),
+                tipo: item.tipo || 'chispa',
+                estado: item.estado || 'planeacion',
+                categoria: item.categoria || 'general'
+            }
+        }));
+        await this.performUpdates(ops);
+    }
 
     // --- Filters ---
 

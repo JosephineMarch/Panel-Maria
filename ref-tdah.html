@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kai Panel - Neobrutalismo Pastel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --brutal-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+            --brutal-border: 2px solid #000;
+            --bg-pastel-red: #ffadad;
+            --bg-pastel-green: #caffbf;
+            --bg-pastel-blue: #a0c4ff;
+            --bg-pastel-yellow: #fdffb6;
+            --bg-pastel-purple: #bdb2ff;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #fdfcf0;
+            color: #1a1a1a;
+        }
+
+        .brutal-card {
+            border: var(--brutal-border);
+            box-shadow: var(--brutal-shadow);
+            transition: all 0.2s ease;
+        }
+
+        .brutal-card:active {
+            box-shadow: 1px 1px 0px 0px rgba(0,0,0,1);
+            transform: translate(2px, 2px);
+        }
+
+        .brutal-btn {
+            border: var(--brutal-border);
+            box-shadow: var(--brutal-shadow);
+            cursor: pointer;
+        }
+
+        .brutal-btn:active {
+            box-shadow: none;
+            transform: translate(3px, 3px);
+        }
+
+        .status-red { background-color: var(--bg-pastel-red); }
+        .status-green { background-color: var(--bg-pastel-green); }
+        .status-blue { background-color: var(--bg-pastel-blue); }
+
+        .sidebar-item {
+            margin-bottom: 12px;
+            padding: 10px;
+            border: 2px solid transparent;
+        }
+
+        .sidebar-item.active {
+            border: var(--brutal-border);
+            background-color: var(--bg-pastel-yellow);
+            box-shadow: 3px 3px 0px 0px rgba(0,0,0,1);
+        }
+
+        /* Custom scrollbar for Neobrutalism */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: transparent; border-left: var(--brutal-border); }
+        ::-webkit-scrollbar-thumb { background: #000; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-20 md:w-64 border-r-2 border-black bg-white flex flex-col p-4 z-20">
+        <div class="mb-8 hidden md:block">
+            <h1 class="text-2xl font-medium border-b-2 border-black pb-2">KAI PANEL</h1>
+        </div>
+
+        <nav class="flex-1">
+            <div onclick="switchTab('chat')" id="nav-chat" class="sidebar-item active brutal-btn text-center md:text-left cursor-pointer transition-all">
+                <span class="md:inline">💬 Chat con Kai</span>
+            </div>
+            <div onclick="switchTab('projects')" id="nav-projects" class="sidebar-item brutal-btn text-center md:text-left cursor-pointer transition-all mt-4">
+                <span class="md:inline">🚀 Proyectos</span>
+            </div>
+            <div onclick="switchTab('health')" id="nav-health" class="sidebar-item brutal-btn text-center md:text-left cursor-pointer transition-all mt-4">
+                <span class="md:inline">🩺 Salud</span>
+            </div>
+        </nav>
+
+        <div class="mt-auto">
+            <div class="brutal-card p-3 text-xs bg-gray-100 border-2 border-black">
+                <p>Status: <span class="text-green-600 font-bold">ONLINE</span></p>
+                <p class="hidden md:block">Kai está listo.</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col relative bg-[#fdfcf0]">
+        
+        <!-- View: CHAT -->
+        <section id="view-chat" class="flex-1 flex flex-col p-4 md:p-8">
+            <div class="flex-1 overflow-y-auto space-y-6 pb-20" id="chat-messages">
+                <!-- Kai Message -->
+                <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 border-2 border-black bg-purple-300 flex items-center justify-center font-bold">K</div>
+                    <div class="brutal-card p-4 bg-white max-w-[80%]">
+                        ¡Hola María! Soy Kai. ⚡ ¿Cómo va ese jardín hoy? Recuerda que tienes el deadline de la Manta para marzo.
+                    </div>
+                </div>
+
+                <!-- User Message -->
+                <div class="flex items-start gap-3 flex-row-reverse">
+                    <div class="w-10 h-10 border-2 border-black bg-yellow-200 flex items-center justify-center font-bold">M</div>
+                    <div class="brutal-card p-4 bg-pastel-blue max-w-[80%]">
+                        Kai, guarda esta idea: "Hacer una hilera de piedras azules en el camino lateral". Etiquétalo como Jardín.
+                    </div>
+                </div>
+
+                <!-- Kai Response -->
+                <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 border-2 border-black bg-purple-300 flex items-center justify-center font-bold">K</div>
+                    <div class="brutal-card p-4 bg-white max-w-[80%]">
+                        ¡Entendido! Lo he guardado como **Idea** en el proyecto `#Jardín`. ¿Quieres que le asigne un recordatorio para este fin de semana?
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="absolute bottom-6 left-4 right-4 md:left-8 md:right-8">
+                <div class="flex gap-4">
+                    <button id="btn-voice" class="brutal-btn p-4 bg-pastel-red rounded-full w-14 h-14 flex items-center justify-center text-xl">🎤</button>
+                    <div class="flex-1 relative">
+                        <input type="text" placeholder="Escribe a Kai o captura una idea..." 
+                               class="w-full h-14 border-2 border-black p-4 brutal-shadow focus:outline-none focus:ring-2 focus:ring-purple-400">
+                    </div>
+                    <button class="brutal-btn p-4 bg-pastel-green px-6 font-medium">ENVIAR</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- View: PROJECTS -->
+        <section id="view-projects" class="hidden flex-1 p-8 overflow-y-auto pb-20">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-3xl font-medium italic underline decoration-wavy decoration-purple-500">Mis Proyectos</h2>
+                <div class="flex gap-2">
+                    <button class="brutal-btn bg-white px-4 py-2 text-sm">Filtros</button>
+                    <button class="brutal-btn bg-pastel-yellow px-4 py-2 text-sm">+ Nuevo Proyecto</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Project Card (Process) -->
+                <div class="brutal-card status-green p-5">
+                    <div class="flex justify-between mb-2 text-xs font-bold uppercase tracking-wider">
+                        <span>#Jardín</span>
+                        <span>EN PROCESO</span>
+                    </div>
+                    <h3 class="text-xl font-medium mb-4">Alinear Piedras Camino</h3>
+                    <p class="text-sm mb-4 opacity-80">Crear un sendero visualmente armónico con piedras de río.</p>
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2 text-sm"><input type="checkbox" checked> Comprar piedras</div>
+                        <div class="flex items-center gap-2 text-sm"><input type="checkbox"> Limpiar camino</div>
+                    </div>
+                </div>
+
+                <!-- Project Card (Planning) -->
+                <div class="brutal-card status-red p-5">
+                    <div class="flex justify-between mb-2 text-xs font-bold uppercase tracking-wider">
+                        <span>#LibroNiños</span>
+                        <span>PLANEACIÓN</span>
+                    </div>
+                    <h3 class="text-xl font-medium mb-4">El Gato Azul</h3>
+                    <p class="text-sm mb-4 opacity-80">Libro ilustrado sobre un gato que cambia de color.</p>
+                    <div class="bg-white/50 border-2 border-black p-2 text-xs">
+                        ⚠️ Deadline: 15 de Marzo
+                    </div>
+                </div>
+
+                <!-- Project Card (Finished) -->
+                <div class="brutal-card status-blue p-5">
+                    <div class="flex justify-between mb-2 text-xs font-bold uppercase tracking-wider">
+                        <span>#Manualidades</span>
+                        <span>TERMINADO</span>
+                    </div>
+                    <h3 class="text-xl font-medium mb-4">Manta de Patchwork</h3>
+                    <p class="text-sm mb-4 opacity-80">Regalo terminado para el sobrino.</p>
+                    <div class="text-xs italic">✨ Finalizado hoy a las 10:00 AM</div>
+                </div>
+
+                <!-- Idea Block -->
+                <div class="brutal-card bg-white p-5 border-dashed">
+                    <div class="text-xs font-bold mb-2">#Idea Suelta</div>
+                    <h3 class="text-xl font-medium">App de Presupuestos</h3>
+                    <p class="text-sm opacity-80">Idea de app sencilla para no gastar tanto en hilos.</p>
+                    <button class="mt-4 text-xs underline font-bold">CONVERTIR EN PROYECTO</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Search Bar Overlay (Visual only) -->
+        <div class="absolute top-4 right-8 hidden md:block">
+            <div class="relative">
+                <input type="text" placeholder="¿Pregunta a Kai...?" 
+                       class="brutal-card px-4 py-2 w-64 bg-white focus:w-80 transition-all focus:outline-none">
+                <span class="absolute right-3 top-2 opacity-50">🔍</span>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        function switchTab(tab) {
+            // Hide all views
+            document.getElementById('view-chat').classList.add('hidden');
+            document.getElementById('view-projects').classList.add('hidden');
+            
+            // Deactivate nav items
+            document.getElementById('nav-chat').classList.remove('active');
+            document.getElementById('nav-projects').classList.remove('active');
+            document.getElementById('nav-health').classList.remove('active');
+
+            // Show selected view
+            document.getElementById('view-' + tab).classList.remove('hidden');
+            document.getElementById('nav-' + tab).classList.add('active');
+        }
+
+        // Voice button simple toggle effect
+        const micBtn = document.getElementById('btn-voice');
+        micBtn.addEventListener('click', () => {
+            micBtn.classList.toggle('bg-red-500');
+            micBtn.classList.toggle('animate-pulse');
+        });
+    </script>
+</body>
+</html>
