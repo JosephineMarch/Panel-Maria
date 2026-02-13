@@ -6,7 +6,9 @@ let appInstance = null;
 let chatMessages, chatInput, voiceBtn; // Global refs
 const API_ENDPOINT = 'https://api.cerebras.ai/v1/chat/completions';
 const MODEL = 'llama-3.3-70b';
-let chatHistory = []; 
+// Intentamos cargar el historial guardado, si no existe, empezamos vacío
+let chatHistory = JSON.parse(localStorage.getItem('kai_history')) || [];
+
 
 // --- MAIN FUNCTION ---
 export async function initChat(app) {
@@ -24,39 +26,53 @@ export async function initChat(app) {
     }
 
     console.log('Kai AI Module Initialized (Persona Loaded & Listeners Ready)');
+
+    // Al final de initChat...
+if (chatHistory.length > 0) {
+    chatHistory.forEach(msg => {
+        const sender = msg.role === 'user' ? 'user' : 'kai';
+        // Solo mostramos si el mensaje tiene contenido de texto
+        if (msg.content && typeof msg.content === 'string') {
+             appendMessage(sender, msg.content);
+        }
+    });
+}
+    
 }
 
 // --- PUBLIC API ---
 export async function sendMessageToKai(text) {
     if (!text.trim()) return;
 
-    // 1. Get Context
     const context = getContextSummary(appInstance.store);
-
-    // 2. Build Prompt using Persona
     const systemPrompt = buildSystemPrompt(context);
 
-    // 3. Prepare Messages (AQUÍ AÑADIMOS LA MEMORIA)
     const messages = [
         { role: 'system', content: systemPrompt },
-        ...chatHistory, // Esto le da memoria de la conversación actual
+        ...chatHistory,
         { role: 'user', content: text }
     ];
 
     try {
         const responseText = await callCerebras(messages);
-
-        // Guardamos en el historial para la próxima pregunta
+        
+        // Guardamos en el array
         chatHistory.push({ role: 'user', content: text });
         chatHistory.push({ role: 'assistant', content: responseText });
-        if (chatHistory.length > 10) chatHistory.shift(); // No saturar la memoria
+
+        // Mantenemos solo los últimos 15 para no saturar
+        if (chatHistory.length > 15) chatHistory.shift();
+
+        // --- ESTO ES LO NUEVO: Guardado persistente ---
+        localStorage.setItem('kai_history', JSON.stringify(chatHistory));
 
         await handleKaiResponse(responseText);
     } catch (error) {
         console.error('Kai Brain Freeze:', error);
-        appendMessage('kai', 'Ups, mi cerebro digital se congeló un segundo. 🥶 Intenta otra vez.');
+        appendMessage('kai', 'Ups, 🥶 Intenta otra vez.');
     }
 }
+
 
 
 // --- INTERNAL HELPERS ---
