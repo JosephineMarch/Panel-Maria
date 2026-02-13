@@ -152,23 +152,28 @@ async function handleKaiResponse(rawText) {
         return;
     }
 
-    // 1. BULK UPDATE
+        // 1. BULK UPDATE (Optimizado)
     if (action === 'bulk_update' || (updates && Array.isArray(updates))) {
         const jobs = updates || [];
         if (jobs.length === 0) {
-            appendMessage('kai', response || 'He revisado todo y... ¡tus etiquetas ya están impecables! No he necesitado cambiar nada. ✨');
+            appendMessage('kai', response || 'No he encontrado nada que necesite limpieza. ¡Todo en orden! ✨');
             return;
         }
 
-        // Show Response FIRST if provided
         if (response) appendMessage('kai', response);
 
-        for (const update of jobs) {
-            if (update.id && update.data) {
-                await appInstance.store.updateItem(update.id, update.data);
-            }
-        }
-        if (!response) appendMessage('kai', `¡Listo! He re-etiquetado y organizado esa parte de tu información. ✅`);
+        // Preparamos todas las operaciones para el Store
+        const operations = jobs.map(upd => ({
+            type: 'update',
+            id: upd.id,
+            data: upd.data
+        }));
+
+        // Ejecutamos todo de un golpe usando el performBatchUpdate de tu storage.js
+        await appInstance.store.performBatchUpdate(operations);
+        
+        if (!response) appendMessage('kai', `He organizado ${jobs.length} notas con éxito. ✅`);
+            
 
         // 2. CREATE
     } else if (action === 'create') {
@@ -243,17 +248,17 @@ async function runSequentialCleanup() {
         const batch = items.slice(i, i + BATCH_SIZE);
         const batchContext = batch.map(item => `(ID: ${item.id}) [${item.titulo}] Tags actuales: #${(item.etiquetas || []).join(', #')}`).join('\n');
 
-        const prompt = `
+                const prompt = `
         TAREA: Limpia y simplifica las etiquetas de estos ${batch.length} bloques. 
-        REGLAS:
-        - Si hay etiquetas parecidas, únelas (ej: #Cita y #Reunion -> #Citas).
-        - Usa etiquetas generales: #Trabajo, #Ideas, #Casa, #Salud.
-        - Solo responde con el JSON de bulk_update.
+        REGLAS DE ORO:
+        - NUNCA uses el símbolo '#' en el JSON. Escribe solo el texto (ej: "trabajo", no "#Trabajo").
+        - Si hay etiquetas similares (ej: "cita" y "reunion"), únelas en "citas".
+        - Usa categorías generales: trabajo, casa, ideas, salud, proyectos.
+        - Responde estrictamente con el JSON de bulk_update.
         
         BLOQUES A PROCESAR:
         ${batchContext}
         `;
-
         try {
             // AQUÍ EL CAMBIO: Le pasamos su identidad completa en lugar de un texto vacío
             const resText = await callCerebras([
