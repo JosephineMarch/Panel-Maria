@@ -6,6 +6,7 @@ let appInstance = null;
 let chatMessages, chatInput, voiceBtn; // Global refs
 const API_ENDPOINT = 'https://api.cerebras.ai/v1/chat/completions';
 const MODEL = 'llama-3.3-70b';
+let chatHistory = []; 
 
 // --- MAIN FUNCTION ---
 export async function initChat(app) {
@@ -35,20 +36,28 @@ export async function sendMessageToKai(text) {
     // 2. Build Prompt using Persona
     const systemPrompt = buildSystemPrompt(context);
 
-    // 3. Prepare Messages
+    // 3. Prepare Messages (AQUÍ AÑADIMOS LA MEMORIA)
     const messages = [
         { role: 'system', content: systemPrompt },
+        ...chatHistory, // Esto le da memoria de la conversación actual
         { role: 'user', content: text }
     ];
 
     try {
         const responseText = await callCerebras(messages);
+
+        // Guardamos en el historial para la próxima pregunta
+        chatHistory.push({ role: 'user', content: text });
+        chatHistory.push({ role: 'assistant', content: responseText });
+        if (chatHistory.length > 10) chatHistory.shift(); // No saturar la memoria
+
         await handleKaiResponse(responseText);
     } catch (error) {
         console.error('Kai Brain Freeze:', error);
         appendMessage('kai', 'Ups, mi cerebro digital se congeló un segundo. 🥶 Intenta otra vez.');
     }
 }
+
 
 // --- INTERNAL HELPERS ---
 
@@ -201,6 +210,7 @@ function tryRepairJSON(jsonString) {
 
 // --- SEQUENTIAL CLEANUP LOGIC ---
 
+// --- SEQUENTIAL CLEANUP LOGIC ---
 async function runSequentialCleanup() {
     const items = appInstance.store.items;
     if (!items || items.length === 0) {
@@ -208,24 +218,20 @@ async function runSequentialCleanup() {
         return;
     }
 
-    appendMessage('kai', `🚀 <b>Iniciando Organización Inteligente</b>... Iré bloque por bloque como me pediste. ¡Te aviso al terminar!`);
+    appendMessage('kai', `🚀 <b>Iniciando Organización Inteligente</b>... Iré bloque por bloque. ¡Te aviso al terminar!`);
 
     const BATCH_SIZE = 10;
     let processed = 0;
 
     for (let i = 0; i < items.length; i += BATCH_SIZE) {
         const batch = items.slice(i, i + BATCH_SIZE);
-        const batchLabel = `Bloques ${i + 1} a ${Math.min(i + BATCH_SIZE, items.length)}`;
-
-        console.log(`Kai: Processing ${batchLabel}`);
-
-        // Prepare Batch Prompt
         const batchContext = batch.map(item => `(ID: ${item.id}) [${item.titulo}] Tags actuales: #${(item.etiquetas || []).join(', #')}`).join('\n');
 
         const prompt = `
-        TAREA: Optimiza y limpia las etiquetas de estos ${batch.length} bloques. 
+        TAREA: Limpia y simplifica las etiquetas de estos ${batch.length} bloques. 
         REGLAS:
-        - Usa etiquetas temáticas claras (#Trabajo, #Ideas, #Video, #Salud, etc.).
+        - Si hay etiquetas parecidas, únelas (ej: #Cita y #Reunion -> #Citas).
+        - Usa etiquetas generales: #Trabajo, #Ideas, #Casa, #Salud.
         - Solo responde con el JSON de bulk_update.
         
         BLOQUES A PROCESAR:
@@ -233,7 +239,12 @@ async function runSequentialCleanup() {
         `;
 
         try {
-            const resText = await callCerebras([{ role: 'system', content: buildSystemPrompt('') }, { role: 'user', content: prompt }]);
+            // AQUÍ EL CAMBIO: Le pasamos su identidad completa en lugar de un texto vacío
+            const resText = await callCerebras([
+                { role: 'system', content: buildSystemPrompt('MODO LIMPIEZA: Tu objetivo es reducir y organizar etiquetas.') }, 
+                { role: 'user', content: prompt }
+            ]);
+            
             const parsed = JSON.parse(resText);
 
             if (parsed.updates) {
@@ -243,7 +254,6 @@ async function runSequentialCleanup() {
             }
 
             processed += batch.length;
-            // Update UI with a small progress note every 2 batches or so to not spam
             if (i % 20 === 0) {
                 appendMessage('kai', `⌚ Procesando... (${Math.min(processed, items.length)}/${items.length} bloques analizados)`);
             }
@@ -252,12 +262,12 @@ async function runSequentialCleanup() {
             console.error('Batch error:', e);
         }
 
-        // Small delay to keep UI smooth
         await new Promise(r => setTimeout(r, 500));
     }
 
-    appendMessage('kai', `🏆 <b>¡Misión cumplida!</b> He revisado toda tu información y he optimizado el etiquetado. ¡Todo está en su sitio! 🧠✨`);
+    appendMessage('kai', `🏆 <b>¡Misión cumplida!</b> He simplificado tu sistema de etiquetas. 🧠✨`);
 }
+
 
 function appendMessage(sender, html) {
     const container = document.getElementById('kaiMessages');
