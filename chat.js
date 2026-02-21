@@ -118,94 +118,81 @@ async function callCerebras(messages) {
     return data.choices[0].message.content;
 }
 
-async function handleKaiResponse(rawText) {
-    console.log('Kai Raw Response:', rawText);
-
-    let parsed;
+async function handleKaiResponse(responseText) {
     try {
-        parsed = JSON.parse(rawText);
-    } catch (e) {
-        // Try repair for truncation
-        const repaired = tryRepairJSON(rawText);
-        if (repaired) {
-            parsed = repaired;
-        } else {
-            console.error('JSON Parse Error:', e);
-            // If it starts with a bracket but failed, it's a technical glitch. Don't show it to Maria.
-            if (rawText.trim().startsWith('{')) {
-                appendMessage('kai', '¡Uy! Me he liado un poco intentando procesar eso. 🧠🌀 ¿Podemos probar por partes?');
-            } else {
-                appendMessage('kai', rawText);
-            }
-            return;
-        }
-    }
-
-    const { action, data, id, updates, response } = parsed;
-
-    // --- ORCHESTRATOR ---
-
-    // 0. SEQUENTIAL CLEANUP
-    if (action === 'start_global_cleanup') {
-        if (response) appendMessage('kai', response);
-        runSequentialCleanup();
-        return;
-    }
-
-        // 1. BULK UPDATE (Optimizado)
-    if (action === 'bulk_update' || (updates && Array.isArray(updates))) {
-        const jobs = updates || [];
-        if (jobs.length === 0) {
-            appendMessage('kai', response || 'No he encontrado nada que necesite limpieza. ¡Todo en orden! ✨');
-            return;
-        }
-
-        if (response) appendMessage('kai', response);
-
-        // Preparamos todas las operaciones para el Store
-        const operations = jobs.map(upd => ({
-            type: 'update',
-            id: upd.id,
-            data: upd.data
-        }));
-
-        // Ejecutamos todo de un golpe usando el performBatchUpdate de tu storage.js
-        await appInstance.store.performBatchUpdate(operations);
+        // 1. Intentamos extraer el JSON de la respuesta de KAI
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
         
-        if (!response) appendMessage('kai', `He organizado ${jobs.length} notas con éxito. ✅`);
-            
+        // Si no hay JSON, es solo una respuesta de texto normal
+        if (!jsonMatch) {
+            appendMessage('kai', responseText);
+            return;
+        }
 
-        // 2. CREATE
-    } else if (action === 'create') {
-        const newItem = {
-            id: appInstance.store.generateId(),
-            titulo: data?.titulo || 'Nota de Kai',
-            descripcion: data?.descripcion || '',
-            url: data?.url || '',
-            etiquetas: data?.etiquetas || [],
-            tareas: data?.tareas || [],
-            fecha_creacion: new Date().toISOString()
-        };
-        await appInstance.store.addItem(newItem);
-        appendMessage('kai', response || `¡Guardado! He anotado "<b>${newItem.titulo}</b>" en tus bloques. 🧠`);
+        const command = JSON.parse(jsonMatch[0]);
+        const { action, id, data, response, updates } = command;
 
-        // 3. SINGLE UPDATE
-    } else if (action === 'update') {
-        if (!id) return;
-        await appInstance.store.updateItem(id, data);
-        appendMessage('kai', response || `He actualizado "<b>${data.titulo || 'el bloque'}</b>". ✅`);
+        // 2. Mostrar el mensaje de texto de KAI si existe
+        if (response) {
+            appendMessage('kai', response);
+        } else if (action === 'chat') {
+            appendMessage('kai', responseText);
+        }
 
-        // 4. DELETE
-    } else if (action === 'delete') {
-        if (!id) return;
-        await appInstance.store.deleteItem(id);
-        appendMessage('kai', response || `Borrado. ¡Espacio liberado! 🗑️`);
+        // 3. EJECUTOR DE ACCIONES (El puente con tu Store)
+        switch (action) {
+            case 'create':
+                // Usa el método addItem de tu store.js
+                await appInstance.store.addItem(data);
+                if (!response) appendMessage('kai', "✅ He creado la nota por ti.");
+                break;
 
-        // 5. CHAT / FALLBACK
-    } else {
-        appendMessage('kai', response || "Dime María, ¿en qué más puedo ayudarte? ⚡");
+            case 'update':
+                if (id) {
+                    // Usa el método updateItem de tu store.js
+                    await appInstance.store.updateItem(id, data);
+                    if (!response) appendMessage('kai', "📝 Nota actualizada correctamente.");
+                }
+                break;
+
+            case 'delete':
+                if (id) {
+                    // Usa el método deleteItem de tu store.js
+                    await appInstance.store.deleteItem(id);
+                    if (!response) appendMessage('kai', "🗑️ Nota eliminada.");
+                }
+                break;
+
+            case 'start_global_cleanup':
+                // Llama a la función de limpieza secuencial que ya tienes
+                runSequentialCleanup();
+                break;
+
+            case 'bulk_update':
+                // Para limpiezas masivas usando performBatchUpdate de tu storage.js
+                if (updates && updates.length > 0) {
+                    const operations = updates.map(u => ({
+                        type: 'update',
+                        id: u.id,
+                        data: u.data
+                    }));
+                    await appInstance.store.performBatchUpdate(operations);
+                    if (!response) appendMessage('kai', `He organizado ${updates.length} notas. 🧠`);
+                }
+                break;
+
+            default:
+                // Si la acción no es reconocida pero hay texto, lo mostramos
+                if (!response && action !== 'chat') appendMessage('kai', responseText);
+                break;
+        }
+    } catch (e) {
+        console.error("Error en el ejecutor de KAI:", e);
+        // Si el JSON estaba mal formado, al menos mostramos el texto
+        appendMessage('kai', responseText);
     }
 }
+
 
 function tryRepairJSON(jsonString) {
     let str = jsonString.trim();
