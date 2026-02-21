@@ -96,8 +96,15 @@ export class Store {
         await this.performUpdates([{ type: 'add', data: newItem }]);
     }
 
-    async updateItem(id, data) { await this.performUpdates([{ type: 'update', id, data }]); }
-    async deleteItem(id) { await this.performUpdates([{ type: 'delete', id }]); }
+    // Añadir en la clase Store de store.js
+async updateItem(id, data) {
+    // Normalizar etiquetas antes de guardar
+    if (data.etiquetas) {
+        data.etiquetas = data.etiquetas.map(t => t.replace('#', '').toLowerCase().trim());
+    }
+    await window.storage.performBatchUpdate([{ type: 'update', id, data }], this.items);
+    await this.loadData(); // Recargar para sincronizar
+}
 
     // --- Filters ---
 
