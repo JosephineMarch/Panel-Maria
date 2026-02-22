@@ -53,6 +53,7 @@ export const data = {
             if (filters.type) query = query.eq('type', filters.type);
             if (filters.status) query = query.eq('status', filters.status);
             if (filters.user_id) query = query.eq('user_id', filters.user_id);
+            if (filters.search) query = query.ilike('content', `%${filters.search}%`);
         }
 
         const { data, error } = await query;

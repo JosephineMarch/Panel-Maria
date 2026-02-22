@@ -2,16 +2,81 @@
   "name": "KAI - Tu Segundo Cerebro",
   "short_name": "KAI",
   "description": "PWA ADHD-Friendly para organizar tu vida",
-  "start_url": "/index.html",
+  "start_url": "./index.html",
+  "id": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#7c3aed",
+  "orientation": "portrait",
+  "background_color": "#FFFDF5",
+  "theme_color": "#FFB7C5",
+  "scope": "./",
+  "lang": "es",
+  "categories": ["productivity", "lifestyle"],
   "icons": [
     {
-      "src": "icon.svg",
-      "sizes": "192x192 512x512",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "src": "src/assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "src/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "src/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
-  ]
+  ],
+  "screenshots": [
+    {
+      "src": "1.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nueva Idea",
+      "short_name": "Idea",
+      "description": "Crear una nueva idea",
+      "url": "./index.html?action=new&type=idea",
+      "icons": [{ "src": "src/assets/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Nueva Tarea",
+      "short_name": "Tarea",
+      "description": "Crear una nueva tarea",
+      "url": "./index.html?action=new&type=task",
+      "icons": [{ "src": "src/assets/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "share_target": [
+    {
+      "action": "./index.html",
+      "method": "GET",
+      "params": {
+        "title": "title",
+        "text": "text",
+        "url": "url"
+      }
+    },
+    {
+      "action": "./index.html",
+      "method": "POST",
+      "enctype": "multipart/form-data",
+      "params": {
+        "title": "title",
+        "text": "text",
+        "url": "url",
+        "files": "files"
+      }
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
 }

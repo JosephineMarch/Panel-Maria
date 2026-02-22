@@ -18,8 +18,14 @@ export const ui = {
         voiceBtn: () => document.getElementById('btn-voice-footer') || document.getElementById('btn-voice'),
         btnSubmit: () => document.getElementById('btn-submit'),
         kaiBubble: () => document.getElementById('kai-bubble'),
-        kaiText: document.getElementById('kai-text'),
-        kaiAvatar: document.getElementById('kai-avatar')
+        kaiText: () => document.getElementById('kai-text'),
+        kaiAvatar: () => document.getElementById('kai-avatar'),
+        kaiAvatarContainer: () => document.getElementById('kai-avatar-container'),
+        kaiChatWindow: () => document.getElementById('kai-chat-window'),
+        kaiChatMessages: () => document.getElementById('kai-chat-messages'),
+        kaiChatInput: () => document.getElementById('kai-chat-input'),
+        kaiChatSend: () => document.getElementById('kai-chat-send'),
+        kaiChatClose: () => document.getElementById('kai-chat-close'),
     },
 
     // Configuración de Tipos
@@ -39,7 +45,54 @@ export const ui = {
         if (!this.elements.container()) {
             const container = document.createElement('div');
             container.id = 'items-container';
-            document.getElementById('app').appendChild(container);
+            document.getElementById('app')?.appendChild(container);
+        }
+    },
+
+    toggleKaiChat(show = null) {
+        const window = this.elements.kaiChatWindow();
+        if (!window) return;
+
+        const isHidden = window.classList.contains('scale-0');
+        const shouldShow = show !== null ? show : isHidden;
+
+        if (shouldShow) {
+            window.classList.remove('scale-0', 'opacity-0');
+            window.classList.add('scale-100', 'opacity-100');
+            this.elements.kaiChatInput()?.focus();
+        } else {
+            window.classList.remove('scale-100', 'opacity-100');
+            window.classList.add('scale-0', 'opacity-0');
+        }
+    },
+
+    addKaiMessage(text, isAi = true) {
+        const container = this.elements.kaiChatMessages();
+        if (!container) return;
+
+        const msg = document.createElement('div');
+        msg.className = isAi
+            ? 'bg-brand/10 p-3 rounded-2xl rounded-bl-none text-ink font-medium max-w-[85%] animate-fadeIn'
+            : 'bg-white border border-brand/10 p-3 rounded-2xl rounded-br-none text-ink font-bold max-w-[85%] ml-auto animate-fadeIn';
+
+        msg.innerHTML = this.escapeHtml(text);
+        container.appendChild(msg);
+        container.scrollTop = container.scrollHeight;
+    },
+
+    showKaiThinking(show = true) {
+        const container = this.elements.kaiChatMessages();
+        if (!container) return;
+
+        if (show) {
+            const thinking = document.createElement('div');
+            thinking.id = 'kai-thinking';
+            thinking.className = 'bg-brand/5 p-2 rounded-xl text-[10px] text-ink/40 italic flex items-center gap-2 animate-pulse';
+            thinking.innerHTML = '<span>🧸 Kai está pensando...</span>';
+            container.appendChild(thinking);
+            container.scrollTop = container.scrollHeight;
+        } else {
+            document.getElementById('kai-thinking')?.remove();
         }
     },
 

@@ -17,17 +17,17 @@ export const ai = {
                     .map(result => result[0])
                     .map(result => result.transcript)
                     .join('');
-                
-                window.dispatchEvent(new CustomEvent('voice-result', { 
-                    detail: { transcript } 
+
+                window.dispatchEvent(new CustomEvent('voice-result', {
+                    detail: { transcript }
                 }));
             };
 
             this.recognition.onerror = (event) => {
                 console.error('Voice recognition error:', event.error);
                 this.isRecording = false;
-                window.dispatchEvent(new CustomEvent('voice-error', { 
-                    detail: { error: event.error } 
+                window.dispatchEvent(new CustomEvent('voice-error', {
+                    detail: { error: event.error }
                 }));
             };
 
@@ -55,44 +55,15 @@ export const ai = {
     },
 
     async processWithKai(text) {
-        const { data, error } = await supabase.functions.invoke('kai-process', {
-            body: { text }
-        });
-
-        if (error) throw error;
-        return data;
+        // Ahora usamos el motor de Cerebras
+        const { cerebras } = await import('./cerebras.js');
+        return await cerebras.ask(text);
     },
 
+    // El parseIntent manual queda obsoleto por la IA, 
+    // pero lo mantenemos como fallback básico si fuera necesario
     parseIntent(text) {
-        const lowerText = text.toLowerCase();
-        
-        let type = 'note';
-        let tags = [];
-        let deadline = null;
-
-        if (lowerText.includes('tarea') || lowerText.includes('hacer') || lowerText.includes('to-do')) {
-            type = 'task';
-        } else if (lowerText.includes('proyecto') || lowerText.includes('project')) {
-            type = 'project';
-        } else if (lowerText.includes('recordatorio') || lowerText.includes('recordar')) {
-            type = 'reminder';
-        } else if (lowerText.includes('enlace') || lowerText.includes('link') || lowerText.includes('http')) {
-            type = 'link';
-        } else if (lowerText.includes('humor') || lowerText.includes('me siento') || lowerText.includes('estado')) {
-            type = 'mood';
-        }
-
-        const tagMatch = text.match(/#(\w+)/g);
-        if (tagMatch) {
-            tags = tagMatch.map(t => t.replace('#', ''));
-        }
-
-        const dateMatch = text.match(/(\d{1,2})[\/\-](\d{1,2})(?:\/(\d{2,4}))?/);
-        if (dateMatch) {
-            const year = dateMatch[3] ? parseInt(dateMatch[3]) : new Date().getFullYear();
-            deadline = new Date(year, parseInt(dateMatch[2]) - 1, parseInt(dateMatch[1])).toISOString();
-        }
-
-        return { type, tags, deadline };
+        // Podríamos redirigir esto a la IA también o dejarlo para procesado offline rápido
+        return { type: 'note', tags: [], deadline: null };
     }
 };
