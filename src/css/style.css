@@ -1,0 +1,344 @@
+/* 🎨 KAI - Kawaii Productive Design System */
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&family=Patrick+Hand&display=swap');
+
+:root {
+    --brand: #FFB7C5;
+    --brand-dark: #FF9EAA;
+    --action: #A1DFFF;
+    --success: #B8FFB8;
+    --warning: #FFF2A1;
+    --urgent: #FFB8C5;
+    --cream: #FFFDF5;
+    --ink: #4A4A4A;
+    --app-bg: #FFFDF5;
+    /* Fondo crema suave para el inicio */
+
+    /* Paleta Ultra-Suave por Tipo */
+    --color-proyecto: #F3F0FF;
+    --color-proyecto-dark: #C9B8FF;
+
+    --color-idea: #FFFDEB;
+    --color-idea-dark: #FFF2A1;
+
+    --color-note: #F7F7FF;
+    --color-note-dark: #F0F0FF;
+
+    --color-link: #E6F8FF;
+    --color-link-dark: #A1DFFF;
+
+    --color-alarm: #FFF0F3;
+    --color-alarm-dark: #FFB8C5;
+
+    --color-logro: #F0FFF0;
+    --color-logro-dark: #B8FFB8;
+
+    /* Escala Tipográfica Profesional */
+    --text-xl: 1.25rem;
+    /* Títulos grandes */
+    --text-lg: 1.125rem;
+    /* Títulos de tarjetas */
+    --text-base: 1rem;
+    /* Cuerpo de texto */
+    --text-sm: 0.875rem;
+    /* Texto secundario */
+    --text-xs: 0.75rem;
+    /* Labels y metadatos */
+}
+
+body {
+    background-color: var(--app-bg);
+    background-image: radial-gradient(#E6E6FA 2px, transparent 2px);
+    background-size: 30px 30px;
+    color: var(--ink);
+    font-family: 'Quicksand', sans-serif;
+    margin: 0;
+    min-height: 100vh;
+}
+
+/* Ocultar scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Efecto Sticker */
+.shadow-sticker {
+    box-shadow: 0 6px 0px 0px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease-in-out;
+}
+
+.shadow-sticker:hover {
+    box-shadow: 0 8px 0px 0px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Themes por Tipo (Header Sólido) */
+.theme-proyecto {
+    background-color: var(--color-proyecto-dark);
+    color: var(--ink);
+}
+
+.theme-idea {
+    background-color: var(--color-idea-dark);
+    color: var(--ink);
+}
+
+.theme-note {
+    background-color: var(--action);
+    color: var(--ink);
+    border: none;
+}
+
+.theme-link {
+    background-color: var(--color-link-dark);
+    color: var(--ink);
+    border: none;
+}
+
+.theme-alarm {
+    background-color: var(--brand);
+    color: var(--ink);
+    border: none;
+}
+
+.theme-logro {
+    background-color: var(--color-logro-dark);
+    color: var(--ink);
+}
+
+/* Etiquetas de Tipo Minimalistas */
+.tag-type {
+    display: inline-flex;
+    padding: 2px 10px;
+    border-radius: 8px;
+    font-size: var(--text-xs);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink);
+}
+
+.tag-proyecto {
+    background-color: var(--color-proyecto-dark);
+}
+
+.tag-idea {
+    background-color: var(--color-idea-dark);
+}
+
+.tag-note,
+.tag-task {
+    background-color: var(--action);
+}
+
+/* Celeste para Tareas */
+.tag-link {
+    background-color: var(--color-link-dark);
+}
+
+.tag-alarm,
+.tag-reminder {
+    background-color: var(--brand);
+}
+
+/* Rosa para Alarmas */
+.tag-logro {
+    background-color: var(--color-logro-dark);
+}
+
+.card-body-soft {
+    background-color: var(--color-soft-white);
+}
+
+/* Checkbox Kawaii Custom */
+.kawaii-checkbox {
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s;
+    background: var(--brand);
+    opacity: 0.4;
+    /* Estado desmarcado: rosa suave */
+}
+
+.kawaii-checkbox:checked {
+    opacity: 1;
+    /* Estado marcado: rosa vibrante */
+}
+
+.kawaii-checkbox:checked::after {
+    content: "✓";
+    position: absolute;
+    color: white;
+    font-weight: 800;
+    left: 4px;
+    top: -2px;
+    font-size: 14px;
+}
+
+/* Tipografía e Interactivos */
+.font-hand {
+    font-family: 'Patrick Hand', cursive;
+}
+
+a,
+button:not(.btn-category) {
+    font-weight: 700;
+}
+
+i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Bloque Expandido Estilo */
+.card-body-soft {
+    background-color: var(--color-soft-white);
+}
+
+.card-body-soft input:not(.kawaii-checkbox),
+.card-body-soft textarea,
+.card-body-soft select {
+    background-color: rgba(0, 0, 0, 0.03) !important;
+    border: 1px solid rgba(0, 0, 0, 0.02) !important;
+    transition: all 0.2s ease-in-out;
+}
+
+.card-body-soft input:focus,
+.card-body-soft textarea:focus,
+.card-body-soft select:focus {
+    background-color: white !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.wish-item {
+    background-color: transparent;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.wish-item:hover {
+    background-color: var(--brand);
+    color: white !important;
+    transform: scale(1.05);
+}
+
+/* Clases de Utilidad de Texto (Contraste) */
+.text-proyecto {
+    color: #9B86FA;
+}
+
+.text-idea {
+    color: #C4A400;
+}
+
+.text-note {
+    color: #8F8FFF;
+}
+
+.text-link {
+    color: #008DCF;
+}
+
+.text-alarm {
+    color: #EB4A66;
+}
+
+.text-logro {
+    color: #2D8B2D;
+}
+
+/* ✍️ Jerarquía Tipográfica Semántica Refinada (Bold Estratégico) */
+.txt-title {
+    font-size: var(--text-lg);
+    font-weight: 800;
+    /* Extra Bold para impacto */
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+}
+
+.txt-display {
+    font-size: var(--text-xl);
+    font-weight: 900;
+    /* Black para títulos máximos */
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+}
+
+.txt-body {
+    font-size: var(--text-base);
+    font-weight: 500;
+    line-height: 1.6;
+}
+
+.txt-bold {
+    font-weight: 700;
+    /* Bold estándar para resaltar en el cuerpo */
+}
+
+.txt-label {
+    font-size: var(--text-xs);
+    font-weight: 900;
+    /* Black para que resalten a pesar del tamaño */
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    opacity: 0.55;
+}
+
+.txt-small {
+    font-size: var(--text-sm);
+    font-weight: 700;
+    /* Bold para tarjetas secundarias */
+}
+
+.txt-button {
+    font-size: var(--text-xs);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Estabilización de Rotaciones Humildes */
+#items-container .item-card:nth-child(even) {
+    transform: rotate(0.5deg);
+}
+
+#items-container .item-card:nth-child(odd) {
+    transform: rotate(-0.5deg);
+}
+
+#items-container .item-card:hover {
+    transform: rotate(0) scale(1.01);
+    z-index: 10;
+}
+
+/* Modal Blur */
+.backdrop-blur-sm {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}

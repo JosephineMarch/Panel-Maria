@@ -4,13 +4,318 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel-María V5</title>
-    <link rel="stylesheet" href="style.css">
+    <title>KAI - Tu Segundo Cerebro</title>
+    <meta name="description" content="PWA ADHD-Friendly para organizar tu vida">
+    <meta name="theme-color" content="#7c3aed">
+    <link rel="stylesheet" href="src/css/style.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon.svg">
+
+    <!-- Google Fonts: Quicksand (Rounded) & Patrick Hand (Handwritten) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&family=Patrick+Hand&display=swap"
+        rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Quicksand', 'sans-serif'],
+                        hand: ['Patrick Hand', 'cursive'],
+                    },
+                    colors: {
+                        'cream': '#FFFDF5',
+                        'sugar-pink': '#FFB7C5',
+                        'hot-pink': '#FF69B4',
+                        'soft-blue': '#AEC6CF',
+                        'mint': '#B9FBC0',
+                        'lavender': '#E6E6FA',
+                        'lemon': '#FDFD96',
+                        'peach': '#FFDAC1',
+                        'ink': '#4A4A4A',
+                        'brand': '#FFB7C5',
+                        'brand-dark': '#FF9EAA',
+                        'action': '#AEC6CF',
+                        'success': '#B9FBC0',
+                        'warning': '#FDFD96',
+                        'urgent': '#FFDAC1',
+                        'accent': '#E6E6FA',
+                        'card-bg': '#FFFFFF',
+                        'input-bg': '#F3F4F6',
+                    },
+                    borderRadius: {
+                        'blob': '2rem',
+                    },
+                    boxShadow: {
+                        'bubble': '0 4px 0px 0px rgba(0,0,0,0.05)',
+                        'sticker': '0 6px 0px 0px rgba(0,0,0,0.08)',
+                        'sticker-hover': '0 8px 0px 0px rgba(0,0,0,0.08)',
+                        'pressed': 'inset 0 4px 6px rgba(0,0,0,0.1)',
+                        'float': '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                    },
+                    animation: {
+                        'float': 'float 3s ease-in-out infinite',
+                        'bounce-slow': 'bounce 3s infinite',
+                        'wiggle': 'wiggle 1s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-5px)' },
+                        },
+                        wiggle: {
+                            '0%, 100%': { transform: 'rotate(-3deg)' },
+                            '50%': { transform: 'rotate(3deg)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 </head>
 
-<body>
-    <div id="app"></div>
-    <script src="app.js"></script>
+<body class="bg-cream font-sans text-ink min-h-screen flex flex-col selection:bg-sugar-pink selection:text-white">
+
+    <!-- HEADER + MOOD TRACKER (Persistente) -->
+    <header
+        class="bg-white/80 backdrop-blur-md px-4 py-3 flex justify-between items-center z-50 border-b border-gray-100 sticky top-0 md:px-8">
+        <div class="flex items-center gap-3">
+            <div id="btn-user"
+                class="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-brand p-0.5 cursor-pointer relative group">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=ffdfbf" alt="Avatar"
+                    class="w-full h-full rounded-full bg-peach/20">
+                <div class="absolute bottom-0 right-0 bg-success w-3 h-3 rounded-full border-2 border-white"></div>
+            </div>
+            <div class="hidden sm:block">
+                <h1 class="font-bold text-sm md:text-lg text-ink leading-tight flex items-center gap-1">
+                    KAI Brain <span class="animate-bounce-slow">✨</span>
+                </h1>
+                <div class="flex gap-1 mt-0.5">
+                    <button
+                        class="text-[10px] bg-lavender px-2 py-0.5 rounded-lg hover:bg-sugar-pink hover:text-white transition">😴
+                        Cansada</button>
+                    <button class="text-[10px] bg-lemon px-2 py-0.5 rounded-lg hover:bg-warning transition">⚡
+                        Enfocada</button>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex gap-1 bg-gray-50 p-1 rounded-2xl">
+            <button
+                class="btn-category px-3 py-1 rounded-xl text-xs font-bold transition-all active bg-white shadow-sticker"
+                data-category="all">Todos</button>
+            <button
+                class="btn-category px-3 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-brand transition-all"
+                data-category="proyecto">📁 Proyectos</button>
+            <button
+                class="btn-category px-3 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-brand transition-all"
+                data-category="logro">🏆 Logros</button>
+        </nav>
+
+        <button id="btn-voice" class="text-gray-400 hover:text-brand text-xl transition-transform hover:scale-110">
+            <i class="fa-solid fa-microphone"></i>
+        </button>
+    </header>
+
+    <main id="app" class="flex-1 max-w-5xl mx-auto w-full p-4 md:p-8 space-y-8 pb-32 no-scrollbar">
+        <!-- Navegación Breadcrumb -->
+        <nav id="breadcrumb" class="text-xs font-bold text-gray-400 uppercase tracking-widest ml-2">
+            <a href="#" data-action="home" class="hover:text-brand">Inicio</a>
+        </nav>
+
+        <main>
+            <!-- El input antiguo ha sido movido al footer -->
+
+
+            <!-- Layout de Feed Único (Enesima Style) -->
+            <section id="items-container" class="max-w-2xl mx-auto flex flex-col gap-8 pb-10">
+                <!-- Los items se inyectarán aquí uno debajo de otro -->
+            </section>
+        </main>
+
+        <!-- FOOTER / BARRA DE CAPTURA PRO -->
+        <footer class="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white via-white/80 to-transparent z-40">
+            <div
+                class="bg-white border-2 border-lavender p-2 rounded-[2.5rem] shadow-2xl flex items-center gap-2 max-w-xl mx-auto border-b-4">
+                <button type="button"
+                    class="w-10 h-10 rounded-full bg-gray-50 hover:bg-lavender text-gray-400 hover:text-purple-500 flex items-center justify-center shrink-0 transition text-lg">
+                    <i class="fa-solid fa-image"></i>
+                </button>
+
+                <input type="text" id="item-input" placeholder="¿Qué tienes en mente?"
+                    class="flex-1 bg-transparent text-ink px-2 py-2 text-sm md:text-md font-bold focus:outline-none placeholder-gray-300">
+
+                <div class="flex items-center gap-2 pr-1">
+                    <select id="item-type"
+                        class="hidden md:block bg-gray-50 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase cursor-pointer hover:bg-lavender transition-colors border-none outline-none">
+                        <option value="idea">💡 Idea</option>
+                        <option value="task">✅ Tarea</option>
+                        <option value="proyecto">📁 Proyecto</option>
+                        <option value="reminder">⏰ Alarma</option>
+                        <option value="directorio">🔗 Enlace</option>
+                    </select>
+
+                    <button id="btn-submit"
+                        class="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shrink-0 shadow-sticker active:shadow-pressed transition-all">
+                        <i class="fa-solid fa-plus font-bold"></i>
+                    </button>
+
+                    <!-- Botón Micrófono Central -->
+                    <button id="btn-voice-footer"
+                        class="w-12 h-12 rounded-full bg-gradient-to-tr from-sugar-pink to-hot-pink text-white flex items-center justify-center shrink-0 shadow-lg shadow-pink-200 transform hover:scale-105 active:scale-95 transition border-2 border-white">
+                        <i class="fa-solid fa-microphone text-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </footer>
+
+        <!-- Sidebar Kawaii -->
+        <aside id="sidebar"
+            class="fixed top-0 right-0 w-80 h-full bg-white shadow-float z-50 transform translate-x-full transition-transform duration-300 rounded-l-blob overflow-hidden">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+                <h2 class="text-xl font-bold">Configuración</h2>
+                <button id="btn-close-sidebar" class="text-xl hover:text-brand transition"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6">
+                <div id="auth-form"
+                    class="text-center bg-cream p-8 rounded-blob border-2 border-dashed border-brand/30">
+                    <p class="mb-6 font-bold text-gray-500">¡Conecta tu cerebro!</p>
+                    <button type="button" id="btn-google"
+                        class="w-full bg-white border-2 border-brand text-brand font-bold py-3 px-4 rounded-blob shadow-sticker hover:bg-brand hover:text-white transition-all flex items-center justify-center gap-2">
+                        <span>🌐</span> Google Login
+                    </button>
+                </div>
+                <div id="user-info" class="hidden text-center">
+                    <div
+                        class="w-20 h-20 bg-brand rounded-full mx-auto mb-4 border-4 border-white shadow-sticker flex items-center justify-center text-3xl">
+                        👤</div>
+                    <p class="font-bold mb-6 text-gray-600 truncate" id="user-email"></p>
+                    <button id="btn-logout"
+                        class="w-full bg-urgent text-white font-bold py-3 rounded-blob shadow-sticker hover:brightness-95 transition-all">Cerrar
+                        sesión</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- El Asistente Kai (Floating Widget) -->
+        <div id="kai-widget" class="fixed bottom-10 right-10 z-50 group cursor-pointer">
+            <div id="kai-bubble"
+                class="absolute bottom-20 right-0 bg-white border-4 border-brand p-4 rounded-3xl rounded-br-none shadow-float w-48 opacity-0 pointer-events-none transition-all duration-300 translate-y-4">
+                <p id="kai-text" class="text-xs font-bold text-ink leading-relaxed"></p>
+            </div>
+            <div
+                class="w-20 h-20 bg-white rounded-full border-4 border-brand shadow-float flex items-center justify-center transform transition-transform group-hover:scale-110 active:scale-95 overflow-hidden">
+                <img src="icon.svg" class="w-14 h-14" id="kai-avatar" alt="KAI">
+            </div>
+        </div>
+
+        <!-- Reutilizamos el modal de edición con clases Tailwind -->
+        <div id="modal-edit"
+            class="fixed inset-0 bg-ink/20 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-4">
+            <div class="bg-white w-full max-w-lg rounded-blob shadow-2xl max-h-[90vh] overflow-y-auto p-8 relative">
+                <button class="modal-close absolute top-6 right-6 text-xl hover:text-brand transition"><i
+                        class="fa-solid fa-xmark"></i></button>
+                <h3 class="text-2xl font-bold mb-6 text-brand">Personalizar Bloque</h3>
+
+                <form id="edit-form" class="space-y-6">
+                    <input type="hidden" id="edit-id">
+
+                    <div class="space-y-2">
+                        <label class="font-bold text-sm ml-2">Categoría</label>
+                        <select id="edit-type"
+                            class="w-full bg-input-bg border-none rounded-blob px-4 py-3 font-bold text-ink focus:ring-2 focus:ring-brand"
+                            required>
+                            <option value="idea">💡 Idea</option>
+                            <option value="task">✅ Tarea (Checklist)</option>
+                            <option value="proyecto">📁 Proyecto</option>
+                            <option value="directorio">🔗 Enlace</option>
+                            <option value="logro">🏆 Logro</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="font-bold text-sm ml-2">Título</label>
+                        <input type="text" id="edit-content"
+                            class="w-full bg-input-bg border-none rounded-blob px-6 py-4 font-bold focus:ring-2 focus:ring-brand"
+                            required>
+                    </div>
+
+                    <div id="alarm-section" class="space-y-2">
+                        <label class="font-bold text-sm ml-2">⏰ Programar Alarma (Fecha y Hora)</label>
+                        <div class="flex gap-2">
+                            <input type="date" id="edit-deadline-date"
+                                class="flex-1 bg-input-bg border-none rounded-blob px-4 py-3 font-bold focus:ring-2 focus:ring-brand">
+                            <input type="time" id="edit-deadline-time"
+                                class="flex-1 bg-input-bg border-none rounded-blob px-4 py-3 font-bold focus:ring-2 focus:ring-brand">
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="font-bold text-sm ml-2">Descripción</label>
+                        <textarea id="edit-description"
+                            class="w-full bg-input-bg border-none rounded-blob px-6 py-4 min-h-[100px] focus:ring-2 focus:ring-brand"
+                            placeholder="Añade más detalles aquí..."></textarea>
+                    </div>
+
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center ml-2">
+                            <label class="font-bold text-sm">Tareas</label>
+                            <button type="button" id="btn-add-task"
+                                class="text-brand font-bold text-xs hover:underline">+ Añadir tarea</button>
+                        </div>
+                        <div id="edit-tasks-container" class="space-y-2"></div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="font-bold text-sm ml-2">Enlace Directo</label>
+                        <input type="url" id="edit-url"
+                            class="w-full bg-input-bg border-none rounded-blob px-6 py-4 text-action font-medium"
+                            placeholder="https://...">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="font-bold text-sm ml-2">Etiquetas (separadas por coma)</label>
+                        <input type="text" id="edit-tags"
+                            class="w-full bg-input-bg border-none rounded-blob px-6 py-4 text-brand font-bold">
+                    </div>
+
+                    <div class="flex gap-4 pt-4">
+                        <button type="submit"
+                            class="flex-1 bg-brand text-white txt-button py-2 rounded-blob shadow-sticker hover:bg-brand-dark transition-all">Guardar</button>
+                        <button type="button"
+                            class="flex-1 bg-gray-100 text-gray-500 txt-button py-2 rounded-blob shadow-sticker hover:bg-gray-200 transition-all modal-close">Quizás
+                            luego</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="voice-overlay"
+            class="fixed inset-0 bg-brand/90 backdrop-blur-md z-[200] flex items-center justify-center hidden">
+            <div class="text-center text-white px-8">
+                <div
+                    class="w-32 h-32 bg-white rounded-full mx-auto mb-8 flex items-center justify-center animate-pulse shadow-float">
+                    <span class="text-6xl">🎤</span>
+                </div>
+                <h2 class="text-3xl font-bold mb-4">¡Te escucho!</h2>
+                <p id="voice-text" class="text-xl font-hand mb-10 min-h-[1.5em]"></p>
+                <button id="btn-stop-voice"
+                    class="bg-white text-brand font-bold px-12 py-4 rounded-blob shadow-sticker active:shadow-pressed">Ya
+                    terminé</button>
+            </div>
+        </div>
+        </div>
+
+        <script type="module" src="app.js"></script>
 </body>
 
 </html>

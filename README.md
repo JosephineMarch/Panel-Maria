@@ -29,10 +29,15 @@ deadline	TIMESTAMPTZ	Fecha y hora límite (opcional).
 meta	JSONB	Datos extra flexibles (ej: URL del audio, URL de la imagen, json del checklist, sentimiento del mood).
 embedding	VECTOR(1536)	La representación matemática para que la IA busque por contexto.
 created_at	TIMESTAMPTZ	Fecha de creación.
-4. Arquitectura de Carpetas (Frontend)
-Para mantenerlo ordenado pero escalable con Vanilla JS:
-code
-Text
+### 4. Arquitectura de Carpetas (MVC)
+Para una mantenibilidad total y separación de responsabilidades:
+
+- **src/js/data.js (El Modelo - Los Datos)**: Comunicación exclusiva con Supabase e IndexedDB. Guarda, edita y borra. No conoce el HTML.
+- **src/js/logic.js (El Controlador - El Cerebro)**: Lógica de negocio, integración con IA (Kai) y procesamiento de datos. Decide qué hacer.
+- **src/js/ui.js (La Vista - El HTML/Tailwind)**: Único archivo autorizado para tocar el DOM (`getElementById`, `innerHTML`, etc.).
+> [!IMPORTANT]  
+> Esta separación permite cambiar todo el diseño visual en `ui.js` sin romper la lógica del "cerebro" en `logic.js` ni la base de datos en `data.js`.
+
 /proyecto-kai
 │
 ├── index.html        # La estructura base (lo que ya tienes)
@@ -53,6 +58,10 @@ Text
 │
 ├── manifest.json     # Configuración para instalar como App (PWA)
 └── sw.js             # Service Worker (Para que funcione Offline)
+
+
+
+
 5. Plan de Acción: Paso a Paso
 Aquí es donde empezamos a trabajar. No mires todo el plan, solo el Paso 1.
 🟢 FASE 1: Cimientos y Conexión (Día 1-2)

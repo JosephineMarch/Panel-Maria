@@ -1,2 +1,5 @@
-// Versión 5 - Lógica inicial
-console.log('Panel-María V5 inicializado');
+/**
+ * KAI - Aplicación de Panel Maria
+ * Puente de entrada principal.
+ */
+import './src/js/logic.js';
