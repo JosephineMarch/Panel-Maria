@@ -310,6 +310,36 @@ i {
     opacity: 0.55;
 }
 
+@media (max-width: 768px) {
+    #kai-widget {
+        bottom: 140px !important;
+        /* Más arriba aún para despejar la barra de entrada */
+        right: 15px !important;
+        left: auto !important;
+    }
+
+    #kai-widget>div:last-child {
+        width: 3rem !important;
+        height: 3rem !important;
+        border-width: 0 !important;
+        /* Eliminar borde */
+    }
+
+    #kai-avatar {
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    #kai-bubble {
+        bottom: 3.5rem !important;
+        right: 0 !important;
+        left: auto !important;
+        width: 9rem !important;
+        border-radius: 1.5rem 1.5rem 0 1.5rem !important;
+        /* Pico original a la derecha */
+    }
+}
+
 .txt-small {
     font-size: var(--text-sm);
     font-weight: 700;
