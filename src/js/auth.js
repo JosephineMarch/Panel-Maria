@@ -41,7 +41,10 @@ export const auth = {
 
     async signInWithGoogle() {
         const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: 'google'
+            provider: 'google',
+            options: {
+                redirectTo: 'https://josephinemarch.github.io/Panel-Maria/'
+            }
         });
         if (error) throw error;
         return data;
