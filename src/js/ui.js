@@ -98,13 +98,21 @@ export const ui = {
 
     // --- RENDERIZADO ---
 
-    render(items = []) {
+    render(items = [], isDemo = false) {
         const container = this.elements.container();
         if (!container) return;
 
         container.innerHTML = '';
 
-        if (items.length === 0) {
+        if (isDemo) {
+            container.innerHTML += `
+                <div class="bg-lemon border-2 border-warning p-4 rounded-2xl mb-8 text-center">
+                    <p class="font-bold text-ink">📺 Modo Demo - Inicia sesión para ver tu contenido real</p>
+                </div>
+            `;
+        }
+
+        if (items.length === 0 && !isDemo) {
             container.innerHTML = `
                 <div class="col-span-full py-20 text-center opacity-50">
                     <span class="text-6xl">🏜️</span>
@@ -193,7 +201,7 @@ export const ui = {
                                 <span class="${tagClass} text-[9px] px-2 py-0.5 bg-white/20">${typeConfig.label}</span>
                                 ${deadlineHtml ? `<span class="opacity-60">${deadlineHtml}</span>` : ''}
                             </div>
-                            <h3 class="txt-title truncate text-ink">${this.escapeHtml(item.content)}</h3>
+                            <h3 class="txt-title text-ink">${this.escapeHtml(item.content)}</h3>
                             <!-- Barra de Progreso en Header -->
                             ${item.tareas && item.tareas.length > 0 ? `
                                 <div class="mt-2 flex items-center gap-2 bg-white/20 p-1 px-2 rounded-full">
@@ -213,7 +221,7 @@ export const ui = {
                 <!-- Body Minimalista -->
                 <div class="card-body-soft p-4">
                     <!-- Previsualización de Descripción -->
-                    ${item.descripcion ? `<p class="txt-small text-ink/40 mb-3 italic line-clamp-2">${this.escapeHtml(item.descripcion)}</p>` : ''}
+                    ${item.descripcion ? `<p class="txt-small text-ink/40 mb-3 italic">${this.escapeHtml(item.descripcion)}</p>` : ''}
 
                     <!-- Previsualización de Tareas (Interactiva) -->
                     ${item.tareas && item.tareas.length > 0 ? `
@@ -250,10 +258,7 @@ export const ui = {
 
             // 1. Previsualización de Descripción (para Ideas, Notas, Proyectos)
             if (item.descripcion) {
-                const truncatedDesc = item.descripcion.length > 100
-                    ? item.descripcion.substring(0, 97) + '...'
-                    : item.descripcion;
-                previewHtml += `<p class="txt-small text-ink/40 mt-1 italic line-clamp-2">${this.escapeHtml(truncatedDesc)}</p>`;
+                previewHtml += `<p class="txt-small text-ink/40 mt-1 italic">${this.escapeHtml(item.descripcion)}</p>`;
             }
 
             // 2. Previsualización de Tareas (Checklist)
@@ -315,7 +320,7 @@ export const ui = {
                             <span class="${tagClass} text-[9px] px-2 py-0.5">${typeConfig.label}</span>
                             ${deadlineHtml}
                         </div>
-                        <h3 class="txt-small text-ink truncate group-hover:opacity-70 transition-opacity font-bold">${this.escapeHtml(item.content)}</h3>
+                        <h3 class="txt-small text-ink group-hover:opacity-70 transition-opacity font-bold">${this.escapeHtml(item.content)}</h3>
                         ${progressHtml}
                         ${previewHtml}
                     </div>
@@ -337,12 +342,12 @@ export const ui = {
         card.dataset.expanded = 'true';
 
         const tareasHtml = (item.tareas || []).map((t, idx) => `
-            <div class="flex items-center gap-3 p-2 rounded-xl group/task border-b border-gray-100/50">
-                <input type="checkbox" class="kawaii-checkbox" ${t.completado ? 'checked' : ''} data-index="${idx}">
-                <input type="text" value="${this.escapeHtml(t.titulo)}" 
-                       class="flex-1 bg-transparent border-none font-bold text-sm text-ink outline-none focus:ring-0 inline-task-input" 
-                       placeholder="¿Qué sigue?" data-index="${idx}">
-                <button class="btn-remove-inline text-ink/20 hover:text-ink px-2 transition-colors" data-index="${idx}"><i class="fa-solid fa-xmark"></i></button>
+            <div class="flex items-start gap-3 p-2 rounded-xl group/task border-b border-gray-100/50">
+                <input type="checkbox" class="kawaii-checkbox mt-1" ${t.completado ? 'checked' : ''} data-index="${idx}">
+                <textarea rows="1" 
+                        class="flex-1 bg-transparent border-none font-bold text-sm text-ink outline-none focus:ring-0 inline-task-input resize-none" 
+                        placeholder="¿Qué sigue?" data-index="${idx}">${this.escapeHtml(t.titulo)}</textarea>
+                <button class="btn-remove-inline text-ink/20 hover:text-ink px-2 transition-colors mt-1" data-index="${idx}"><i class="fa-solid fa-xmark"></i></button>
             </div>
         `).join('');
 
@@ -393,7 +398,7 @@ export const ui = {
 
                 <div id="section-desc-${item.id}" class="space-y-2 ${hasDesc ? '' : 'hidden'}">
                     <label class="txt-label ml-1">Descripción</label>
-                    <textarea id="inline-desc-${item.id}" class="w-full bg-white/40 border-none rounded-2xl px-5 py-4 min-h-[100px] txt-body text-ink focus:ring-2 focus:ring-white/50 resize-none outline-none" 
+                    <textarea id="inline-desc-${item.id}" class="w-full bg-white/40 border-none rounded-2xl px-5 py-4 min-h-[60px] txt-body text-ink focus:ring-2 focus:ring-white/50 resize-none outline-none field-sizing-content" 
                               placeholder="Añade detalles, links o pensamientos adicionales...">${item.descripcion || ''}</textarea>
                 </div>
 
@@ -529,15 +534,15 @@ export const ui = {
         const list = document.getElementById(`inline-tasks-list-${id}`);
         if (!list) return;
         const div = document.createElement('div');
-        div.className = 'flex items-center gap-3 p-2 rounded-xl group/task animate-fadeIn border-b border-gray-100/50';
+        div.className = 'flex items-start gap-3 p-2 rounded-xl group/task animate-fadeIn border-b border-gray-100/50';
         div.innerHTML = `
-            <input type="checkbox" class="kawaii-checkbox">
-            <input type="text" class="flex-1 bg-transparent border-none font-bold text-sm text-ink outline-none focus:ring-0 inline-task-input" placeholder="¿Qué sigue?">
-            <button class="btn-remove-inline text-ink/20 hover:text-ink px-2 transition-colors"><i class="fa-solid fa-xmark"></i></button>
+            <input type="checkbox" class="kawaii-checkbox mt-1">
+            <textarea rows="1" class="flex-1 bg-transparent border-none font-bold text-sm text-ink outline-none focus:ring-0 inline-task-input resize-none" placeholder="¿Qué sigue?"></textarea>
+            <button class="btn-remove-inline text-ink/20 hover:text-ink px-2 transition-colors mt-1"><i class="fa-solid fa-xmark"></i></button>
         `;
         div.querySelector('.btn-remove-inline').addEventListener('click', () => div.remove());
         list.appendChild(div);
-        div.querySelector('input[type="text"]').focus();
+        div.querySelector('textarea').focus();
     },
 
     async handleInlineSave(card, item) {
@@ -682,13 +687,13 @@ export const ui = {
         const container = this.elements.tasksContainer();
         if (!container) return;
         const div = document.createElement('div');
-        div.className = 'flex items-center gap-3 bg-gray-50 p-3 rounded-xl border-2 border-transparent hover:border-brand/20 transition-all';
+        div.className = 'flex items-start gap-3 bg-gray-50 p-3 rounded-xl border-2 border-transparent hover:border-brand/20 transition-all';
         div.innerHTML = `
-            <input type="checkbox" class="kawaii-checkbox" ${task.completado ? 'checked' : ''} 
+            <input type="checkbox" class="kawaii-checkbox mt-1" ${task.completado ? 'checked' : ''} 
                    onchange="this.parentElement.querySelector('.task-item-input').dataset.completado = this.checked">
-            <input type="text" class="task-item-input flex-1 bg-transparent border-none font-bold text-ink outline-none" 
-                   value="${this.escapeHtml(task.titulo)}" data-completado="${task.completado}" placeholder="¿Cuál es el siguiente paso?">
-            <button type="button" class="btn-remove-task text-ink/30 hover:text-urgent transition-colors"><i class="fa-solid fa-xmark"></i></button>
+            <textarea rows="1" class="task-item-input flex-1 bg-transparent border-none font-bold text-ink outline-none resize-none" 
+                   data-completado="${task.completado}" placeholder="¿Cuál es el siguiente paso?">${this.escapeHtml(task.titulo)}</textarea>
+            <button type="button" class="btn-remove-task text-ink/30 hover:text-urgent transition-colors mt-1"><i class="fa-solid fa-xmark"></i></button>
         `;
 
         div.querySelector('.btn-remove-task').addEventListener('click', () => div.remove());
@@ -698,7 +703,7 @@ export const ui = {
     // --- VISIBILIDAD & ESTADOS (LEGACY MODAL SUPPORT) ---
 
     toggleSidebar() {
-        this.elements.sidebar()?.classList.toggle('translate-x-full');
+        this.elements.sidebar()?.classList.toggle('-translate-x-full');
     },
 
     // El modal ya no se usa para editar, pero lo mantenemos por si acaso para otros fines

@@ -18,22 +18,184 @@ class KaiController {
         console.log('🧠 KAI: Controlador iniciado.');
         ui.init();
         this.bindEvents();
+        this.startAlarmChecker();
 
+        // Forzar modo demo siempre (para desarrollo)
+        localStorage.removeItem('kaiDemoItems');
+        
         try {
             this.currentUser = await auth.init();
+            console.log('Usuario:', this.currentUser);
             if (this.currentUser) {
                 ui.updateUserInfo(this.currentUser);
                 await this.loadItems();
             } else {
-                ui.render([]);
-                // Podríamos mostrar un mensaje de bienvenida aquí
+                console.log('Cargando demo items...');
+                this.loadDemoItems();
             }
         } catch (error) {
             console.error('Error en inicialización:', error);
-            ui.renderError('Vaya, KAI se ha distraído. ¿Recargamos?');
+            this.loadDemoItems();
         }
 
         ai.init();
+    }
+
+    loadDemoItems() {
+        console.log('loadDemoItems llamado');
+        
+        let demoItems = JSON.parse(localStorage.getItem('kaiDemoItems'));
+        
+        if (!demoItems) {
+            demoItems = [
+                {
+                    id: 'demo-1',
+                    content: 'Proyecto Principal',
+                    type: 'proyecto',
+                    descripcion: 'Este es un proyecto con una descripción muy larga que quiero ver completa sin que se corte. Aquí hay más texto para demostrar que ahora se muestra todo el contenido sin límites de caracteres ni barras de desplazamiento.',
+                    tareas: [
+                        { titulo: 'Tarea con texto muy largo que antes se cortaba y ahora debería mostrarse completo', completado: false },
+                        { titulo: 'Otra tarea normal', completado: true },
+                        { titulo: 'Tarea número tres', completado: false }
+                    ],
+                    deadline: null,
+                    anclado: false,
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 'demo-2',
+                    content: 'Ideas para el Proyecto',
+                    type: 'idea',
+                    descripcion: 'Una idea con descripción muy larga: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.',
+                    tareas: [],
+                    deadline: null,
+                    anclado: false,
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 'demo-3',
+                    content: 'Recordatorio Importante',
+                    type: 'reminder',
+                    descripcion: 'Recordatorio con alarma configurada',
+                    tareas: [],
+                    deadline: new Date(Date.now() + 60000).toISOString(),
+                    anclado: false,
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 'demo-4',
+                    content: 'Lista de Compras',
+                    type: 'task',
+                    descripcion: '',
+                    tareas: [
+                        { titulo: 'Comprar leche', completado: false },
+                        { titulo: 'Pan', completado: false },
+                        { titulo: 'Huevos', completado: false },
+                        { titulo: 'Frutas y verduras frescas del mercado', completado: false }
+                    ],
+                    deadline: null,
+                    anclado: false,
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 'demo-5',
+                    content: 'Enlace útil',
+                    type: 'directorio',
+                    descripcion: 'Mi sitio web favorito',
+                    url: 'https://google.com',
+                    tareas: [],
+                    deadline: null,
+                    anclado: false,
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 'demo-6',
+                    content: '¡Mi Primer Logro!',
+                    type: 'logro',
+                    descripcion: 'He completado todas mis tareas del día',
+                    tareas: [],
+                    deadline: null,
+                    anclado: false,
+                    created_at: new Date().toISOString()
+                }
+            ];
+            localStorage.setItem('kaiDemoItems', JSON.stringify(demoItems));
+        }
+        
+        this.isDemoMode = true;
+        
+        ui.render(demoItems, true);
+    }
+
+    isDemoMode = false;
+
+    async demoUpdateItem(id, updates) {
+        let items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
+        const index = items.findIndex(i => i.id === id);
+        if (index !== -1) {
+            items[index] = { ...items[index], ...updates };
+            localStorage.setItem('kaiDemoItems', JSON.stringify(items));
+            this.loadDemoItems();
+        }
+    }
+
+    async demoDeleteItem(id) {
+        let items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
+        items = items.filter(i => i.id !== id);
+        localStorage.setItem('kaiDemoItems', JSON.stringify(items));
+        this.loadDemoItems();
+    }
+
+    startAlarmChecker() {
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+        
+        setInterval(() => {
+            this.checkAlarms();
+        }, 30000);
+    }
+
+    async checkAlarms() {
+        if (!this.currentUser) return;
+        
+        try {
+            const items = await data.getItems({});
+            const now = new Date();
+            const triggeredIds = JSON.parse(localStorage.getItem('triggeredAlarms') || '[]');
+
+            for (const item of items) {
+                if (item.deadline && !triggeredIds.includes(item.id)) {
+                    const deadline = new Date(item.deadline);
+                    const timeDiff = deadline - now;
+                    
+                    if (timeDiff > -60000 && timeDiff <= 60000) {
+                        triggeredIds.push(item.id);
+                        localStorage.setItem('triggeredAlarms', JSON.stringify(triggeredIds));
+                        
+                        this.triggerAlarm(item);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error checking alarms:', error);
+        }
+    }
+
+    async triggerAlarm(item) {
+        if (Notification.permission === 'granted') {
+            new Notification('⏰ ¡KAI Te Recuerdas!', {
+                body: item.content,
+                icon: 'src/assets/icon-192.png',
+                tag: item.id
+            });
+        }
+        
+        ui.showNotification(`⏰ ¡Hora de: ${item.content}!`, 'warning');
+        
+        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleR4GOKjm');
+        audio.volume = 0.5;
+        audio.play().catch(() => {});
     }
 
     bindEvents() {
@@ -84,7 +246,6 @@ class KaiController {
         // por lo que eliminamos el listener manual de aquí para evitar recargas.
 
         // --- Modals & Sidebar ---
-        document.getElementById('btn-voice')?.addEventListener('click', () => this.toggleVoiceInput());
         document.getElementById('btn-user')?.addEventListener('click', () => ui.toggleSidebar());
         document.getElementById('btn-close-sidebar')?.addEventListener('click', () => ui.toggleSidebar());
         document.getElementById('btn-google')?.addEventListener('click', () => this.handleGoogleLogin());
@@ -93,8 +254,6 @@ class KaiController {
 
         // El botón de voz central en el footer
         document.getElementById('btn-voice-footer')?.addEventListener('click', () => this.toggleVoiceInput());
-        // Compatibilidad con el del header (si existe)
-        document.getElementById('btn-voice')?.addEventListener('click', () => this.toggleVoiceInput());
 
         document.querySelectorAll('.modal-close').forEach(btn => {
             btn.addEventListener('click', () => ui.toggleModal(false));
@@ -186,9 +345,14 @@ class KaiController {
 
     async dataUpdateInline(id, updates) {
         try {
-            await data.updateItem(id, updates);
-            ui.showNotification('¡Bloque actualizado! ✨', 'success');
-            // Nota: El refresco lo maneja el UI o el controlador después de llamar a esto
+            if (this.isDemoMode) {
+                await this.demoUpdateItem(id, updates);
+                ui.showNotification('¡Bloque actualizado! ✨', 'success');
+            } else {
+                await data.updateItem(id, updates);
+                ui.showNotification('¡Bloque actualizado! ✨', 'success');
+                await this.loadItems();
+            }
         } catch (error) {
             console.error('Error al actualizar inline:', error);
             ui.showNotification('No pude guardar los cambios del bloque.', 'error');
@@ -197,9 +361,14 @@ class KaiController {
 
     async deleteItem(id) {
         try {
-            await data.deleteItem(id);
-            ui.showNotification('Recuerdo borrado con éxito. 🗑️', 'info');
-            await this.loadItems();
+            if (this.isDemoMode) {
+                await this.demoDeleteItem(id);
+                ui.showNotification('Recuerdo borrado con éxito. 🗑️', 'info');
+            } else {
+                await data.deleteItem(id);
+                ui.showNotification('Recuerdo borrado con éxito. 🗑️', 'info');
+                await this.loadItems();
+            }
         } catch (error) {
             console.error('Error al borrar:', error);
             ui.showNotification('No pude borrar eso. ¿Reintentamos?', 'error');
@@ -207,6 +376,12 @@ class KaiController {
     }
 
     async loadItems() {
+        if (this.isDemoMode) {
+            const items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
+            ui.render(items, true);
+            return;
+        }
+        
         ui.renderLoading();
         try {
             const filters = { parent_id: this.currentParentId };

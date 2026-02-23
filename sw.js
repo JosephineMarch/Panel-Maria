@@ -75,14 +75,17 @@ async function networkFirst(request) {
 
 async function staleWhileRevalidate(request) {
     const cachedResponse = await caches.match(request);
+    
     const fetchPromise = fetch(request).then((networkResponse) => {
         if (networkResponse.ok) {
+            const responseToCache = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => {
-                cache.put(request, networkResponse.clone());
+                cache.put(request, responseToCache);
             });
         }
         return networkResponse;
     }).catch(() => null);
+    
     return cachedResponse || fetchPromise || new Response('Offline', { status: 503 });
 }
 

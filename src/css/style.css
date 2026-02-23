@@ -372,3 +372,27 @@ i {
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
 }
+
+/* Textareas auto-expand */
+textarea.inline-task-input,
+textarea.task-item-input {
+    field-sizing: content;
+    min-height: 1.5em;
+    overflow: hidden;
+}
+
+textarea.inline-task-input:focus,
+textarea.task-item-input:focus {
+    min-height: 3em;
+}
+
+/* Card body sin scroll */
+.card-body-soft {
+    overflow-y: visible !important;
+    max-height: none !important;
+}
+
+/* Auto text-growareas globally */
+textarea {
+    field-sizing: content;
+}

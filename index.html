@@ -131,10 +131,6 @@
                 class="btn-category px-3 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-brand transition-all"
                 data-category="logro">🏆 Logros</button>
         </nav>
-
-        <button id="btn-voice" class="text-gray-400 hover:text-brand text-xl transition-transform hover:scale-110">
-            <i class="fa-solid fa-microphone"></i>
-        </button>
     </header>
 
     <main id="app" class="flex-1 max-w-5xl mx-auto w-full p-4 md:p-8 space-y-8 pb-32 no-scrollbar">
@@ -191,7 +187,7 @@
 
         <!-- Sidebar Kawaii -->
         <aside id="sidebar"
-            class="fixed top-0 right-0 w-80 h-full bg-white shadow-float z-50 transform translate-x-full transition-transform duration-300 rounded-l-blob overflow-hidden">
+            class="fixed top-0 left-0 w-80 h-full bg-white shadow-float z-50 transform -translate-x-full transition-transform duration-300 rounded-r-blob overflow-hidden">
             <div class="p-6 border-b border-gray-100 flex justify-between items-center">
                 <h2 class="text-xl font-bold">Configuración</h2>
                 <button id="btn-close-sidebar" class="text-xl hover:text-brand transition"><i
@@ -307,7 +303,7 @@
                     <div class="space-y-2">
                         <label class="font-bold text-sm ml-2">Descripción</label>
                         <textarea id="edit-description"
-                            class="w-full bg-input-bg border-none rounded-blob px-6 py-4 min-h-[100px] focus:ring-2 focus:ring-brand"
+                            class="w-full bg-input-bg border-none rounded-blob px-6 py-4 min-h-[60px] focus:ring-2 focus:ring-brand resize-none field-sizing-content"
                             placeholder="Añade más detalles aquí..."></textarea>
                     </div>
 
