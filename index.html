@@ -132,37 +132,37 @@
                     class="btn-category px-3 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-brand transition-all"
                     data-category="directorio">🔗 Enlaces</button>
             </div>
-            <div class="flex gap-1 flex-wrap items-center">
-                <button
-                    class="btn-tag px-2 py-0.5 rounded-lg text-[10px] font-semibold text-brand border border-transparent hover:border-brand transition-all"
-                    data-tag="logro">logro</button>
-                <button
-                    class="btn-tag px-2 py-0.5 rounded-lg text-[10px] font-semibold text-brand border border-transparent hover:border-brand transition-all"
-                    data-tag="salud">salud</button>
-                <button
-                    class="btn-tag px-2 py-0.5 rounded-lg text-[10px] font-semibold text-brand border border-transparent hover:border-brand transition-all"
-                    data-tag="emocion">emocion</button>
-                <button
-                    class="btn-tag px-2 py-0.5 rounded-lg text-[10px] font-semibold text-brand border border-transparent hover:border-brand transition-all"
-                    data-tag="alarma">alarma</button>
-            </div>
         </nav>
     </header>
 
-    <main id="app" class="flex-1 max-w-5xl mx-auto w-full p-4 md:p-8 space-y-8 pb-32 no-scrollbar">
+    <main id="app" class="flex-1 max-w-5xl mx-auto w-full p-4 md:p-8 space-y-6 pb-32 no-scrollbar">
         <!-- Navegación Breadcrumb -->
         <nav id="breadcrumb" class="text-xs font-bold text-gray-400 uppercase tracking-widest ml-2">
             <a href="#" data-action="home" class="hover:text-brand">Inicio</a>
         </nav>
 
-        <div>
-            <!-- El input antiguo ha sido movido al footer -->
+        <!-- Filtros de Etiquetas -->
+        <div class="flex gap-2 flex-wrap items-center max-w-2xl mx-auto">
+
+            <button
+                class="btn-tag px-3 py-1 rounded-full text-sm font-medium text-ink/60 border border-brand/30 hover:border-brand hover:text-brand transition-all"
+                data-tag="logro">logro</button>
+            <button
+                class="btn-tag px-3 py-1 rounded-full text-sm font-medium text-ink/60 border border-brand/30 hover:border-brand hover:text-brand transition-all"
+                data-tag="salud">salud</button>
+            <button
+                class="btn-tag px-3 py-1 rounded-full text-sm font-medium text-ink/60 border border-brand/30 hover:border-brand hover:text-brand transition-all"
+                data-tag="emocion">emocion</button>
+            <button
+                class="btn-tag px-3 py-1 rounded-full text-sm font-medium text-ink/60 border border-brand/30 hover:border-brand hover:text-brand transition-all"
+                data-tag="alarma">alarma</button>
+        </div>
 
 
-            <!-- Layout de Feed Único (Enesima Style) -->
-            <section id="items-container" class="max-w-2xl mx-auto flex flex-col gap-8 pb-10">
-                <!-- Los items se inyectarán aquí uno debajo de otro -->
-            </section>
+        <!-- Layout de Feed Único (Enesima Style) -->
+        <section id="items-container" class="max-w-2xl mx-auto flex flex-col gap-8 pb-10">
+            <!-- Los items se inyectarán aquí uno debajo de otro -->
+        </section>
         </div>
 
         <!-- FOOTER / BARRA DE CAPTURA PRO -->
