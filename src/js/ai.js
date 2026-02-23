@@ -70,17 +70,39 @@ export const ai = {
     detectarBitacora(texto) {
         const textoLower = texto.toLowerCase().trim();
         
-        // Patrones para detectar acciones personales
+        // Patrones para comandos explícitos de bitácora (prioridad alta)
+        const patronesExplicit = [
+            { regex: /^bitácora:\s*(.+)/i, momento: 'ahora' },
+            { regex: /^bitacora:\s*(.+)/i, momento: 'ahora' },
+            { regex: /^(?:anota|guarda|registra|pon|escribe)\s+(?:en\s+)?bitácora[:\s]*(.+)/i, momento: 'ahora' },
+            { regex: /^(?:para|voy a|quiero)\s+bitácora[:\s]*(.+)/i, momento: 'ahora' }
+        ];
+
+        for (const patron of patronesExplicit) {
+            const match = textoLower.match(patron.regex);
+            if (match && match[1]) {
+                const contenido = match[1].trim().replace(/,$/, '');
+                return {
+                    esBitacora: true,
+                    contenido: this.capitalizar(contenido),
+                    momento: patron.momento,
+                    textoOriginal: texto,
+                    explicito: true
+                };
+            }
+        }
+        
+        // Patrones para detectar acciones personales (prioridad normal)
         const patrones = [
-            { regex: /^hoy\s+(hice|terminé|empecé|comí|estudié|trabajé|bañé|acabé|levanté|cené)\s+(.+)/i, momento: 'hoy' },
-            { regex: /^ayer\s+(hice|terminé|empecé|comí|estudié|trabajé|bañé|acabé|levanté|cené)\s+(.+)/i, momento: 'ayer' },
-            { regex: /^esta\s+(mañana|tarde|noche)\s+(hice|terminé|empecé|comí|estudié|trabajé|bañé|acabé)\s+(.+)/i, momento: 'esta mañana' },
-            { regex: /^acabo\s+de\s+(.+)/i, momento: 'ahora' },
-            { regex: /^me\s+(bañé|levanté|desperté|acosté|cambié)\s*/i, momento: 'ahora' },
-            { regex: /^(hice|terminé|empecé|comí|estudié|trabajé|bañé|acabé|levanté|cené)\s+(.+)/i, momento: 'hoy' },
-            { regex: /^ya\s+(hice|terminé|acabé)\s+(.+)/i, momento: 'hoy' },
-            { regex: /^terminé\s+de\s+(.+)/i, momento: 'hoy' },
-            { regex: /^empecé\s+a\s+(.+)/i, momento: 'hoy' }
+            { regex: /^hoy\s+(hice|terminé|empecé|comí|estudié|trabajé|bañé|acabé|levanté|cené)\s+(.+)/i, momento: 'hoy', conContenido: true },
+            { regex: /^ayer\s+(hice|terminé|empecé|comí|estudié|trabajé|bañé|acabé|levanté|cené)\s+(.+)/i, momento: 'ayer', conContenido: true },
+            { regex: /^esta\s+(mañana|tarde|noche)\s+(hice|terminé|empecé|comí|estudié|trabajé|bañé|acabé)\s+(.+)/i, momento: 'esta mañana', conContenido: true },
+            { regex: /^acabo\s+de\s+(.+)/i, momento: 'ahora', conContenido: true },
+            { regex: /^me\s+(bañé|levanté|desperté|acosté|cambié)\s*$/i, momento: 'ahora', conContenido: false },
+            { regex: /^(hice|terminé|empecé|comí|estudié|trabajé|bañé|acabé|levanté|cené)\s+(.+)/i, momento: 'hoy', conContenido: true },
+            { regex: /^ya\s+(hice|terminé|acabé)\s+(.+)/i, momento: 'hoy', conContenido: true },
+            { regex: /^terminé\s+de\s+(.+)/i, momento: 'hoy', conContenido: true },
+            { regex: /^empecé\s+a\s+(.+)/i, momento: 'hoy', conContenido: true }
         ];
 
         for (const patron of patrones) {
@@ -89,16 +111,21 @@ export const ai = {
                 let contenido = '';
                 
                 // Extraer el contenido según el patrón
-                if (match.length === 3) {
-                    contenido = match[2].trim();
-                } else if (match.length === 4) {
-                    contenido = match[3].trim();
+                if (patron.conContenido) {
+                    if (match.length === 3) {
+                        contenido = match[2].trim();
+                    } else if (match.length === 4) {
+                        contenido = match[3].trim();
+                    }
+                } else {
+                    // Para patrones sin contenido adicional (como "me bañé")
+                    contenido = match[1] ? match[1] : match[0];
                 }
                 
                 // Limpiar contenido
                 contenido = contenido.replace(/,$/, '').trim();
                 
-                // Si el contenido está vacío, usar la palabra clave + lo que sigue
+                // Si el contenido está vacío, usar la palabra clave
                 if (!contenido && match[1]) {
                     contenido = match[1];
                 }
@@ -107,12 +134,13 @@ export const ai = {
                     esBitacora: true,
                     contenido: this.capitalizar(contenido),
                     momento: patron.momento,
-                    textoOriginal: texto
+                    textoOriginal: texto,
+                    explicito: false
                 };
             }
         }
 
-        return { esBitacora: false, contenido: '', momento: '', textoOriginal: texto };
+        return { esBitacora: false, contenido: '', momento: '', textoOriginal: texto, explicito: false };
     },
 
     capitalizar(str) {

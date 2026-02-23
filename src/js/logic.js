@@ -25,9 +25,9 @@ class KaiController {
         this.bindEvents();
         this.startAlarmChecker();
 
-        // Solo forzar demo en desarrollo
+        // En desarrollo, mostrar botón para generar demo
+        // En producción, nunca mostrar demo
         if (this.isDevMode) {
-            localStorage.removeItem('kaiDemoItems');
             this.mostrarControlesDemo(true);
         } else {
             this.mostrarControlesDemo(false);
@@ -40,20 +40,49 @@ class KaiController {
                 ui.updateUserInfo(this.currentUser);
                 await this.loadItems();
             } else {
-                console.log('Cargando demo items...');
-                this.loadDemoItems();
+                // No cargar demo automáticamente - esperar a que usuario lo genere
+                console.log('Sin sesión - esperando generación de demo...');
+                this.loadEmptyState();
             }
         } catch (error) {
             console.error('Error en inicialización:', error);
-            this.loadDemoItems();
+            this.loadEmptyState();
         }
 
         ai.init();
     }
 
+    loadEmptyState() {
+        // Mostrar estado vacío con opción de generar demo
+        ui.render([], false);
+        const container = ui.elements.container();
+        if (container) {
+            container.innerHTML = `
+                <div class="text-center py-12">
+                    <div class="text-6xl mb-4">🧠</div>
+                    <h2 class="text-2xl font-bold text-ink mb-2">Bienvenido a KAI</h2>
+                    <p class="text-ink/60 mb-6">Tu segundo cerebro está listo para usar</p>
+                    <button id="btn-generate-demo" class="bg-brand text-white font-bold py-3 px-8 rounded-blob shadow-sticker hover:bg-brand-dark transition-all">
+                        ✨ Probar con datos de ejemplo
+                    </button>
+                </div>
+            `;
+            document.getElementById('btn-generate-demo')?.addEventListener('click', () => {
+                regenerarDemoItems();
+                this.isDemoMode = true;
+                this.loadItems();
+            });
+        }
+    }
+
     esDesarrollo() {
         const hostname = window.location.hostname;
-        return hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('localhost');
+        return hostname === 'localhost' || 
+               hostname === '127.0.0.1' || 
+               hostname === '0.0.0.0' ||
+               hostname.includes('localhost') ||
+               window.location.href.includes('localhost') ||
+               window.location.href.includes('127.0.0.1');
     }
 
     mostrarControlesDemo(mostrar) {
@@ -223,12 +252,8 @@ class KaiController {
         document.getElementById('btn-logout')?.addEventListener('click', () => this.handleLogout());
         document.getElementById('btn-add-task')?.addEventListener('click', () => ui.addTaskToModal());
         document.getElementById('btn-regenerate-demo')?.addEventListener('click', () => {
-            if (this.isDevMode) {
-                regenerarDemoItems();
-                location.reload();
-            } else {
-                ui.showNotification('Esta función solo está disponible en desarrollo', 'warning');
-            }
+            regenerarDemoItems();
+            location.reload();
         });
 
         // El botón de voz central en el footer
@@ -244,6 +269,16 @@ class KaiController {
         ui.elements.kaiChatSend()?.addEventListener('click', () => this.handleKaiChat());
         ui.elements.kaiChatInput()?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.handleKaiChat();
+        });
+
+        // --- Demo Regenerate Button ---
+        document.addEventListener('click', (e) => {
+            const regenerateBtn = e.target.closest('#btn-regenerate-in-timeline');
+            if (regenerateBtn) {
+                regenerarDemoItems();
+                this.isDemoMode = true;
+                this.loadItems();
+            }
         });
 
         // --- Delegación de Items (Stickers) ---
@@ -284,6 +319,7 @@ class KaiController {
 
         // Detectar si es una entrada de bitácora
         const bitacoraData = ai.detectarBitacora(content);
+        console.log('🔍 Detección bitácora:', content, '->', bitacoraData);
         
         if (bitacoraData.esBitacora) {
             await this.crearBitacora(bitacoraData);
@@ -373,13 +409,23 @@ class KaiController {
 
             ui.clearMainInput();
             
-            // Mensaje especial de bitácora
-            const mensajesBitacora = [
-                '¡Anotado en tu bitácora! ✨ Sigue así',
-                '¡Guardado! Estás haciendo grandi cosas 🧸💪',
-                '¡Perfecto! Tu bitácora crece ✨',
-                '¡Lo tengo! Cada paso cuenta 🌟'
-            ];
+            // Mensaje especial de bitácora según tipo
+            let mensajesBitacora;
+            if (bitacoraData.explicito) {
+                mensajesBitacora = [
+                    '¡Anotado en bitácora! 📝✨',
+                    '¡Guardado en tu bitácora! 📝',
+                    '¡Perfecto! Lo tienes registrado 📝🌟'
+                ];
+            } else {
+                mensajesBitacora = [
+                    '¡Lo detecté! Guardado en tu bitácora ✨',
+                    '¡Anotado en tu bitácora! ✨ Sigue así',
+                    '¡Guardado! Estás haciendo grandi cosas 🧸💪',
+                    '¡Perfecto! Tu bitácora crece ✨',
+                    '¡Lo tengo! Cada paso cuenta 🌟'
+                ];
+            }
             const mensajeAleatorio = mensajesBitacora[Math.floor(Math.random() * mensajesBitacora.length)];
             ui.showNotification(mensajeAleatorio, 'success');
             
@@ -442,8 +488,12 @@ class KaiController {
     }
 
     async loadItems() {
-        if (this.isDemoMode) {
-            const items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
+        // Verificar si hay demo items en localStorage
+        const demoItems = JSON.parse(localStorage.getItem('kaiDemoItems') || 'null');
+        
+        if (this.isDemoMode || demoItems) {
+            this.isDemoMode = true;
+            const items = demoItems || [];
             ui.render(items, true);
             return;
         }

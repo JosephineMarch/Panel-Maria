@@ -107,8 +107,14 @@ export const ui = {
 
         if (isDemo) {
             container.innerHTML += `
-                <div class="bg-lemon border-2 border-warning p-4 rounded-2xl mb-8 text-center">
-                    <p class="font-bold text-ink">📺 Modo Demo - Inicia sesión para ver tu contenido real</p>
+                <div class="bg-lemon border-2 border-warning p-4 rounded-2xl mb-6 text-center flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div>
+                        <p class="font-bold text-ink">📺 Modo Demo</p>
+                        <p class="text-xs text-ink/60">Inicia sesión para ver tu contenido real</p>
+                    </div>
+                    <button id="btn-regenerate-in-timeline" class="bg-white border-2 border-warning text-ink font-bold py-2 px-4 rounded-xl text-sm shadow-sticker hover:brightness-95 transition-all">
+                        🔄 Regenerar Demo
+                    </button>
                 </div>
             `;
         }
@@ -251,6 +257,24 @@ export const ui = {
                 `;
             }
 
+            // Para bitácora, mostrar fecha/hora de creación
+            let bitacoraFechaHtml = '';
+            if (item.type === 'bitacora' && item.created_at) {
+                const fecha = new Date(item.created_at);
+                const hoy = new Date();
+                const esHoy = fecha.toDateString() === hoy.toDateString();
+                
+                const fechaStr = esHoy 
+                    ? `Hoy ${fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
+                    : fecha.toLocaleDateString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                
+                bitacoraFechaHtml = `
+                    <span class="txt-label text-bitacora font-bold flex items-center gap-1">
+                        <i class="fa-solid fa-calendar-check"></i> ${fechaStr}
+                    </span>
+                `;
+            }
+
             const typeConfig = this.typeConfig[item.type] || this.typeConfig.idea;
             const tagClass = `tag-type tag-${item.type}`;
 
@@ -317,9 +341,10 @@ export const ui = {
                         <span class="text-2xl">${typeConfig.icon}</span>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2 mb-1">
+                        <div class="flex items-center gap-2 mb-1 flex-wrap">
                             <span class="${tagClass} text-[9px] px-2 py-0.5">${typeConfig.label}</span>
                             ${deadlineHtml}
+                            ${bitacoraFechaHtml}
                         </div>
                         <h3 class="txt-small text-ink group-hover:opacity-70 transition-opacity font-bold">${this.escapeHtml(item.content)}</h3>
                         ${progressHtml}
@@ -356,6 +381,26 @@ export const ui = {
         const hasTasks = (item.tareas || []).length > 0;
         const hasUrl = !!item.url;
         const hasAlarm = !!item.deadline;
+        
+        // Fecha para bitácora
+        let bitacoraInfoHtml = '';
+        if (item.type === 'bitacora' && item.created_at) {
+            const fecha = new Date(item.created_at);
+            const fechaDisplay = fecha.toLocaleString('es-ES', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            bitacoraInfoHtml = `
+                <div class="bg-bitacora/30 p-3 rounded-xl flex items-center gap-2 text-bitacora">
+                    <i class="fa-solid fa-calendar-check"></i>
+                    <span class="text-sm font-bold">${fechaDisplay}</span>
+                </div>
+            `;
+        }
 
         card.innerHTML = `
             <!-- Header Sólido -->
@@ -383,8 +428,11 @@ export const ui = {
                             <option value="directorio" ${item.type === 'directorio' ? 'selected' : ''}>🔗 Enlace</option>
                             <option value="reminder" ${item.type === 'reminder' || item.type === 'alarma' ? 'selected' : ''}>⏰ Alarma</option>
                             <option value="logro" ${item.type === 'logro' ? 'selected' : ''}>🏆 Logro</option>
+                            <option value="bitacora" ${item.type === 'bitacora' ? 'selected' : ''}>📝 Bitácora</option>
                         </select>
                     </div>
+                    
+                    ${bitacoraInfoHtml}
                     
                     <div id="section-alarm-${item.id}" class="space-y-2 ${hasAlarm ? '' : 'hidden'}">
                         <label class="txt-label ml-1">⏰ Alarma</label>
