@@ -37,7 +37,8 @@ export const ui = {
         directorio: { color: 'link', icon: '🔗', solid: 'theme-link', label: 'ENLACE' },
         reminder: { color: 'alarm', icon: '⏰', solid: 'theme-alarm', label: 'ALARMA' },
         alarm: { color: 'alarm', icon: '⏰', solid: 'theme-alarm', label: 'ALARMA' },
-        task: { color: 'note', icon: '✅', solid: 'theme-note', label: 'TAREA' } // Tarea = Checklist
+        task: { color: 'note', icon: '✅', solid: 'theme-note', label: 'TAREA' }, // Tarea = Checklist
+        bitacora: { color: 'bitacora', icon: '📝', solid: 'theme-bitacora', label: 'BITÁCORA' }
     },
 
     init() {

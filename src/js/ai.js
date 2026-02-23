@@ -65,5 +65,57 @@ export const ai = {
     parseIntent(text) {
         // Podríamos redirigir esto a la IA también o dejarlo para procesado offline rápido
         return { type: 'note', tags: [], deadline: null };
+    },
+
+    detectarBitacora(texto) {
+        const textoLower = texto.toLowerCase().trim();
+        
+        // Patrones para detectar acciones personales
+        const patrones = [
+            { regex: /^hoy\s+(hice|terminé|empecé|comí|estudié|trabajé|bañé|acabé|levanté|cené)\s+(.+)/i, momento: 'hoy' },
+            { regex: /^ayer\s+(hice|terminé|empecé|comí|estudié|trabajé|bañé|acabé|levanté|cené)\s+(.+)/i, momento: 'ayer' },
+            { regex: /^esta\s+(mañana|tarde|noche)\s+(hice|terminé|empecé|comí|estudié|trabajé|bañé|acabé)\s+(.+)/i, momento: 'esta mañana' },
+            { regex: /^acabo\s+de\s+(.+)/i, momento: 'ahora' },
+            { regex: /^me\s+(bañé|levanté|desperté|acosté|cambié)\s*/i, momento: 'ahora' },
+            { regex: /^(hice|terminé|empecé|comí|estudié|trabajé|bañé|acabé|levanté|cené)\s+(.+)/i, momento: 'hoy' },
+            { regex: /^ya\s+(hice|terminé|acabé)\s+(.+)/i, momento: 'hoy' },
+            { regex: /^terminé\s+de\s+(.+)/i, momento: 'hoy' },
+            { regex: /^empecé\s+a\s+(.+)/i, momento: 'hoy' }
+        ];
+
+        for (const patron of patrones) {
+            const match = textoLower.match(patron.regex);
+            if (match) {
+                let contenido = '';
+                
+                // Extraer el contenido según el patrón
+                if (match.length === 3) {
+                    contenido = match[2].trim();
+                } else if (match.length === 4) {
+                    contenido = match[3].trim();
+                }
+                
+                // Limpiar contenido
+                contenido = contenido.replace(/,$/, '').trim();
+                
+                // Si el contenido está vacío, usar la palabra clave + lo que sigue
+                if (!contenido && match[1]) {
+                    contenido = match[1];
+                }
+
+                return {
+                    esBitacora: true,
+                    contenido: this.capitalizar(contenido),
+                    momento: patron.momento,
+                    textoOriginal: texto
+                };
+            }
+        }
+
+        return { esBitacora: false, contenido: '', momento: '', textoOriginal: texto };
+    },
+
+    capitalizar(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
     }
 };

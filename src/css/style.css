@@ -32,6 +32,9 @@
     --color-logro: #F0FFF0;
     --color-logro-dark: #B8FFB8;
 
+    --color-bitacora: #E8F4F8;
+    --color-bitacora-dark: #A8D8EA;
+
     /* Escala Tipográfica Profesional */
     --text-xl: 1.25rem;
     /* Títulos grandes */
@@ -127,6 +130,11 @@ body {
     color: var(--ink);
 }
 
+.theme-bitacora {
+    background-color: var(--color-bitacora-dark);
+    color: var(--ink);
+}
+
 /* Etiquetas de Tipo Minimalistas */
 .tag-type {
     display: inline-flex;
@@ -165,6 +173,10 @@ body {
 /* Rosa para Alarmas */
 .tag-logro {
     background-color: var(--color-logro-dark);
+}
+
+.tag-bitacora {
+    background-color: var(--color-bitacora-dark);
 }
 
 .card-body-soft {

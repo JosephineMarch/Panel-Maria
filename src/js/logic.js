@@ -4,6 +4,7 @@ import { ui } from './ui.js';
 import { auth } from './auth.js';
 import { ai } from './ai.js';
 import { cerebras } from './cerebras.js';
+import { generarDemoData, regenerarDemoItems } from './demo-data.js';
 
 class KaiController {
     constructor() {
@@ -16,12 +17,21 @@ class KaiController {
 
     async init() {
         console.log('🧠 KAI: Controlador iniciado.');
+        
+        // Detectar si estamos en desarrollo (localhost)
+        this.isDevMode = this.esDesarrollo();
+        
         ui.init();
         this.bindEvents();
         this.startAlarmChecker();
 
-        // Forzar modo demo siempre (para desarrollo)
-        localStorage.removeItem('kaiDemoItems');
+        // Solo forzar demo en desarrollo
+        if (this.isDevMode) {
+            localStorage.removeItem('kaiDemoItems');
+            this.mostrarControlesDemo(true);
+        } else {
+            this.mostrarControlesDemo(false);
+        }
         
         try {
             this.currentUser = await auth.init();
@@ -41,84 +51,26 @@ class KaiController {
         ai.init();
     }
 
+    esDesarrollo() {
+        const hostname = window.location.hostname;
+        return hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('localhost');
+    }
+
+    mostrarControlesDemo(mostrar) {
+        const controls = document.getElementById('demo-controls');
+        if (controls) {
+            controls.style.display = mostrar ? 'block' : 'none';
+        }
+    }
+
     loadDemoItems() {
         console.log('loadDemoItems llamado');
         
         let demoItems = JSON.parse(localStorage.getItem('kaiDemoItems'));
         
         if (!demoItems) {
-            demoItems = [
-                {
-                    id: 'demo-1',
-                    content: 'Proyecto Principal',
-                    type: 'proyecto',
-                    descripcion: 'Este es un proyecto con una descripción muy larga que quiero ver completa sin que se corte. Aquí hay más texto para demostrar que ahora se muestra todo el contenido sin límites de caracteres ni barras de desplazamiento.',
-                    tareas: [
-                        { titulo: 'Tarea con texto muy largo que antes se cortaba y ahora debería mostrarse completo', completado: false },
-                        { titulo: 'Otra tarea normal', completado: true },
-                        { titulo: 'Tarea número tres', completado: false }
-                    ],
-                    deadline: null,
-                    anclado: false,
-                    created_at: new Date().toISOString()
-                },
-                {
-                    id: 'demo-2',
-                    content: 'Ideas para el Proyecto',
-                    type: 'idea',
-                    descripcion: 'Una idea con descripción muy larga: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.',
-                    tareas: [],
-                    deadline: null,
-                    anclado: false,
-                    created_at: new Date().toISOString()
-                },
-                {
-                    id: 'demo-3',
-                    content: 'Recordatorio Importante',
-                    type: 'reminder',
-                    descripcion: 'Esta alarma debería sonar en 2 minutos',
-                    tareas: [],
-                    deadline: new Date(Date.now() + 120000).toISOString(), // 2 minutos desde ahora
-                    anclado: false,
-                    created_at: new Date().toISOString()
-                },
-                {
-                    id: 'demo-4',
-                    content: 'Lista de Compras',
-                    type: 'task',
-                    descripcion: '',
-                    tareas: [
-                        { titulo: 'Comprar leche', completado: false },
-                        { titulo: 'Pan', completado: false },
-                        { titulo: 'Huevos', completado: false },
-                        { titulo: 'Frutas y verduras frescas del mercado', completado: false }
-                    ],
-                    deadline: null,
-                    anclado: false,
-                    created_at: new Date().toISOString()
-                },
-                {
-                    id: 'demo-5',
-                    content: 'Enlace útil',
-                    type: 'directorio',
-                    descripcion: 'Mi sitio web favorito',
-                    url: 'https://google.com',
-                    tareas: [],
-                    deadline: null,
-                    anclado: false,
-                    created_at: new Date().toISOString()
-                },
-                {
-                    id: 'demo-6',
-                    content: '¡Mi Primer Logro!',
-                    type: 'logro',
-                    descripcion: 'He completado todas mis tareas del día',
-                    tareas: [],
-                    deadline: null,
-                    anclado: false,
-                    created_at: new Date().toISOString()
-                }
-            ];
+            // Usar generador automático de demo data
+            demoItems = generarDemoData();
             localStorage.setItem('kaiDemoItems', JSON.stringify(demoItems));
         }
         
@@ -270,6 +222,14 @@ class KaiController {
         document.getElementById('btn-google')?.addEventListener('click', () => this.handleGoogleLogin());
         document.getElementById('btn-logout')?.addEventListener('click', () => this.handleLogout());
         document.getElementById('btn-add-task')?.addEventListener('click', () => ui.addTaskToModal());
+        document.getElementById('btn-regenerate-demo')?.addEventListener('click', () => {
+            if (this.isDevMode) {
+                regenerarDemoItems();
+                location.reload();
+            } else {
+                ui.showNotification('Esta función solo está disponible en desarrollo', 'warning');
+            }
+        });
 
         // El botón de voz central en el footer
         document.getElementById('btn-voice-footer')?.addEventListener('click', () => this.toggleVoiceInput());
@@ -322,6 +282,14 @@ class KaiController {
         const { content, type } = ui.getMainInputData();
         if (!content) return;
 
+        // Detectar si es una entrada de bitácora
+        const bitacoraData = ai.detectarBitacora(content);
+        
+        if (bitacoraData.esBitacora) {
+            await this.crearBitacora(bitacoraData);
+            return;
+        }
+
         if (!this.currentUser && !this.isDemoMode) {
             ui.showNotification('¡Ups! Necesitas entrar para que Kai recuerde esto.', 'warning');
             ui.toggleSidebar();
@@ -365,6 +333,60 @@ class KaiController {
         } catch (error) {
             console.error('Error al crear:', error);
             ui.showNotification('KAI no pudo guardar eso. ¿Intentamos de nuevo?', 'error');
+        }
+    }
+
+    async crearBitacora(bitacoraData) {
+        try {
+            const now = new Date();
+            const horaFormateada = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+            
+            const contenidoBitacora = `${bitacoraData.contenido} — ${bitacoraData.momento === 'ahora' ? 'Ahora' : bitacoraData.momento} ${horaFormateada}`;
+
+            if (this.isDemoMode) {
+                const newItem = {
+                    id: 'demo-' + Date.now(),
+                    content: contenidoBitacora,
+                    type: 'bitacora',
+                    parent_id: this.currentParentId,
+                    tags: ['bitacora', 'accion'],
+                    descripcion: '',
+                    url: '',
+                    tareas: [],
+                    deadline: null,
+                    anclado: false,
+                    meta: { momento: bitacoraData.momento },
+                    created_at: new Date().toISOString()
+                };
+                let items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
+                items.unshift(newItem);
+                localStorage.setItem('kaiDemoItems', JSON.stringify(items));
+            } else if (this.currentUser) {
+                await data.createItem({
+                    content: contenidoBitacora,
+                    type: 'bitacora',
+                    parent_id: this.currentParentId,
+                    tags: ['bitacora', 'accion'],
+                    meta: { momento: bitacoraData.momento }
+                });
+            }
+
+            ui.clearMainInput();
+            
+            // Mensaje especial de bitácora
+            const mensajesBitacora = [
+                '¡Anotado en tu bitácora! ✨ Sigue así',
+                '¡Guardado! Estás haciendo grandi cosas 🧸💪',
+                '¡Perfecto! Tu bitácora crece ✨',
+                '¡Lo tengo! Cada paso cuenta 🌟'
+            ];
+            const mensajeAleatorio = mensajesBitacora[Math.floor(Math.random() * mensajesBitacora.length)];
+            ui.showNotification(mensajeAleatorio, 'success');
+            
+            await this.loadItems();
+        } catch (error) {
+            console.error('Error al crear bitácora:', error);
+            ui.showNotification('No pude guardar en la bitácora. ¿Reintentamos?', 'error');
         }
     }
 
