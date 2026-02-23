@@ -120,36 +120,42 @@
             </div>
         </div>
 
-        <nav class="flex gap-1 bg-gray-50 p-1 rounded-2xl flex-wrap">
-            <!-- Tipos -->
-            <button
-                class="btn-category px-3 py-1 rounded-xl text-xs font-bold transition-all active bg-white shadow-sticker"
-                data-category="all">Todos</button>
-            <button
-                class="btn-category px-3 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-brand transition-all"
-                data-category="nota">📝 Notas</button>
-            <button
-                class="btn-category px-3 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-brand transition-all"
-                data-category="proyecto">📁 Proyectos</button>
-            <button
-                class="btn-category px-3 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-brand transition-all"
-                data-category="task">✅ Tareas</button>
-            <button
-                class="btn-category px-3 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-brand transition-all"
-                data-category="directorio">🔗 Enlaces</button>
-            <button
-                class="btn-category px-3 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-brand transition-all"
-                data-category="logro">🏆 Logros</button>
+        <nav class="flex flex-col gap-2">
+            <!-- Tipos Principales -->
+            <div class="flex gap-1 bg-gray-100 p-1 rounded-2xl flex-wrap">
+                <span class="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider self-center">Tipos</span>
+                <button
+                    class="btn-category px-3 py-1 rounded-xl text-xs font-bold transition-all active bg-white shadow-sticker"
+                    data-category="all">Todos</button>
+                <button
+                    class="btn-category px-3 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-brand transition-all"
+                    data-category="nota">📝 Notas</button>
+                <button
+                    class="btn-category px-3 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-brand transition-all"
+                    data-category="proyecto">📁 Proyectos</button>
+                <button
+                    class="btn-category px-3 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-brand transition-all"
+                    data-category="task">✅ Tareas</button>
+                <button
+                    class="btn-category px-3 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-brand transition-all"
+                    data-category="directorio">🔗 Enlaces</button>
+                <button
+                    class="btn-category px-3 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-brand transition-all"
+                    data-category="logro">🏆 Logros</button>
+            </div>
             <!-- Tags -->
-            <button
-                class="btn-category px-3 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-brand transition-all"
-                data-tag="bitacora">✨ Acciones</button>
-            <button
-                class="btn-category px-3 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-brand transition-all"
-                data-tag="salud">💪 Salud</button>
-            <button
-                class="btn-category px-3 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-brand transition-all"
-                data-tag="emocion">💭 Emociones</button>
+            <div class="flex gap-1 flex-wrap items-center ml-2">
+                <span class="px-2 py-0.5 text-[9px] font-bold text-gray-400 uppercase tracking-wider border-l-2 border-lavender pl-2">Tags</span>
+                <button
+                    class="btn-tag px-2 py-0.5 rounded-lg text-[10px] font-semibold text-gray-500 hover:bg-lavender hover:text-purple-600 transition-all border border-transparent hover:border-purple-200"
+                    data-tag="bitacora">✨ Acciones</button>
+                <button
+                    class="btn-tag px-2 py-0.5 rounded-lg text-[10px] font-semibold text-gray-500 hover:bg-mint hover:text-green-600 transition-all border border-transparent hover:border-green-200"
+                    data-tag="salud">💪 Salud</button>
+                <button
+                    class="btn-tag px-2 py-0.5 rounded-lg text-[10px] font-semibold text-gray-500 hover:bg-lemon hover:text-yellow-600 transition-all border border-transparent hover:border-yellow-200"
+                    data-tag="emocion">💭 Emociones</button>
+            </div>
         </nav>
     </header>
 
