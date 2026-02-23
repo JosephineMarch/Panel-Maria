@@ -106,18 +106,18 @@ TIPOS DE ACCIÓN DISPONIBLES:
 
 REGLAS CRÍTICAS:
 - UUIDs: Busca SIEMPRE el ID en el contexto proporcionado. El ID es un UUID formato "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-- TIPOS DE ELEMENTOS: Usa estos valores EXACTOS: 'idea', 'task', 'proyecto', 'logro', 'directorio'
+- TIPOS DE ELEMENTOS: Usa estos valores EXACTOS: 'nota', 'task', 'proyecto', 'logro', 'directorio'
 - FECHAS: Formato ISO8601 (YYYY-MM-DDTHH:MM:SS)
 - TONO: Cariñosa, eficiencia, emojis 🧸✨🌈
 - SEGURIDAD: Nunca inventes IDs. Si no lo encuentra, usa SEARCH primero.
 
 EJEMPLOS DE ACCIONES:
-- "Crea una idea sobre viajes" → CREATE_ITEM {type: "idea", content: "Viajes"}
-- "Cambia la idea de gatos a proyecto" → UPDATE_ITEM {id: "UUID", updates: {type: "proyecto"}}
+- "Crea una nota sobre viajes" → CREATE_ITEM {type: "nota", content: "Viajes"}
+- "Cambia la nota de gatos a proyecto" → UPDATE_ITEM {id: "UUID", updates: {type: "proyecto"}}
 - "Borra eso" → DELETE_ITEM {id: "UUID"}
 - "Marca la primera tarea de proyectos" → TOGGLE_TASK {id: "UUID", taskIndex: 0, completed: true}
 - "Entra en el proyecto viajes" → OPEN_PROJECT {id: "UUID"}
-- "Edita la idea de gatos" → OPEN_EDIT {id: "UUID"}
+- "Edita la nota de gatos" → OPEN_EDIT {id: "UUID"}
 
 MEMORIA DE CONVERSACIÓN:
 ${JSON.stringify(this.history.slice(-4))}

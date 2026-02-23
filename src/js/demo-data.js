@@ -2,12 +2,12 @@
 // Generador de datos demo para pruebas sin conexión
 // NO afecta el funcionamiento de la app - solo para testing
 //
-// Tipos: nota, task, proyecto, directorio, logro
-// Tags: bitacora, accion, salud, emocion, alarma
+// Tipos: nota, tarea, proyecto, directorio, alarma, logro
+// Tags: logro, salud, emocion, alarma
 
 export function generarDemoData() {
     const ahora = new Date();
-    
+
     return [
         // Proyecto
         {
@@ -53,7 +53,7 @@ export function generarDemoData() {
         {
             id: 'demo-4',
             content: 'Lista de Compras',
-            type: 'task',
+            type: 'tarea',
             descripcion: '',
             tareas: [
                 { titulo: 'Comprar leche', completado: false },
@@ -91,14 +91,14 @@ export function generarDemoData() {
             anclado: false,
             created_at: new Date(ahora.getTime() - 259200000).toISOString()
         },
-        // Nota con tag accion (como bitácora)
+        // Nota con tag salud
         {
             id: 'demo-7',
             content: 'Hice ejercicio',
             type: 'nota',
             descripcion: '',
             tareas: [],
-            tags: ['bitacora', 'accion'],
+            tags: ['salud'],
             deadline: null,
             anclado: false,
             created_at: new Date(ahora.getTime() - 3600000).toISOString()

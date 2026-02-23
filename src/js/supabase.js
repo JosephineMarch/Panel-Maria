@@ -6,24 +6,46 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export const CONFIG = {
-    types: ['note', 'task', 'project', 'reminder', 'link', 'mood', 'voice'],
-    statuses: ['inbox', 'active', 'completed', 'archived'],
+    // Tipos canónicos — TODOS EN ESPAÑOL
+    types: ['nota', 'tarea', 'proyecto', 'directorio', 'alarma', 'logro'],
+
+    // Mapa de migración: convierte tipos antiguos (inglés/mixtos) al tipo español correcto
+    migrarTipo(tipo) {
+        const mapa = {
+            'note': 'nota',
+            'task': 'tarea',
+            'project': 'proyecto',
+            'link': 'directorio',
+            'reminder': 'alarma',
+            'alarm': 'alarma',
+            'voice': 'nota',
+            'mood': 'nota',
+            // ya en español — pass-through
+            'nota': 'nota',
+            'tarea': 'tarea',
+            'proyecto': 'proyecto',
+            'directorio': 'directorio',
+            'alarma': 'alarma',
+            'logro': 'logro',
+        };
+        return mapa[tipo] || 'nota';
+    },
+
     typeIcons: {
-        note: '📝',
-        task: '✅',
-        project: '📁',
-        reminder: '⏰',
-        link: '🔗',
-        mood: '💭',
-        voice: '🎤'
+        nota: '📝',
+        tarea: '✅',
+        proyecto: '📁',
+        directorio: '🔗',
+        alarma: '⏰',
+        logro: '🏆',
     },
     typeColors: {
-        note: '#fef3c7',
-        task: '#d1fae5',
-        project: '#e0e7ff',
-        reminder: '#fee2e2',
-        link: '#dbeafe',
-        mood: '#fce7f3',
-        voice: '#f3e8ff'
+        nota: '#fef3c7',
+        tarea: '#d1fae5',
+        proyecto: '#e0e7ff',
+        directorio: '#dbeafe',
+        alarma: '#fee2e2',
+        logro: '#fce7f3',
     }
 };
+

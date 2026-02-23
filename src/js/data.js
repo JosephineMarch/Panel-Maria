@@ -11,7 +11,7 @@ export const data = {
         const item = {
             user_id: user.id,
             content: itemData.content,
-            type: itemData.type || 'note',
+            type: itemData.type || 'nota',
             parent_id: itemData.parent_id || null,
             status: itemData.status || 'inbox',
             descripcion: itemData.descripcion || '',

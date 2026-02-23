@@ -117,16 +117,16 @@ const ShareUtils = {
         }
         
         if (url && !text) return 'directorio';
-        if (text.length > 100) return 'idea';
+        if (text.length > 100) return 'nota';
         
-        return 'idea';
+        return 'nota';
     },
 
     getTypeIcon(type) {
         const icons = {
             task: 'fa-check',
             proyecto: 'fa-folder',
-            idea: 'fa-lightbulb',
+            nota: 'fa-sticky-note',
             directorio: 'fa-link',
             logro: 'fa-trophy',
             reminder: 'fa-bell'
@@ -138,19 +138,19 @@ const ShareUtils = {
         const colors = {
             task: { bg: 'bg-lemon', text: 'text-yellow-600', icon: 'text-yellow-600' },
             proyecto: { bg: 'bg-action/20', text: 'text-action', icon: 'text-action' },
-            idea: { bg: 'bg-mint/20', text: 'text-green-600', icon: 'text-green-600' },
+            nota: { bg: 'bg-mint/20', text: 'text-green-600', icon: 'text-green-600' },
             directorio: { bg: 'bg-brand/10', text: 'text-brand', icon: 'text-brand' },
             logro: { bg: 'bg-purple-100', text: 'text-purple-600', icon: 'text-purple-600' },
             reminder: { bg: 'bg-peach/20', text: 'text-orange-600', icon: 'text-orange-600' }
         };
-        return colors[type] || colors.idea;
+        return colors[type] || colors.nota;
     },
 
     getTypeLabel(type) {
         const labels = {
             task: 'Tarea',
             proyecto: 'Proyecto',
-            idea: 'Idea',
+            nota: 'Nota',
             directorio: 'Enlace',
             logro: 'Logro',
             reminder: 'Recordatorio'
@@ -203,7 +203,7 @@ const ShareUtils = {
                                 ${this.getTypeLabel(suggestedType)}
                             </button>
                             
-                            ${['idea', 'task', 'proyecto', 'directorio'].filter(t => t !== suggestedType).slice(0, 3).map(type => `
+                            ${['nota', 'task', 'proyecto', 'directorio'].filter(t => t !== suggestedType).slice(0, 3).map(type => `
                                 <button class="share-option bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2 px-3 rounded-xl flex items-center gap-2 transition text-sm"
                                         data-type="${type}" data-url="${url || ''}" data-title="${title || url}">
                                     <i class="fa-solid ${this.getTypeIcon(type)}"></i>
@@ -253,18 +253,18 @@ const ShareUtils = {
         try {
             const { cerebras } = await import('./cerebras.js');
             
-            const prompt = `Analiza este contenido y clasifica qué tipo de elemento es en KAI (idea, tarea, proyecto, enlace, logro o recordatorio). 
+            const prompt = `Analiza este contenido y clasifica qué tipo de elemento es en KAI (nota, tarea, proyecto, enlace, logro o recordatorio). 
             
 Contenido: "${text}"
 ${url ? `URL: ${url}` : ''}
 
-Responde SOLO con una palabra: idea, tarea, proyecto, directorio, logro o reminder`;
+Responde SOLO con una palabra: nota, tarea, proyecto, directorio, logro o reminder`;
 
             const response = await cerebras.ask(prompt);
             const type = response.toLowerCase().trim().replace(/[.\s]/g, '');
             
-            const validTypes = ['idea', 'tarea', 'proyecto', 'directorio', 'logro', 'reminder'];
-            const matchedType = validTypes.find(t => type.includes(t)) || 'idea';
+            const validTypes = ['nota', 'tarea', 'proyecto', 'directorio', 'logro', 'reminder'];
+            const matchedType = validTypes.find(t => type.includes(t)) || 'nota';
             
             this.saveSharedItem(matchedType, text, url);
             

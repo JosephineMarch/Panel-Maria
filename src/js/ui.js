@@ -28,17 +28,16 @@ export const ui = {
         kaiChatClose: () => document.getElementById('kai-chat-close'),
     },
 
-    // Configuración de Tipos
+    // Configuración de tipos — TODOS EN ESPAÑOL
     typeConfig: {
-        proyecto: { color: 'proyecto', icon: '📁', solid: 'theme-proyecto', label: 'PROYECTO' },
-        logro: { color: 'logro', icon: '🏆', solid: 'theme-logro', label: 'LOGRO' },
         nota: { color: 'nota', icon: '📝', solid: 'theme-nota', label: 'NOTA' },
-        idea: { color: 'nota', icon: '📝', solid: 'theme-nota', label: 'NOTA' },
-        directorio: { color: 'link', icon: '🔗', solid: 'theme-link', label: 'ENLACE' },
-        reminder: { color: 'alarm', icon: '⏰', solid: 'theme-alarm', label: 'ALARMA' },
-        alarm: { color: 'alarm', icon: '⏰', solid: 'theme-alarm', label: 'ALARMA' },
-        task: { color: 'task', icon: '✅', solid: 'theme-task', label: 'TAREA' }
+        tarea: { color: 'tarea', icon: '✅', solid: 'theme-tarea', label: 'TAREA' },
+        proyecto: { color: 'proyecto', icon: '📁', solid: 'theme-proyecto', label: 'PROYECTO' },
+        directorio: { color: 'directorio', icon: '🔗', solid: 'theme-directorio', label: 'ENLACE' },
+        alarma: { color: 'alarma', icon: '⏰', solid: 'theme-alarma', label: 'ALARMA' },
+        logro: { color: 'logro', icon: '🏆', solid: 'theme-logro', label: 'LOGRO' },
     },
+
 
     init() {
         // Asegurar que el contenedor existe
@@ -122,7 +121,7 @@ export const ui = {
             container.innerHTML = `
                 <div class="col-span-full py-20 text-center opacity-50">
                     <span class="text-6xl">🏜️</span>
-                    <p class="mt-4 font-bold text-ink">Bandeja vacía. ¡Suelta una idea!</p>
+                    <p class="mt-4 font-bold text-ink">Bandeja vacía. ¡Anota algo!</p>
                 </div>
             `;
             return;
@@ -156,15 +155,19 @@ export const ui = {
     },
 
     updateCardContent(card, item, expanded = false) {
-        const config = this.typeConfig[item.type] || this.typeConfig['idea'];
-        const isProject = item.type === 'proyecto' || item.type === 'project';
-        const isReminder = item.type === 'reminder' || item.type === 'alarma';
-        const isAchievement = item.type === 'logro';
+        // Normalizar tipo — convierte tipos viejos en inglés a español
+        const tipoNorm = CONFIG.migrarTipo(item.type);
+        const itemNorm = { ...item, type: tipoNorm };
+
+        const config = this.typeConfig[tipoNorm] || this.typeConfig['nota'];
+        const isProject = tipoNorm === 'proyecto';
+        const isReminder = tipoNorm === 'alarma';
+        const isAchievement = tipoNorm === 'logro';
 
         if (expanded) {
-            this.renderExpandedCard(card, item, config);
+            this.renderExpandedCard(card, itemNorm, config);
         } else {
-            this.renderCollapsedCard(card, item, config, isProject, isReminder, isAchievement);
+            this.renderCollapsedCard(card, itemNorm, config, isProject, isReminder, isAchievement);
         }
     },
 
@@ -184,7 +187,7 @@ export const ui = {
             card.className = `group item-card bg-white rounded-[2rem] shadow-sticker border-none overflow-hidden mb-8 transition-all duration-300`;
             card.dataset.expanded = 'false';
 
-            const typeConfig = this.typeConfig[item.type] || this.typeConfig.note;
+            const typeConfig = this.typeConfig[item.type] || this.typeConfig['nota'];
             const tagClass = `tag-type tag-${item.type}`;
 
             let deadlineHtml = '';
@@ -262,11 +265,11 @@ export const ui = {
                 const fecha = new Date(item.created_at);
                 const hoy = new Date();
                 const esHoy = fecha.toDateString() === hoy.toDateString();
-                
-                const fechaStr = esHoy 
+
+                const fechaStr = esHoy
                     ? `Hoy ${fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
                     : fecha.toLocaleDateString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-                
+
                 fechaHtml = `
                     <span class="txt-label text-gray-400 flex items-center gap-1">
                         <i class="fa-regular fa-clock"></i> ${fechaStr}
@@ -274,7 +277,7 @@ export const ui = {
                 `;
             }
 
-            const typeConfig = this.typeConfig[item.type] || this.typeConfig.idea;
+            const typeConfig = this.typeConfig[item.type] || this.typeConfig.nota;
             const tagClass = `tag-type tag-${item.type}`;
 
             // Previsualización Rica de Contenido
@@ -380,19 +383,17 @@ export const ui = {
         const hasTasks = (item.tareas || []).length > 0;
         const hasUrl = !!item.url;
         const hasAlarm = !!item.deadline;
-        
+
         // Tags del item
-        const tagsHtml = (item.tags && item.tags.length > 0) 
+        const tagsHtml = (item.tags && item.tags.length > 0)
             ? `<div class="flex gap-2 flex-wrap mt-3">
-                ${item.tags.map(tag => `<span class="text-xs px-2 py-1 rounded-full ${
-                    tag === 'alarma' ? 'bg-pink-200 text-pink-700' :
-                    tag === 'salud' ? 'bg-red-200 text-red-700' :
+                ${item.tags.map(tag => `<span class="text-xs px-2 py-1 rounded-full ${tag === 'alarma' ? 'bg-pink-200 text-pink-700' :
+                tag === 'salud' ? 'bg-red-200 text-red-700' :
                     tag === 'emocion' ? 'bg-purple-200 text-purple-700' :
-                    tag === 'bitacora' || tag === 'accion' ? 'bg-blue-200 text-blue-700' :
-                    tag === 'logro' ? 'bg-green-200 text-green-700' :
-                    'bg-gray-200 text-gray-700'
+                        tag === 'logro' ? 'bg-green-200 text-green-700' :
+                            'bg-gray-200 text-gray-700'
                 }">${tag}</span>`).join('')}
-               </div>` 
+               </div>`
             : '';
 
         card.innerHTML = `
@@ -413,13 +414,12 @@ export const ui = {
                 <!-- Secciones de Contenido (Dinámicas) -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-2">
-                        <label class="txt-label ml-1">Categoría</label>
+                        <label class="txt-label ml-1">Tipo</label>
                         <select id="inline-type-${item.id}" class="w-full bg-white/40 border-none rounded-2xl px-4 py-3 txt-small text-ink focus:ring-2 focus:ring-white/50 outline-none">
-                            <option value="idea" ${item.type === 'idea' || item.type === 'note' ? 'selected' : ''}>📝 Nota</option>
+                            <option value="nota" ${item.type === 'nota' || item.type === 'idea' || item.type === 'note' ? 'selected' : ''}>📝 Nota</option>
                             <option value="task" ${item.type === 'task' ? 'selected' : ''}>✅ Tarea (Checklist)</option>
                             <option value="proyecto" ${item.type === 'proyecto' ? 'selected' : ''}>📁 Proyecto</option>
                             <option value="directorio" ${item.type === 'directorio' ? 'selected' : ''}>🔗 Enlace</option>
-                            <option value="reminder" ${item.type === 'reminder' || item.type === 'alarma' ? 'selected' : ''}>⏰ Alarma</option>
                             <option value="logro" ${item.type === 'logro' ? 'selected' : ''}>🏆 Logro</option>
                         </select>
                     </div>
@@ -489,15 +489,15 @@ export const ui = {
     },
 
     expandCard(card, item) {
+        let hadExpanded = false;
         document.querySelectorAll('[data-expanded="true"]').forEach(c => {
             if (c !== card) {
-                const otherId = c.dataset.id;
                 c.dataset.expanded = 'false';
-                // Para restaurar el estado collapsed, necesitamos el item original.
-                // Como no lo tenemos aquí, lo delegamos al controlador para re-renderizar.
-                if (window.kai) window.kai.loadItems();
+                hadExpanded = true;
             }
         });
+        // Recargar una sola vez si había otra tarjeta expandida
+        if (hadExpanded && window.kai) window.kai.loadItems();
 
         this.updateCardContent(card, item, true);
         card.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -507,6 +507,7 @@ export const ui = {
         const id = item.id;
 
         card.querySelectorAll('.action-collapse').forEach(btn => {
+
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -572,12 +573,12 @@ export const ui = {
     },
 
     addInlineTask(id) {
-        const list = document.getElementById(`inline-tasks-list-${id}`);
+        const list = document.getElementById(`inline - tasks - list - ${id} `);
         if (!list) return;
         const div = document.createElement('div');
         div.className = 'flex items-start gap-3 p-2 rounded-xl group/task animate-fadeIn border-b border-gray-100/50';
         div.innerHTML = `
-            <input type="checkbox" class="kawaii-checkbox mt-1">
+            < input type = "checkbox" class="kawaii-checkbox mt-1" >
             <textarea rows="1" class="flex-1 bg-transparent border-none font-bold text-sm text-ink outline-none focus:ring-0 inline-task-input resize-none" placeholder="¿Qué sigue?"></textarea>
             <button class="btn-remove-inline text-ink/20 hover:text-ink px-2 transition-colors mt-1"><i class="fa-solid fa-xmark"></i></button>
         `;
@@ -588,13 +589,13 @@ export const ui = {
 
     async handleInlineSave(card, item) {
         const id = item.id;
-        const content = document.getElementById(`inline-content-${id}`).value;
-        const type = document.getElementById(`inline-type-${id}`).value;
-        const descripcion = document.getElementById(`inline-desc-${id}`).value;
-        const url = document.getElementById(`inline-url-${id}`).value;
-        const date = document.getElementById(`inline-date-${id}`).value;
-        const time = document.getElementById(`inline-time-${id}`).value;
-        const deadline = (date && time) ? `${date}T${time}` : (date || null);
+        const content = document.getElementById(`inline - content - ${id} `).value;
+        const type = document.getElementById(`inline - type - ${id} `).value;
+        const descripcion = document.getElementById(`inline - desc - ${id} `).value;
+        const url = document.getElementById(`inline - url - ${id} `).value;
+        const date = document.getElementById(`inline - date - ${id} `).value;
+        const time = document.getElementById(`inline - time - ${id} `).value;
+        const deadline = (date && time) ? `${date}T${time} ` : (date || null);
 
         const tareas = [];
         card.querySelectorAll('#inline-tasks-list-' + id + ' .group\\/task').forEach(row => {
@@ -622,7 +623,7 @@ export const ui = {
 
         let html = '<a href="#" data-action="home" class="hover:text-brand transition">Inicio</a>';
         path.forEach(item => {
-            html += ` <span class="mx-1 text-gray-300">/</span> <a href="#" data-id="${item.id}" data-action="navigate" class="hover:text-brand transition">${this.truncate(item.content, 20)}</a>`;
+            html += ` < span class="mx-1 text-gray-300" > /</span > <a href="#" data-id="${item.id}" data-action="navigate" class="hover:text-brand transition">${this.truncate(item.content, 20)}</a>`;
         });
         bread.innerHTML = html;
 
@@ -667,7 +668,7 @@ export const ui = {
 
         const date = document.getElementById('edit-deadline-date').value;
         const time = document.getElementById('edit-deadline-time').value;
-        const deadline = (date && time) ? `${date}T${time}` : (date || null);
+        const deadline = (date && time) ? `${date}T${time} ` : (date || null);
 
         const tags = tagsStr.split(',').map(t => t.trim()).filter(t => t);
 
@@ -687,7 +688,15 @@ export const ui = {
     fillEditModal(item, focus = null) {
         document.getElementById('edit-id').value = item.id;
         document.getElementById('edit-content').value = item.content || '';
-        document.getElementById('edit-type').value = item.type || 'note';
+
+        const typeSelect = document.getElementById('edit-type');
+        const itemType = item.type || 'nota';
+        if (typeSelect.querySelector(`option[value = "${itemType}"]`)) {
+            typeSelect.value = itemType;
+        } else {
+            typeSelect.value = 'nota';
+        }
+
         document.getElementById('edit-description').value = item.descripcion || '';
         document.getElementById('edit-url').value = item.url || '';
         document.getElementById('edit-tags').value = (item.tags || []).join(', ');
@@ -730,8 +739,8 @@ export const ui = {
         const div = document.createElement('div');
         div.className = 'flex items-start gap-3 bg-gray-50 p-3 rounded-xl border-2 border-transparent hover:border-brand/20 transition-all';
         div.innerHTML = `
-            <input type="checkbox" class="kawaii-checkbox mt-1" ${task.completado ? 'checked' : ''} 
-                   onchange="this.parentElement.querySelector('.task-item-input').dataset.completado = this.checked">
+            < input type = "checkbox" class="kawaii-checkbox mt-1" ${task.completado ? 'checked' : ''}
+        onchange = "this.parentElement.querySelector('.task-item-input').dataset.completado = this.checked" >
             <textarea rows="1" class="task-item-input flex-1 bg-transparent border-none font-bold text-ink outline-none resize-none" 
                    data-completado="${task.completado}" placeholder="¿Cuál es el siguiente paso?">${this.escapeHtml(task.titulo)}</textarea>
             <button type="button" class="btn-remove-task text-ink/30 hover:text-urgent transition-colors mt-1"><i class="fa-solid fa-xmark"></i></button>
@@ -810,7 +819,7 @@ export const ui = {
         const toast = document.createElement('div');
         const colors = { success: 'bg-success', error: 'bg-urgent', info: 'bg-action', warning: 'bg-warning' };
 
-        toast.className = `fixed top-10 left-1/2 -translate-x-1/2 ${colors[type] || 'bg-brand'} text-ink font-bold px-8 py-4 rounded-blob shadow-float z-[500] transform -translate-y-20 transition-all duration-300`;
+        toast.className = `fixed top - 10 left - 1 / 2 - translate - x - 1 / 2 ${colors[type] || 'bg-brand'} text - ink font - bold px - 8 py - 4 rounded - blob shadow - float z - [500] transform - translate - y - 20 transition - all duration - 300`;
         toast.textContent = message;
 
         document.body.appendChild(toast);
@@ -825,23 +834,23 @@ export const ui = {
     renderLoading() {
         if (this.elements.container()) {
             this.elements.container().innerHTML = `
-                <div class="col-span-full py-20 text-center animate-bounce-slow">
+            < div class="col-span-full py-20 text-center animate-bounce-slow" >
                     <span class="text-6xl">🧠</span>
                     <p class="mt-4 font-bold text-brand italic underline decoration-brand-dark decoration-4">KAI está conectando neuronas...</p>
-                </div>
-            `;
+                </div >
+    `;
         }
     },
 
     renderError(message) {
         if (this.elements.container()) {
             this.elements.container().innerHTML = `
-                <div class="col-span-full bg-urgent/10 p-12 rounded-blob text-center border-4 border-dashed border-urgent/30">
+    < div class="col-span-full bg-urgent/10 p-12 rounded-blob text-center border-4 border-dashed border-urgent/30" >
                     <span class="text-6xl">😵‍💫</span>
                     <p class="mt-4 font-bold text-ink text-xl">${message}</p>
                     <button onclick="location.reload()" class="mt-6 bg-white px-6 py-2 rounded-full shadow-sticker font-bold">Reintentar</button>
-                </div>
-            `;
+                </div >
+    `;
         }
     }
 };

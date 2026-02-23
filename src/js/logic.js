@@ -18,10 +18,10 @@ class KaiController {
 
     async init() {
         console.log('🧠 KAI: Controlador iniciado.');
-        
+
         // Detectar si estamos en desarrollo (localhost)
         this.isDevMode = this.esDesarrollo();
-        
+
         ui.init();
         this.bindEvents();
         this.startAlarmChecker();
@@ -33,7 +33,7 @@ class KaiController {
         } else {
             this.mostrarControlesDemo(false);
         }
-        
+
         try {
             this.currentUser = await auth.init();
             console.log('Usuario:', this.currentUser);
@@ -78,12 +78,12 @@ class KaiController {
 
     esDesarrollo() {
         const hostname = window.location.hostname;
-        return hostname === 'localhost' || 
-               hostname === '127.0.0.1' || 
-               hostname === '0.0.0.0' ||
-               hostname.includes('localhost') ||
-               window.location.href.includes('localhost') ||
-               window.location.href.includes('127.0.0.1');
+        return hostname === 'localhost' ||
+            hostname === '127.0.0.1' ||
+            hostname === '0.0.0.0' ||
+            hostname.includes('localhost') ||
+            window.location.href.includes('localhost') ||
+            window.location.href.includes('127.0.0.1');
     }
 
     mostrarControlesDemo(mostrar) {
@@ -95,17 +95,17 @@ class KaiController {
 
     loadDemoItems() {
         console.log('loadDemoItems llamado');
-        
+
         let demoItems = JSON.parse(localStorage.getItem('kaiDemoItems'));
-        
+
         if (!demoItems) {
             // Usar generador automático de demo data
             demoItems = generarDemoData();
             localStorage.setItem('kaiDemoItems', JSON.stringify(demoItems));
         }
-        
+
         this.isDemoMode = true;
-        
+
         ui.render(demoItems, true);
     }
 
@@ -130,10 +130,10 @@ class KaiController {
         if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission();
         }
-        
+
         // Verificar inmediatamente al abrir
         setTimeout(() => this.checkAlarms(), 2000);
-        
+
         // Luego verificar cada 30 segundos
         setInterval(() => {
             this.checkAlarms();
@@ -142,10 +142,10 @@ class KaiController {
 
     async checkAlarms() {
         console.log('🔔 Verificando alarmas... isDemoMode:', this.isDemoMode);
-        
+
         try {
             let items;
-            
+
             if (this.isDemoMode) {
                 items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
             } else if (this.currentUser) {
@@ -153,12 +153,12 @@ class KaiController {
             } else {
                 return;
             }
-            
+
             const now = new Date();
             // Zona horaria Lima, Perú (UTC-5)
             const limaTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Lima' }));
             console.log('🕐 Hora actual (Lima):', limaTime.toISOString());
-            
+
             const triggeredIds = JSON.parse(localStorage.getItem('triggeredAlarms') || '[]');
 
             for (const item of items) {
@@ -166,14 +166,14 @@ class KaiController {
                     // La deadline ya debería estar en UTC, la comparamos directamente
                     const deadline = new Date(item.deadline);
                     const timeDiff = deadline - limaTime;
-                    
+
                     console.log(`⏰ Alarma "${item.content}": deadline=${deadline.toISOString()}, diff=${timeDiff}ms`);
-                    
+
                     // Ventana de 1 minuto antes hasta 1 minuto después
                     if (timeDiff > -60000 && timeDiff <= 60000) {
                         triggeredIds.push(item.id);
                         localStorage.setItem('triggeredAlarms', JSON.stringify(triggeredIds));
-                        
+
                         this.triggerAlarm(item);
                     }
                 }
@@ -191,12 +191,12 @@ class KaiController {
                 tag: item.id
             });
         }
-        
+
         ui.showNotification(`⏰ ¡Hora de: ${item.content}!`, 'warning');
-        
+
         const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleR4GOKjm');
         audio.volume = 0.5;
-        audio.play().catch(() => {});
+        audio.play().catch(() => { });
     }
 
     bindEvents() {
@@ -235,8 +235,16 @@ class KaiController {
             }
         });
 
-        // --- Navegación & Categorías ---
+        // --- Navegación & Categorías (Tipos) ---
         document.querySelectorAll('.btn-category').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.handleCategoryClick(e.target);
+            });
+        });
+
+        // --- Navegación & Tags ---
+        document.querySelectorAll('.btn-tag').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 this.handleCategoryClick(e.target);
@@ -255,6 +263,20 @@ class KaiController {
         document.getElementById('btn-regenerate-demo')?.addEventListener('click', () => {
             regenerarDemoItems();
             location.reload();
+        });
+
+        // Tag suggestions - agregar tags al input
+        document.querySelectorAll('.tag-suggestion').forEach(tag => {
+            tag.addEventListener('click', () => {
+                const input = document.getElementById('edit-tags');
+                const current = input.value || '';
+                const newTag = tag.dataset.tag;
+                if (current) {
+                    input.value = current + ', ' + newTag;
+                } else {
+                    input.value = newTag;
+                }
+            });
         });
 
         // El botón de voz central en el footer
@@ -321,22 +343,13 @@ class KaiController {
         // 1. Detectar alarmas (comando en cualquier parte)
         const alarmaData = ai.detectarAlarmas(content);
         console.log('🔔 Detección alarma:', content, '->', alarmaData);
-        
+
         if (alarmaData.esAlarma) {
             await this.crearAlarma(alarmaData);
             return;
         }
 
-        // 2. Detectar si es una entrada de bitácora
-        const bitacoraData = ai.detectarBitacora(content);
-        console.log('🔍 Detección bitácora:', content, '->', bitacoraData);
-        
-        if (bitacoraData.esBitacora) {
-            await this.crearBitacora(bitacoraData);
-            return;
-        }
-
-        // 3. Detectar tags (salud, emocion)
+        // 2. Detectar tags (salud, emocion)
         const detectedTags = ai.detectarTags(content);
         console.log('🏷️ Detección tags:', content, '->', detectedTags);
 
@@ -349,7 +362,7 @@ class KaiController {
         try {
             const parsed = ai.parseIntent(content);
             const finalType = type !== 'note' ? type : parsed.type;
-            
+
             // Combinar tags detectados automáticamente con los parsed
             const finalTags = [...(parsed.tags || []), ...detectedTags];
 
@@ -389,70 +402,6 @@ class KaiController {
         }
     }
 
-    async crearBitacora(bitacoraData) {
-        try {
-            const now = new Date();
-            const horaFormateada = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-            
-            const contenidoBitacora = `${bitacoraData.contenido} — ${bitacoraData.momento === 'ahora' ? 'Ahora' : bitacoraData.momento} ${horaFormateada}`;
-
-            if (this.isDemoMode) {
-                const newItem = {
-                    id: 'demo-' + Date.now(),
-                    content: contenidoBitacora,
-                    type: 'nota', // Ahora es nota con tags
-                    parent_id: this.currentParentId,
-                    tags: ['bitacora', 'accion'],
-                    descripcion: '',
-                    url: '',
-                    tareas: [],
-                    deadline: null,
-                    anclado: false,
-                    meta: { momento: bitacoraData.momento },
-                    created_at: new Date().toISOString()
-                };
-                let items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
-                items.unshift(newItem);
-                localStorage.setItem('kaiDemoItems', JSON.stringify(items));
-            } else if (this.currentUser) {
-                await data.createItem({
-                    content: contenidoBitacora,
-                    type: 'nota',
-                    parent_id: this.currentParentId,
-                    tags: ['bitacora', 'accion'],
-                    meta: { momento: bitacoraData.momento }
-                });
-            }
-
-            ui.clearMainInput();
-            
-            // Mensaje especial de bitácora según tipo
-            let mensajesBitacora;
-            if (bitacoraData.explicito) {
-                mensajesBitacora = [
-                    '¡Anotado en bitácora! 📝✨',
-                    '¡Guardado en tu bitácora! 📝',
-                    '¡Perfecto! Lo tienes registrado 📝🌟'
-                ];
-            } else {
-                mensajesBitacora = [
-                    '¡Lo detecté! Guardado en tu bitácora ✨',
-                    '¡Anotado en tu bitácora! ✨ Sigue así',
-                    '¡Guardado! Estás haciendo grandi cosas 🧸💪',
-                    '¡Perfecto! Tu bitácora crece ✨',
-                    '¡Lo tengo! Cada paso cuenta 🌟'
-                ];
-            }
-            const mensajeAleatorio = mensajesBitacora[Math.floor(Math.random() * mensajesBitacora.length)];
-            ui.showNotification(mensajeAleatorio, 'success');
-            
-            await this.loadItems();
-        } catch (error) {
-            console.error('Error al crear bitácora:', error);
-            ui.showNotification('No pude guardar en la bitácora. ¿Reintentamos?', 'error');
-        }
-    }
-
     async crearAlarma(alarmaData) {
         try {
             const contenidoAlarma = alarmaData.contenido || 'Recordatorio';
@@ -462,7 +411,7 @@ class KaiController {
                 const newItem = {
                     id: 'demo-' + Date.now(),
                     content: contenidoAlarma,
-                    type: 'idea', // Mantener como nota, deadline hace la magia
+                    type: 'nota', // Mantener como nota, deadline hace la magia
                     parent_id: this.currentParentId,
                     tags: ['alarma'],
                     descripcion: '',
@@ -478,7 +427,7 @@ class KaiController {
             } else if (this.currentUser) {
                 await data.createItem({
                     content: contenidoAlarma,
-                    type: 'idea',
+                    type: 'nota',
                     parent_id: this.currentParentId,
                     tags: ['alarma'],
                     deadline: deadline
@@ -486,14 +435,14 @@ class KaiController {
             }
 
             ui.clearMainInput();
-            
-            const hora = new Date(deadline).toLocaleString('es-ES', { 
-                month: 'short', 
-                day: 'numeric', 
-                hour: '2-digit', 
-                minute: '2-digit' 
+
+            const hora = new Date(deadline).toLocaleString('es-ES', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
             });
-            
+
             const mensajesAlarma = [
                 `¡Alarmas configurada para ${hora}! ⏰`,
                 `¡Te recuerdo a las ${hora}! ⏰✨`,
@@ -501,7 +450,7 @@ class KaiController {
             ];
             const mensajeAleatorio = mensajesAlarma[Math.floor(Math.random() * mensajesAlarma.length)];
             ui.showNotification(mensajeAleatorio, 'success');
-            
+
             await this.loadItems();
         } catch (error) {
             console.error('Error al crear alarma:', error);
@@ -549,6 +498,7 @@ class KaiController {
             if (this.isDemoMode) {
                 await this.demoDeleteItem(id);
                 ui.showNotification('Recuerdo borrado con éxito. 🗑️', 'info');
+                await this.loadItems(); // ← corregido: recargar UI en modo demo
             } else {
                 await data.deleteItem(id);
                 ui.showNotification('Recuerdo borrado con éxito. 🗑️', 'info');
@@ -563,11 +513,11 @@ class KaiController {
     async loadItems() {
         // Verificar si hay demo items en localStorage
         const demoItems = JSON.parse(localStorage.getItem('kaiDemoItems') || 'null');
-        
+
         if (this.isDemoMode || demoItems) {
             this.isDemoMode = true;
             let items = demoItems || [];
-            
+
             // Filtrar por categoría o tag
             if (this.currentTag) {
                 // Filtrar por tag
@@ -576,24 +526,24 @@ class KaiController {
                 // Filtrar por tipo
                 items = items.filter(item => item.type === this.currentCategory);
             }
-            
+
             ui.render(items, true);
             return;
         }
-        
+
         ui.renderLoading();
         try {
             const filters = { parent_id: this.currentParentId };
             if (this.currentCategory !== 'all') filters.type = this.currentCategory;
 
             const items = await data.getItems(filters);
-            
+
             // Filtrar por tag si aplica
             let filteredItems = items;
             if (this.currentTag) {
                 filteredItems = items.filter(item => item.tags && item.tags.includes(this.currentTag));
             }
-            
+
             ui.render(filteredItems);
             this.updateBreadcrumb();
         } catch (error) {
@@ -642,14 +592,14 @@ class KaiController {
                     await this.loadItems();
                     ui.showNotification('¡Creado con éxito! ✨', 'success');
                     break;
-                    
+
                 case 'UPDATE_ITEM':
                     if (!id) throw new Error('ID no proporcionado para actualizar');
                     await data.updateItem(id, actionData.updates || actionData);
                     await this.loadItems();
                     ui.showNotification('¡Actualizado! 📁', 'success');
                     break;
-                    
+
                 case 'DELETE_ITEM':
                     if (!id) throw new Error('ID no proporcionado para borrar');
                     if (confirm('¿Estás segura de querer borrar esto? Kai dice que es definitivo.')) {
@@ -658,7 +608,7 @@ class KaiController {
                         ui.showNotification('¡Borrado! 🗑️', 'info');
                     }
                     break;
-                    
+
                 case 'TOGGLE_TASK':
                     if (!id || actionData.taskIndex === undefined) {
                         ui.showNotification('Faltan datos para completar la tarea.', 'warning');
@@ -667,23 +617,23 @@ class KaiController {
                     await this.toggleTimelineTask(id, actionData.taskIndex, actionData.completed);
                     ui.showNotification(actionData.completed ? '¡Tarea completada! ✅' : 'Tarea desmarcada', 'success');
                     break;
-                    
+
                 case 'TOGGLE_PIN':
                     if (!id) throw new Error('ID no proporcionado para anclado');
                     await this.togglePin(id);
                     break;
-                    
+
                 case 'OPEN_PROJECT':
                     if (!id) throw new Error('ID no proporcionado para abrir proyecto');
                     await this.openProject(id);
                     ui.showNotification('Abriendo proyecto... 📁', 'info');
                     break;
-                    
+
                 case 'OPEN_EDIT':
                     if (!id) throw new Error('ID no proporcionado para editar');
                     await this.openEditModal(id, actionData.focus);
                     break;
-                    
+
                 case 'SEARCH':
                     const query = action.query || actionData.query;
                     if (!query) {
@@ -699,17 +649,17 @@ class KaiController {
                         ui.addKaiMessage(`Vaya Maria, busqué por todo el panel y no encontré nada sobre "${query}". 🧐`);
                     }
                     break;
-                    
+
                 case 'FILTER_CATEGORY':
                     this.currentCategory = actionData.category || 'all';
                     await this.loadItems();
                     ui.showNotification(`Mostrando: ${actionData.category || 'todos'}`, 'info');
                     break;
-                    
+
                 case 'NO_ACTION':
                     ui.showNotification('Kai entiende pero no actúa.', 'info');
                     break;
-                    
+
                 default:
                     console.warn('Acción de Kai no reconocida:', action.type);
                     ui.showNotification('Kai intentó hacer algo, pero no lo entendí.', 'warning');
@@ -830,13 +780,20 @@ class KaiController {
     }
 
     async handleCategoryClick(button) {
-        document.querySelectorAll('.btn-category').forEach(b => b.classList.remove('active', 'border-brand'));
-        button.classList.add('active', 'border-brand');
-        
+        document.querySelectorAll('.btn-category').forEach(b => b.classList.remove('active', 'border-brand', 'bg-white', 'shadow-sticker'));
+        document.querySelectorAll('.btn-tag').forEach(b => b.classList.remove('active', 'bg-lavender', 'text-purple-600', 'border-purple-200'));
+
+        // Aplicar estilos activos según el tipo de botón
+        if (button.classList.contains('btn-tag')) {
+            button.classList.add('active', 'bg-lavender', 'text-purple-600', 'border-purple-200');
+        } else {
+            button.classList.add('active', 'border-brand', 'bg-white', 'shadow-sticker');
+        }
+
         // Manejar tanto categorías como tags
         this.currentCategory = button.dataset.category || null;
         this.currentTag = button.dataset.tag || null;
-        
+
         await this.loadItems();
     }
 
@@ -892,13 +849,15 @@ class KaiController {
     }
 }
 
+
+
 // Inicialización global
 window.addEventListener('DOMContentLoaded', () => {
     window.kai = new KaiController();
 });
 
-// listeners de auth
-window.addEventListener('auth-signIn', async () => {
+// listeners de auth — Supabase emite 'SIGNED_IN' (mayúsculas)
+window.addEventListener('auth-SIGNED_IN', async () => {
     if (window.kai) {
         window.kai.currentUser = await auth.getUser();
         ui.updateUserInfo(window.kai.currentUser);
