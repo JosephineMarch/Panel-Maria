@@ -2,8 +2,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&family=Patrick+Hand&display=swap');
 
 :root {
-    --brand: #FFB7C5;
-    --brand-dark: #FF9EAA;
+    --brand: #ec96a7;
+    --brand-dark: #ec7986;
     --action: #A1DFFF;
     --success: #B8FFB8;
     --warning: #FFF2A1;
@@ -36,9 +36,17 @@
     --color-bitacora-dark: #A8D8EA;
 
     /* Text colors */
-    .text-bitacora { color: #5BA4C4; }
-    .bg-bitacora { background-color: #E8F4F8; }
-    .bg-bitacora\/30 { background-color: rgba(232, 244, 248, 0.3); }
+    .text-bitacora {
+        color: #5BA4C4;
+    }
+
+    .bg-bitacora {
+        background-color: #E8F4F8;
+    }
+
+    .bg-bitacora\/30 {
+        background-color: rgba(232, 244, 248, 0.3);
+    }
 
     /* Escala Tipográfica Profesional */
     --text-xl: 1.25rem;
@@ -102,53 +110,24 @@ body {
 }
 
 /* Themes por Tipo (Header Sólido) */
+.theme-nota {
+    background-color: #FFF2A1;
+    color: var(--ink);
+}
+
+.theme-tarea {
+    background-color: #A1DFFF;
+    color: var(--ink);
+}
+
 .theme-proyecto {
-    background-color: var(--color-proyecto-dark);
-    color: var(--ink);
-}
-
-.theme-idea {
-    background-color: var(--color-idea-dark);
-    color: var(--ink);
-}
-
-.theme-note {
-    background-color: var(--action);
-    color: var(--ink);
-    border: none;
-}
-
-.theme-link {
-    background-color: var(--color-link-dark);
-    color: var(--ink);
-    border: none;
-}
-
-.theme-alarm {
     background-color: var(--brand);
     color: var(--ink);
-    border: none;
 }
 
-.theme-logro {
-    background-color: var(--color-logro-dark);
+.theme-directorio {
+    background-color: #C9B8FF;
     color: var(--ink);
-}
-
-.theme-bitacora {
-    background-color: var(--color-bitacora-dark);
-    color: var(--ink);
-}
-
-.theme-nota {
-    background-color: var(--color-idea-dark);
-    color: var(--ink);
-}
-
-.theme-task {
-    background-color: var(--color-note-dark);
-    color: var(--ink);
-    border: none;
 }
 
 /* Etiquetas de Tipo Minimalistas */
@@ -163,32 +142,21 @@ body {
     color: var(--ink);
 }
 
+/* Tags de Tipo con color de fondo */
+.tag-nota {
+    background-color: #FFF2A1;
+}
+
+.tag-tarea {
+    background-color: #A1DFFF;
+}
+
 .tag-proyecto {
-    background-color: var(--color-proyecto-dark);
+    background-color: #FFB7C5;
 }
 
-.tag-idea {
-    background-color: var(--color-idea-dark);
-}
-
-.tag-note,
-.tag-task {
-    background-color: var(--action);
-}
-
-/* Celeste para Tareas */
-.tag-link {
-    background-color: var(--color-link-dark);
-}
-
-.tag-alarm,
-.tag-reminder {
-    background-color: var(--brand);
-}
-
-/* Rosa para Alarmas */
-.tag-logro {
-    background-color: var(--color-logro-dark);
+.tag-directorio {
+    background-color: #C9B8FF;
 }
 
 .tag-bitacora {

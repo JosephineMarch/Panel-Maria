@@ -34,15 +34,14 @@ export const ui = {
         tarea: { color: 'tarea', icon: '✅', solid: 'theme-tarea', label: 'TAREA' },
         proyecto: { color: 'proyecto', icon: '📁', solid: 'theme-proyecto', label: 'PROYECTO' },
         directorio: { color: 'directorio', icon: '🔗', solid: 'theme-directorio', label: 'ENLACE' },
-        alarma: { color: 'alarma', icon: '⏰', solid: 'theme-alarma', label: 'ALARMA' },
     },
 
     // Configuración de etiquetas (diseño sutil, sin color de header)
     tagConfig: {
-        logro: { icon: '🏆', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
-        salud: { icon: '💪', bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200' },
-        emocion: { icon: '💭', bg: 'bg-violet-50', text: 'text-violet-700', border: 'border-violet-200' },
-        alarma: { icon: '⏰', bg: 'bg-pink-50', text: 'text-pink-700', border: 'border-pink-200' },
+        logro: { bg: '', text: 'text-ink/70', border: 'border-brand' },
+        salud: { bg: '', text: 'text-ink/70', border: 'border-brand' },
+        emocion: { bg: '', text: 'text-ink/70', border: 'border-brand' },
+        alarma: { bg: '', text: 'text-ink/70', border: 'border-brand' },
     },
 
 
@@ -60,9 +59,7 @@ export const ui = {
         return tags.map(tag => {
             const config = this.tagConfig[tag];
             if (!config) return '';
-            return `<span class="${config.bg} ${config.text} ${config.border} border px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1">
-                <span>${config.icon}</span> ${tag}
-            </span>`;
+            return `<span class="${config.text} ${config.border} border bg-transparent px-2 py-0.5 rounded-full text-[10px] font-semibold">${tag}</span>`;
         }).join('');
     },
 
@@ -179,16 +176,15 @@ export const ui = {
 
         const config = this.typeConfig[tipoNorm] || this.typeConfig['nota'];
         const isProject = tipoNorm === 'proyecto';
-        const isReminder = tipoNorm === 'alarma';
 
         if (expanded) {
             this.renderExpandedCard(card, itemNorm, config);
         } else {
-            this.renderCollapsedCard(card, itemNorm, config, isProject, isReminder);
+            this.renderCollapsedCard(card, itemNorm, config, isProject);
         }
     },
 
-    renderCollapsedCard(card, item, config, isProject, isReminder) {
+    renderCollapsedCard(card, item, config, isProject) {
         const themeClass = `theme-${config.color}`;
         card.className = isProject
             ? `${themeClass} rounded-[2rem] shadow-sticker border-2 transition-all hover:shadow-lg overflow-hidden mb-4 w-full cursor-pointer group`

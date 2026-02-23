@@ -134,14 +134,17 @@
             </div>
             <div class="flex gap-1 flex-wrap items-center">
                 <button
-                    class="btn-tag px-2 py-0.5 rounded-lg text-[10px] font-semibold text-gray-500 hover:bg-mint hover:text-green-600 transition-all border border-transparent hover:border-green-200"
-                    data-tag="logro">🏆 Logro</button>
+                    class="btn-tag px-2 py-0.5 rounded-lg text-[10px] font-semibold text-brand border border-transparent hover:border-brand transition-all"
+                    data-tag="logro">logro</button>
                 <button
-                    class="btn-tag px-2 py-0.5 rounded-lg text-[10px] font-semibold text-gray-500 hover:bg-soft-blue hover:text-blue-600 transition-all border border-transparent hover:border-blue-200"
-                    data-tag="salud">💪 Salud</button>
+                    class="btn-tag px-2 py-0.5 rounded-lg text-[10px] font-semibold text-brand border border-transparent hover:border-brand transition-all"
+                    data-tag="salud">salud</button>
                 <button
-                    class="btn-tag px-2 py-0.5 rounded-lg text-[10px] font-semibold text-gray-500 hover:bg-lemon hover:text-yellow-600 transition-all border border-transparent hover:border-yellow-200"
-                    data-tag="emocion">💭 Emocion</button>
+                    class="btn-tag px-2 py-0.5 rounded-lg text-[10px] font-semibold text-brand border border-transparent hover:border-brand transition-all"
+                    data-tag="emocion">emocion</button>
+                <button
+                    class="btn-tag px-2 py-0.5 rounded-lg text-[10px] font-semibold text-brand border border-transparent hover:border-brand transition-all"
+                    data-tag="alarma">alarma</button>
             </div>
         </nav>
     </header>
@@ -181,7 +184,6 @@
                         <option value="tarea">✅ Tarea</option>
                         <option value="proyecto">📁 Proyecto</option>
                         <option value="directorio">🔗 Enlace</option>
-                        <option value="alarma">⏰ Alarma</option>
                     </select>
 
                     <button id="btn-submit"
@@ -304,7 +306,6 @@
                             <option value="tarea">✅ Tarea</option>
                             <option value="proyecto">📁 Proyecto</option>
                             <option value="directorio">🔗 Enlace</option>
-                            <option value="alarma">⏰ Alarma</option>
                         </select>
                     </div>
 
@@ -356,14 +357,17 @@
                         </label>
                         <div class="flex gap-2 mb-2 flex-wrap">
                             <span
-                                class="tag-suggestion px-2 py-1 rounded-lg text-[10px] font-bold bg-mint/50 text-green-600 cursor-pointer hover:bg-mint transition"
-                                data-tag="logro">🏆 Logro</span>
+                                class="tag-suggestion px-2 py-1 rounded-lg text-[10px] font-semibold text-brand border border-brand/30 cursor-pointer hover:border-brand hover:bg-brand/5 transition"
+                                data-tag="logro">logro</span>
                             <span
-                                class="tag-suggestion px-2 py-1 rounded-lg text-[10px] font-bold bg-soft-blue/50 text-blue-600 cursor-pointer hover:bg-soft-blue transition"
-                                data-tag="salud">💪 Salud</span>
+                                class="tag-suggestion px-2 py-1 rounded-lg text-[10px] font-semibold text-brand border border-brand/30 cursor-pointer hover:border-brand hover:bg-brand/5 transition"
+                                data-tag="salud">salud</span>
                             <span
-                                class="tag-suggestion px-2 py-1 rounded-lg text-[10px] font-bold bg-lemon/50 text-yellow-600 cursor-pointer hover:bg-lemon transition"
-                                data-tag="emocion">💭 Emocion</span>
+                                class="tag-suggestion px-2 py-1 rounded-lg text-[10px] font-semibold text-brand border border-brand/30 cursor-pointer hover:border-brand hover:bg-brand/5 transition"
+                                data-tag="emocion">emocion</span>
+                            <span
+                                class="tag-suggestion px-2 py-1 rounded-lg text-[10px] font-semibold text-brand border border-brand/30 cursor-pointer hover:border-brand hover:bg-brand/5 transition"
+                                data-tag="alarma">alarma</span>
                         </div>
                         <input type="text" id="edit-tags"
                             class="w-full bg-lavender/30 border border-lavender rounded-blob px-6 py-4 text-purple-600 font-bold placeholder-gray-400"

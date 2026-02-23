@@ -7,7 +7,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export const CONFIG = {
     // Tipos canónicos — TODOS EN ESPAÑOL
-    types: ['nota', 'tarea', 'proyecto', 'directorio', 'alarma'],
+    types: ['nota', 'tarea', 'proyecto', 'directorio'],
 
     // Mapa de migración: convierte tipos antiguos (inglés/mixtos) al tipo español correcto
     migrarTipo(tipo) {
@@ -17,17 +17,17 @@ export const CONFIG = {
             'task': 'tarea',
             'project': 'proyecto',
             'link': 'directorio',
-            'reminder': 'alarma',
-            'alarm': 'alarma',
+            'reminder': 'nota', // Alarma ahora es etiqueta
+            'alarm': 'nota', // Alarma ahora es etiqueta
             'voice': 'nota',
             'mood': 'nota',
-            'logro': 'nota', // Logro ahora es etiqueta, migrar a nota
+            'logro': 'nota', // Logro ahora es etiqueta
             // ya en español — pass-through
             'nota': 'nota',
             'tarea': 'tarea',
             'proyecto': 'proyecto',
             'directorio': 'directorio',
-            'alarma': 'alarma',
+            'alarma': 'nota', // Alarma ahora es etiqueta
         };
         return mapa[tipo] || 'nota';
     },
@@ -37,14 +37,12 @@ export const CONFIG = {
         tarea: '✅',
         proyecto: '📁',
         directorio: '🔗',
-        alarma: '⏰',
     },
     typeColors: {
-        nota: '#fef3c7',
-        tarea: '#d1fae5',
-        proyecto: '#e0e7ff',
-        directorio: '#dbeafe',
-        alarma: '#fee2e2',
+        nota: '#FFF2A1',
+        tarea: '#A1DFFF',
+        proyecto: '#FFB7C5',
+        directorio: '#C9B8FF',
     }
 };
 
