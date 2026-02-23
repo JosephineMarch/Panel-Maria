@@ -79,11 +79,11 @@ export function generarDemoData() {
             anclado: false,
             created_at: new Date(ahora.getTime() - 172800000).toISOString()
         },
-        // Logro (manual)
+        // Logro (ahora es etiqueta, no tipo)
         {
             id: 'demo-6',
             content: '¡Completé mi primer proyecto!',
-            type: 'logro',
+            type: 'nota',
             descripcion: 'He completado todas mis tareas del día',
             tareas: [],
             tags: ['logro'],

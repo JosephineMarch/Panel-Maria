@@ -155,9 +155,9 @@ class KaiController {
             }
 
             const now = new Date();
-            // Zona horaria Lima, Perú (UTC-5)
-            const limaTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Lima' }));
-            console.log('🕐 Hora actual (Lima):', limaTime.toISOString());
+            const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Lima';
+            const localTime = new Date(now.toLocaleString('en-US', { timeZone: userTimezone }));
+            console.log(`🕐 Hora actual (${userTimezone}):`, localTime.toISOString());
 
             const triggeredIds = JSON.parse(localStorage.getItem('triggeredAlarms') || '[]');
 
@@ -165,7 +165,7 @@ class KaiController {
                 if (item.deadline && !triggeredIds.includes(item.id)) {
                     // La deadline ya debería estar en UTC, la comparamos directamente
                     const deadline = new Date(item.deadline);
-                    const timeDiff = deadline - limaTime;
+                    const timeDiff = deadline - localTime;
 
                     console.log(`⏰ Alarma "${item.content}": deadline=${deadline.toISOString()}, diff=${timeDiff}ms`);
 
@@ -196,7 +196,9 @@ class KaiController {
 
         const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleR4GOKjm');
         audio.volume = 0.5;
-        audio.play().catch(() => { });
+        audio.play().catch((err) => {
+            console.warn('🔇 No se pudo reproducir audio de alarma:', err.message);
+        });
     }
 
     bindEvents() {
@@ -725,14 +727,19 @@ class KaiController {
                 let items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
                 const item = items.find(i => i.id === id);
                 if (item) {
-                    item.type = 'logro';
+                    item.tags = item.tags || [];
+                    if (!item.tags.includes('logro')) item.tags.push('logro');
                     item.status = 'completed';
                     localStorage.setItem('kaiDemoItems', JSON.stringify(items));
                     ui.showNotification('¡Felicidades por tu logro! 🏆', 'success');
                     await this.loadItems();
                 }
             } else {
-                await data.updateItem(id, { type: 'logro', status: 'completed' });
+                const items = await data.getItems({ id });
+                const item = Array.isArray(items) ? items.find(i => i.id === id) : items;
+                const currentTags = item.tags || [];
+                const newTags = currentTags.includes('logro') ? currentTags : [...currentTags, 'logro'];
+                await data.updateItem(id, { tags: newTags, status: 'completed' });
                 ui.showNotification('¡Felicidades por tu logro! 🏆', 'success');
                 await this.loadItems();
             }

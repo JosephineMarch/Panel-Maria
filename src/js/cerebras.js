@@ -75,7 +75,7 @@ Debes responder con un JSON de acción AL FINAL de tu mensaje si detectas una in
 TIPOS DE ACCIÓN DISPONIBLES:
 
 1. CREATE_ITEM: Para crear cualquier cosa nueva.
-   data: { type: "idea|task|proyecto|logro|directorio", content: "título", descripcion?: "...", tareas?: [], tags?: [], deadline?: "ISO8601" }
+   data: { type: "nota|tarea|proyecto|directorio", content: "título", descripcion?: "...", tareas?: [], tags?: ["logro", "salud", "emocion"], deadline?: "ISO8601" }
 
 2. UPDATE_ITEM: Para editar, cambiar tipo, anclar, completar.
    data: { id: "UUID_DEL_ITEM", updates: { content?, type?, tags?, descripcion?, deadline?, status?, anclado?: boolean } }

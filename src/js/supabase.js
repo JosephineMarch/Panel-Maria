@@ -7,12 +7,13 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export const CONFIG = {
     // Tipos canónicos — TODOS EN ESPAÑOL
-    types: ['nota', 'tarea', 'proyecto', 'directorio', 'alarma', 'logro'],
+    types: ['nota', 'tarea', 'proyecto', 'directorio', 'alarma'],
 
     // Mapa de migración: convierte tipos antiguos (inglés/mixtos) al tipo español correcto
     migrarTipo(tipo) {
         const mapa = {
             'note': 'nota',
+            'idea': 'nota',
             'task': 'tarea',
             'project': 'proyecto',
             'link': 'directorio',
@@ -20,13 +21,13 @@ export const CONFIG = {
             'alarm': 'alarma',
             'voice': 'nota',
             'mood': 'nota',
+            'logro': 'nota', // Logro ahora es etiqueta, migrar a nota
             // ya en español — pass-through
             'nota': 'nota',
             'tarea': 'tarea',
             'proyecto': 'proyecto',
             'directorio': 'directorio',
             'alarma': 'alarma',
-            'logro': 'logro',
         };
         return mapa[tipo] || 'nota';
     },
@@ -37,7 +38,6 @@ export const CONFIG = {
         proyecto: '📁',
         directorio: '🔗',
         alarma: '⏰',
-        logro: '🏆',
     },
     typeColors: {
         nota: '#fef3c7',
@@ -45,7 +45,6 @@ export const CONFIG = {
         proyecto: '#e0e7ff',
         directorio: '#dbeafe',
         alarma: '#fee2e2',
-        logro: '#fce7f3',
     }
 };
 

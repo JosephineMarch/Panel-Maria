@@ -28,14 +28,21 @@ export const ui = {
         kaiChatClose: () => document.getElementById('kai-chat-close'),
     },
 
-    // Configuración de tipos — TODOS EN ESPAÑOL
+    // Configuración de tipos (con color de header)
     typeConfig: {
         nota: { color: 'nota', icon: '📝', solid: 'theme-nota', label: 'NOTA' },
         tarea: { color: 'tarea', icon: '✅', solid: 'theme-tarea', label: 'TAREA' },
         proyecto: { color: 'proyecto', icon: '📁', solid: 'theme-proyecto', label: 'PROYECTO' },
         directorio: { color: 'directorio', icon: '🔗', solid: 'theme-directorio', label: 'ENLACE' },
         alarma: { color: 'alarma', icon: '⏰', solid: 'theme-alarma', label: 'ALARMA' },
-        logro: { color: 'logro', icon: '🏆', solid: 'theme-logro', label: 'LOGRO' },
+    },
+
+    // Configuración de etiquetas (diseño sutil, sin color de header)
+    tagConfig: {
+        logro: { icon: '🏆', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
+        salud: { icon: '💪', bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200' },
+        emocion: { icon: '💭', bg: 'bg-violet-50', text: 'text-violet-700', border: 'border-violet-200' },
+        alarma: { icon: '⏰', bg: 'bg-pink-50', text: 'text-pink-700', border: 'border-pink-200' },
     },
 
 
@@ -46,6 +53,17 @@ export const ui = {
             container.id = 'items-container';
             document.getElementById('app')?.appendChild(container);
         }
+    },
+
+    renderTags(tags) {
+        if (!tags || tags.length === 0) return '';
+        return tags.map(tag => {
+            const config = this.tagConfig[tag];
+            if (!config) return '';
+            return `<span class="${config.bg} ${config.text} ${config.border} border px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1">
+                <span>${config.icon}</span> ${tag}
+            </span>`;
+        }).join('');
     },
 
     toggleKaiChat(show = null) {
@@ -162,16 +180,15 @@ export const ui = {
         const config = this.typeConfig[tipoNorm] || this.typeConfig['nota'];
         const isProject = tipoNorm === 'proyecto';
         const isReminder = tipoNorm === 'alarma';
-        const isAchievement = tipoNorm === 'logro';
 
         if (expanded) {
             this.renderExpandedCard(card, itemNorm, config);
         } else {
-            this.renderCollapsedCard(card, itemNorm, config, isProject, isReminder, isAchievement);
+            this.renderCollapsedCard(card, itemNorm, config, isProject, isReminder);
         }
     },
 
-    renderCollapsedCard(card, item, config, isProject, isReminder, isAchievement) {
+    renderCollapsedCard(card, item, config, isProject, isReminder) {
         const themeClass = `theme-${config.color}`;
         card.className = isProject
             ? `${themeClass} rounded-[2rem] shadow-sticker border-2 transition-all hover:shadow-lg overflow-hidden mb-4 w-full cursor-pointer group`
@@ -230,22 +247,26 @@ export const ui = {
                 <!-- Body Minimalista -->
                 <div class="card-body-soft p-4">
                     <!-- Previsualización de Descripción -->
-                    ${item.descripcion ? `<p class="txt-small text-ink/40 mb-3 italic">${this.escapeHtml(item.descripcion)}</p>` : ''}
+                    ${item.descripcion ? (() => {
+                        const descTruncada = item.descripcion.length > 120 ? item.descripcion.substring(0, 120) + '...' : item.descripcion;
+                        return `<p class="text-sm text-ink/70 mb-3">${this.escapeHtml(descTruncada)}</p>`;
+                    })() : ''}
 
                     <!-- Previsualización de Tareas (Interactiva) -->
                     ${item.tareas && item.tareas.length > 0 ? `
                         <div class="space-y-1 mb-2">
                             ${item.tareas.slice(0, 3).map((t, idx) => `
-                                <div class="flex items-center gap-2 text-sm text-ink/60 py-0.5">
-                                    <input type="checkbox" class="kawaii-checkbox timeline-task-checkbox scale-90 origin-left" 
+                                <div class="flex items-center gap-3 py-1.5">
+                                    <input type="checkbox" class="kawaii-checkbox timeline-task-checkbox" 
                                            ${t.completado ? 'checked' : ''} 
                                            data-id="${item.id}" data-index="${idx}">
-                                    <span class="${t.completado ? 'line-through opacity-50' : ''}">${this.escapeHtml(t.titulo)}</span>
+                                    <span class="text-sm text-ink ${t.completado ? 'line-through opacity-50' : 'font-medium'}">${this.escapeHtml(t.titulo)}</span>
                                 </div>
                             `).join('')}
-                            ${item.tareas.length > 3 ? `<p class="text-[10px] font-bold text-brand ml-6">+ ${item.tareas.length - 3} más...</p>` : ''}
+                            ${item.tareas.length > 3 ? `<p class="text-[10px] font-bold text-brand ml-7">+ ${item.tareas.length - 3} más...</p>` : ''}
                         </div>
                     ` : ''}
+                    ${this.renderTags(item.tags) ? `<div class="flex gap-1.5 flex-wrap mt-3">${this.renderTags(item.tags)}</div>` : ''}
                 </div>
             `;
         } else {
@@ -285,18 +306,19 @@ export const ui = {
 
             // 1. Previsualización de Descripción (para Ideas, Notas, Proyectos)
             if (item.descripcion) {
-                previewHtml += `<p class="txt-small text-ink/40 mt-1 italic">${this.escapeHtml(item.descripcion)}</p>`;
+                const descTruncada = item.descripcion.length > 120 ? item.descripcion.substring(0, 120) + '...' : item.descripcion;
+                previewHtml += `<p class="text-sm text-ink/70 mt-2">${this.escapeHtml(descTruncada)}</p>`;
             }
 
             // 2. Previsualización de Tareas (Checklist)
             if (item.tareas && item.tareas.length > 0) {
                 const maxPreviewTasks = 3;
                 const tasksPreview = item.tareas.slice(0, maxPreviewTasks).map((t, idx) => `
-                    <div class="flex items-center gap-2 text-sm text-ink/60 py-1">
-                        <input type="checkbox" class="kawaii-checkbox timeline-task-checkbox scale-90 origin-left" 
+                    <div class="flex items-center gap-3 py-1.5">
+                        <input type="checkbox" class="kawaii-checkbox timeline-task-checkbox" 
                                ${t.completado ? 'checked' : ''} 
                                data-id="${item.id}" data-index="${idx}">
-                        <span class="${t.completado ? 'line-through opacity-50' : ''}">${this.escapeHtml(t.titulo)}</span>
+                        <span class="text-sm text-ink ${t.completado ? 'line-through opacity-50' : 'font-medium'}">${this.escapeHtml(t.titulo)}</span>
                     </div>
                 `).join('');
 
@@ -326,16 +348,19 @@ export const ui = {
                 const progressWidth = `${Math.round((completed / item.tareas.length) * 100)}%`;
                 progressHtml = `
                     <div class="mt-3 flex items-center gap-2">
-                        <div class="flex-1 bg-gray-100 h-1 rounded-full overflow-hidden">
-                            <div class="bg-action h-full" style="width: ${progressWidth}"></div>
+                        <div class="flex-1 bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-brand h-full transition-all" style="width: ${progressWidth}"></div>
                         </div>
-                        <span class="text-[9px] font-bold text-ink/30">${completed}/${item.tareas.length}</span>
+                        <span class="text-[10px] font-bold text-ink/60">${completed}/${item.tareas.length}</span>
                     </div>
                 `;
             }
 
             card.className = `item-card bg-white rounded-2xl p-4 shadow-sticker border-none group relative hover:z-10 transition-all mb-4 w-full cursor-pointer`;
             card.dataset.expanded = 'false';
+
+            // Renderizar etiquetas (tags)
+            const tagsHtml = this.renderTags(item.tags);
 
             card.innerHTML = `
                 <div class="flex gap-4 items-start">
@@ -348,13 +373,14 @@ export const ui = {
                             ${deadlineHtml}
                             ${fechaHtml}
                         </div>
-                        <h3 class="txt-small text-ink group-hover:opacity-70 transition-opacity font-bold">${this.escapeHtml(item.content)}</h3>
+                        <h3 class="text-sm text-ink font-bold leading-snug">${this.escapeHtml(this.truncate(item.content, 80))}</h3>
                         ${progressHtml}
                         ${previewHtml}
+                        ${tagsHtml ? `<div class="flex gap-1.5 flex-wrap mt-2">${tagsHtml}</div>` : ''}
                     </div>
                     <div class="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button class="action-expand p-2 text-ink/20 hover:text-ink transition-colors" data-id="${item.id}" title="Expandir"><i class="fa-solid fa-expand"></i></button>
-                        ${item.type !== 'logro' ? `<button class="action-finish p-2 text-ink/20 hover:text-success transition-colors" data-id="${item.id}" title="Terminar"><i class="fa-solid fa-check-circle"></i></button>` : ''}
+                        <button class="action-finish p-2 text-ink/20 hover:text-success transition-colors" data-id="${item.id}" title="Terminar"><i class="fa-solid fa-check-circle"></i></button>
                     </div>
                 </div>
             `;
@@ -385,16 +411,8 @@ export const ui = {
         const hasAlarm = !!item.deadline;
 
         // Tags del item
-        const tagsHtml = (item.tags && item.tags.length > 0)
-            ? `<div class="flex gap-2 flex-wrap mt-3">
-                ${item.tags.map(tag => `<span class="text-xs px-2 py-1 rounded-full ${tag === 'alarma' ? 'bg-pink-200 text-pink-700' :
-                tag === 'salud' ? 'bg-red-200 text-red-700' :
-                    tag === 'emocion' ? 'bg-purple-200 text-purple-700' :
-                        tag === 'logro' ? 'bg-green-200 text-green-700' :
-                            'bg-gray-200 text-gray-700'
-                }">${tag}</span>`).join('')}
-               </div>`
-            : '';
+        const tagsHtml = this.renderTags(item.tags);
+        const hasTags = tagsHtml && tagsHtml.length > 0;
 
         card.innerHTML = `
             <!-- Header Sólido -->
@@ -420,11 +438,10 @@ export const ui = {
                             <option value="task" ${item.type === 'task' ? 'selected' : ''}>✅ Tarea (Checklist)</option>
                             <option value="proyecto" ${item.type === 'proyecto' ? 'selected' : ''}>📁 Proyecto</option>
                             <option value="directorio" ${item.type === 'directorio' ? 'selected' : ''}>🔗 Enlace</option>
-                            <option value="logro" ${item.type === 'logro' ? 'selected' : ''}>🏆 Logro</option>
                         </select>
                     </div>
                     
-                    ${tagsHtml}
+                    ${hasTags ? `<div class="space-y-2"><label class="txt-label ml-1">Etiquetas</label><div class="flex gap-2 flex-wrap">${tagsHtml}</div></div>` : ''}
                     
                     <div id="section-alarm-${item.id}" class="space-y-2 ${hasAlarm ? '' : 'hidden'}">
                         <label class="txt-label ml-1">⏰ Alarma</label>
