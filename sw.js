@@ -40,6 +40,9 @@ function getStrategy(url) {
 }
 
 async function cacheFirst(request) {
+    if (request.method !== 'GET') {
+        return fetch(request);
+    }
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
         return cachedResponse;
@@ -57,6 +60,9 @@ async function cacheFirst(request) {
 }
 
 async function networkFirst(request) {
+    if (request.method !== 'GET') {
+        return fetch(request);
+    }
     try {
         const networkResponse = await fetch(request);
         if (networkResponse.ok) {

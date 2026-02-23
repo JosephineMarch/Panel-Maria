@@ -5,7 +5,11 @@ export const data = {
      * Crea un nuevo item en Supabase
      */
     async createItem(itemData) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError) {
+            console.error('Auth error:', authError);
+            throw new Error('Error de autenticación');
+        }
         if (!user) throw new Error('Usuario no autenticado');
 
         const item = {
@@ -29,7 +33,10 @@ export const data = {
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            console.error('Error createItem:', error);
+            throw error;
+        }
         return data;
     },
 
@@ -37,10 +44,17 @@ export const data = {
      * Obtiene una lista de items filtrada
      */
     async getItems(filters = {}) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            console.warn('data.getItems: No hay usuario autenticado');
+            return [];
+        }
+
         let query = supabase
             .from('items')
             .select('*')
-            .order('anclado', { ascending: false }) // Priorizar anclados
+            .eq('user_id', user.id)
+            .order('anclado', { ascending: false })
             .order('created_at', { ascending: false });
 
         if (filters.id) {
@@ -57,7 +71,10 @@ export const data = {
         }
 
         const { data, error } = await query;
-        if (error) throw error;
+        if (error) {
+            console.error('Error getItems:', error);
+            throw error;
+        }
         return data || [];
     },
 
@@ -72,7 +89,10 @@ export const data = {
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            console.error('Error updateItem:', error);
+            throw error;
+        }
         return data;
     },
 
@@ -85,7 +105,10 @@ export const data = {
             .delete()
             .eq('id', id);
 
-        if (error) throw error;
+        if (error) {
+            console.error('Error deleteItem:', error);
+            throw error;
+        }
         return true;
     },
 
