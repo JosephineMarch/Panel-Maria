@@ -32,13 +32,12 @@ export const ui = {
     typeConfig: {
         proyecto: { color: 'proyecto', icon: '📁', solid: 'theme-proyecto', label: 'PROYECTO' },
         logro: { color: 'logro', icon: '🏆', solid: 'theme-logro', label: 'LOGRO' },
-        idea: { color: 'idea', icon: '💡', solid: 'theme-idea', label: 'IDEA' },
-        note: { color: 'idea', icon: '💡', solid: 'theme-idea', label: 'IDEA' }, // Unificado con Idea
+        nota: { color: 'nota', icon: '📝', solid: 'theme-nota', label: 'NOTA' },
+        idea: { color: 'nota', icon: '📝', solid: 'theme-nota', label: 'NOTA' },
         directorio: { color: 'link', icon: '🔗', solid: 'theme-link', label: 'ENLACE' },
         reminder: { color: 'alarm', icon: '⏰', solid: 'theme-alarm', label: 'ALARMA' },
         alarm: { color: 'alarm', icon: '⏰', solid: 'theme-alarm', label: 'ALARMA' },
-        task: { color: 'note', icon: '✅', solid: 'theme-note', label: 'TAREA' }, // Tarea = Checklist
-        bitacora: { color: 'bitacora', icon: '📝', solid: 'theme-bitacora', label: 'BITÁCORA' }
+        task: { color: 'task', icon: '✅', solid: 'theme-task', label: 'TAREA' }
     },
 
     init() {
@@ -257,9 +256,9 @@ export const ui = {
                 `;
             }
 
-            // Para bitácora, mostrar fecha/hora de creación
-            let bitacoraFechaHtml = '';
-            if (item.type === 'bitacora' && item.created_at) {
+            // Para notas y otros tipos, mostrar fecha de creación
+            let fechaHtml = '';
+            if ((item.type === 'nota' || item.type === 'idea' || item.type === 'note') && item.created_at) {
                 const fecha = new Date(item.created_at);
                 const hoy = new Date();
                 const esHoy = fecha.toDateString() === hoy.toDateString();
@@ -268,9 +267,9 @@ export const ui = {
                     ? `Hoy ${fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
                     : fecha.toLocaleDateString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
                 
-                bitacoraFechaHtml = `
-                    <span class="txt-label text-bitacora font-bold flex items-center gap-1">
-                        <i class="fa-solid fa-calendar-check"></i> ${fechaStr}
+                fechaHtml = `
+                    <span class="txt-label text-gray-400 flex items-center gap-1">
+                        <i class="fa-regular fa-clock"></i> ${fechaStr}
                     </span>
                 `;
             }
@@ -344,7 +343,7 @@ export const ui = {
                         <div class="flex items-center gap-2 mb-1 flex-wrap">
                             <span class="${tagClass} text-[9px] px-2 py-0.5">${typeConfig.label}</span>
                             ${deadlineHtml}
-                            ${bitacoraFechaHtml}
+                            ${fechaHtml}
                         </div>
                         <h3 class="txt-small text-ink group-hover:opacity-70 transition-opacity font-bold">${this.escapeHtml(item.content)}</h3>
                         ${progressHtml}
@@ -382,25 +381,19 @@ export const ui = {
         const hasUrl = !!item.url;
         const hasAlarm = !!item.deadline;
         
-        // Fecha para bitácora
-        let bitacoraInfoHtml = '';
-        if (item.type === 'bitacora' && item.created_at) {
-            const fecha = new Date(item.created_at);
-            const fechaDisplay = fecha.toLocaleString('es-ES', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric',
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
-            bitacoraInfoHtml = `
-                <div class="bg-bitacora/30 p-3 rounded-xl flex items-center gap-2 text-bitacora">
-                    <i class="fa-solid fa-calendar-check"></i>
-                    <span class="text-sm font-bold">${fechaDisplay}</span>
-                </div>
-            `;
-        }
+        // Tags del item
+        const tagsHtml = (item.tags && item.tags.length > 0) 
+            ? `<div class="flex gap-2 flex-wrap mt-3">
+                ${item.tags.map(tag => `<span class="text-xs px-2 py-1 rounded-full ${
+                    tag === 'alarma' ? 'bg-pink-200 text-pink-700' :
+                    tag === 'salud' ? 'bg-red-200 text-red-700' :
+                    tag === 'emocion' ? 'bg-purple-200 text-purple-700' :
+                    tag === 'bitacora' || tag === 'accion' ? 'bg-blue-200 text-blue-700' :
+                    tag === 'logro' ? 'bg-green-200 text-green-700' :
+                    'bg-gray-200 text-gray-700'
+                }">${tag}</span>`).join('')}
+               </div>` 
+            : '';
 
         card.innerHTML = `
             <!-- Header Sólido -->
@@ -422,17 +415,16 @@ export const ui = {
                     <div class="space-y-2">
                         <label class="txt-label ml-1">Categoría</label>
                         <select id="inline-type-${item.id}" class="w-full bg-white/40 border-none rounded-2xl px-4 py-3 txt-small text-ink focus:ring-2 focus:ring-white/50 outline-none">
-                            <option value="idea" ${item.type === 'idea' || item.type === 'note' ? 'selected' : ''}>💡 Idea</option>
+                            <option value="idea" ${item.type === 'idea' || item.type === 'note' ? 'selected' : ''}>📝 Nota</option>
                             <option value="task" ${item.type === 'task' ? 'selected' : ''}>✅ Tarea (Checklist)</option>
                             <option value="proyecto" ${item.type === 'proyecto' ? 'selected' : ''}>📁 Proyecto</option>
                             <option value="directorio" ${item.type === 'directorio' ? 'selected' : ''}>🔗 Enlace</option>
                             <option value="reminder" ${item.type === 'reminder' || item.type === 'alarma' ? 'selected' : ''}>⏰ Alarma</option>
                             <option value="logro" ${item.type === 'logro' ? 'selected' : ''}>🏆 Logro</option>
-                            <option value="bitacora" ${item.type === 'bitacora' ? 'selected' : ''}>📝 Bitácora</option>
                         </select>
                     </div>
                     
-                    ${bitacoraInfoHtml}
+                    ${tagsHtml}
                     
                     <div id="section-alarm-${item.id}" class="space-y-2 ${hasAlarm ? '' : 'hidden'}">
                         <label class="txt-label ml-1">⏰ Alarma</label>

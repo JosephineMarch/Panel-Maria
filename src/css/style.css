@@ -140,6 +140,17 @@ body {
     color: var(--ink);
 }
 
+.theme-nota {
+    background-color: var(--color-idea-dark);
+    color: var(--ink);
+}
+
+.theme-task {
+    background-color: var(--color-note-dark);
+    color: var(--ink);
+    border: none;
+}
+
 /* Etiquetas de Tipo Minimalistas */
 .tag-type {
     display: inline-flex;

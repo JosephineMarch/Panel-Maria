@@ -120,19 +120,36 @@
             </div>
         </div>
 
-        <nav class="flex gap-1 bg-gray-50 p-1 rounded-2xl">
+        <nav class="flex gap-1 bg-gray-50 p-1 rounded-2xl flex-wrap">
+            <!-- Tipos -->
             <button
                 class="btn-category px-3 py-1 rounded-xl text-xs font-bold transition-all active bg-white shadow-sticker"
                 data-category="all">Todos</button>
             <button
                 class="btn-category px-3 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-brand transition-all"
-                data-category="bitacora">📝 Bitácora</button>
+                data-category="nota">📝 Notas</button>
             <button
                 class="btn-category px-3 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-brand transition-all"
                 data-category="proyecto">📁 Proyectos</button>
             <button
                 class="btn-category px-3 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-brand transition-all"
+                data-category="task">✅ Tareas</button>
+            <button
+                class="btn-category px-3 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-brand transition-all"
+                data-category="directorio">🔗 Enlaces</button>
+            <button
+                class="btn-category px-3 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-brand transition-all"
                 data-category="logro">🏆 Logros</button>
+            <!-- Tags -->
+            <button
+                class="btn-category px-3 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-brand transition-all"
+                data-tag="bitacora">✨ Acciones</button>
+            <button
+                class="btn-category px-3 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-brand transition-all"
+                data-tag="salud">💪 Salud</button>
+            <button
+                class="btn-category px-3 py-1 rounded-xl text-xs font-bold text-gray-400 hover:text-brand transition-all"
+                data-tag="emocion">💭 Emociones</button>
         </nav>
     </header>
 
@@ -167,12 +184,11 @@
                 <div class="flex items-center gap-2 pr-1">
                     <select id="item-type"
                         class="hidden md:block bg-gray-50 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase cursor-pointer hover:bg-lavender transition-colors border-none outline-none">
-                        <option value="idea">💡 Idea</option>
+                        <option value="idea">📝 Nota</option>
                         <option value="task">✅ Tarea</option>
                         <option value="proyecto">📁 Proyecto</option>
                         <option value="reminder">⏰ Alarma</option>
                         <option value="directorio">🔗 Enlace</option>
-                        <option value="bitacora">📝 Bitácora</option>
                     </select>
 
                     <button id="btn-submit"
@@ -288,7 +304,7 @@
                         <select id="edit-type"
                             class="w-full bg-input-bg border-none rounded-blob px-4 py-3 font-bold text-ink focus:ring-2 focus:ring-brand"
                             required>
-                            <option value="idea">💡 Idea</option>
+                            <option value="idea">📝 Nota</option>
                             <option value="task">✅ Tarea (Checklist)</option>
                             <option value="proyecto">📁 Proyecto</option>
                             <option value="directorio">🔗 Enlace</option>

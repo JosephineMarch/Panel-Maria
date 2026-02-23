@@ -143,6 +143,153 @@ export const ai = {
         return { esBitacora: false, contenido: '', momento: '', textoOriginal: texto, explicito: false };
     },
 
+    detectarAlarmas(texto) {
+        const textoLower = texto.toLowerCase();
+        
+        // Buscar si contiene comando de alarma en cualquier parte
+        const tieneComandoAlarma = /alarma|recordatorio|recuerdame|avísame|avisa|recordar|recuerda/i.test(textoLower);
+        
+        if (!tieneComandoAlarma) {
+            return { esAlarma: false, deadline: null };
+        }
+        
+        // Extraer deadline del texto
+        const deadline = this.extraerFechaHora(texto);
+        
+        if (deadline) {
+            // Limpiar el texto del comando
+            let contenido = texto
+                .replace(/alarma:?\s*/i, '')
+                .replace(/recordatorio:?\s*/i, '')
+                .replace(/recuerdame\s*/i, '')
+                .replace(/avísame\s*/i, '')
+                .replace(/avisa\s*/i, '')
+                .replace(/recordar\s*/i, '')
+                .replace(/recuerda\s*/i, '')
+                .trim();
+            
+            return {
+                esAlarma: true,
+                deadline: deadline,
+                contenido: contenido || 'Recordatorio'
+            };
+        }
+        
+        return { esAlarma: false, deadline: null };
+    },
+
+    extraerFechaHora(texto) {
+        const ahora = new Date();
+        const textoLower = texto.toLowerCase();
+        let fecha = new Date(ahora);
+        
+        // Patrones de tiempo relativo
+        if (/en\s+(\d+)\s*hora/i.test(textoLower)) {
+            const horas = parseInt(textoLower.match(/en\s+(\d+)\s*hora/i)[1]);
+            fecha.setHours(fecha.getHours() + horas);
+            return fecha.toISOString();
+        }
+        
+        if (/en\s+(\d+)\s*minuto/i.test(textoLower)) {
+            const minutos = parseInt(textoLower.match(/en\s+(\d+)\s*minuto/i)[1]);
+            fecha.setMinutes(fecha.getMinutes() + minutos);
+            return fecha.toISOString();
+        }
+        
+        // Patrones de hora específica
+        // "a las 6pm", "a las 6:30pm", "para las 14:00"
+        const horaMatch = textoLower.match(/(?:a las|para las)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+        if (horaMatch) {
+            let horas = parseInt(horaMatch[1]);
+            const minutos = horaMatch[2] ? parseInt(horaMatch[2]) : 0;
+            const periodo = horaMatch[3]?.toLowerCase();
+            
+            if (periodo === 'pm' && horas < 12) horas += 12;
+            if (periodo === 'am' && horas === 12) horas = 0;
+            
+            fecha.setHours(horas, minutos, 0, 0);
+            
+            // Si la hora ya pasó hoy, poner para mañana
+            if (fecha < ahora) {
+                fecha.setDate(fecha.getDate() + 1);
+            }
+            
+            return fecha.toISOString();
+        }
+        
+        // "hoy a las X"
+        if (/hoy.*a las\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i.test(textoLower)) {
+            const match = textoLower.match(/a las\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+            let horas = parseInt(match[1]);
+            const minutos = match[2] ? parseInt(match[2]) : 0;
+            const periodo = match[3]?.toLowerCase();
+            
+            if (periodo === 'pm' && horas < 12) horas += 12;
+            if (periodo === 'am' && horas === 12) horas = 0;
+            
+            fecha.setHours(horas, minutos, 0, 0);
+            
+            if (fecha < ahora) {
+                fecha.setDate(fecha.getDate() + 1);
+            }
+            
+            return fecha.toISOString();
+        }
+        
+        // "mañana"
+        if (/mañana/i.test(textoLower)) {
+            fecha.setDate(fecha.getDate() + 1);
+            fecha.setHours(9, 0, 0, 0); // Por defecto 9am
+            return fecha.toISOString();
+        }
+        
+        // "hoy"
+        if (/^hoy\b|\bhoy\b/i.test(textoLower)) {
+            // Si dice "hoy" sin hora específica, poner para dentro de 1 hora
+            fecha.setHours(fecha.getHours() + 1);
+            return fecha.toISOString();
+        }
+        
+        return null;
+    },
+
+    detectarTags(texto) {
+        const textoLower = texto.toLowerCase();
+        const tags = [];
+        
+        // Tags de salud (cuerpo físico)
+        const patronesSalud = [
+            /me\s+dolió/i, /me\s+duele/i, /estuve\s+cansada/i, /estoy\s+cansada/i,
+            /me\s+enfermé/i, /me\s+enfermo/i, /tengo\s+dolor/i, /me\s+siento\s+débil/i,
+            /me\s+siento\s+enferma/i, /tengo\s+gripe/i, /tengo\s+resfriado/i,
+            /me\s+headache/i, /me\s+dolor\s+de/i, /tengo\s+fatiga/i
+        ];
+        
+        // Tags de emoción
+        const patronesEmocion = [
+            /me\s+sentí/i, /me\s+siento/i, /estoy\s+(triste|feliz|contento|contenta|feliz)/i,
+            /me\s+siento\s+(bien|mal|triste|feliz|ansioso|preocupado)/i,
+            /tengo\s+(miedo|vergüenza|rabia|enojo)/i, /estoy\s+(ansioso|preocupado|nervioso)/i,
+            /me\s+siento\s+(solo|sola)/i, /tengo\s+(ansiedad|depresión)/i
+        ];
+        
+        for (const patron of patronesSalud) {
+            if (patron.test(textoLower)) {
+                tags.push('salud');
+                break;
+            }
+        }
+        
+        for (const patron of patronesEmocion) {
+            if (patron.test(textoLower)) {
+                tags.push('emocion');
+                break;
+            }
+        }
+        
+        return tags;
+    },
+
     capitalizar(str) {
         return str.charAt(0).toUpperCase() + str.slice(1);
     }

@@ -11,6 +11,7 @@ class KaiController {
         this.currentUser = null;
         this.currentParentId = null;
         this.currentCategory = 'all';
+        this.currentTag = null;
         this.breadcrumbPath = [];
         this.init();
     }
@@ -317,7 +318,16 @@ class KaiController {
         const { content, type } = ui.getMainInputData();
         if (!content) return;
 
-        // Detectar si es una entrada de bitácora
+        // 1. Detectar alarmas (comando en cualquier parte)
+        const alarmaData = ai.detectarAlarmas(content);
+        console.log('🔔 Detección alarma:', content, '->', alarmaData);
+        
+        if (alarmaData.esAlarma) {
+            await this.crearAlarma(alarmaData);
+            return;
+        }
+
+        // 2. Detectar si es una entrada de bitácora
         const bitacoraData = ai.detectarBitacora(content);
         console.log('🔍 Detección bitácora:', content, '->', bitacoraData);
         
@@ -325,6 +335,10 @@ class KaiController {
             await this.crearBitacora(bitacoraData);
             return;
         }
+
+        // 3. Detectar tags (salud, emocion)
+        const detectedTags = ai.detectarTags(content);
+        console.log('🏷️ Detección tags:', content, '->', detectedTags);
 
         if (!this.currentUser && !this.isDemoMode) {
             ui.showNotification('¡Ups! Necesitas entrar para que Kai recuerde esto.', 'warning');
@@ -335,6 +349,9 @@ class KaiController {
         try {
             const parsed = ai.parseIntent(content);
             const finalType = type !== 'note' ? type : parsed.type;
+            
+            // Combinar tags detectados automáticamente con los parsed
+            const finalTags = [...(parsed.tags || []), ...detectedTags];
 
             if (this.isDemoMode) {
                 const newItem = {
@@ -342,7 +359,7 @@ class KaiController {
                     content,
                     type: finalType,
                     parent_id: this.currentParentId,
-                    tags: parsed.tags || [],
+                    tags: finalTags,
                     descripcion: '',
                     url: '',
                     tareas: [],
@@ -358,7 +375,7 @@ class KaiController {
                     content,
                     type: finalType,
                     parent_id: this.currentParentId,
-                    tags: parsed.tags,
+                    tags: finalTags,
                     deadline: parsed.deadline
                 });
             }
@@ -383,7 +400,7 @@ class KaiController {
                 const newItem = {
                     id: 'demo-' + Date.now(),
                     content: contenidoBitacora,
-                    type: 'bitacora',
+                    type: 'nota', // Ahora es nota con tags
                     parent_id: this.currentParentId,
                     tags: ['bitacora', 'accion'],
                     descripcion: '',
@@ -400,7 +417,7 @@ class KaiController {
             } else if (this.currentUser) {
                 await data.createItem({
                     content: contenidoBitacora,
-                    type: 'bitacora',
+                    type: 'nota',
                     parent_id: this.currentParentId,
                     tags: ['bitacora', 'accion'],
                     meta: { momento: bitacoraData.momento }
@@ -433,6 +450,62 @@ class KaiController {
         } catch (error) {
             console.error('Error al crear bitácora:', error);
             ui.showNotification('No pude guardar en la bitácora. ¿Reintentamos?', 'error');
+        }
+    }
+
+    async crearAlarma(alarmaData) {
+        try {
+            const contenidoAlarma = alarmaData.contenido || 'Recordatorio';
+            const deadline = alarmaData.deadline;
+
+            if (this.isDemoMode) {
+                const newItem = {
+                    id: 'demo-' + Date.now(),
+                    content: contenidoAlarma,
+                    type: 'idea', // Mantener como nota, deadline hace la magia
+                    parent_id: this.currentParentId,
+                    tags: ['alarma'],
+                    descripcion: '',
+                    url: '',
+                    tareas: [],
+                    deadline: deadline,
+                    anclado: false,
+                    created_at: new Date().toISOString()
+                };
+                let items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
+                items.unshift(newItem);
+                localStorage.setItem('kaiDemoItems', JSON.stringify(items));
+            } else if (this.currentUser) {
+                await data.createItem({
+                    content: contenidoAlarma,
+                    type: 'idea',
+                    parent_id: this.currentParentId,
+                    tags: ['alarma'],
+                    deadline: deadline
+                });
+            }
+
+            ui.clearMainInput();
+            
+            const hora = new Date(deadline).toLocaleString('es-ES', { 
+                month: 'short', 
+                day: 'numeric', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            const mensajesAlarma = [
+                `¡Alarmas configurada para ${hora}! ⏰`,
+                `¡Te recuerdo a las ${hora}! ⏰✨`,
+                `¡Listo! Te aviso a las ${hora} ⏰`
+            ];
+            const mensajeAleatorio = mensajesAlarma[Math.floor(Math.random() * mensajesAlarma.length)];
+            ui.showNotification(mensajeAleatorio, 'success');
+            
+            await this.loadItems();
+        } catch (error) {
+            console.error('Error al crear alarma:', error);
+            ui.showNotification('No pude crear la alarma. ¿Reintentamos?', 'error');
         }
     }
 
@@ -493,7 +566,17 @@ class KaiController {
         
         if (this.isDemoMode || demoItems) {
             this.isDemoMode = true;
-            const items = demoItems || [];
+            let items = demoItems || [];
+            
+            // Filtrar por categoría o tag
+            if (this.currentTag) {
+                // Filtrar por tag
+                items = items.filter(item => item.tags && item.tags.includes(this.currentTag));
+            } else if (this.currentCategory && this.currentCategory !== 'all') {
+                // Filtrar por tipo
+                items = items.filter(item => item.type === this.currentCategory);
+            }
+            
             ui.render(items, true);
             return;
         }
@@ -504,7 +587,14 @@ class KaiController {
             if (this.currentCategory !== 'all') filters.type = this.currentCategory;
 
             const items = await data.getItems(filters);
-            ui.render(items);
+            
+            // Filtrar por tag si aplica
+            let filteredItems = items;
+            if (this.currentTag) {
+                filteredItems = items.filter(item => item.tags && item.tags.includes(this.currentTag));
+            }
+            
+            ui.render(filteredItems);
             this.updateBreadcrumb();
         } catch (error) {
             console.error('Error al cargar:', error);
@@ -742,7 +832,11 @@ class KaiController {
     async handleCategoryClick(button) {
         document.querySelectorAll('.btn-category').forEach(b => b.classList.remove('active', 'border-brand'));
         button.classList.add('active', 'border-brand');
-        this.currentCategory = button.dataset.category;
+        
+        // Manejar tanto categorías como tags
+        this.currentCategory = button.dataset.category || null;
+        this.currentTag = button.dataset.tag || null;
+        
         await this.loadItems();
     }
 
