@@ -76,9 +76,9 @@ class KaiController {
                     id: 'demo-3',
                     content: 'Recordatorio Importante',
                     type: 'reminder',
-                    descripcion: 'Recordatorio con alarma configurada',
+                    descripcion: 'Esta alarma debería sonar en 2 minutos',
                     tareas: [],
-                    deadline: new Date(Date.now() + 60000).toISOString(),
+                    deadline: new Date(Date.now() + 120000).toISOString(), // 2 minutos desde ahora
                     anclado: false,
                     created_at: new Date().toISOString()
                 },
@@ -149,24 +149,45 @@ class KaiController {
             Notification.requestPermission();
         }
         
+        // Verificar inmediatamente al abrir
+        setTimeout(() => this.checkAlarms(), 2000);
+        
+        // Luego verificar cada 30 segundos
         setInterval(() => {
             this.checkAlarms();
         }, 30000);
     }
 
     async checkAlarms() {
-        if (!this.currentUser) return;
+        console.log('🔔 Verificando alarmas... isDemoMode:', this.isDemoMode);
         
         try {
-            const items = await data.getItems({});
+            let items;
+            
+            if (this.isDemoMode) {
+                items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
+            } else if (this.currentUser) {
+                items = await data.getItems({});
+            } else {
+                return;
+            }
+            
             const now = new Date();
+            // Zona horaria Lima, Perú (UTC-5)
+            const limaTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Lima' }));
+            console.log('🕐 Hora actual (Lima):', limaTime.toISOString());
+            
             const triggeredIds = JSON.parse(localStorage.getItem('triggeredAlarms') || '[]');
 
             for (const item of items) {
                 if (item.deadline && !triggeredIds.includes(item.id)) {
+                    // La deadline ya debería estar en UTC, la comparamos directamente
                     const deadline = new Date(item.deadline);
-                    const timeDiff = deadline - now;
+                    const timeDiff = deadline - limaTime;
                     
+                    console.log(`⏰ Alarma "${item.content}": deadline=${deadline.toISOString()}, diff=${timeDiff}ms`);
+                    
+                    // Ventana de 1 minuto antes hasta 1 minuto después
                     if (timeDiff > -60000 && timeDiff <= 60000) {
                         triggeredIds.push(item.id);
                         localStorage.setItem('triggeredAlarms', JSON.stringify(triggeredIds));
@@ -301,7 +322,7 @@ class KaiController {
         const { content, type } = ui.getMainInputData();
         if (!content) return;
 
-        if (!this.currentUser) {
+        if (!this.currentUser && !this.isDemoMode) {
             ui.showNotification('¡Ups! Necesitas entrar para que Kai recuerde esto.', 'warning');
             ui.toggleSidebar();
             return;
@@ -311,13 +332,32 @@ class KaiController {
             const parsed = ai.parseIntent(content);
             const finalType = type !== 'note' ? type : parsed.type;
 
-            await data.createItem({
-                content,
-                type: finalType,
-                parent_id: this.currentParentId,
-                tags: parsed.tags,
-                deadline: parsed.deadline
-            });
+            if (this.isDemoMode) {
+                const newItem = {
+                    id: 'demo-' + Date.now(),
+                    content,
+                    type: finalType,
+                    parent_id: this.currentParentId,
+                    tags: parsed.tags || [],
+                    descripcion: '',
+                    url: '',
+                    tareas: [],
+                    deadline: parsed.deadline || null,
+                    anclado: false,
+                    created_at: new Date().toISOString()
+                };
+                let items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
+                items.unshift(newItem);
+                localStorage.setItem('kaiDemoItems', JSON.stringify(items));
+            } else {
+                await data.createItem({
+                    content,
+                    type: finalType,
+                    parent_id: this.currentParentId,
+                    tags: parsed.tags,
+                    deadline: parsed.deadline
+                });
+            }
 
             ui.clearMainInput();
             ui.showNotification('¡Anotado con éxito!', 'success');
@@ -331,7 +371,11 @@ class KaiController {
     async handleEdit() {
         const updates = ui.getEditFormData();
         try {
-            await data.updateItem(updates.id, updates);
+            if (this.isDemoMode) {
+                await this.demoUpdateItem(updates.id, updates);
+            } else {
+                await data.updateItem(updates.id, updates);
+            }
             ui.toggleModal(false);
             ui.showNotification('¡Cambios guardados con amor!', 'success');
             await this.loadItems();
