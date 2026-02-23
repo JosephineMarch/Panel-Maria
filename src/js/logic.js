@@ -135,7 +135,6 @@ class KaiController {
         if (index !== -1) {
             items[index] = { ...items[index], ...updates };
             localStorage.setItem('kaiDemoItems', JSON.stringify(items));
-            this.loadDemoItems();
         }
     }
 
@@ -143,7 +142,6 @@ class KaiController {
         let items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
         items = items.filter(i => i.id !== id);
         localStorage.setItem('kaiDemoItems', JSON.stringify(items));
-        this.loadDemoItems();
     }
 
     startAlarmChecker() {
@@ -344,10 +342,12 @@ class KaiController {
     }
 
     async dataUpdateInline(id, updates) {
+        console.log('dataUpdateInline - isDemoMode:', this.isDemoMode, 'id:', id);
         try {
             if (this.isDemoMode) {
                 await this.demoUpdateItem(id, updates);
                 ui.showNotification('¡Bloque actualizado! ✨', 'success');
+                await this.loadItems();
             } else {
                 await data.updateItem(id, updates);
                 ui.showNotification('¡Bloque actualizado! ✨', 'success');
@@ -517,14 +517,23 @@ class KaiController {
 
     async togglePin(id) {
         try {
-            // Lógica optimista o directa
-            const items = await data.getItems({ id }); // Simplificación
-            const item = Array.isArray(items) ? items[0] : items;
-            const newPinned = !item.anclado;
-
-            await data.updateItem(id, { anclado: newPinned });
-            ui.showNotification(newPinned ? '📌 Anclado al panel' : '📍 Desanclado', 'success');
-            await this.loadItems();
+            if (this.isDemoMode) {
+                let items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
+                const item = items.find(i => i.id === id);
+                if (item) {
+                    item.anclado = !item.anclado;
+                    localStorage.setItem('kaiDemoItems', JSON.stringify(items));
+                    ui.showNotification(item.anclado ? '📌 Anclado al panel' : '📍 Desanclado', 'success');
+                    await this.loadItems();
+                }
+            } else {
+                const items = await data.getItems({ id });
+                const item = Array.isArray(items) ? items[0] : items;
+                const newPinned = !item.anclado;
+                await data.updateItem(id, { anclado: newPinned });
+                ui.showNotification(newPinned ? '📌 Anclado al panel' : '📍 Desanclado', 'success');
+                await this.loadItems();
+            }
         } catch (error) {
             console.error('Error pin:', error);
         }
@@ -532,14 +541,22 @@ class KaiController {
 
     async toggleTimelineTask(id, taskIndex, isCompleted) {
         try {
-            const items = await data.getItems({ id });
-            const item = Array.isArray(items) ? items.find(i => i.id === id) : items;
-
-            if (item && item.tareas && item.tareas[taskIndex]) {
-                item.tareas[taskIndex].completado = isCompleted;
-                await data.updateItem(id, { tareas: item.tareas });
-                // No mostramos notificación para no saturar, el feedback visual es el checkbox
-                await this.loadItems();
+            if (this.isDemoMode) {
+                let items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
+                const item = items.find(i => i.id === id);
+                if (item && item.tareas && item.tareas[taskIndex]) {
+                    item.tareas[taskIndex].completado = isCompleted;
+                    localStorage.setItem('kaiDemoItems', JSON.stringify(items));
+                    await this.loadItems();
+                }
+            } else {
+                const items = await data.getItems({ id });
+                const item = Array.isArray(items) ? items.find(i => i.id === id) : items;
+                if (item && item.tareas && item.tareas[taskIndex]) {
+                    item.tareas[taskIndex].completado = isCompleted;
+                    await data.updateItem(id, { tareas: item.tareas });
+                    await this.loadItems();
+                }
             }
         } catch (error) {
             console.error('Error toggle timeline task:', error);
@@ -548,10 +565,21 @@ class KaiController {
 
     async finishItem(id) {
         try {
-            await data.updateItem(id, { type: 'logro', status: 'completed' });
-            ui.showNotification('¡Felicidades por tu logro! 🏆', 'success');
-            ui.showKaiResponse('¡Lo hiciste genial! Estoy orgulloso de ti. 🎉');
-            await this.loadItems();
+            if (this.isDemoMode) {
+                let items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
+                const item = items.find(i => i.id === id);
+                if (item) {
+                    item.type = 'logro';
+                    item.status = 'completed';
+                    localStorage.setItem('kaiDemoItems', JSON.stringify(items));
+                    ui.showNotification('¡Felicidades por tu logro! 🏆', 'success');
+                    await this.loadItems();
+                }
+            } else {
+                await data.updateItem(id, { type: 'logro', status: 'completed' });
+                ui.showNotification('¡Felicidades por tu logro! 🏆', 'success');
+                await this.loadItems();
+            }
         } catch (error) {
             console.error('Error finish:', error);
         }
@@ -561,12 +589,20 @@ class KaiController {
 
     async openProject(id) {
         try {
-            const items = await data.getItems({ id });
-            const project = Array.isArray(items) ? items.find(i => i.id === id) : items;
+            let project;
+            if (this.isDemoMode) {
+                const items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
+                project = items.find(i => i.id === id);
+            } else {
+                const items = await data.getItems({ id });
+                project = Array.isArray(items) ? items.find(i => i.id === id) : items;
+            }
 
-            this.breadcrumbPath.push({ id, content: project.content });
-            this.currentParentId = id;
-            await this.loadItems();
+            if (project) {
+                this.breadcrumbPath.push({ id, content: project.content });
+                this.currentParentId = id;
+                await this.loadItems();
+            }
         } catch (error) {
             console.error('Error abrir proyecto:', error);
         }
@@ -596,8 +632,14 @@ class KaiController {
 
     async openEditModal(id, focus = null) {
         try {
-            const items = await data.getItems({ id });
-            const item = Array.isArray(items) ? items.find(i => i.id === id) : items;
+            let item;
+            if (this.isDemoMode) {
+                const items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
+                item = items.find(i => i.id === id);
+            } else {
+                const items = await data.getItems({ id });
+                item = Array.isArray(items) ? items.find(i => i.id === id) : items;
+            }
             if (item) {
                 ui.fillEditModal(item, focus);
                 ui.toggleModal(true);
