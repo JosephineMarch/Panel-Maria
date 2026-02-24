@@ -274,31 +274,6 @@
                 <div id="kai-status" class="absolute bottom-0 right-0 w-4 h-4 bg-green-400 border-2 border-white rounded-full"></div>
             </div>
         </div>
-                </div>
-                <button id="kai-chat-minimize" class="w-10 h-10 rounded-full hover:bg-white/20 flex items-center justify-center transition">
-                    <i class="fa-solid fa-minus"></i>
-                </button>
-            </div>
-            
-            <!-- Chat Messages -->
-            <div id="kai-chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4 bg-cream">
-                <div class="bg-white p-4 rounded-2xl rounded-bl-none shadow-sm max-w-[85%]">
-                    <p class="text-sm font-medium text-ink">¡Hola Maria! ✨ Soy Kai. Estoy listo para ayudarte a gestionar tus notas y proyectos. ¿Qué tienes en mente?</p>
-                </div>
-            </div>
-            
-            <!-- Chat Input -->
-            <div class="p-4 bg-white border-t border-gray-100 shrink-0">
-                <div class="flex gap-3 items-center">
-                    <input type="text" id="kai-chat-input" placeholder="Escribe tu mensaje..." 
-                        class="flex-1 bg-gray-100 border-none rounded-2xl px-5 py-3 text-sm font-bold focus:ring-2 focus:ring-brand outline-none">
-                    <button id="kai-chat-send"
-                        class="w-12 h-12 rounded-full bg-brand text-white flex items-center justify-center shadow-sticker">
-                        <i class="fa-solid fa-paper-plane"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
 
         <!-- Reutilizamos el modal de edición con clases Tailwind -->
         <div id="modal-edit"
@@ -393,9 +368,9 @@
 
                     <div class="flex gap-4 pt-4">
                         <button type="submit"
-                            class="flex-1 bg-brand text-white txt-button py-2 rounded-blob shadow-sticker hover:bg-brand-dark transition-all">Guardar</button>
+                            class="flex-1 bg-brand text-white font-bold py-2 rounded-blob shadow-sticker hover:bg-brand-dark transition-all">Guardar</button>
                         <button type="button"
-                            class="flex-1 bg-gray-100 text-gray-500 txt-button py-2 rounded-blob shadow-sticker hover:bg-gray-200 transition-all modal-close">Quizás
+                            class="flex-1 bg-gray-100 text-gray-500 font-bold py-2 rounded-blob shadow-sticker hover:bg-gray-200 transition-all modal-close">Quizás
                             luego</button>
                     </div>
                 </form>
@@ -409,8 +384,8 @@
                     class="w-32 h-32 bg-white rounded-full mx-auto mb-8 flex items-center justify-center animate-pulse shadow-float">
                     <span class="text-6xl">🎤</span>
                 </div>
-                <h2 class="text-3xl font-bold mb-4">¡Te escucho!</h2>
-                <p id="voice-text" class="text-xl font-hand mb-10 min-h-[1.5em]"></p>
+                <h2 class="font-bold mb-4">¡Te escucho!</h2>
+                <p id="voice-text" class="font-hand mb-10 min-h-[1.5em]"></p>
                 <button id="btn-stop-voice"
                     class="bg-white text-brand font-bold px-12 py-4 rounded-blob shadow-sticker active:shadow-pressed">Ya
                     terminé</button>
