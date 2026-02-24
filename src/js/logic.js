@@ -380,12 +380,13 @@ class KaiController {
                 items.unshift(newItem);
                 localStorage.setItem('kaiDemoItems', JSON.stringify(items));
             } else {
+                const deadlineValue = parsed.deadline ? new Date(parseInt(parsed.deadline)).toISOString() : null;
                 await data.createItem({
                     content,
                     type: finalType,
                     parent_id: this.currentParentId,
                     tags: finalTags,
-                    deadline: parsed.deadline
+                    deadline: deadlineValue
                 });
             }
 
@@ -426,7 +427,7 @@ class KaiController {
                     type: 'nota',
                     parent_id: this.currentParentId,
                     tags: ['alarma'],
-                    deadline: new Date(deadline).toISOString()
+                    deadline: new Date(parseInt(deadline)).toISOString()
                 });
             }
 
