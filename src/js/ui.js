@@ -137,9 +137,58 @@ export const ui = {
             return;
         }
 
-        items.forEach(item => {
-            container.appendChild(this.createItemCard(item));
+        // Agrupar items por fecha
+        const grouped = this.groupItemsByDate(items);
+        
+        Object.keys(grouped).forEach(dateLabel => {
+            // Agregar separador de fecha
+            const dateSeparator = document.createElement('div');
+            dateSeparator.className = 'flex items-center gap-4 my-6';
+            dateSeparator.innerHTML = `
+                <div class="h-px flex-1 bg-gray-200"></div>
+                <span class="text-xs font-bold text-gray-400 uppercase tracking-widest px-2">${dateLabel}</span>
+                <div class="h-px flex-1 bg-gray-200"></div>
+            `;
+            container.appendChild(dateSeparator);
+            
+            // Agregar items de esta fecha
+            grouped[dateLabel].forEach(item => {
+                container.appendChild(this.createItemCard(item));
+            });
         });
+    },
+
+    groupItemsByDate(items) {
+        const groups = {};
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        const last7Days = new Date(today);
+        last7Days.setDate(last7Days.getDate() - 7);
+
+        items.forEach(item => {
+            const itemDate = new Date(item.created_at);
+            itemDate.setHours(0, 0, 0, 0);
+            
+            let label;
+            if (itemDate.getTime() === today.getTime()) {
+                label = 'Hoy';
+            } else if (itemDate.getTime() === yesterday.getTime()) {
+                label = 'Ayer';
+            } else if (itemDate >= last7Days) {
+                label = itemDate.toLocaleDateString('es-ES', { weekday: 'long', month: 'short', day: 'numeric' });
+            } else {
+                label = itemDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+            }
+            
+            if (!groups[label]) groups[label] = [];
+            groups[label].push(item);
+        });
+
+        return groups;
     },
 
     createItemCard(item) {
