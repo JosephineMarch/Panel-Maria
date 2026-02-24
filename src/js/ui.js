@@ -137,25 +137,45 @@ export const ui = {
             return;
         }
 
-        // Agrupar items por fecha
-        const grouped = this.groupItemsByDate(items);
-        
-        Object.keys(grouped).forEach(dateLabel => {
-            // Agregar separador de fecha
-            const dateSeparator = document.createElement('div');
-            dateSeparator.className = 'flex items-center gap-4 my-6';
-            dateSeparator.innerHTML = `
-                <div class="h-px flex-1 bg-gray-200"></div>
-                <span class="text-xs font-bold text-gray-400 uppercase tracking-widest px-2">${dateLabel}</span>
-                <div class="h-px flex-1 bg-gray-200"></div>
+        // Separar items anclados y no anclados
+        const pinnedItems = items.filter(item => item.anclado);
+        const unpinnedItems = items.filter(item => !item.anclado);
+
+        // Mostrar primero los items anclados
+        if (pinnedItems.length > 0) {
+            const pinnedSeparator = document.createElement('div');
+            pinnedSeparator.className = 'flex items-center gap-4 my-6';
+            pinnedSeparator.innerHTML = `
+                <div class="h-px flex-1 bg-brand/30"></div>
+                <span class="text-xs font-bold text-brand uppercase tracking-widest px-2">📌 Fijados</span>
+                <div class="h-px flex-1 bg-brand/30"></div>
             `;
-            container.appendChild(dateSeparator);
-            
-            // Agregar items de esta fecha
-            grouped[dateLabel].forEach(item => {
+            container.appendChild(pinnedSeparator);
+
+            pinnedItems.forEach(item => {
                 container.appendChild(this.createItemCard(item));
             });
-        });
+        }
+
+        // Luego mostrar los no anclados agrupados por fecha
+        if (unpinnedItems.length > 0) {
+            const grouped = this.groupItemsByDate(unpinnedItems);
+            
+            Object.keys(grouped).forEach(dateLabel => {
+                const dateSeparator = document.createElement('div');
+                dateSeparator.className = 'flex items-center gap-4 my-6';
+                dateSeparator.innerHTML = `
+                    <div class="h-px flex-1 bg-gray-200"></div>
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-widest px-2">${dateLabel}</span>
+                    <div class="h-px flex-1 bg-gray-200"></div>
+                `;
+                container.appendChild(dateSeparator);
+                
+                grouped[dateLabel].forEach(item => {
+                    container.appendChild(this.createItemCard(item));
+                });
+            });
+        }
     },
 
     groupItemsByDate(items) {
