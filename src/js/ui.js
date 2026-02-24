@@ -431,9 +431,9 @@ export const ui = {
                         <label class="txt-label ml-1">Tipo</label>
                         <select id="inline-type-${item.id}" class="w-full bg-white/40 border-none rounded-2xl px-4 py-3 txt-small text-ink focus:ring-2 focus:ring-white/50 outline-none">
                             <option value="nota" ${item.type === 'nota' || item.type === 'idea' || item.type === 'note' ? 'selected' : ''}>📝 Nota</option>
-                            <option value="task" ${item.type === 'task' ? 'selected' : ''}>✅ Tarea (Checklist)</option>
-                            <option value="proyecto" ${item.type === 'proyecto' ? 'selected' : ''}>📁 Proyecto</option>
-                            <option value="directorio" ${item.type === 'directorio' ? 'selected' : ''}>🔗 Enlace</option>
+                            <option value="tarea" ${item.type === 'tarea' || item.type === 'task' ? 'selected' : ''}>✅ Tarea (Checklist)</option>
+                            <option value="proyecto" ${item.type === 'proyecto' || item.type === 'project' ? 'selected' : ''}>📁 Proyecto</option>
+                            <option value="directorio" ${item.type === 'directorio' || item.type === 'link' ? 'selected' : ''}>🔗 Enlace</option>
                         </select>
                     </div>
                     
@@ -586,7 +586,7 @@ export const ui = {
     },
 
     addInlineTask(id) {
-        const list = document.getElementById(`inline - tasks - list - ${id} `);
+        const list = document.getElementById(`inline-tasks-list-${id}`);
         if (!list) return;
         const div = document.createElement('div');
         div.className = 'flex items-start gap-3 p-2 rounded-xl group/task animate-fadeIn border-b border-gray-100/50';
@@ -602,12 +602,12 @@ export const ui = {
 
     async handleInlineSave(card, item) {
         const id = item.id;
-        const content = document.getElementById(`inline - content - ${id} `).value;
-        const type = document.getElementById(`inline - type - ${id} `).value;
-        const descripcion = document.getElementById(`inline - desc - ${id} `).value;
-        const url = document.getElementById(`inline - url - ${id} `).value;
-        const date = document.getElementById(`inline - date - ${id} `).value;
-        const time = document.getElementById(`inline - time - ${id} `).value;
+        const content = document.getElementById(`inline-content-${id}`).value;
+        const type = document.getElementById(`inline-type-${id}`).value;
+        const descripcion = document.getElementById(`inline-desc-${id}`)?.value || '';
+        const url = document.getElementById(`inline-url-${id}`)?.value || '';
+        const date = document.getElementById(`inline-date-${id}`)?.value || '';
+        const time = document.getElementById(`inline-time-${id}`)?.value || '';
         const deadline = (date && time) ? `${date}T${time} ` : (date || null);
 
         const tareas = [];

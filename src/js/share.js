@@ -203,7 +203,7 @@ const ShareUtils = {
                                 ${this.getTypeLabel(suggestedType)}
                             </button>
                             
-                            ${['nota', 'task', 'proyecto', 'directorio'].filter(t => t !== suggestedType).slice(0, 3).map(type => `
+                            ${['nota', 'tarea', 'proyecto', 'directorio'].filter(t => t !== suggestedType).slice(0, 3).map(type => `
                                 <button class="share-option bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2 px-3 rounded-xl flex items-center gap-2 transition text-sm"
                                         data-type="${type}" data-url="${url || ''}" data-title="${title || url}">
                                     <i class="fa-solid ${this.getTypeIcon(type)}"></i>

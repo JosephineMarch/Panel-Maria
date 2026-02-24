@@ -149,6 +149,9 @@ export const ai = {
         // Buscar si contiene comando de alarma en cualquier parte
         const tieneComandoAlarma = /alarma|recordatorio|recuerdame|avísame|avisa|recordar|recuerda/i.test(textoLower);
 
+        console.log('🔔 detectarAlarmas - texto:', texto);
+        console.log('🔔 detectarAlarmas - tieneComandoAlarma:', tieneComandoAlarma);
+
         if (!tieneComandoAlarma) {
             return { esAlarma: false, deadline: null };
         }
@@ -166,12 +169,24 @@ export const ai = {
                 .replace(/avisa\s*/i, '')
                 .replace(/recordar\s*/i, '')
                 .replace(/recuerda\s*/i, '')
+                .replace(/dentro\s+de\s+\d+\s*(minuto|minutos|min|hora|horas|h)\b\s*/gi, '')
+                .replace(/en\s+\d+\s*(minuto|minutos|min|hora|horas|h)\b\s*/gi, '')
+                .replace(/en\s+una\s+(hora|minuto)\b\s*/gi, '')
+                .replace(/en\s+un\s+(hora|minuto)\b\s*/gi, '')
                 .trim();
+
+            // Si quedó vacío, usar un mensaje genérico
+            if (!contenido || contenido.length < 2) {
+                contenido = 'Recordatorio';
+            }
+
+            console.log('🔔 detectarAlarmas - deadline:', deadline);
+            console.log('🔔 detectarAlarmas - contenido:', contenido);
 
             return {
                 esAlarma: true,
                 deadline: deadline,
-                contenido: contenido || 'Recordatorio'
+                contenido: contenido
             };
         }
 
@@ -183,16 +198,57 @@ export const ai = {
         const textoLower = texto.toLowerCase();
         let fecha = new Date(ahora);
 
-        // Patrones de tiempo relativo
-        if (/en\s+(\d+)\s*hora/i.test(textoLower)) {
-            const horas = parseInt(textoLower.match(/en\s+(\d+)\s*hora/i)[1]);
-            fecha.setHours(fecha.getHours() + horas);
+        console.log('🔍 extraerFechaHora - texto:', texto);
+        console.log('🔍 extraerFechaHora - ahora:', ahora.toISOString());
+
+        // Patrones de tiempo relativo - PRIORIDAD ALTA
+        // "dentro de 5 minutos", "dentro de 5 minuto", "dentro 5 minutos"
+        const dentroMinuto = textoLower.match(/dentro\s+(?:de\s+)?(\d+)\s*(minuto|minutos|min|m)/i);
+        if (dentroMinuto) {
+            const minutos = parseInt(dentroMinuto[1]);
+            fecha.setMinutes(fecha.getMinutes() + minutos);
+            console.log('🔍 Dentro de minutos:', minutos, '→', fecha.toISOString());
             return fecha.toISOString();
         }
 
-        if (/en\s+(\d+)\s*minuto/i.test(textoLower)) {
-            const minutos = parseInt(textoLower.match(/en\s+(\d+)\s*minuto/i)[1]);
+        // "dentro de 2 horas", "dentro 2 horas"
+        const dentroHora = textoLower.match(/dentro\s+(?:de\s+)?(\d+)\s*(hora|horas|h)/i);
+        if (dentroHora) {
+            const horas = parseInt(dentroHora[1]);
+            fecha.setHours(fecha.getHours() + horas);
+            console.log('🔍 Dentro de horas:', horas, '→', fecha.toISOString());
+            return fecha.toISOString();
+        }
+
+        // "en 5 minutos", "en 5 minuto"
+        const enMinuto = textoLower.match(/en\s+(\d+)\s*(minuto|minutos|min|m)\b/i);
+        if (enMinuto) {
+            const minutos = parseInt(enMinuto[1]);
             fecha.setMinutes(fecha.getMinutes() + minutos);
+            console.log('🔍 En minutos:', minutos, '→', fecha.toISOString());
+            return fecha.toISOString();
+        }
+
+        // "en 2 horas"
+        const enHora = textoLower.match(/en\s+(\d+)\s*(hora|horas|h)\b/i);
+        if (enHora) {
+            const horas = parseInt(enHora[1]);
+            fecha.setHours(fecha.getHours() + horas);
+            console.log('🔍 En horas:', horas, '→', fecha.toISOString());
+            return fecha.toISOString();
+        }
+
+        // "en una hora"
+        if (/en\s+una\s+hora/i.test(textoLower)) {
+            fecha.setHours(fecha.getHours() + 1);
+            console.log('🔍 En una hora →', fecha.toISOString());
+            return fecha.toISOString();
+        }
+
+        // "en un minuto"
+        if (/en\s+un\s+minuto/i.test(textoLower)) {
+            fecha.setMinutes(fecha.getMinutes() + 1);
+            console.log('🔍 En un minuto →', fecha.toISOString());
             return fecha.toISOString();
         }
 
