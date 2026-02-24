@@ -194,7 +194,6 @@ export const ai = {
     },
 
     extraerFechaHora(texto) {
-        // Usar Date() directo - ya es hora local
         const ahora = new Date();
         const fecha = new Date(ahora);
         const textoLower = texto.toLowerCase();
@@ -206,44 +205,44 @@ export const ai = {
         if (dentroMinuto) {
             const minutos = parseInt(dentroMinuto[1]);
             fecha.setMinutes(fecha.getMinutes() + minutos);
-            console.log('🔍 Dentro de minutos:', minutos, '→', fecha);
-            return fecha.toISOString();
+            console.log('🔍 Dentro de minutos:', minutos, '→', fecha.toString());
+            return fecha.getTime(); // timestamp
         }
 
         const dentroHora = textoLower.match(/dentro\s+(?:de\s+)?(\d+)\s*(hora|horas|h)/i);
         if (dentroHora) {
             const horas = parseInt(dentroHora[1]);
             fecha.setHours(fecha.getHours() + horas);
-            console.log('🔍 Dentro de horas:', horas, '→', fecha);
-            return fecha.toISOString();
+            console.log('🔍 Dentro de horas:', horas, '→', fecha.toString());
+            return fecha.getTime();
         }
 
         const enMinuto = textoLower.match(/en\s+(\d+)\s*(minuto|minutos|min|m)\b/i);
         if (enMinuto) {
             const minutos = parseInt(enMinuto[1]);
             fecha.setMinutes(fecha.getMinutes() + minutos);
-            console.log('🔍 En minutos:', minutos, '→', fecha);
-            return fecha.toISOString();
+            console.log('🔍 En minutos:', minutos, '→', fecha.toString());
+            return fecha.getTime();
         }
 
         const enHora = textoLower.match(/en\s+(\d+)\s*(hora|horas|h)\b/i);
         if (enHora) {
             const horas = parseInt(enHora[1]);
             fecha.setHours(fecha.getHours() + horas);
-            console.log('🔍 En horas:', horas, '→', fecha);
-            return fecha.toISOString();
+            console.log('🔍 En horas:', horas, '→', fecha.toString());
+            return fecha.getTime();
         }
 
         if (/en\s+una\s+hora/i.test(textoLower)) {
             fecha.setHours(fecha.getHours() + 1);
-            console.log('🔍 En una hora →', fecha);
-            return fecha.toISOString();
+            console.log('🔍 En una hora →', fecha.toString());
+            return fecha.getTime();
         }
 
         if (/en\s+un\s+minuto/i.test(textoLower)) {
             fecha.setMinutes(fecha.getMinutes() + 1);
-            console.log('🔍 En un minuto →', fecha);
-            return fecha.toISOString();
+            console.log('🔍 En un minuto →', fecha.toString());
+            return fecha.getTime();
         }
 
         // Hora específica
@@ -262,8 +261,8 @@ export const ai = {
                 fecha.setDate(fecha.getDate() + 1);
             }
 
-            console.log('🔍 Hora específica →', fecha);
-            return fecha.toISOString();
+            console.log('🔍 Hora específica →', fecha.toString());
+            return fecha.getTime();
         }
 
         return null;

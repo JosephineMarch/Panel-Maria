@@ -163,8 +163,9 @@ class KaiController {
 
             for (const item of items) {
                 if (item.deadline && !triggeredIds.includes(item.id)) {
-                    const deadline = new Date(item.deadline);
-                    const timeDiff = deadline - localTime;
+                    // deadline puede ser timestamp o string ISO
+                    const deadline = new Date(parseInt(item.deadline));
+                    const timeDiff = deadline.getTime() - localTime.getTime();
 
                     console.log(`⏰ Alarma "${item.content}": deadline=${deadline}, diff=${timeDiff}ms`);
 
