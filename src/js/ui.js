@@ -441,12 +441,19 @@ export const ui = {
                     
                     ${(() => {
                         let deadlineDate = null;
-                        if (item.deadline) {
-                            if (typeof item.deadline === 'number') {
-                                deadlineDate = new Date(item.deadline);
-                            } else if (typeof item.deadline === 'string') {
-                                const parsed = parseInt(item.deadline);
-                                deadlineDate = isNaN(parsed) ? new Date(item.deadline) : new Date(parsed);
+                        const dl = item.deadline;
+                        if (dl) {
+                            // Si es número (timestamp)
+                            if (typeof dl === 'number') {
+                                deadlineDate = new Date(dl);
+                            } 
+                            // Si es string ISO (de Supabase)
+                            else if (typeof dl === 'string' && dl.includes('T')) {
+                                deadlineDate = new Date(dl);
+                            }
+                            // Si es string de fecha simple (YYYY-MM-DD)
+                            else if (typeof dl === 'string') {
+                                deadlineDate = new Date(dl);
                             }
                         }
                         const dateStr = deadlineDate && !isNaN(deadlineDate.getTime()) ? deadlineDate.toLocaleDateString('en-CA') : '';
@@ -631,7 +638,11 @@ export const ui = {
             const d = new Date(year, month - 1, day, hour, minute, 0, 0);
             deadline = d.toISOString();
         } else if (date) {
+            // Solo fecha, sin hora - crear a medianoche UTC
             deadline = date + 'T00:00:00.000Z';
+        } else {
+            // No hay deadline
+            deadline = null;
         }
 
         const tareas = [];
@@ -739,18 +750,19 @@ export const ui = {
         document.getElementById('edit-tags').value = (item.tags || []).join(', ');
 
         if (item.deadline) {
-            let dt;
-            if (typeof item.deadline === 'number') {
-                dt = new Date(item.deadline);
-            } else if (typeof item.deadline === 'string') {
-                const parsed = parseInt(item.deadline);
-                dt = isNaN(parsed) ? new Date(item.deadline) : new Date(parsed);
-            } else {
-                dt = new Date(item.deadline);
+            let dt = null;
+            const dl = item.deadline;
+            if (typeof dl === 'number') {
+                dt = new Date(dl);
+            } else if (typeof dl === 'string') {
+                dt = new Date(dl);
             }
-            if (!isNaN(dt.getTime())) {
+            if (dt && !isNaN(dt.getTime())) {
                 document.getElementById('edit-deadline-date').value = dt.toLocaleDateString('en-CA');
                 document.getElementById('edit-deadline-time').value = dt.toTimeString().substring(0, 5);
+            } else {
+                document.getElementById('edit-deadline-date').value = '';
+                document.getElementById('edit-deadline-time').value = '';
             }
         } else {
             document.getElementById('edit-deadline-date').value = '';

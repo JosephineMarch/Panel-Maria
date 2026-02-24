@@ -422,9 +422,11 @@ class KaiController {
     }
 
     async crearAlarma(alarmaData) {
+        console.log('crearAlarma - alarmaData:', alarmaData);
         try {
             const contenidoAlarma = alarmaData.contenido || 'Recordatorio';
             const deadline = alarmaData.deadline;
+            console.log('crearAlarma - deadline antes de format:', deadline, 'tipo:', typeof deadline);
 
             if (this.isDemoMode) {
                 const newItem = {
@@ -444,12 +446,14 @@ class KaiController {
                 items.unshift(newItem);
                 localStorage.setItem('kaiDemoItems', JSON.stringify(items));
             } else if (this.currentUser) {
+                const deadlineForDB = formatDeadlineForDB(deadline);
+                console.log('crearAlarma - deadline para Supabase:', deadlineForDB);
                 await data.createItem({
                     content: contenidoAlarma,
                     type: 'nota',
                     parent_id: this.currentParentId,
                     tags: ['alarma'],
-                    deadline: formatDeadlineForDB(deadline)
+                    deadline: deadlineForDB
                 });
             }
 
@@ -496,11 +500,25 @@ class KaiController {
     }
 
     async dataUpdateInline(id, updates) {
-        console.log('dataUpdateInline - isDemoMode:', this.isDemoMode, 'id:', id);
+        console.log('dataUpdateInline - isDemoMode:', this.isDemoMode, 'id:', id, 'updates:', updates);
         try {
             // Convertir deadline a formato ISO si es necesario
-            if (updates.deadline && typeof updates.deadline === 'number') {
-                updates.deadline = new Date(updates.deadline).toISOString();
+            if (updates.deadline) {
+                if (typeof updates.deadline === 'number') {
+                    // Es un timestamp
+                    updates.deadline = new Date(updates.deadline).toISOString();
+                } else if (typeof updates.deadline === 'string' && updates.deadline.includes('T')) {
+                    // Ya es ISO string, verificar que sea válido
+                    const d = new Date(updates.deadline);
+                    if (isNaN(d.getTime())) {
+                        updates.deadline = null;
+                    }
+                } else if (typeof updates.deadline === 'string' && !updates.deadline.includes('T')) {
+                    // Es una fecha sin hora (YYYY-MM-DD)
+                    updates.deadline = updates.deadline + 'T00:00:00.000Z';
+                }
+            } else {
+                updates.deadline = null;
             }
             
             if (this.isDemoMode) {
