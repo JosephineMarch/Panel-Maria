@@ -440,10 +440,17 @@ export const ui = {
                     ${hasTags ? `<div class="space-y-2"><label class="txt-label ml-1">Etiquetas</label><div class="flex gap-2 flex-wrap">${tagsHtml}</div></div>` : ''}
                     
                     ${(() => {
-                        const deadlineMs = item.deadline ? parseInt(item.deadline) : null;
-                        const deadlineDate = deadlineMs ? new Date(deadlineMs) : null;
-                        const dateStr = deadlineDate ? deadlineDate.toLocaleDateString('en-CA') : ''; // YYYY-MM-DD local
-                        const timeStr = deadlineDate ? deadlineDate.toTimeString().substring(0, 5) : ''; // HH:MM local
+                        let deadlineDate = null;
+                        if (item.deadline) {
+                            if (typeof item.deadline === 'number') {
+                                deadlineDate = new Date(item.deadline);
+                            } else if (typeof item.deadline === 'string') {
+                                const parsed = parseInt(item.deadline);
+                                deadlineDate = isNaN(parsed) ? new Date(item.deadline) : new Date(parsed);
+                            }
+                        }
+                        const dateStr = deadlineDate && !isNaN(deadlineDate.getTime()) ? deadlineDate.toLocaleDateString('en-CA') : '';
+                        const timeStr = deadlineDate && !isNaN(deadlineDate.getTime()) ? deadlineDate.toTimeString().substring(0, 5) : '';
                         return `
                     <div id="section-alarm-${item.id}" class="space-y-2 ${hasAlarm ? '' : 'hidden'}">
                         <label class="txt-label ml-1">⏰ Alarma</label>
@@ -722,10 +729,19 @@ export const ui = {
         document.getElementById('edit-tags').value = (item.tags || []).join(', ');
 
         if (item.deadline) {
-            const deadlineMs = parseInt(item.deadline);
-            const dt = new Date(deadlineMs);
-            document.getElementById('edit-deadline-date').value = dt.toLocaleDateString('en-CA');
-            document.getElementById('edit-deadline-time').value = dt.toTimeString().substring(0, 5);
+            let dt;
+            if (typeof item.deadline === 'number') {
+                dt = new Date(item.deadline);
+            } else if (typeof item.deadline === 'string') {
+                const parsed = parseInt(item.deadline);
+                dt = isNaN(parsed) ? new Date(item.deadline) : new Date(parsed);
+            } else {
+                dt = new Date(item.deadline);
+            }
+            if (!isNaN(dt.getTime())) {
+                document.getElementById('edit-deadline-date').value = dt.toLocaleDateString('en-CA');
+                document.getElementById('edit-deadline-time').value = dt.toTimeString().substring(0, 5);
+            }
         } else {
             document.getElementById('edit-deadline-date').value = '';
             document.getElementById('edit-deadline-time').value = '';

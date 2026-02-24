@@ -6,6 +6,28 @@ import { ai } from './ai.js';
 import { cerebras } from './cerebras.js';
 import { generarDemoData, regenerarDemoItems } from './demo-data.js';
 
+function formatDeadlineForDB(deadline) {
+    if (!deadline) return null;
+    if (typeof deadline === 'number') {
+        return new Date(deadline).toISOString();
+    }
+    if (typeof deadline === 'string') {
+        const parsed = parseInt(deadline);
+        if (!isNaN(parsed)) {
+            return new Date(parsed).toISOString();
+        }
+        return deadline;
+    }
+    return null;
+}
+
+function formatDeadlineForDisplay(deadline) {
+    if (!deadline) return null;
+    const d = new Date(typeof deadline === 'number' ? deadline : deadline);
+    if (isNaN(d.getTime())) return null;
+    return d;
+}
+
 class KaiController {
     constructor() {
         this.currentUser = null;
@@ -380,7 +402,7 @@ class KaiController {
                 items.unshift(newItem);
                 localStorage.setItem('kaiDemoItems', JSON.stringify(items));
             } else {
-                const deadlineValue = parsed.deadline ? new Date(parseInt(parsed.deadline)).toISOString() : null;
+                const deadlineValue = parsed.deadline ? formatDeadlineForDB(parsed.deadline) : null;
                 await data.createItem({
                     content,
                     type: finalType,
@@ -427,13 +449,14 @@ class KaiController {
                     type: 'nota',
                     parent_id: this.currentParentId,
                     tags: ['alarma'],
-                    deadline: new Date(parseInt(deadline)).toISOString()
+                    deadline: formatDeadlineForDB(deadline)
                 });
             }
 
             ui.clearMainInput();
 
-            const hora = new Date(deadline).toLocaleString('es-ES', {
+            const deadlineDate = formatDeadlineForDisplay(deadline);
+            const hora = deadlineDate ? deadlineDate.toLocaleString('es-ES', {
                 month: 'short',
                 day: 'numeric',
                 hour: '2-digit',
