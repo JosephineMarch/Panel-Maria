@@ -146,17 +146,12 @@ export const ai = {
     detectarAlarmas(texto) {
         const textoLower = texto.toLowerCase();
 
-        // Buscar si contiene comando de alarma en cualquier parte
         const tieneComandoAlarma = /alarma|recordatorio|recuerdame|avísame|avisa|recordar|recuerda/i.test(textoLower);
-
-        console.log('🔔 detectarAlarmas - texto:', texto);
-        console.log('🔔 detectarAlarmas - tieneComandoAlarma:', tieneComandoAlarma);
 
         if (!tieneComandoAlarma) {
             return { esAlarma: false, deadline: null };
         }
 
-        // Extraer deadline del texto
         const deadline = this.extraerFechaHora(texto);
 
         if (deadline) {
@@ -180,9 +175,6 @@ export const ai = {
                 contenido = 'Recordatorio';
             }
 
-            console.log('🔔 detectarAlarmas - deadline:', deadline);
-            console.log('🔔 detectarAlarmas - contenido:', contenido);
-
             return {
                 esAlarma: true,
                 deadline: deadline,
@@ -198,22 +190,17 @@ export const ai = {
         const fecha = new Date(ahora);
         const textoLower = texto.toLowerCase();
 
-        console.log('🔍 extraerFechaHora - ahora local:', fecha);
-
-        // Patrones de tiempo relativo
         const dentroMinuto = textoLower.match(/dentro\s+(?:de\s+)?(\d+)\s*(minuto|minutos|min|m)/i);
         if (dentroMinuto) {
             const minutos = parseInt(dentroMinuto[1]);
             fecha.setMinutes(fecha.getMinutes() + minutos);
-            console.log('🔍 Dentro de minutos:', minutos, '→', fecha.toString());
-            return fecha.getTime(); // timestamp
+            return fecha.getTime();
         }
 
         const dentroHora = textoLower.match(/dentro\s+(?:de\s+)?(\d+)\s*(hora|horas|h)/i);
         if (dentroHora) {
             const horas = parseInt(dentroHora[1]);
             fecha.setHours(fecha.getHours() + horas);
-            console.log('🔍 Dentro de horas:', horas, '→', fecha.toString());
             return fecha.getTime();
         }
 
@@ -221,7 +208,6 @@ export const ai = {
         if (enMinuto) {
             const minutos = parseInt(enMinuto[1]);
             fecha.setMinutes(fecha.getMinutes() + minutos);
-            console.log('🔍 En minutos:', minutos, '→', fecha.toString());
             return fecha.getTime();
         }
 
@@ -229,19 +215,16 @@ export const ai = {
         if (enHora) {
             const horas = parseInt(enHora[1]);
             fecha.setHours(fecha.getHours() + horas);
-            console.log('🔍 En horas:', horas, '→', fecha.toString());
             return fecha.getTime();
         }
 
         if (/en\s+una\s+hora/i.test(textoLower)) {
             fecha.setHours(fecha.getHours() + 1);
-            console.log('🔍 En una hora →', fecha.toString());
             return fecha.getTime();
         }
 
         if (/en\s+un\s+minuto/i.test(textoLower)) {
             fecha.setMinutes(fecha.getMinutes() + 1);
-            console.log('🔍 En un minuto →', fecha.toString());
             return fecha.getTime();
         }
 
@@ -261,7 +244,6 @@ export const ai = {
                 fecha.setDate(fecha.getDate() + 1);
             }
 
-            console.log('🔍 Hora específica →', fecha.toString());
             return fecha.getTime();
         }
 
