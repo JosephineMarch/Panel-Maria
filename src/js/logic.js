@@ -307,7 +307,8 @@ class KaiController {
 
         // --- Kai Chat Events ---
         ui.elements.kaiAvatarContainer()?.addEventListener('click', () => ui.toggleKaiChat());
-        ui.elements.kaiChatClose()?.addEventListener('click', () => ui.toggleKaiChat(false));
+        document.getElementById('kai-chat-back')?.addEventListener('click', () => ui.toggleKaiChat(false));
+        document.getElementById('kai-chat-minimize')?.addEventListener('click', () => ui.toggleKaiChat(false));
         ui.elements.kaiChatSend()?.addEventListener('click', () => this.handleKaiChat());
         ui.elements.kaiChatInput()?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.handleKaiChat();
