@@ -325,6 +325,7 @@ class KaiController {
         // --- Delegación de Items (Stickers) ---
         ui.elements.container()?.addEventListener('click', async (e) => {
             const finishBtn = e.target.closest('.action-finish');
+            const deleteBtn = e.target.closest('.action-delete');
             const openBtn = e.target.closest('.action-open');
             const pinBtn = e.target.closest('.btn-pin');
             const taskCheckbox = e.target.closest('.timeline-task-checkbox');
@@ -332,6 +333,11 @@ class KaiController {
             if (taskCheckbox) {
                 e.stopPropagation();
                 await this.toggleTimelineTask(taskCheckbox.dataset.id, parseInt(taskCheckbox.dataset.index), taskCheckbox.checked);
+            } else if (deleteBtn) {
+                e.stopPropagation();
+                if (confirm('¿Eliminar este elemento?')) {
+                    await this.deleteItem(deleteBtn.dataset.id);
+                }
             } else if (finishBtn) {
                 e.stopPropagation();
                 await this.finishItem(finishBtn.dataset.id);

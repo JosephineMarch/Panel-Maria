@@ -377,6 +377,7 @@ export const ui = {
                     <div class="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button class="action-expand p-2 text-ink/20 hover:text-ink transition-colors" data-id="${item.id}" title="Expandir"><i class="fa-solid fa-expand"></i></button>
                         <button class="action-finish p-2 text-ink/20 hover:text-success transition-colors" data-id="${item.id}" title="Terminar"><i class="fa-solid fa-check-circle"></i></button>
+                        <button class="action-delete p-2 text-ink/20 hover:text-urgent transition-colors" data-id="${item.id}" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </div>
             `;
