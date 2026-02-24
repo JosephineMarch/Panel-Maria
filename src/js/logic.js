@@ -274,7 +274,8 @@ class KaiController {
 
         // --- Modals & Sidebar ---
         document.getElementById('btn-user')?.addEventListener('click', () => ui.toggleSidebar());
-        document.getElementById('btn-close-sidebar')?.addEventListener('click', () => ui.toggleSidebar());
+        document.getElementById('btn-close-sidebar')?.addEventListener('click', () => ui.closeSidebar());
+        document.getElementById('sidebar-overlay')?.addEventListener('click', () => ui.closeSidebar());
         document.getElementById('btn-google')?.addEventListener('click', () => this.handleGoogleLogin());
         document.getElementById('btn-logout')?.addEventListener('click', () => this.handleLogout());
         document.getElementById('btn-add-task')?.addEventListener('click', () => ui.addTaskToModal());

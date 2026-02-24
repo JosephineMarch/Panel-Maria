@@ -81,6 +81,16 @@ body {
     scrollbar-width: none;
 }
 
+/* Scrollbar hide horizontal */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
 /* Efecto Sticker */
 .shadow-sticker {
     box-shadow: 0 6px 0px 0px rgba(0, 0, 0, 0.05);

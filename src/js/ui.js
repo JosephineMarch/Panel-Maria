@@ -813,7 +813,24 @@ export const ui = {
     // --- VISIBILIDAD & ESTADOS (LEGACY MODAL SUPPORT) ---
 
     toggleSidebar() {
-        this.elements.sidebar()?.classList.toggle('-translate-x-full');
+        const sidebar = this.elements.sidebar();
+        const overlay = document.getElementById('sidebar-overlay');
+        sidebar?.classList.toggle('-translate-x-full');
+        overlay?.classList.toggle('hidden');
+    },
+
+    openSidebar() {
+        const sidebar = this.elements.sidebar();
+        const overlay = document.getElementById('sidebar-overlay');
+        sidebar?.classList.remove('-translate-x-full');
+        overlay?.classList.remove('hidden');
+    },
+
+    closeSidebar() {
+        const sidebar = this.elements.sidebar();
+        const overlay = document.getElementById('sidebar-overlay');
+        sidebar?.classList.add('-translate-x-full');
+        overlay?.classList.add('hidden');
     },
 
     // El modal ya no se usa para editar, pero lo mantenemos por si acaso para otros fines
