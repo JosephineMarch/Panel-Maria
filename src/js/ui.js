@@ -622,7 +622,17 @@ export const ui = {
         const url = document.getElementById(`inline-url-${id}`)?.value || '';
         const date = document.getElementById(`inline-date-${id}`)?.value || '';
         const time = document.getElementById(`inline-time-${id}`)?.value || '';
-        const deadline = (date && time) ? `${date}T${time} ` : (date || null);
+        
+        let deadline = null;
+        if (date && time) {
+            // Crear fecha local y convertir a ISO string
+            const [year, month, day] = date.split('-').map(Number);
+            const [hour, minute] = time.split(':').map(Number);
+            const d = new Date(year, month - 1, day, hour, minute, 0, 0);
+            deadline = d.toISOString();
+        } else if (date) {
+            deadline = date + 'T00:00:00.000Z';
+        }
 
         const tareas = [];
         card.querySelectorAll('#inline-tasks-list-' + id + ' .group\\/task').forEach(row => {

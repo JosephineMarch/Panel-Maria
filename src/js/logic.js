@@ -461,7 +461,7 @@ class KaiController {
                 day: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit'
-            });
+            }) : '';
 
             const mensajesAlarma = [
                 `¡Alarmas configurada para ${hora}! ⏰`,
@@ -498,6 +498,11 @@ class KaiController {
     async dataUpdateInline(id, updates) {
         console.log('dataUpdateInline - isDemoMode:', this.isDemoMode, 'id:', id);
         try {
+            // Convertir deadline a formato ISO si es necesario
+            if (updates.deadline && typeof updates.deadline === 'number') {
+                updates.deadline = new Date(updates.deadline).toISOString();
+            }
+            
             if (this.isDemoMode) {
                 await this.demoUpdateItem(id, updates);
                 ui.showNotification('¡Bloque actualizado! ✨', 'success');
