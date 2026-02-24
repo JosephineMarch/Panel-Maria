@@ -426,7 +426,7 @@ class KaiController {
                     type: 'nota',
                     parent_id: this.currentParentId,
                     tags: ['alarma'],
-                    deadline: deadline
+                    deadline: new Date(deadline).toISOString()
                 });
             }
 
