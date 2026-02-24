@@ -439,15 +439,22 @@ export const ui = {
                     
                     ${hasTags ? `<div class="space-y-2"><label class="txt-label ml-1">Etiquetas</label><div class="flex gap-2 flex-wrap">${tagsHtml}</div></div>` : ''}
                     
+                    ${(() => {
+                        const deadlineMs = item.deadline ? parseInt(item.deadline) : null;
+                        const deadlineDate = deadlineMs ? new Date(deadlineMs) : null;
+                        const dateStr = deadlineDate ? deadlineDate.toLocaleDateString('en-CA') : ''; // YYYY-MM-DD local
+                        const timeStr = deadlineDate ? deadlineDate.toTimeString().substring(0, 5) : ''; // HH:MM local
+                        return `
                     <div id="section-alarm-${item.id}" class="space-y-2 ${hasAlarm ? '' : 'hidden'}">
                         <label class="txt-label ml-1">⏰ Alarma</label>
                         <div class="flex gap-2">
-                            <input type="date" id="inline-date-${item.id}" value="${item.deadline ? item.deadline.split('T')[0] : ''}" 
+                            <input type="date" id="inline-date-${item.id}" value="${dateStr}" 
                                    class="flex-1 bg-white/40 border-none rounded-2xl px-4 py-3 txt-small focus:ring-2 focus:ring-white/50 outline-none text-ink">
-                            <input type="time" id="inline-time-${item.id}" value="${item.deadline && item.deadline.includes('T') ? item.deadline.split('T')[1].substring(0, 5) : ''}" 
+                            <input type="time" id="inline-time-${item.id}" value="${timeStr}" 
                                    class="flex-1 bg-white/40 border-none rounded-2xl px-4 py-3 txt-small focus:ring-2 focus:ring-white/50 outline-none text-ink">
                         </div>
-                    </div>
+                    </div>`;
+                    })()}
                 </div>
 
                 <div id="section-desc-${item.id}" class="space-y-2 ${hasDesc ? '' : 'hidden'}">
@@ -715,9 +722,10 @@ export const ui = {
         document.getElementById('edit-tags').value = (item.tags || []).join(', ');
 
         if (item.deadline) {
-            const dt = new Date(item.deadline);
-            document.getElementById('edit-deadline-date').value = dt.toISOString().split('T')[0];
-            document.getElementById('edit-deadline-time').value = dt.toTimeString().split(' ')[0].substring(0, 5);
+            const deadlineMs = parseInt(item.deadline);
+            const dt = new Date(deadlineMs);
+            document.getElementById('edit-deadline-date').value = dt.toLocaleDateString('en-CA');
+            document.getElementById('edit-deadline-time').value = dt.toTimeString().substring(0, 5);
         } else {
             document.getElementById('edit-deadline-date').value = '';
             document.getElementById('edit-deadline-time').value = '';
