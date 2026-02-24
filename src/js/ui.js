@@ -17,6 +17,7 @@ export const ui = {
         userInfo: () => document.getElementById('user-info'),
         voiceBtn: () => document.getElementById('btn-voice-footer') || document.getElementById('btn-voice'),
         btnSubmit: () => document.getElementById('btn-submit'),
+        kaiAvatarContainer: () => document.getElementById('kai-avatar-container'),
         kaiChatWindow: () => document.getElementById('kai-chat-overlay'),
         kaiChatMessages: () => document.getElementById('kai-chat-messages'),
         kaiChatInput: () => document.getElementById('kai-chat-input'),

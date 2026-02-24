@@ -54,7 +54,6 @@ export const data = {
             .from('items')
             .select('*')
             .eq('user_id', user.id)
-            .order('anclado', { ascending: false })
             .order('created_at', { ascending: false });
 
         if (filters.id) {
