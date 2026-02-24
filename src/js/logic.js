@@ -155,19 +155,18 @@ class KaiController {
             }
 
             const now = new Date();
-            const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Lima';
-            const localTime = new Date(now.toLocaleString('en-US', { timeZone: userTimezone }));
-            console.log(`🕐 Hora actual (${userTimezone}):`, localTime.toISOString());
+            const localTime = new Date(now);
+            
+            console.log(`🕐 Hora actual:`, localTime);
 
             const triggeredIds = JSON.parse(localStorage.getItem('triggeredAlarms') || '[]');
 
             for (const item of items) {
                 if (item.deadline && !triggeredIds.includes(item.id)) {
-                    // La deadline ya debería estar en UTC, la comparamos directamente
                     const deadline = new Date(item.deadline);
                     const timeDiff = deadline - localTime;
 
-                    console.log(`⏰ Alarma "${item.content}": deadline=${deadline.toISOString()}, diff=${timeDiff}ms`);
+                    console.log(`⏰ Alarma "${item.content}": deadline=${deadline}, diff=${timeDiff}ms`);
 
                     // Ventana de 1 minuto antes hasta 1 minuto después
                     if (timeDiff > -60000 && timeDiff <= 60000) {

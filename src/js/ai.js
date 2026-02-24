@@ -194,66 +194,59 @@ export const ai = {
     },
 
     extraerFechaHora(texto) {
+        // Usar Date() directo - ya es hora local
         const ahora = new Date();
+        const fecha = new Date(ahora);
         const textoLower = texto.toLowerCase();
-        let fecha = new Date(ahora);
 
-        console.log('🔍 extraerFechaHora - texto:', texto);
-        console.log('🔍 extraerFechaHora - ahora:', ahora.toISOString());
+        console.log('🔍 extraerFechaHora - ahora local:', fecha);
 
-        // Patrones de tiempo relativo - PRIORIDAD ALTA
-        // "dentro de 5 minutos", "dentro de 5 minuto", "dentro 5 minutos"
+        // Patrones de tiempo relativo
         const dentroMinuto = textoLower.match(/dentro\s+(?:de\s+)?(\d+)\s*(minuto|minutos|min|m)/i);
         if (dentroMinuto) {
             const minutos = parseInt(dentroMinuto[1]);
             fecha.setMinutes(fecha.getMinutes() + minutos);
-            console.log('🔍 Dentro de minutos:', minutos, '→', fecha.toISOString());
+            console.log('🔍 Dentro de minutos:', minutos, '→', fecha);
             return fecha.toISOString();
         }
 
-        // "dentro de 2 horas", "dentro 2 horas"
         const dentroHora = textoLower.match(/dentro\s+(?:de\s+)?(\d+)\s*(hora|horas|h)/i);
         if (dentroHora) {
             const horas = parseInt(dentroHora[1]);
             fecha.setHours(fecha.getHours() + horas);
-            console.log('🔍 Dentro de horas:', horas, '→', fecha.toISOString());
+            console.log('🔍 Dentro de horas:', horas, '→', fecha);
             return fecha.toISOString();
         }
 
-        // "en 5 minutos", "en 5 minuto"
         const enMinuto = textoLower.match(/en\s+(\d+)\s*(minuto|minutos|min|m)\b/i);
         if (enMinuto) {
             const minutos = parseInt(enMinuto[1]);
             fecha.setMinutes(fecha.getMinutes() + minutos);
-            console.log('🔍 En minutos:', minutos, '→', fecha.toISOString());
+            console.log('🔍 En minutos:', minutos, '→', fecha);
             return fecha.toISOString();
         }
 
-        // "en 2 horas"
         const enHora = textoLower.match(/en\s+(\d+)\s*(hora|horas|h)\b/i);
         if (enHora) {
             const horas = parseInt(enHora[1]);
             fecha.setHours(fecha.getHours() + horas);
-            console.log('🔍 En horas:', horas, '→', fecha.toISOString());
+            console.log('🔍 En horas:', horas, '→', fecha);
             return fecha.toISOString();
         }
 
-        // "en una hora"
         if (/en\s+una\s+hora/i.test(textoLower)) {
             fecha.setHours(fecha.getHours() + 1);
-            console.log('🔍 En una hora →', fecha.toISOString());
+            console.log('🔍 En una hora →', fecha);
             return fecha.toISOString();
         }
 
-        // "en un minuto"
         if (/en\s+un\s+minuto/i.test(textoLower)) {
             fecha.setMinutes(fecha.getMinutes() + 1);
-            console.log('🔍 En un minuto →', fecha.toISOString());
+            console.log('🔍 En un minuto →', fecha);
             return fecha.toISOString();
         }
 
-        // Patrones de hora específica
-        // "a las 6pm", "a las 6:30pm", "para las 14:00"
+        // Hora específica
         const horaMatch = textoLower.match(/(?:a las|para las)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
         if (horaMatch) {
             let horas = parseInt(horaMatch[1]);
@@ -265,44 +258,11 @@ export const ai = {
 
             fecha.setHours(horas, minutos, 0, 0);
 
-            // Si la hora ya pasó hoy, poner para mañana
             if (fecha < ahora) {
                 fecha.setDate(fecha.getDate() + 1);
             }
 
-            return fecha.toISOString();
-        }
-
-        // "hoy a las X"
-        if (/hoy.*a las\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i.test(textoLower)) {
-            const match = textoLower.match(/a las\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
-            let horas = parseInt(match[1]);
-            const minutos = match[2] ? parseInt(match[2]) : 0;
-            const periodo = match[3]?.toLowerCase();
-
-            if (periodo === 'pm' && horas < 12) horas += 12;
-            if (periodo === 'am' && horas === 12) horas = 0;
-
-            fecha.setHours(horas, minutos, 0, 0);
-
-            if (fecha < ahora) {
-                fecha.setDate(fecha.getDate() + 1);
-            }
-
-            return fecha.toISOString();
-        }
-
-        // "mañana"
-        if (/mañana/i.test(textoLower)) {
-            fecha.setDate(fecha.getDate() + 1);
-            fecha.setHours(9, 0, 0, 0); // Por defecto 9am
-            return fecha.toISOString();
-        }
-
-        // "hoy"
-        if (/^hoy\b|\bhoy\b/i.test(textoLower)) {
-            // Si dice "hoy" sin hora específica, poner para dentro de 1 hora
-            fecha.setHours(fecha.getHours() + 1);
+            console.log('🔍 Hora específica →', fecha);
             return fecha.toISOString();
         }
 
