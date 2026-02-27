@@ -81,8 +81,8 @@ export const ui = {
 
         const msg = document.createElement('div');
         msg.className = isAi
-            ? 'bg-white p-4 rounded-2xl rounded-bl-none shadow-sm max-w-[85%] animate-fadeIn'
-            : 'bg-brand p-4 rounded-2xl rounded-br-none text-white font-medium max-w-[85%] ml-auto animate-fadeIn';
+            ? 'bg-white p-4 rounded-2xl rounded-bl-none shadow-sm max-w-[85%] animate-fadeIn break-words'
+            : 'bg-brand p-4 rounded-2xl rounded-br-none text-white font-medium max-w-[85%] ml-auto animate-fadeIn break-words';
 
         msg.innerHTML = this.escapeHtml(text);
         container.appendChild(msg);
