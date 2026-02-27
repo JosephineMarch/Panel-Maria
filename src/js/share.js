@@ -69,60 +69,21 @@ const ShareUtils = {
         this.currentData = data;
         
         const url = data.url || this.extractUrl(data.text) || '';
-        const fullText = `${data.title} ${data.text}`.trim();
+        let textOnly = data.text || '';
+        if (url && textOnly.includes(url)) {
+            textOnly = textOnly.replace(url, '').trim();
+        }
+        const fullText = `${data.title} ${textOnly}`.trim();
         
         const suggested = this.suggestType(fullText, url);
         this.suggestedType = suggested;
         
-        await this.showShareModal(url, data.title || data.text, fullText, suggested);
+        const content = data.title || textOnly || 'Enlace compartido';
+        
+        await this.showShareModal(url, content, fullText, suggested);
     },
 
     extractUrl(text) {
-        if (!text) return null;
-        const urlRegex = /(https?:\/\/[^\s]+)/g;
-        const match = text.match(urlRegex);
-        return match ? match[0] : null;
-    },
-
-    suggestType(text, url) {
-        const lower = text.toLowerCase();
-        
-        const patterns = {
-            task: [
-                /tarea|task|to.do|checklist|hacer|comprar|pagar|llamar|enviar|recordar|no olvidar|pendiente|reunion| cita|entregar|terminar|completar|acabar|revisar|actualizar|renovar|subscribe|unsubscribe|follow|unfollow|buy|pay|call|send|remember|don't forget|todo|meeting|appointment|deadline|due|complete|finish|end/
-            ],
-            proyecto: [
-                /proyecto|project|iniciar|empezar|crear|desarrollar|lanzar|build|start|begin|create|develop|launch|initiative|campaign|plan|strategy/
-            ],
-            idea: [
-                /idea|inspiración|inspirar|curiosidad|interesante|cool|genial|awesome|interesting|note|nota|guardar|save|remember|think|thought|maybe|posible|perhaps|possible/
-            ],
-            directorio: [
-                /enlace|link|url|web|sitio|page|website|blog|video|youtube|netflix|article|read|leer|doc|pdf|resource|reference/
-            ],
-            logro: [
-                /logro|completado|finished|done|éxito|success|won|achieved|accomplished|victory|celebrate|celebration|milestone|badge|award|premio|ganado/
-            ],
-            reminder: [
-                /recordatorio|reminder|alarma|alarm|avisar|notify|when|cuando|at|después|after|before|antes|mañana|hoy|next week/
-            ]
-        };
-        
-        for (const [type, regexList] of Object.entries(patterns)) {
-            for (const regex of regexList) {
-                if (regex.test(lower)) {
-                    return type;
-                }
-            }
-        }
-        
-        if (url && !text) return 'directorio';
-        if (text.length > 100) return 'nota';
-        
-        return 'nota';
-    },
-
-    getTypeIcon(type) {
         const icons = {
             task: 'fa-check',
             proyecto: 'fa-folder',
@@ -165,6 +126,8 @@ const ShareUtils = {
         const domain = url ? (() => { try { return new URL(url).hostname; } catch { return ''; } })() : '';
         const colors = this.getTypeColor(suggestedType);
         
+        const hasTitle = title && title !== 'Enlace compartido';
+        
         const modal = document.createElement('div');
         modal.id = 'share-modal';
         modal.className = 'fixed inset-0 bg-ink/20 backdrop-blur-sm z-[100] flex items-center justify-center p-4';
@@ -182,7 +145,11 @@ const ShareUtils = {
                         <div class="flex items-center gap-2 mb-2">
                             <span class="text-xs font-bold uppercase ${colors.text}">✨ ${this.getTypeLabel(suggestedType)} sugerido</span>
                         </div>
-                        <p class="font-bold text-ink text-sm">${title || 'Sin título'}</p>
+                        <input type="text" id="share-title-input" 
+                            class="w-full bg-white/50 border-none rounded-xl px-3 py-2 text-sm font-bold text-ink placeholder-ink/40 focus:ring-2 focus:ring-white/50 outline-none"
+                            placeholder="${hasTitle ? '' : 'Escribe un título...'}"
+                            value="${hasTitle ? title : ''}"
+                            autocomplete="off">
                         ${url ? `<p class="text-xs text-gray-500 truncate mt-1">${domain}</p>` : ''}
                     </div>
 
@@ -198,14 +165,14 @@ const ShareUtils = {
                         
                         <div class="grid grid-cols-2 gap-2">
                             <button class="share-option ${colors.bg} hover:brightness-95 ${colors.text} font-bold py-2 px-3 rounded-xl flex items-center gap-2 transition text-sm"
-                                    data-type="${suggestedType}" data-url="${url || ''}" data-title="${title || url}">
+                                    data-type="${suggestedType}" data-url="${url || ''}">
                                 <i class="fa-solid ${this.getTypeIcon(suggestedType)}"></i>
                                 ${this.getTypeLabel(suggestedType)}
                             </button>
                             
                             ${['nota', 'tarea', 'proyecto', 'directorio'].filter(t => t !== suggestedType).slice(0, 3).map(type => `
                                 <button class="share-option bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2 px-3 rounded-xl flex items-center gap-2 transition text-sm"
-                                        data-type="${type}" data-url="${url || ''}" data-title="${title || url}">
+                                        data-type="${type}" data-url="${url || ''}">
                                     <i class="fa-solid ${this.getTypeIcon(type)}"></i>
                                     ${this.getTypeLabel(type)}
                                 </button>
@@ -229,13 +196,13 @@ const ShareUtils = {
         document.getElementById('close-share-modal').onclick = () => this.closeModal();
         document.getElementById('dismiss-share').onclick = () => this.closeModal();
         
-        document.getElementById('kai-classify-btn').onclick = () => this.classifyWithKai(url, title || fullText);
+        document.getElementById('kai-classify-btn').onclick = () => this.classifyWithKai(url, document.getElementById('share-title-input').value || fullText);
         
         document.querySelectorAll('.share-option').forEach(btn => {
             btn.onclick = () => {
                 const type = btn.dataset.type;
-                const itemTitle = btn.dataset.title;
                 const itemUrl = btn.dataset.url;
+                const itemTitle = document.getElementById('share-title-input').value || 'Enlace compartido';
                 this.saveSharedItem(type, itemTitle, itemUrl);
             };
         });
@@ -266,13 +233,15 @@ Responde SOLO con una palabra: nota, tarea, proyecto, directorio, logro o remind
             const validTypes = ['nota', 'tarea', 'proyecto', 'directorio', 'logro', 'reminder'];
             const matchedType = validTypes.find(t => type.includes(t)) || 'nota';
             
-            this.saveSharedItem(matchedType, text, url);
+            const title = document.getElementById('share-title-input').value || text;
+            this.saveSharedItem(matchedType, title, url);
             
         } catch (error) {
             console.error('Kai classification error:', error);
             btn.innerHTML = '❌ Error, usando sugerencia anterior';
             setTimeout(() => {
-                this.saveSharedItem(this.suggestedType, text, url);
+                const title = document.getElementById('share-title-input').value || 'Enlace compartido';
+                this.saveSharedItem(this.suggestedType, title, url);
             }, 1500);
         }
     },
