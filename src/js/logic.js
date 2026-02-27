@@ -160,20 +160,6 @@ class KaiController {
             this.scheduleAllAlarms();
             this.checkAlarms();
         }, 30000);
-
-        if ('visibilityState' in document) {
-            document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState === 'visible') {
-                    this.scheduleAllAlarms();
-                    this.checkAlarms();
-                }
-            });
-        }
-
-        window.addEventListener('focus', () => {
-            this.scheduleAllAlarms();
-            this.checkAlarms();
-        });
     }
 
     async scheduleAllAlarms() {
