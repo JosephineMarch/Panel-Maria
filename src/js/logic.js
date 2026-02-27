@@ -509,6 +509,55 @@ class KaiController {
 
     // --- LÓGICA DE NEGOCIO ---
 
+    async parseIntentWithAI(content) {
+        try {
+            const prompt = `Analiza este texto y determina qué tipo de elemento crear y qué tags agregar.
+
+Texto: "${content}"
+
+Responde SOLO con JSON, sin otro texto:
+{
+  "type": "nota" | "tarea" | "proyecto" | "directorio",
+  "tags": ["salud"] | ["emocion"] | ["logro"] | [],
+  "reason": "explicación corta de por qué elegiste ese tipo"
+}
+
+REGLAS:
+- type: "tarea" si dice "tengo que", "necesito", "pendiente", "no olvidar", verbos en futuro
+- type: "proyecto" si dice "proyecto", "iniciar", "vamos a hacer algo grande"
+- type: "directorio" si menciona videos, enlaces, links, youtube, etc
+- type: "nota" para todo lo demás
+- tags: incluye "salud" si menciona dolor, enfermedad, síntoma, médico, etc
+- tags: incluye "emocion" si menciona cómo se siente (triste, feliz, ansiosa, etc)
+- tags: incluye "logro" si menciona que logró, terminó, completó, etc
+- tags puede estar vacío si no aplica`;
+
+            const { cerebras } = await import('./cerebras.js');
+            const response = await cerebras.ask(prompt);
+            
+            let parsed = { type: 'nota', tags: [] };
+            
+            if (response.response) {
+                try {
+                    const jsonMatch = response.response.match(/\{[\s\S]*\}/);
+                    if (jsonMatch) {
+                        parsed = JSON.parse(jsonMatch[0]);
+                    }
+                } catch (e) {
+                    console.log('Error parsing AI response, using default');
+                }
+            }
+            
+            return {
+                type: parsed.type || 'nota',
+                tags: parsed.tags || []
+            };
+        } catch (error) {
+            console.error('Error parsing with AI:', error);
+            return { type: 'nota', tags: [] };
+        }
+    }
+
     async handleSubmit() {
         const { content, type } = ui.getMainInputData();
         if (!content) return;
@@ -533,11 +582,15 @@ class KaiController {
         }
 
         try {
-            const parsed = ai.parseIntent(content);
-            const finalType = type !== 'note' ? type : parsed.type;
-
-            // Combinar tags detectados automáticamente con los parsed
-            const finalTags = [...(parsed.tags || []), ...detectedTags];
+            // Usar IA para inferir tipo y tags si el usuario no especificó tipo
+            let finalType = type !== 'note' ? type : 'nota';
+            let finalTags = [...detectedTags];
+            
+            if (type === 'note' || !type) {
+                const aiParsed = await this.parseIntentWithAI(content);
+                finalType = aiParsed.type;
+                finalTags = [...new Set([...finalTags, ...aiParsed.tags])];
+            }
 
             if (this.isDemoMode) {
                 const newItem = {
@@ -549,7 +602,7 @@ class KaiController {
                     descripcion: '',
                     url: '',
                     tareas: [],
-                    deadline: parsed.deadline || null,
+                    deadline: null,
                     anclado: false,
                     created_at: new Date().toISOString()
                 };
@@ -557,13 +610,12 @@ class KaiController {
                 items.unshift(newItem);
                 localStorage.setItem('kaiDemoItems', JSON.stringify(items));
             } else {
-                const deadlineValue = parsed.deadline ? formatDeadlineForDB(parsed.deadline) : null;
                 await data.createItem({
                     content,
                     type: finalType,
                     parent_id: this.currentParentId,
                     tags: finalTags,
-                    deadline: deadlineValue
+                    deadline: null
                 });
             }
 
