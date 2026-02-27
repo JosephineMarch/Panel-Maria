@@ -5,19 +5,17 @@
 import './src/js/logic.js';
 import './src/js/share.js';
 
+const CACHE_VERSION = 'v7';
+
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
+        navigator.serviceWorker.register(`./sw.js?cache=${CACHE_VERSION}`)
             .then(reg => {
-                console.log('🧠 KAI: Service Worker registrado ✨');
-                
                 reg.addEventListener('updatefound', () => {
                     const newWorker = reg.installing;
                     newWorker.addEventListener('statechange', () => {
                         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            if (confirm('¡Nueva versión disponible! ¿Recargar para actualizar?')) {
-                                window.location.reload();
-                            }
+                            window.location.reload();
                         }
                     });
                 });
@@ -28,7 +26,7 @@ if ('serviceWorker' in navigator) {
 
 if (window.matchMedia('(display-mode: standalone)').matches) {
     document.body.classList.add('app-installed');
-    console.log('📱 KAI: Ejecutando como app instalada');
+    // console.log('📱 KAI: Ejecutando como app instalada');
 }
 
 window.addEventListener('DOMContentLoaded', () => {

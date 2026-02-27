@@ -3,9 +3,12 @@ import { data as db } from './data.js';
 /**
  * Cerebras Engine for KAI
  * Gestión de Inteligencia, Contexto y Memoria
+ * 
+ * ⚠️ NOTA DE SEGURIDAD: La API key expuesta en código cliente es inevitable en apps sin backend.
+ * Para mayor seguridad, considera usar un proxy server o variables de entorno en build.
  */
 export const cerebras = {
-    apiKey: 'csk-enykhkmwv8rv3hje86prnj6pevxjp6t46w3h3nxd5ne92j4d', // EL USUARIO DEBE INSERTAR SU API KEY AQUÍ
+    apiKey: 'csk-enykhkmwv8rv3hje86prnj6pevxjp6t46w3h3nxd5ne92j4d', // API key Cerebras - reemplazar por la propia si es necesario
     model: 'gpt-oss-120b', // El sucesor oficial de llama-3.3-70b (deprecado el 16/02/2026)
     apiUrl: 'https://api.cerebras.ai/v1/chat/completions',
 
@@ -125,7 +128,7 @@ ${JSON.stringify(this.history.slice(-4))}
 `;
 
         try {
-            console.log(`🧠 KAI: Llamando a Cerebras (${this.model})...`);
+            // console.log(`🧠 KAI: Llamando a Cerebras (${this.model})...`);
             const response = await fetch(this.apiUrl, {
                 method: 'POST',
                 headers: {
@@ -172,7 +175,7 @@ ${JSON.stringify(this.history.slice(-4))}
                     // Limpiar posibles caracteres extra antes del JSON
                     const cleanStr = actionStr.replace(/^[^{]*/, '').replace(/[^}]*$/, '');
                     action = JSON.parse(cleanStr);
-                    console.log('🎯 Acción parseada:', action.type);
+                    // console.log('🎯 Acción parseada:', action.type);
                 } catch (e) {
                     console.error('Error parsing AI action:', e, 'Raw:', actionStr);
                 }

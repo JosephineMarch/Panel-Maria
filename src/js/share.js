@@ -61,7 +61,7 @@ const ShareUtils = {
                 this.handleSharedData({ title, text, url });
             }
         } catch (e) {
-            console.log('No form data:', e);
+            // console.log('No form data:', e);
         }
     },
 

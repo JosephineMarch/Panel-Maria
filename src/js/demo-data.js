@@ -158,6 +158,6 @@ export function regenerarDemoItems() {
     localStorage.removeItem('kaiDemoItems');
     const datos = generarDemoData();
     localStorage.setItem('kaiDemoItems', JSON.stringify(datos));
-    console.log('✅ Demo data regenerada');
+    // console.log('✅ Demo data regenerada');
     return datos;
 }

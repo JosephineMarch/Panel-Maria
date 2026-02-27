@@ -686,7 +686,7 @@ export const ui = {
         const div = document.createElement('div');
         div.className = 'flex items-start gap-3 p-2 rounded-xl group/task animate-fadeIn border-b border-gray-100/50';
         div.innerHTML = `
-            < input type = "checkbox" class="kawaii-checkbox mt-1" >
+            <input type="checkbox" class="kawaii-checkbox mt-1">
             <textarea rows="1" class="flex-1 bg-transparent border-none font-bold text-sm text-ink outline-none focus:ring-0 inline-task-input resize-none" placeholder="¿Qué sigue?"></textarea>
             <button class="btn-remove-inline text-ink/20 hover:text-ink px-2 transition-colors mt-1"><i class="fa-solid fa-xmark"></i></button>
         `;
@@ -745,7 +745,7 @@ export const ui = {
 
         let html = '<a href="#" data-action="home" class="hover:text-brand transition">Inicio</a>';
         path.forEach(item => {
-            html += ` < span class="mx-1 text-gray-300" > /</span > <a href="#" data-id="${item.id}" data-action="navigate" class="hover:text-brand transition">${this.truncate(item.content, 20)}</a>`;
+            html += ` <span class="mx-1 text-gray-300">/</span> <a href="#" data-id="${item.id}" data-action="navigate" class="hover:text-brand transition">${this.truncate(item.content, 20)}</a>`;
         });
         bread.innerHTML = html;
 
@@ -872,8 +872,7 @@ export const ui = {
         const div = document.createElement('div');
         div.className = 'flex items-start gap-3 bg-gray-50 p-3 rounded-xl border-2 border-transparent hover:border-brand/20 transition-all';
         div.innerHTML = `
-            < input type = "checkbox" class="kawaii-checkbox mt-1" ${task.completado ? 'checked' : ''}
-        onchange = "this.parentElement.querySelector('.task-item-input').dataset.completado = this.checked" >
+            <input type="checkbox" class="kawaii-checkbox mt-1" ${task.completado ? 'checked' : ''} onchange="this.parentElement.querySelector('.task-item-input').dataset.completado = this.checked">
             <textarea rows="1" class="task-item-input flex-1 bg-transparent border-none font-bold text-ink outline-none resize-none" 
                    data-completado="${task.completado}" placeholder="¿Cuál es el siguiente paso?">${this.escapeHtml(task.titulo)}</textarea>
             <button type="button" class="btn-remove-task text-ink/30 hover:text-urgent transition-colors mt-1"><i class="fa-solid fa-xmark"></i></button>
@@ -969,7 +968,7 @@ export const ui = {
         const toast = document.createElement('div');
         const colors = { success: 'bg-success', error: 'bg-urgent', info: 'bg-action', warning: 'bg-warning' };
 
-        toast.className = `fixed top - 10 left - 1 / 2 - translate - x - 1 / 2 ${colors[type] || 'bg-brand'} text - ink font - bold px - 8 py - 4 rounded - blob shadow - float z - [500] transform - translate - y - 20 transition - all duration - 300`;
+        toast.className = `fixed top-10 left-1/2 -translate-x-1/2 ${colors[type] || 'bg-brand'} text-ink font-bold px-8 py-4 rounded-blob shadow-float z-[500] -translate-y-20 transition-all duration-300`;
         toast.textContent = message;
 
         document.body.appendChild(toast);
@@ -984,23 +983,23 @@ export const ui = {
     renderLoading() {
         if (this.elements.container()) {
             this.elements.container().innerHTML = `
-            < div class="col-span-full py-20 text-center animate-bounce-slow" >
+                <div class="col-span-full py-20 text-center animate-bounce-slow">
                     <span class="text-6xl">🧠</span>
                     <p class="mt-4 font-bold text-brand italic underline decoration-brand-dark decoration-4">KAI está conectando neuronas...</p>
-                </div >
-    `;
+                </div>
+            `;
         }
     },
 
     renderError(message) {
         if (this.elements.container()) {
             this.elements.container().innerHTML = `
-    < div class="col-span-full bg-urgent/10 p-12 rounded-blob text-center border-4 border-dashed border-urgent/30" >
+                <div class="col-span-full bg-urgent/10 p-12 rounded-blob text-center border-4 border-dashed border-urgent/30">
                     <span class="text-6xl">😵‍💫</span>
                     <p class="mt-4 font-bold text-ink text-xl">${message}</p>
                     <button onclick="location.reload()" class="mt-6 bg-white px-6 py-2 rounded-full shadow-sticker font-bold">Reintentar</button>
-                </div >
-    `;
+                </div>
+            `;
         }
     }
 };

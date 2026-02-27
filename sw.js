@@ -1,11 +1,11 @@
-const CACHE_NAME = 'kai-cache-v5';
+const CACHE_NAME = 'kai-cache-v7';
 const STATIC_ASSETS = [
     './',
     './index.html',
-    './src/css/style.css',
     './app.js',
     './manifest.json',
     './icon.svg',
+    './src/css/style.css',
     './src/assets/icon-192.png',
     './src/assets/icon-512.png',
     './src/js/supabase.js',
@@ -33,8 +33,8 @@ function getStrategy(url) {
     if (url.includes('fonts.googleapis') || url.includes('fonts.gstatic') || url.includes('cdnjs')) {
         return CACHE_STRATEGIES.CACHE_FIRST;
     }
-    if (url.includes('.js') || url.includes('.css') || url.includes('.png') || url.includes('.svg')) {
-        return CACHE_STRATEGIES.CACHE_FIRST;
+    if (url.includes('.js') || url.includes('.css') || url.includes('.png') || url.includes('.svg') || url.includes('index.html') || url.includes('manifest.json')) {
+        return CACHE_STRATEGIES.STALE_WHILE_REVALIDATE;
     }
     return CACHE_STRATEGIES.STALE_WHILE_REVALIDATE;
 }
@@ -98,7 +98,7 @@ async function staleWhileRevalidate(request) {
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            console.log('[SW] Caché inicial abierta');
+            // console.log('[SW] Caché inicial abierta');
             return cache.addAll(STATIC_ASSETS);
         }).then(() => {
             return self.skipWaiting();
@@ -128,7 +128,9 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    const strategy = getStrategy(request.url);
+    const urlWithoutCache = url.pathname + url.search.replace(/[?&]cache=.*$/, '');
+
+    const strategy = getStrategy(urlWithoutCache || request.url);
 
     let responsePromise;
     switch (strategy) {
@@ -152,4 +154,46 @@ self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'SKIP_WAITING') {
         self.skipWaiting();
     }
+});
+
+// Manejo de Trigger Notifications (Notificaciones Programadas)
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    
+    const action = event.action;
+    const data = event.notification.data || {};
+    
+    if (action === 'open' || !action) {
+        event.waitUntil(
+            clients.matchAll({ type: 'window', includeUncontrolled: true })
+                .then((clientList) => {
+                    for (const client of clientList) {
+                        if (client.url === '/' && 'focus' in client) {
+                            return client.focus();
+                        }
+                    }
+                    return clients.openWindow('/');
+                })
+        );
+    }
+});
+
+// Manejo de Push Notifications (para futuro uso con servidor)
+self.addEventListener('push', (event) => {
+    if (!event.data) return;
+    
+    const data = event.data.json();
+    const options = {
+        body: data.body || '',
+        icon: data.icon || '/src/assets/icon-192.png',
+        badge: '/src/assets/icon-192.png',
+        tag: data.tag || 'kai-notification',
+        data: data.data || {},
+        vibrate: [200, 100, 200],
+        requireInteraction: true
+    };
+    
+    event.waitUntil(
+        self.registration.showNotification(data.title || 'KAI', options)
+    );
 });

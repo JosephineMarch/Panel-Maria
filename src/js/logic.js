@@ -39,7 +39,7 @@ class KaiController {
     }
 
     async init() {
-        console.log('🧠 KAI: Controlador iniciado.');
+        // console.log('🧠 KAI: Controlador iniciado.');
 
         // Detectar si estamos en desarrollo (localhost)
         this.isDevMode = this.esDesarrollo();
@@ -58,13 +58,13 @@ class KaiController {
 
         try {
             this.currentUser = await auth.init();
-            console.log('Usuario:', this.currentUser);
+            // console.log('Usuario:', this.currentUser);
             if (this.currentUser) {
                 ui.updateUserInfo(this.currentUser);
                 await this.loadItems();
             } else {
                 // No cargar demo automáticamente - esperar a que usuario lo genere
-                console.log('Sin sesión - esperando generación de demo...');
+                // console.log('Sin sesión - esperando generación de demo...');
                 this.loadEmptyState();
             }
         } catch (error) {
@@ -116,7 +116,7 @@ class KaiController {
     }
 
     loadDemoItems() {
-        console.log('loadDemoItems llamado');
+        // console.log('loadDemoItems llamado');
 
         let demoItems = JSON.parse(localStorage.getItem('kaiDemoItems'));
 
@@ -153,17 +153,107 @@ class KaiController {
             Notification.requestPermission();
         }
 
-        // Verificar inmediatamente al abrir
-        setTimeout(() => this.checkAlarms(), 2000);
+        this.scheduleAllAlarms();
 
-        // Luego verificar cada 30 segundos
         setInterval(() => {
-            this.checkAlarms();
-        }, 30000);
+            this.scheduleAllAlarms();
+        }, 60000);
+    }
+
+    async scheduleAllAlarms() {
+        try {
+            let items;
+
+            if (this.isDemoMode) {
+                items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
+            } else if (this.currentUser) {
+                items = await data.getItems({});
+            } else {
+                return;
+            }
+
+            const scheduledIds = JSON.parse(localStorage.getItem('scheduledAlarms') || '[]');
+            const now = Date.now();
+
+            for (const item of items) {
+                if (!item.deadline || scheduledIds.includes(item.id)) continue;
+
+                let deadlineTime;
+                if (typeof item.deadline === 'number') {
+                    deadlineTime = item.deadline;
+                } else if (typeof item.deadline === 'string') {
+                    deadlineTime = new Date(item.deadline).getTime();
+                } else {
+                    continue;
+                }
+
+                if (deadlineTime > now && deadlineTime - now < 7 * 24 * 60 * 60 * 1000) {
+                    await this.scheduleTriggerNotification(item, deadlineTime);
+                    scheduledIds.push(item.id);
+                }
+            }
+
+            localStorage.setItem('scheduledAlarms', JSON.stringify(scheduledIds));
+        } catch (error) {
+            console.error('Error scheduling alarms:', error);
+        }
+    }
+
+    async scheduleTriggerNotification(item, deadlineTime) {
+        if (!('Notification' in window) || Notification.permission !== 'granted') {
+            return;
+        }
+
+        const triggerTime = deadlineTime - 60000;
+
+        if (triggerTime <= Date.now()) {
+            this.triggerAlarm(item);
+            return;
+        }
+
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            try {
+                const registration = await navigator.serviceWorker.ready;
+                
+                if ('showNotification' in registration) {
+                    await registration.showNotification('⏰ KAI - Recordatorio', {
+                        body: item.content,
+                        icon: '/src/assets/icon-192.png',
+                        tag: item.id,
+                        data: { itemId: item.id },
+                        vibrate: [200, 100, 200],
+                        requireInteraction: true,
+                        trigger: { 
+                            type: 'timestamp', 
+                            timestamp: triggerTime 
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error scheduling SW notification:', error);
+            }
+        }
+
+        if ('Notification' in window && 'trigger' in Notification.prototype) {
+            try {
+                new Notification('⏰ KAI - Recordatorio', {
+                    body: item.content,
+                    icon: '/src/assets/icon-192.png',
+                    tag: item.id,
+                    data: { itemId: item.id },
+                    trigger: { 
+                        type: 'timestamp', 
+                        timestamp: triggerTime 
+                    }
+                });
+            } catch (error) {
+                console.error('Error scheduling notification:', error);
+            }
+        }
     }
 
     async checkAlarms() {
-        console.log('🔔 Verificando alarmas... isDemoMode:', this.isDemoMode);
+        // console.log('🔔 Verificando alarmas... isDemoMode:', this.isDemoMode);
 
         try {
             let items;
@@ -201,11 +291,18 @@ class KaiController {
 
     async triggerAlarm(item) {
         if (Notification.permission === 'granted') {
-            new Notification('⏰ ¡KAI Te Recuerdas!', {
-                body: item.content,
-                icon: 'src/assets/icon-192.png',
-                tag: item.id
-            });
+            try {
+                new Notification('⏰ ¡KAI Te Recuerdas!', {
+                    body: item.content,
+                    icon: '/src/assets/icon-192.png',
+                    tag: item.id,
+                    data: { itemId: item.id },
+                    vibrate: [200, 100, 200],
+                    requireInteraction: true
+                });
+            } catch (error) {
+                console.error('Error showing notification:', error);
+            }
         }
 
         ui.showNotification(`⏰ ¡Hora de: ${item.content}!`, 'warning');
@@ -368,7 +465,7 @@ class KaiController {
 
         // 1. Detectar alarmas (comando en cualquier parte)
         const alarmaData = ai.detectarAlarmas(content);
-        console.log('🔔 Detección alarma:', content, '->', alarmaData);
+        // console.log('🔔 Detección alarma:', content, '->', alarmaData);
 
         if (alarmaData.esAlarma) {
             await this.crearAlarma(alarmaData);
@@ -377,7 +474,7 @@ class KaiController {
 
         // 2. Detectar tags (salud, emocion)
         const detectedTags = ai.detectarTags(content);
-        console.log('🏷️ Detección tags:', content, '->', detectedTags);
+        // console.log('🏷️ Detección tags:', content, '->', detectedTags);
 
         if (!this.currentUser && !this.isDemoMode) {
             ui.showNotification('¡Ups! Necesitas entrar para que Kai recuerde esto.', 'warning');
@@ -430,11 +527,11 @@ class KaiController {
     }
 
     async crearAlarma(alarmaData) {
-        console.log('crearAlarma - alarmaData:', alarmaData);
+        // console.log('crearAlarma - alarmaData:', alarmaData);
         try {
             const contenidoAlarma = alarmaData.contenido || 'Recordatorio';
             const deadline = alarmaData.deadline;
-            console.log('crearAlarma - deadline antes de format:', deadline, 'tipo:', typeof deadline);
+            // console.log('crearAlarma - deadline antes de format:', deadline, 'tipo:', typeof deadline);
 
             if (this.isDemoMode) {
                 const newItem = {
@@ -455,7 +552,7 @@ class KaiController {
                 localStorage.setItem('kaiDemoItems', JSON.stringify(items));
             } else if (this.currentUser) {
                 const deadlineForDB = formatDeadlineForDB(deadline);
-                console.log('crearAlarma - deadline para Supabase:', deadlineForDB);
+                // console.log('crearAlarma - deadline para Supabase:', deadlineForDB);
                 await data.createItem({
                     content: contenidoAlarma,
                     type: 'nota',
@@ -508,7 +605,7 @@ class KaiController {
     }
 
     async dataUpdateInline(id, updates) {
-        console.log('dataUpdateInline - isDemoMode:', this.isDemoMode, 'id:', id, 'updates:', updates);
+        // console.log('dataUpdateInline - isDemoMode:', this.isDemoMode, 'id:', id, 'updates:', updates);
         try {
             // Convertir deadline a formato ISO si es necesario
             if (updates.deadline) {
@@ -632,7 +729,7 @@ class KaiController {
     }
 
     async executeKaiAction(action) {
-        console.log('🤖 Kai ejecutando acción:', action);
+        // console.log('🤖 Kai ejecutando acción:', action);
         try {
             const actionData = action.data || {};
             const id = actionData.id;
