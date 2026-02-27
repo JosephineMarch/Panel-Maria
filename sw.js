@@ -178,6 +178,13 @@ self.addEventListener('notificationclick', (event) => {
     }
 });
 
+self.addEventListener('notificationclose', (event) => {
+    const data = event.notification.data || {};
+    if (data.itemId) {
+        console.log('Notification closed:', data.itemId);
+    }
+});
+
 // Manejo de Push Notifications (para futuro uso con servidor)
 self.addEventListener('push', (event) => {
     if (!event.data) return;

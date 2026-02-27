@@ -154,10 +154,12 @@ class KaiController {
         }
 
         this.scheduleAllAlarms();
+        this.checkAlarms();
 
         setInterval(() => {
             this.scheduleAllAlarms();
-        }, 60000);
+            this.checkAlarms();
+        }, 30000);
     }
 
     async scheduleAllAlarms() {
@@ -187,8 +189,10 @@ class KaiController {
                     continue;
                 }
 
+                const reminderTime = deadlineTime - 60000;
+                
                 if (deadlineTime > now && deadlineTime - now < 7 * 24 * 60 * 60 * 1000) {
-                    await this.scheduleTriggerNotification(item, deadlineTime);
+                    await this.scheduleTriggerNotification(item, reminderTime, deadlineTime);
                     scheduledIds.push(item.id);
                 }
             }
@@ -199,62 +203,84 @@ class KaiController {
         }
     }
 
-    async scheduleTriggerNotification(item, deadlineTime) {
-        if (!('Notification' in window) || Notification.permission !== 'granted') {
-            return;
-        }
+    async scheduleTriggerNotification(item, reminderTime, deadlineTime) {
+        const now = Date.now();
 
-        const triggerTime = deadlineTime - 60000;
-
-        if (triggerTime <= Date.now()) {
+        if (reminderTime <= now && deadlineTime > now) {
             this.triggerAlarm(item);
             return;
         }
 
-        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        if (deadlineTime <= now) {
+            return;
+        }
+
+        if ('serviceWorker' in navigator) {
             try {
                 const registration = await navigator.serviceWorker.ready;
                 
-                if ('showNotification' in registration) {
+                if ('showNotification' in registration && 'trigger' in Notification.prototype) {
                     await registration.showNotification('⏰ KAI - Recordatorio', {
-                        body: item.content,
+                        body: `Se acerca: ${item.content}`,
                         icon: '/src/assets/icon-192.png',
-                        tag: item.id,
-                        data: { itemId: item.id },
+                        tag: `alarm-${item.id}`,
+                        data: { itemId: item.id, type: 'reminder' },
                         vibrate: [200, 100, 200],
                         requireInteraction: true,
                         trigger: { 
                             type: 'timestamp', 
-                            timestamp: triggerTime 
+                            timestamp: reminderTime 
+                        }
+                    });
+                    
+                    await registration.showNotification('⏰ ¡KAI Te Recuerdas!', {
+                        body: item.content,
+                        icon: '/src/assets/icon-192.png',
+                        tag: `alarm-final-${item.id}`,
+                        data: { itemId: item.id, type: 'alarm' },
+                        vibrate: [300, 100, 300, 100, 300],
+                        requireInteraction: true,
+                        trigger: { 
+                            type: 'timestamp', 
+                            timestamp: deadlineTime 
                         }
                     });
                 }
             } catch (error) {
-                console.error('Error scheduling SW notification:', error);
+                console.log('SW trigger not supported, using fallback:', error.message);
             }
         }
 
         if ('Notification' in window && 'trigger' in Notification.prototype) {
             try {
                 new Notification('⏰ KAI - Recordatorio', {
-                    body: item.content,
+                    body: `Se acerca: ${item.content}`,
                     icon: '/src/assets/icon-192.png',
-                    tag: item.id,
-                    data: { itemId: item.id },
+                    tag: `alarm-${item.id}`,
+                    data: { itemId: item.id, type: 'reminder' },
                     trigger: { 
                         type: 'timestamp', 
-                        timestamp: triggerTime 
+                        timestamp: reminderTime 
+                    }
+                });
+
+                new Notification('⏰ ¡KAI Te Recuerdas!', {
+                    body: item.content,
+                    icon: '/src/assets/icon-192.png',
+                    tag: `alarm-final-${item.id}`,
+                    data: { itemId: item.id, type: 'alarm' },
+                    trigger: { 
+                        type: 'timestamp', 
+                        timestamp: deadlineTime 
                     }
                 });
             } catch (error) {
-                console.error('Error scheduling notification:', error);
+                console.log('Notification trigger not supported, using fallback');
             }
         }
     }
 
     async checkAlarms() {
-        // console.log('🔔 Verificando alarmas... isDemoMode:', this.isDemoMode);
-
         try {
             let items;
 
@@ -266,19 +292,43 @@ class KaiController {
                 return;
             }
 
-            const now = new Date();
-            const localTime = new Date(now);
-
+            const now = Date.now();
             const triggeredIds = JSON.parse(localStorage.getItem('triggeredAlarms') || '[]');
+            const alarmTimestamps = JSON.parse(localStorage.getItem('alarmTimestamps') || '{}');
+
+            const validTriggeredIds = [];
+            for (const id of triggeredIds) {
+                const lastTriggered = alarmTimestamps[id] || 0;
+                if (now - lastTriggered < 24 * 60 * 60 * 1000) {
+                    validTriggeredIds.push(id);
+                }
+            }
+            localStorage.setItem('triggeredAlarms', JSON.stringify(validTriggeredIds));
 
             for (const item of items) {
-                if (item.deadline && !triggeredIds.includes(item.id)) {
-                    const deadline = new Date(parseInt(item.deadline));
-                    const timeDiff = deadline.getTime() - localTime.getTime();
+                if (!item.deadline) continue;
 
-                    if (timeDiff > -60000 && timeDiff <= 60000) {
-                        triggeredIds.push(item.id);
-                        localStorage.setItem('triggeredAlarms', JSON.stringify(triggeredIds));
+                let deadlineTime;
+                if (typeof item.deadline === 'number') {
+                    deadlineTime = item.deadline;
+                } else if (typeof item.deadline === 'string') {
+                    deadlineTime = new Date(item.deadline).getTime();
+                } else {
+                    continue;
+                }
+
+                if (deadlineTime <= now - 60000) {
+                    continue;
+                }
+
+                if (!validTriggeredIds.includes(item.id)) {
+                    const timeDiff = deadlineTime - now;
+
+                    if (timeDiff <= 0) {
+                        validTriggeredIds.push(item.id);
+                        alarmTimestamps[item.id] = now;
+                        localStorage.setItem('alarmTimestamps', JSON.stringify(alarmTimestamps));
+                        localStorage.setItem('triggeredAlarms', JSON.stringify(validTriggeredIds));
 
                         this.triggerAlarm(item);
                     }
