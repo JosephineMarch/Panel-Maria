@@ -98,90 +98,94 @@
 
     <!-- Left Sidebar (Like WhatsApp/Telegram) -->
     <aside id="sidebar"
-        class="fixed top-0 left-0 w-72 md:w-80 h-full bg-white shadow-float z-[70] transform -translate-x-full transition-transform duration-300 overflow-hidden pt-20">
+        class="fixed top-0 left-0 w-80 max-w-[85vw] h-full bg-white shadow-float z-[70] transform -translate-x-full transition-transform duration-300 overflow-hidden pt-20"
+        role="navigation" aria-label="Menú de navegación">
         <div class="p-4 border-b border-gray-100 flex justify-between items-center absolute top-0 left-0 right-0">
             <h2 class="text-lg font-bold">Menú</h2>
-            <button id="btn-close-sidebar" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition">
-                <i class="fa-solid fa-xmark"></i>
+            <button id="btn-close-sidebar" class="w-12 h-12 rounded-full hover:bg-gray-100 flex items-center justify-center transition focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer" aria-label="Cerrar menú">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
             </button>
         </div>
         
         <!-- User Section -->
         <div class="p-4 border-b border-gray-100">
             <div id="auth-form" class="text-center py-4">
-                <p class="mb-4 font-bold text-gray-500 text-sm">¡Conecta tu cerebro!</p>
+                <p class="mb-4 font-bold text-gray-600 text-sm">¡Conecta tu cerebro!</p>
                 <button type="button" id="btn-google"
-                    class="w-full bg-white border-2 border-brand text-brand font-bold py-3 px-4 rounded-2xl shadow-sticker hover:bg-brand hover:text-white transition-all flex items-center justify-center gap-2">
-                    <span>🌐</span> Google Login
+                    class="w-full bg-white border-2 border-brand text-brand font-bold py-3 px-4 rounded-2xl shadow-sticker hover:bg-brand hover:text-white transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer">
+                    <span aria-hidden="true">🌐</span> Google Login
                 </button>
             </div>
             <div id="user-info" class="hidden flex items-center gap-3">
                 <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=ffdfbf" 
-                     alt="Avatar" class="w-12 h-12 rounded-full bg-peach/20 border-2 border-brand">
+                     alt="Avatar del usuario" class="w-12 h-12 rounded-full bg-peach/20 border-2 border-brand">
                 <div class="flex-1 min-w-0">
-                    <p class="font-bold text-sm truncate" id="user-email">Usuario</p>
-                    <p class="text-xs text-green-500">● En línea</p>
+                    <p class="font-bold text-sm truncate text-gray-700" id="user-email">Usuario</p>
+                    <p class="text-xs text-green-600">● En línea</p>
                 </div>
             </div>
         </div>
 
         <!-- Navigation -->
-        <nav class="p-4 space-y-2">
-            <button id="btn-logout" class="hidden w-full text-left px-4 py-3 rounded-xl hover:bg-red-50 text-red-500 flex items-center gap-3 transition">
-                <i class="fa-solid fa-sign-out-alt"></i>
+        <nav class="p-4 space-y-2" role="navigation" aria-label="Opciones del menú">
+            <button id="btn-logout" class="hidden w-full text-left px-4 py-3 rounded-xl hover:bg-red-50 text-red-500 flex items-center gap-3 transition focus:outline-none focus:ring-2 focus:ring-red-400 cursor-pointer">
+                <i class="fa-solid fa-sign-out-alt" aria-hidden="true"></i>
                 <span class="font-bold text-sm">Cerrar sesión</span>
             </button>
             
             <div id="demo-controls" class="hidden pt-4 border-t border-gray-100">
                 <button type="button" id="btn-regenerate-demo"
-                    class="w-full bg-lemon text-ink font-bold py-2 px-4 rounded-2xl shadow-sticker hover:brightness-95 transition-all flex items-center justify-center gap-2 text-sm">
-                    <span>🔄</span> Regenerar Demo
+                    class="w-full bg-lemon text-ink font-bold py-3 px-4 rounded-2xl shadow-sticker hover:brightness-95 transition-all flex items-center justify-center gap-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer">
+                    <span aria-hidden="true">🔄</span> Regenerar Demo
                 </button>
             </div>
         </nav>
     </aside>
 
     <!-- Sidebar Overlay -->
-    <div id="sidebar-overlay" class="fixed inset-0 bg-black/20 z-[65] hidden transition-opacity"></div>
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/20 z-[65] hidden transition-opacity" role="presentation" aria-hidden="true"></div>
 
     <!-- HEADER -->
-    <header class="bg-white/90 backdrop-blur-md z-[60] border-b border-gray-100 sticky top-0">
+    <header class="bg-white/90 backdrop-blur-md z-[60] border-b border-gray-100 sticky top-0" role="banner">
         <!-- Top: Title + User -->
         <div class="flex items-center justify-between px-4 py-3">
-            <div class="w-10"></div>
-            <h1 class="font-bold text-xl text-ink">KAI</h1>
-            <div id="btn-user" class="w-10 h-10 rounded-full border-2 border-brand p-0.5 cursor-pointer shrink-0">
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=ffdfbf" alt="Avatar" class="w-full h-full rounded-full bg-peach/20">
+            <button id="btn-menu" class="w-12 h-12 rounded-full hover:bg-gray-100 flex items-center justify-center transition focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer md:hidden" aria-label="Abrir menú">
+                <i class="fa-solid fa-bars text-xl" aria-hidden="true"></i>
+            </button>
+            <div class="w-12 md:w-10"></div>
+            <h1 class="font-bold text-xl text-ink" role="heading" aria-level="1">KAI</h1>
+            <div id="btn-user" class="w-12 h-12 rounded-full border-2 border-brand p-0.5 cursor-pointer shrink-0 focus:outline-none focus:ring-2 focus:ring-brand" role="button" tabindex="0" aria-label="Perfil de usuario">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=ffdfbf" alt="Tu avatar" class="w-full h-full rounded-full bg-peach/20">
             </div>
         </div>
         
         <!-- Bottom: Category Icons (Full Width) -->
-        <nav class="flex px-3 pb-3 gap-2">
-            <button class="btn-category flex-1 py-3 rounded-xl text-base font-bold transition-all bg-gray-100 text-gray-500 hover:bg-brand hover:text-white" data-category="all">
-                <i class="fa-solid fa-house mr-1"></i>
+        <nav class="flex px-3 pb-3 gap-2" role="navigation" aria-label="Filtrar por tipo">
+            <button class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-base font-bold transition-all bg-gray-100 text-gray-500 hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer" data-category="all" aria-label="Ver todos los elementos">
+                <i class="fa-solid fa-house mr-1" aria-hidden="true"></i>
             </button>
-            <button class="btn-category flex-1 py-3 rounded-xl text-base font-bold transition-all bg-yellow-100 text-yellow-600 hover:bg-yellow-300" data-category="nota">
+            <button class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-base font-bold transition-all bg-yellow-100 text-yellow-600 hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer" data-category="nota" aria-label="Filtrar notas">
                 📝
             </button>
-            <button class="btn-category flex-1 py-3 rounded-xl text-base font-bold transition-all bg-blue-100 text-blue-600 hover:bg-blue-300" data-category="tarea">
+            <button class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-base font-bold transition-all bg-blue-100 text-blue-600 hover:bg-blue-300 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer" data-category="tarea" aria-label="Filtrar tareas">
                 ✅
             </button>
-            <button class="btn-category flex-1 py-3 rounded-xl text-base font-bold transition-all bg-pink-100 text-pink-600 hover:bg-pink-300" data-category="proyecto">
+            <button class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-base font-bold transition-all bg-pink-100 text-pink-600 hover:bg-pink-300 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer" data-category="proyecto" aria-label="Filtrar proyectos">
                 📁
             </button>
-            <button class="btn-category flex-1 py-3 rounded-xl text-base font-bold transition-all bg-purple-100 text-purple-600 hover:bg-purple-300" data-category="directorio">
+            <button class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-base font-bold transition-all bg-purple-100 text-purple-600 hover:bg-purple-300 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer" data-category="directorio" aria-label="Filtrar enlaces">
                 🔗
             </button>
         </nav>
     </header>
 
-    <main id="app" class="flex-1 max-w-5xl mx-auto w-full p-4 md:p-8 space-y-6 pb-32 no-scrollbar">
+    <main id="app" class="flex-1 max-w-5xl mx-auto w-full px-3 py-4 md:px-8 space-y-6 pb-32 no-scrollbar" role="main">
         <!-- Filtros de Etiquetas (Tags) -->
-        <div class="flex gap-2 flex-wrap justify-center">
-            <button class="btn-tag px-3 py-1 rounded-full text-xs font-medium text-ink/60 border border-brand/30 hover:border-brand hover:text-brand transition-all" data-tag="logro">🏆logro</button>
-            <button class="btn-tag px-3 py-1 rounded-full text-xs font-medium text-ink/60 border border-brand/30 hover:border-brand hover:text-brand transition-all" data-tag="salud">💚salud</button>
-            <button class="btn-tag px-3 py-1 rounded-full text-xs font-medium text-ink/60 border border-brand/30 hover:border-brand hover:text-brand transition-all" data-tag="emocion">💜emocion</button>
-            <button class="btn-tag px-3 py-1 rounded-full text-xs font-medium text-ink/60 border border-brand/30 hover:border-brand hover:text-brand transition-all" data-tag="alarma">⏰alarma</button>
+        <div class="flex gap-2 flex-wrap justify-center" role="group" aria-label="Filtrar por etiqueta">
+            <button class="btn-tag px-4 py-2 min-h-[40px] rounded-full text-xs font-medium text-ink/60 border border-brand/30 hover:border-brand hover:text-brand hover:bg-brand/5 transition-all focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1 cursor-pointer" data-tag="logro" aria-label="Filtrar por logro">🏆logro</button>
+            <button class="btn-tag px-4 py-2 min-h-[40px] rounded-full text-xs font-medium text-ink/60 border border-brand/30 hover:border-brand hover:text-brand hover:bg-brand/5 transition-all focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1 cursor-pointer" data-tag="salud" aria-label="Filtrar por salud">💚salud</button>
+            <button class="btn-tag px-4 py-2 min-h-[40px] rounded-full text-xs font-medium text-ink/60 border border-brand/30 hover:border-brand hover:text-brand hover:bg-brand/5 transition-all focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1 cursor-pointer" data-tag="emocion" aria-label="Filtrar por emoción">💜emocion</button>
+            <button class="btn-tag px-4 py-2 min-h-[40px] rounded-full text-xs font-medium text-ink/60 border border-brand/30 hover:border-brand hover:text-brand hover:bg-brand/5 transition-all focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1 cursor-pointer" data-tag="alarma" aria-label="Filtrar por alarma">⏰alarma</button>
         </div>
 
 
@@ -194,33 +198,33 @@
         <!-- FOOTER / BARRA DE CAPTURA PRO -->
         <footer class="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white via-white/80 to-transparent z-40">
             <div
-                class="bg-white border-2 border-lavender p-2 rounded-[2.5rem] shadow-2xl flex items-center gap-2 max-w-xl mx-auto border-b-4">
-                <button type="button"
-                    class="w-10 h-10 rounded-full bg-gray-50 hover:bg-lavender text-gray-400 hover:text-purple-500 flex items-center justify-center shrink-0 transition text-lg">
-                    <i class="fa-solid fa-image"></i>
+                class="bg-white border-2 border-lavender p-3 rounded-[2.5rem] shadow-2xl flex items-center gap-3 max-w-xl mx-auto border-b-4">
+                <button type="button" aria-label="Subir imagen"
+                    class="w-12 h-12 rounded-full bg-gray-50 hover:bg-lavender text-gray-400 hover:text-purple-500 flex items-center justify-center shrink-0 transition focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer">
+                    <i class="fa-solid fa-image" aria-hidden="true"></i>
                 </button>
 
                 <input type="text" id="item-input" placeholder="¿Qué tienes en mente?"
-                    class="flex-1 bg-transparent text-ink px-2 py-2 text-sm md:text-md font-bold focus:outline-none placeholder-gray-300">
+                    class="flex-1 bg-transparent text-ink px-2 py-2 text-base md:text-md font-bold focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 rounded-lg placeholder-gray-400" aria-label="Escribe tu nota o tarea">
 
                 <div class="flex items-center gap-2 pr-1">
-                    <select id="item-type"
-                        class="hidden md:block bg-gray-50 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase cursor-pointer hover:bg-lavender transition-colors border-none outline-none">
+                    <select id="item-type" aria-label="Seleccionar tipo de elemento"
+                        class="hidden md:block bg-gray-50 px-3 py-2 rounded-xl text-xs font-black uppercase cursor-pointer hover:bg-lavender transition-colors border-none outline-none focus:outline-none focus:ring-2 focus:ring-brand">
                         <option value="nota">📝 Nota</option>
                         <option value="tarea">✅ Tarea</option>
                         <option value="proyecto">📁 Proyecto</option>
                         <option value="directorio">🔗 Enlace</option>
                     </select>
 
-                    <button id="btn-submit"
-                        class="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shrink-0 shadow-sticker active:shadow-pressed transition-all">
-                        <i class="fa-solid fa-plus font-bold"></i>
+                    <button id="btn-submit" aria-label="Guardar elemento"
+                        class="w-12 h-12 rounded-full bg-brand text-white flex items-center justify-center shrink-0 shadow-sticker active:shadow-pressed transition-all focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer">
+                        <i class="fa-solid fa-plus font-bold" aria-hidden="true"></i>
                     </button>
 
                     <!-- Botón Micrófono Central -->
-                    <button id="btn-voice-footer"
-                        class="w-12 h-12 rounded-full bg-gradient-to-tr from-sugar-pink to-hot-pink text-white flex items-center justify-center shrink-0 shadow-lg shadow-pink-200 transform hover:scale-105 active:scale-95 transition border-2 border-white">
-                        <i class="fa-solid fa-microphone text-lg"></i>
+                    <button id="btn-voice-footer" aria-label="Grabar nota de voz"
+                        class="w-14 h-14 rounded-full bg-gradient-to-tr from-sugar-pink to-hot-pink text-white flex items-center justify-center shrink-0 shadow-lg shadow-pink-200 transform hover:scale-105 active:scale-95 transition border-2 border-white focus:outline-none focus:ring-2 focus:ring-pink-300 cursor-pointer">
+                        <i class="fa-solid fa-microphone text-xl" aria-hidden="true"></i>
                     </button>
                 </div>
             </div>
@@ -266,28 +270,30 @@
         </div>
 
         <!-- Kai Avatar (Floating Trigger) -->
-        <div id="kai-widget" class="fixed bottom-6 right-6 z-50">
-            <div id="kai-avatar-container" class="cursor-pointer relative">
-                <div class="w-16 h-16 bg-white rounded-full shadow-float flex items-center justify-center transform transition-transform hover:scale-105 active:scale-95 overflow-hidden border-4 border-brand">
-                    <img src="icon.svg" class="w-full h-full object-cover" id="kai-avatar" alt="KAI">
+        <div id="kai-widget" class="fixed bottom-6 right-6 z-50" role="complementary" aria-label="Asistente Kai">
+            <div id="kai-avatar-container" class="cursor-pointer relative" role="button" tabindex="0" aria-label="Abrir asistente Kai">
+                <div class="w-16 h-16 bg-white rounded-full shadow-float flex items-center justify-center transform transition-transform hover:scale-105 active:scale-95 overflow-hidden border-4 border-brand focus:outline-none focus:ring-2 focus:ring-brand">
+                    <img src="icon.svg" class="w-full h-full object-cover" id="kai-avatar" alt="Kai">
                 </div>
-                <div id="kai-status" class="absolute bottom-0 right-0 w-4 h-4 bg-green-400 border-2 border-white rounded-full"></div>
+                <div id="kai-status" class="absolute bottom-0 right-0 w-4 h-4 bg-green-400 border-2 border-white rounded-full" aria-label="Estado: en línea"></div>
             </div>
         </div>
 
         <!-- Reutilizamos el modal de edición con clases Tailwind -->
         <div id="modal-edit"
-            class="fixed inset-0 bg-ink/20 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-4">
+            class="fixed inset-0 bg-ink/20 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-4"
+            role="dialog" aria-modal="true" aria-labelledby="modal-title">
             <div class="bg-white w-full max-w-lg rounded-blob shadow-2xl max-h-[90vh] overflow-y-auto p-8 relative">
-                <button class="modal-close absolute top-6 right-6 text-xl hover:text-brand transition"><i
-                        class="fa-solid fa-xmark"></i></button>
-                <h3 class="text-2xl font-bold mb-6 text-brand">Personalizar Bloque</h3>
+                <button class="modal-close absolute top-6 right-6 w-12 h-12 rounded-full hover:bg-gray-100 flex items-center justify-center transition focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer" aria-label="Cerrar modal">
+                    <i class="fa-solid fa-xmark text-xl" aria-hidden="true"></i>
+                </button>
+                <h3 id="modal-title" class="text-2xl font-bold mb-6 text-brand">Personalizar Bloque</h3>
 
                 <form id="edit-form" class="space-y-6">
                     <input type="hidden" id="edit-id">
 
                     <div class="space-y-2">
-                        <label class="font-bold text-sm ml-2 flex items-center gap-2">
+                        <label for="edit-type" class="font-bold text-sm ml-2 flex items-center gap-2">
                             <span class="w-2 h-2 rounded-full bg-brand"></span>
                             Tipo
                         </label>
@@ -302,7 +308,7 @@
                     </div>
 
                     <div class="space-y-2">
-                        <label class="font-bold text-sm ml-2">Título</label>
+                        <label for="edit-content" class="font-bold text-sm ml-2">Título</label>
                         <input type="text" id="edit-content"
                             class="w-full bg-input-bg border-none rounded-blob px-6 py-4 font-bold focus:ring-2 focus:ring-brand"
                             required>

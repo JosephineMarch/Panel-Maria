@@ -1,4 +1,5 @@
 /* 🎨 KAI - Kawaii Productive Design System */
+/* 🆕 UI/UX Pro Max Audit Fixes Applied */
 @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&family=Patrick+Hand&display=swap');
 
 :root {
@@ -10,8 +11,8 @@
     --urgent: #FFB8C5;
     --cream: #FFFDF5;
     --ink: #4A4A4A;
+    --ink-light: #6B7280;
     --app-bg: #FFFDF5;
-    /* Fondo crema suave para el inicio */
 
     /* Paleta Ultra-Suave por Tipo */
     --color-proyecto: #F3F0FF;
@@ -50,15 +51,43 @@
 
     /* Escala Tipográfica Profesional */
     --text-xl: 1.25rem;
-    /* Títulos grandes */
     --text-lg: 1.125rem;
-    /* Títulos de tarjetas */
     --text-base: 1rem;
-    /* Cuerpo de texto */
     --text-sm: 0.875rem;
-    /* Texto secundario */
     --text-xs: 0.75rem;
-    /* Labels y metadatos */
+
+    /* Z-Index Scale */
+    --z-dropdown: 10;
+    --z-sticky: 20;
+    --z-fixed: 30;
+    --z-modal-backdrop: 40;
+    --z-modal: 50;
+    --z-popover: 60;
+    --z-tooltip: 70;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+* :focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
 }
 
 body {
