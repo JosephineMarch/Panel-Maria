@@ -61,6 +61,59 @@ export const cerebras = {
         let items = [];
         let tags = [];
         
+        // Detectar formato "tarea título, item a, b, c"
+        const itemMatch = message.match(/^tarea\s+(.+?),\s*item\s+(.+)$/i);
+        
+        if (itemMatch) {
+            const titulo = itemMatch[1].trim();
+            const itemsText = itemMatch[2];
+            items = itemsText.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            items = items.map(titulo => ({ titulo, completado: false }));
+            
+            // Detectar tags
+            if (text.includes('logro') || text.includes('logré')) tags.push('logro');
+            if (text.includes('salud') || text.includes('dolor') || text.includes('enfermo')) tags.push('salud');
+            if (text.includes('emocion') || text.includes('emoción') || text.includes('triste')) tags.push('emocion');
+            
+            const actionData = {
+                type: 'tarea',
+                content: titulo,
+                tags: tags,
+                tareas: items
+            };
+            
+            const responses = [
+                "¡Tarea con checklist creada! ✅",
+                "¡Listo! Tarea con items guardada ✨",
+                "Hecho! Tu tarea está lista 💫"
+            ];
+            
+            return {
+                response: responses[Math.floor(Math.random() * responses.length)],
+                action: { type: 'CREATE_ITEM', data: actionData }
+            };
+        }
+        
+        // Detectar solo "item a, b, c" (sin título)
+        const onlyItemsMatch = message.match(/^item\s+(.+)$/i);
+        if (onlyItemsMatch) {
+            const itemsText = onlyItemsMatch[1];
+            items = itemsText.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            items = items.map(titulo => ({ titulo, completado: false }));
+            
+            const actionData = {
+                type: 'tarea',
+                content: '',
+                tags: tags,
+                tareas: items
+            };
+            
+            return {
+                response: "¡Tarea con checklist creada! ✅",
+                action: { type: 'CREATE_ITEM', data: actionData }
+            };
+        }
+        
         if (text.includes('tarea') || text.includes('tengo que') || text.includes('necesito') || text.includes('pendiente')) {
             type = 'tarea';
         }
@@ -75,12 +128,6 @@ export const cerebras = {
         if (text.includes('logro') || text.includes('logré')) tags.push('logro');
         if (text.includes('salud') || text.includes('dolor') || text.includes('enfermo')) tags.push('salud');
         if (text.includes('emocion') || text.includes('emoción') || text.includes('triste')) tags.push('emocion');
-        
-        // Detectar formato "tarea item a, b, c"
-        const itemMatch = message.match(/item\s+(.+)$/i);
-        if (itemMatch && type === 'tarea') {
-            items = itemMatch[1].split(',').map(s => ({ titulo: s.trim(), completado: false }));
-        }
         
         // Detectar acción
         let action = null;

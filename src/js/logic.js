@@ -611,6 +611,39 @@ REGLAS:
         let type = 'nota';
         let items = [];
         
+        // Detectar formato "tarea título, item a, b, c"
+        // Ejemplo: "tarea que hare hoy, item 1, 2, 3" o "tarea lavar platos, item comprar leche, pagar luz"
+        const itemMatch = content.match(/^tarea\s+(.+?),\s*item\s+(.+)$/i);
+        
+        if (itemMatch) {
+            const titulo = itemMatch[1].trim();
+            const itemsText = itemMatch[2];
+            items = itemsText.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            items = items.map(titulo => ({ titulo, completado: false }));
+            return {
+                type: 'tarea',
+                content: titulo,
+                tags: [],
+                items: items,
+                hasDeadline: false
+            };
+        }
+        
+        // Detectar solo "item a, b, c" (sin título antes)
+        const onlyItemsMatch = content.match(/^item\s+(.+)$/i);
+        if (onlyItemsMatch) {
+            const itemsText = onlyItemsMatch[1];
+            items = itemsText.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            items = items.map(titulo => ({ titulo, completado: false }));
+            return {
+                type: 'tarea',
+                content: '',
+                tags: [],
+                items: items,
+                hasDeadline: false
+            };
+        }
+        
         // Orden importa: alarma primero porque puede combinarse con tarea
         if (text.includes('alarma') || text.includes('recordatorio') || text.includes('avísame') || text.includes('recuérdame')) {
             type = 'tarea';
@@ -637,22 +670,9 @@ REGLAS:
             tags.push('emocion');
         }
         
-        // Detectar formato "tarea item a, b, c"
-        // Formato: "tarea item lavar platos, cocinar, dormir"
-        // NO tiene título, las items son la tarea
-        let mainContent = content;
-        const itemMatch = content.match(/^tarea\s+item\s+(.+)$/i);
-        
-        if (itemMatch) {
-            const itemsText = itemMatch[1];
-            items = itemsText.split(',').map(s => s.trim()).filter(s => s.length > 0);
-            items = items.map(titulo => ({ titulo, completado: false }));
-            mainContent = ''; // La tarea no tiene título
-            type = 'tarea';
-        }
-        
         // Limpiar el contenido (quitar las palabras clave del inicio)
-        if (type === 'tarea' && items.length === 0) {
+        let mainContent = content;
+        if (type === 'tarea') {
             mainContent = content.replace(/^tarea\s*/i, '').trim();
         } else if (type === 'proyecto') {
             mainContent = content.replace(/^proyecto\s*/i, '').trim();
@@ -666,7 +686,7 @@ REGLAS:
             type,
             content: mainContent,
             tags,
-            items,
+            items: [],
             hasDeadline: text.includes('alarma') || text.includes('recordatorio')
         };
     }
