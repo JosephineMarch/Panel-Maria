@@ -153,48 +153,43 @@
         aria-hidden="true"></div>
 
     <!-- HEADER -->
-    <header class="bg-white/90 backdrop-blur-md z-[60] border-b border-gray-100 sticky top-0" role="banner">
+    <header class="bg-white z-[60] border-b border-gray-100 sticky top-0" role="banner">
         <!-- Top: Title + User -->
         <div class="flex items-center justify-between px-4 py-3">
-            <button id="btn-menu"
-                class="w-12 h-12 rounded-full hover:bg-gray-100 flex items-center justify-center transition focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer md:hidden"
-                aria-label="Abrir menú">
-                <i class="fa-solid fa-bars text-xl" aria-hidden="true"></i>
-            </button>
-            <div class="w-12 md:w-10"></div>
-            <h1 class="font-bold text-xl text-ink" role="heading" aria-level="1">KAI</h1>
             <div id="btn-user"
-                class="w-12 h-12 rounded-full border-2 border-brand p-0.5 cursor-pointer shrink-0 focus:outline-none focus:ring-2 focus:ring-brand"
+                class="w-10 h-10 rounded-full border-2 border-brand cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand"
                 role="button" tabindex="0" aria-label="Perfil de usuario">
                 <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=ffdfbf" alt="Tu avatar"
-                    class="w-full h-full rounded-full bg-peach/20">
+                    class="w-full h-full rounded-full">
             </div>
+            <h1 class="font-bold text-xl text-ink" role="heading" aria-level="1">KAI</h1>
+            <div class="w-10"></div>
         </div>
 
         <!-- Bottom: Category Icons (Full Width) -->
         <nav class="flex px-3 pb-3 gap-1 md:gap-2" role="navigation" aria-label="Filtrar por tipo">
             <button
-                class="btn-category flex-1 min-h-[44px] py-2 rounded-lg text-base font-medium transition-all text-brand/60 hover:text-brand hover:bg-brand/10 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1 cursor-pointer"
+                class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
                 data-category="all" aria-label="Ver todos">
                 <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
             </button>
             <button
-                class="btn-category flex-1 min-h-[44px] py-2 rounded-lg text-base font-medium transition-all text-brand/60 hover:text-brand hover:bg-brand/10 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1 cursor-pointer"
+                class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
                 data-category="nota" aria-label="Filtrar notas">
                 <i class="fa-regular fa-note-sticky" aria-hidden="true"></i>
             </button>
             <button
-                class="btn-category flex-1 min-h-[44px] py-2 rounded-lg text-base font-medium transition-all text-brand/60 hover:text-brand hover:bg-brand/10 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1 cursor-pointer"
+                class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
                 data-category="tarea" aria-label="Filtrar tareas">
                 <i class="fa-regular fa-circle-check" aria-hidden="true"></i>
             </button>
             <button
-                class="btn-category flex-1 min-h-[44px] py-2 rounded-lg text-base font-medium transition-all text-brand/60 hover:text-brand hover:bg-brand/10 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1 cursor-pointer"
+                class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
                 data-category="proyecto" aria-label="Filtrar proyectos">
                 <i class="fa-regular fa-folder" aria-hidden="true"></i>
             </button>
             <button
-                class="btn-category flex-1 min-h-[44px] py-2 rounded-lg text-base font-medium transition-all text-brand/60 hover:text-brand hover:bg-brand/10 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1 cursor-pointer"
+                class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
                 data-category="directorio" aria-label="Filtrar enlaces">
                 <i class="fa-solid fa-link" aria-hidden="true"></i>
             </button>
@@ -229,16 +224,11 @@
 
         <!-- FOOTER / BARRA DE CAPTURA PRO -->
         <footer
-            class="fixed bottom-0 left-0 right-0 px-2 py-3 bg-gradient-to-t from-white via-white/90 to-transparent z-40">
+            class="fixed bottom-0 left-0 right-0 px-2 py-3 bg-white border-t border-gray-100 z-40">
             <div
-                class="bg-white border-2 border-lavender px-3 py-2 rounded-[2rem] shadow-lg flex items-center gap-2 max-w-full mx-auto">
-                <button type="button" aria-label="Subir imagen"
-                    class="w-10 h-10 rounded-full bg-gray-50 hover:bg-lavender text-gray-400 hover:text-purple-500 flex items-center justify-center shrink-0 transition focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer">
-                    <i class="fa-solid fa-image text-sm" aria-hidden="true"></i>
-                </button>
-
+                class="bg-white border-2 border-gray-100 px-3 py-2 rounded-[2rem] shadow-lg flex items-center gap-2 max-w-full mx-auto">
                 <input type="text" id="item-input" placeholder="¿Qué tienes en mente?"
-                    class="flex-1 bg-transparent text-ink py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand rounded-lg placeholder-gray-400 min-w-0"
+                    class="flex-1 bg-gray-50 text-ink py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand rounded-lg placeholder-gray-400 min-w-0"
                     aria-label="Escribe tu nota o tarea">
 
                 <div class="flex items-center gap-1">
@@ -249,7 +239,7 @@
 
                     <!-- Botón Micrófono -->
                     <button id="btn-voice-footer" aria-label="Grabar nota de voz"
-                        class="w-10 h-10 rounded-full bg-gradient-to-tr from-sugar-pink to-hot-pink text-white flex items-center justify-center shrink-0 shadow-md hover:scale-105 active:scale-95 transition border-2 border-white focus:outline-none focus:ring-2 focus:ring-pink-300 cursor-pointer">
+                        class="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shrink-0 shadow-md hover:scale-105 active:scale-95 transition border-2 border-white focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer">
                         <i class="fa-solid fa-microphone text-sm" aria-hidden="true"></i>
                     </button>
                 </div>
