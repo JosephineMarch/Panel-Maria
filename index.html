@@ -179,7 +179,7 @@
         </nav>
     </header>
 
-    <main id="app" class="flex-1 max-w-5xl mx-auto w-full px-3 py-4 md:px-8 space-y-6 pb-32 no-scrollbar" role="main">
+    <main id="app" class="flex-1 max-w-5xl mx-auto w-full px-3 py-4 md:px-8 space-y-6 pb-24 md:pb-32 no-scrollbar" role="main">
         <!-- Filtros de Etiquetas (Tags) -->
         <div class="flex gap-2 flex-wrap justify-center" role="group" aria-label="Filtrar por etiqueta">
             <button class="btn-tag px-4 py-2 min-h-[40px] rounded-full text-xs font-medium text-ink/60 border border-brand/30 hover:border-brand hover:text-brand hover:bg-brand/5 transition-all focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1 cursor-pointer" data-tag="logro" aria-label="Filtrar por logro">🏆logro</button>
@@ -196,35 +196,27 @@
         </div>
 
         <!-- FOOTER / BARRA DE CAPTURA PRO -->
-        <footer class="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white via-white/80 to-transparent z-40">
+        <footer class="fixed bottom-0 left-0 right-0 px-2 py-3 bg-gradient-to-t from-white via-white/90 to-transparent z-40">
             <div
-                class="bg-white border-2 border-lavender p-3 rounded-[2.5rem] shadow-2xl flex items-center gap-3 max-w-xl mx-auto border-b-4">
+                class="bg-white border-2 border-lavender px-3 py-2 rounded-[2rem] shadow-lg flex items-center gap-2 max-w-full mx-auto">
                 <button type="button" aria-label="Subir imagen"
-                    class="w-12 h-12 rounded-full bg-gray-50 hover:bg-lavender text-gray-400 hover:text-purple-500 flex items-center justify-center shrink-0 transition focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer">
-                    <i class="fa-solid fa-image" aria-hidden="true"></i>
+                    class="w-10 h-10 rounded-full bg-gray-50 hover:bg-lavender text-gray-400 hover:text-purple-500 flex items-center justify-center shrink-0 transition focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer">
+                    <i class="fa-solid fa-image text-sm" aria-hidden="true"></i>
                 </button>
 
                 <input type="text" id="item-input" placeholder="¿Qué tienes en mente?"
-                    class="flex-1 bg-transparent text-ink px-2 py-2 text-base md:text-md font-bold focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 rounded-lg placeholder-gray-400" aria-label="Escribe tu nota o tarea">
+                    class="flex-1 bg-transparent text-ink py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand rounded-lg placeholder-gray-400 min-w-0" aria-label="Escribe tu nota o tarea">
 
-                <div class="flex items-center gap-2 pr-1">
-                    <select id="item-type" aria-label="Seleccionar tipo de elemento"
-                        class="hidden md:block bg-gray-50 px-3 py-2 rounded-xl text-xs font-black uppercase cursor-pointer hover:bg-lavender transition-colors border-none outline-none focus:outline-none focus:ring-2 focus:ring-brand">
-                        <option value="nota">📝 Nota</option>
-                        <option value="tarea">✅ Tarea</option>
-                        <option value="proyecto">📁 Proyecto</option>
-                        <option value="directorio">🔗 Enlace</option>
-                    </select>
-
+                <div class="flex items-center gap-1">
                     <button id="btn-submit" aria-label="Guardar elemento"
-                        class="w-12 h-12 rounded-full bg-brand text-white flex items-center justify-center shrink-0 shadow-sticker active:shadow-pressed transition-all focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer">
-                        <i class="fa-solid fa-plus font-bold" aria-hidden="true"></i>
+                        class="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shrink-0 shadow-md active:scale-95 transition-all focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1 cursor-pointer">
+                        <i class="fa-solid fa-plus text-sm" aria-hidden="true"></i>
                     </button>
 
-                    <!-- Botón Micrófono Central -->
+                    <!-- Botón Micrófono -->
                     <button id="btn-voice-footer" aria-label="Grabar nota de voz"
-                        class="w-14 h-14 rounded-full bg-gradient-to-tr from-sugar-pink to-hot-pink text-white flex items-center justify-center shrink-0 shadow-lg shadow-pink-200 transform hover:scale-105 active:scale-95 transition border-2 border-white focus:outline-none focus:ring-2 focus:ring-pink-300 cursor-pointer">
-                        <i class="fa-solid fa-microphone text-xl" aria-hidden="true"></i>
+                        class="w-10 h-10 rounded-full bg-gradient-to-tr from-sugar-pink to-hot-pink text-white flex items-center justify-center shrink-0 shadow-md hover:scale-105 active:scale-95 transition border-2 border-white focus:outline-none focus:ring-2 focus:ring-pink-300 cursor-pointer">
+                        <i class="fa-solid fa-microphone text-sm" aria-hidden="true"></i>
                     </button>
                 </div>
             </div>
@@ -232,50 +224,50 @@
 
         <!-- El Asistente Kai (Floating Widget con Chat) -->
         <!-- Kai Chat Full Screen -->
-        <div id="kai-chat-overlay" class="fixed inset-0 bg-white z-[100] hidden flex-col">
+        <div id="kai-chat-overlay" class="fixed inset-0 bg-white z-[100] hidden flex flex-col">
             <!-- Chat Header -->
-            <div class="bg-brand p-4 text-white flex items-center justify-between shrink-0">
+            <div class="bg-brand px-4 py-3 text-white flex items-center justify-between shrink-0">
                 <div class="flex items-center gap-3">
-                    <button id="kai-chat-back" class="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition">
-                        <i class="fa-solid fa-arrow-left text-lg"></i>
+                    <button id="kai-chat-back" class="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition">
+                        <i class="fa-solid fa-arrow-left text-sm"></i>
                     </button>
                     <div class="flex items-center gap-2">
-                        <img src="icon.svg" class="w-8 h-8 rounded-full bg-white" alt="KAI">
-                        <span class="font-bold text-lg">Kai Assistant</span>
+                        <img src="icon.svg" class="w-7 h-7 rounded-full bg-white" alt="KAI">
+                        <span class="font-bold text-sm">Kai</span>
                     </div>
                 </div>
-                <button id="kai-chat-minimize" class="w-10 h-10 rounded-full hover:bg-white/20 flex items-center justify-center transition">
-                    <i class="fa-solid fa-xmark text-lg"></i>
+                <button id="kai-chat-minimize" class="w-9 h-9 rounded-full hover:bg-white/20 flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark text-sm"></i>
                 </button>
             </div>
             
-        <!-- Chat Messages -->
-            <div id="kai-chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4 bg-cream h-0 min-h-0">
-                <div class="bg-white p-4 rounded-2xl rounded-bl-none shadow-sm max-w-[85%]">
-                    <p class="text-sm font-medium text-ink">¡Hola Maria! ✨ Soy Kai. Estoy listo para ayudarte a gestionar tus notas y proyectos. ¿Qué tienes en mente?</p>
+            <!-- Chat Messages -->
+            <div id="kai-chat-messages" class="flex-1 overflow-y-auto p-3 space-y-2 bg-cream">
+                <div class="bg-white p-3 rounded-2xl rounded-bl-none shadow-sm max-w-[85%]">
+                    <p class="text-sm text-ink">¡Hola Maria! ✨ Soy Kai. Estoy listo para ayudarte. ¿Qué tienes en mente?</p>
                 </div>
             </div>
             
             <!-- Chat Input -->
-            <div class="p-4 bg-white border-t border-gray-100 shrink-0">
-                <div class="flex gap-3 items-center">
-                    <input type="text" id="kai-chat-input" placeholder="Escribe tu mensaje..." 
-                        class="flex-1 bg-gray-100 border-none rounded-2xl px-5 py-3 text-sm font-bold focus:ring-2 focus:ring-brand outline-none">
+            <div class="p-3 bg-white border-t border-gray-100 shrink-0">
+                <div class="flex gap-2 items-center">
+                    <input type="text" id="kai-chat-input" placeholder="Escribe..." 
+                        class="flex-1 bg-gray-100 border-none rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-brand outline-none">
                     <button id="kai-chat-send"
-                        class="w-12 h-12 rounded-full bg-brand text-white flex items-center justify-center shadow-sticker">
-                        <i class="fa-solid fa-paper-plane"></i>
+                        class="w-9 h-9 rounded-full bg-brand text-white flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-paper-plane text-xs"></i>
                     </button>
                 </div>
             </div>
         </div>
 
         <!-- Kai Avatar (Floating Trigger) -->
-        <div id="kai-widget" class="fixed bottom-6 right-6 z-50" role="complementary" aria-label="Asistente Kai">
+        <div id="kai-widget" class="fixed bottom-20 md:bottom-6 right-4 z-50" role="complementary" aria-label="Asistente Kai">
             <div id="kai-avatar-container" class="cursor-pointer relative" role="button" tabindex="0" aria-label="Abrir asistente Kai">
-                <div class="w-16 h-16 bg-white rounded-full shadow-float flex items-center justify-center transform transition-transform hover:scale-105 active:scale-95 overflow-hidden border-4 border-brand focus:outline-none focus:ring-2 focus:ring-brand">
+                <div class="w-14 h-14 md:w-16 md:h-16 bg-white rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 overflow-hidden border-4 border-brand focus:outline-none focus:ring-2 focus:ring-brand">
                     <img src="icon.svg" class="w-full h-full object-cover" id="kai-avatar" alt="Kai">
                 </div>
-                <div id="kai-status" class="absolute bottom-0 right-0 w-4 h-4 bg-green-400 border-2 border-white rounded-full" aria-label="Estado: en línea"></div>
+                <div id="kai-status" class="absolute bottom-0 right-0 w-3 h-3 md:w-4 md:h-4 bg-green-400 border-2 border-white rounded-full" aria-label="Estado: en línea"></div>
             </div>
         </div>
 
