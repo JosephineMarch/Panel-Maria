@@ -92,8 +92,8 @@ select:focus-visible,
 
 body {
     background-color: var(--app-bg);
-    background-image: radial-gradient(#E6E6FA 2px, transparent 2px);
-    background-size: 30px 30px;
+    background-image: radial-gradient(#E2E8F0 1px, transparent 1px);
+    background-size: 20px 20px;
     color: var(--ink);
     font-family: 'Quicksand', sans-serif;
     margin: 0;
@@ -118,6 +118,20 @@ body {
 .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
+}
+
+/* Snap scrolling for horizontal scroll containers */
+.snap-x {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+}
+
+.snap-center {
+    scroll-snap-align: center;
+}
+
+.snap-start {
+    scroll-snap-align: start;
 }
 
 /* Efecto Sticker */
