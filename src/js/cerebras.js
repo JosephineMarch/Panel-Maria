@@ -51,14 +51,72 @@ export const cerebras = {
     },
 
     /**
+     * Modo offline: análisis local sin IA
+     */
+    offlineParse(message) {
+        const text = message.toLowerCase();
+        
+        // Detectar tipo
+        let type = 'nota';
+        let items = [];
+        let tags = [];
+        
+        if (text.includes('tarea') || text.includes('tengo que') || text.includes('necesito') || text.includes('pendiente')) {
+            type = 'tarea';
+        }
+        if (text.includes('proyecto')) {
+            type = 'proyecto';
+        }
+        if (text.includes('enlace') || text.includes('link') || text.includes('youtube') || text.includes('http')) {
+            type = 'directorio';
+        }
+        
+        // Detectar tags
+        if (text.includes('logro') || text.includes('logré')) tags.push('logro');
+        if (text.includes('salud') || text.includes('dolor') || text.includes('enfermo')) tags.push('salud');
+        if (text.includes('emocion') || text.includes('emoción') || text.includes('triste')) tags.push('emocion');
+        
+        // Detectar formato "tarea item a, b, c"
+        const itemMatch = message.match(/item\s+(.+)$/i);
+        if (itemMatch && type === 'tarea') {
+            items = itemMatch[1].split(',').map(s => ({ titulo: s.trim(), completado: false }));
+        }
+        
+        // Detectar acción
+        let action = null;
+        const actionData = {
+            type: type,
+            content: message.replace(/^(tarea|proyecto|enlace|link)\s*/i, '').trim(),
+            tags: tags,
+            tareas: items
+        };
+        
+        // Crear siempre un item
+        action = {
+            type: 'CREATE_ITEM',
+            data: actionData
+        };
+        
+        const responses = [
+            "¡Anotado! 🧸✨",
+            "¡Listo! Ya lo guardé 💫",
+            "Hecho! Tu panel está actualizado 🌟",
+            "¡Creado con cariño! 🫰"
+        ];
+        
+        return {
+            response: responses[Math.floor(Math.random() * responses.length)],
+            action: action
+        };
+    },
+
+    /**
      * Procesa un mensaje del usuario
      */
     async ask(message) {
-        if (!this.apiKey) {
-            return {
-                response: "¡Hola! Estoy listo para ayudarte, pero necesito que configures mi 'Cerebro' (API Key de Cerebras) en src/js/cerebras.js para empezar.",
-                action: null
-            };
+        if (!this.apiKey || this.apiKey === 'TU_API_KEY_AQUI') {
+            // Modo offline: analizar localmente
+            return this.offlineParse(message);
         }
 
         const context = await this.getContext();
@@ -220,24 +278,18 @@ ${JSON.stringify(this.history.slice(-4))}
 
             // Parsear acción si existe
             let action = null;
-            if (aiContent.includes('[ACTION]')) {
-                const parts = aiContent.split('[ACTION]');
-                const actionStr = parts[1].trim();
+            const actionMatch = aiContent.match(/\[ACTION\]\s*(\{[\s\S]*?\})/);
+            if (actionMatch) {
                 try {
-                    // Limpiar posibles caracteres extra antes del JSON
-                    const cleanStr = actionStr.replace(/^[^{]*/, '').replace(/[^}]*$/, '');
-                    action = JSON.parse(cleanStr);
-                    // console.log('🎯 Acción parseada:', action.type);
+                    action = JSON.parse(actionMatch[1]);
+                    console.log('🎯 Acción detectada:', action.type, action.data);
                 } catch (e) {
-                    console.error('Error parsing AI action:', e, 'Raw:', actionStr);
+                    console.error('Error parsing AI action:', e, 'Raw:', actionMatch[1]);
                 }
             }
 
             // Limpiar respuesta de marcadores de acción
-            let cleanResponse = aiContent;
-            if (aiContent.includes('[ACTION]')) {
-                cleanResponse = aiContent.split('[ACTION]')[0].trim();
-            }
+            let cleanResponse = aiContent.replace(/\[ACTION\]\s*\{[\s\S]*?\}[\s\S]*/g, '').trim();
 
             return {
                 response: cleanResponse,

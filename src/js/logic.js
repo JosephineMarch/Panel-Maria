@@ -965,7 +965,31 @@ REGLAS:
 
             switch (action.type) {
                 case 'CREATE_ITEM':
-                    await data.createItem(actionData);
+                    if (this.isDemoMode) {
+                        const newItem = {
+                            id: 'demo-' + Date.now(),
+                            content: actionData.content || '',
+                            type: actionData.type || 'nota',
+                            parent_id: this.currentParentId,
+                            tags: actionData.tags || [],
+                            descripcion: actionData.descripcion || '',
+                            url: actionData.url || '',
+                            tareas: actionData.tareas || [],
+                            deadline: actionData.deadline || null,
+                            anclado: false,
+                            created_at: new Date().toISOString()
+                        };
+                        let items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
+                        items.unshift(newItem);
+                        localStorage.setItem('kaiDemoItems', JSON.stringify(items));
+                    } else {
+                        if (!this.currentUser) {
+                            ui.showNotification('¡Ups! Necesitas entrar para guardar.', 'warning');
+                            ui.toggleSidebar();
+                            return;
+                        }
+                        await data.createItem(actionData);
+                    }
                     await this.loadItems();
                     ui.showNotification('¡Creado con éxito! ✨', 'success');
                     break;
