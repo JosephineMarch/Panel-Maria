@@ -485,6 +485,13 @@ class KaiController {
 
         // El botón de voz central en el footer
         document.getElementById('btn-voice-footer')?.addEventListener('click', () => this.toggleVoiceInput());
+        
+        document.getElementById('btn-close-voice')?.addEventListener('click', () => {
+            ai.stopVoice();
+            ui.toggleVoiceOverlay(false);
+        });
+        
+        document.getElementById('btn-stop-voice')?.addEventListener('click', () => this.stopVoiceInput());
 
         document.querySelectorAll('.modal-close').forEach(btn => {
             btn.addEventListener('click', () => ui.toggleModal(false));

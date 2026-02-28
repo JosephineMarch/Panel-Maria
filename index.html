@@ -411,15 +411,19 @@
 
         <div id="voice-overlay"
             class="fixed inset-0 bg-brand/90 backdrop-blur-md z-[200] flex items-center justify-center hidden">
+            <button id="btn-close-voice" aria-label="Cerrar"
+                class="absolute top-4 right-4 w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
             <div class="text-center text-white px-8">
                 <div
-                    class="w-32 h-32 bg-white rounded-full mx-auto mb-8 flex items-center justify-center animate-pulse shadow-float">
+                    class="w-32 h-32 bg-white rounded-full mx-auto mb-8 flex items-center justify-center animate-pulse shadow-lg">
                     <span class="text-6xl">🎤</span>
                 </div>
                 <h2 class="font-bold mb-4">¡Te escucho!</h2>
                 <p id="voice-text" class="font-hand mb-10 min-h-[1.5em]"></p>
                 <button id="btn-stop-voice"
-                    class="bg-white text-brand font-bold px-12 py-4 rounded-blob shadow-sticker active:shadow-pressed">Ya
+                    class="bg-white text-brand font-bold px-12 py-4 rounded-full shadow-lg active:scale-95 transition">Ya
                     terminé</button>
             </div>
         </div>

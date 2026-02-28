@@ -104,8 +104,8 @@ export const ui = {
         if (show) {
             const thinking = document.createElement('div');
             thinking.id = 'kai-thinking';
-            thinking.className = 'bg-gray-100 p-3 rounded-xl text-xs text-gray-400 italic flex items-center gap-2 animate-pulse';
-            thinking.innerHTML = '<span class="text-2xl">🧸</span><span>Kai está pensando...</span>';
+            thinking.className = 'bg-gray-100 px-4 py-2 rounded-full text-xs text-gray-500 flex items-center gap-2';
+            thinking.innerHTML = '<span class="text-sm">...</span>';
             container.appendChild(thinking);
             container.scrollTop = container.scrollHeight;
         } else {
@@ -989,13 +989,9 @@ export const ui = {
     },
 
     renderLoading() {
+        // Instant - no loading indicator needed
         if (this.elements.container()) {
-            this.elements.container().innerHTML = `
-                <div class="col-span-full py-20 text-center animate-bounce-slow">
-                    <span class="text-6xl">🧠</span>
-                    <p class="mt-4 font-bold text-brand italic underline decoration-brand-dark decoration-4">KAI está conectando neuronas...</p>
-                </div>
-            `;
+            this.elements.container().innerHTML = '';
         }
     },
 
