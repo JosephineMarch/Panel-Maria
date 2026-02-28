@@ -609,22 +609,22 @@ REGLAS:
         
         // Detectar tipo por palabra clave
         let type = 'nota';
-        let items = [];
+        let tareas = [];
         
-        // Detectar formato "tarea título, item a, b, c"
-        // Ejemplo: "tarea que hare hoy, item 1, 2, 3" o "tarea lavar platos, item comprar leche, pagar luz"
-        const itemMatch = content.match(/^tarea\s+(.+?),\s*item\s+(.+)$/i);
+        // Detectar formato "tarea título, item a, b, c" o "tarea título item a, b, c"
+        // Ejemplo: "tarea que hare hoy, item 1, 2, 3" o "tarea lavar platos item comprar leche, pagar luz"
+        const itemMatchWithTitle = content.match(/^tarea\s+(.+?)(?:,\s*|\s+)item\s+(.+)$/i);
         
-        if (itemMatch) {
-            const titulo = itemMatch[1].trim();
-            const itemsText = itemMatch[2];
-            items = itemsText.split(',').map(s => s.trim()).filter(s => s.length > 0);
-            items = items.map(titulo => ({ titulo, completado: false }));
+        if (itemMatchWithTitle) {
+            const titulo = itemMatchWithTitle[1].trim();
+            const itemsText = itemMatchWithTitle[2];
+            tareas = itemsText.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            tareas = tareas.map(titulo => ({ titulo, completado: false }));
             return {
                 type: 'tarea',
                 content: titulo,
                 tags: [],
-                items: items,
+                items: tareas,
                 hasDeadline: false
             };
         }
@@ -633,13 +633,13 @@ REGLAS:
         const onlyItemsMatch = content.match(/^item\s+(.+)$/i);
         if (onlyItemsMatch) {
             const itemsText = onlyItemsMatch[1];
-            items = itemsText.split(',').map(s => s.trim()).filter(s => s.length > 0);
-            items = items.map(titulo => ({ titulo, completado: false }));
+            tareas = itemsText.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            tareas = tareas.map(titulo => ({ titulo, completado: false }));
             return {
                 type: 'tarea',
                 content: '',
                 tags: [],
-                items: items,
+                items: tareas,
                 hasDeadline: false
             };
         }
@@ -718,7 +718,7 @@ REGLAS:
 
         try {
             // Usar análisis offline como base, luego mejorar con IA si hay conexión
-            let finalType = type !== 'note' ? type : offlineParsed.type;
+            let finalType = type !== 'nota' ? type : offlineParsed.type;
             let finalTags = [...allTags];
             let finalContent = offlineParsed.content || content;
             let finalItems = offlineParsed.items || [];
