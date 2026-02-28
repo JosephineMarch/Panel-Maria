@@ -596,22 +596,92 @@ REGLAS:
         }
     }
 
+    // --- ANÁLISIS OFFLINE (sin IA) ---
+    parseInputOffline(content) {
+        const text = content.toLowerCase().trim();
+        
+        // Detectar tipo por palabra clave
+        let type = 'nota';
+        let items = [];
+        
+        // Orden importa: alarma primero porque puede combinarse con tarea
+        if (text.includes('alarma') || text.includes('recordatorio') || text.includes('avísame') || text.includes('recuérdame')) {
+            type = 'tarea';
+        }
+        if (text.startsWith('tarea') || text.includes('tengo que') || text.includes('necesito') || text.includes('pendiente')) {
+            type = 'tarea';
+        }
+        if (text.startsWith('proyecto') || text.includes('proyecto')) {
+            type = 'proyecto';
+        }
+        if (text.startsWith('enlace') || text.includes('enlace') || text.startsWith('link') || text.includes(' youtube') || text.includes('http')) {
+            type = 'directorio';
+        }
+        
+        // Detectar tags por palabra clave
+        const tags = [];
+        if (text.includes('logro') || text.includes('logré') || text.includes('completé') || text.includes('terminé')) {
+            tags.push('logro');
+        }
+        if (text.includes('salud') || text.includes('dolor') || text.includes('enfermo') || text.includes('médico')) {
+            tags.push('salud');
+        }
+        if (text.includes('emocion') || text.includes('emoción') || text.includes('triste') || text.includes('feliz')) {
+            tags.push('emocion');
+        }
+        
+        // Detectar formato "tarea item a, b, c"
+        // Formato: "tarea item lavar platos, cocinar, dormir"
+        // NO tiene título, las items son la tarea
+        let mainContent = content;
+        const itemMatch = content.match(/^tarea\s+item\s+(.+)$/i);
+        
+        if (itemMatch) {
+            const itemsText = itemMatch[1];
+            items = itemsText.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            items = items.map(titulo => ({ titulo, completado: false }));
+            mainContent = ''; // La tarea no tiene título
+            type = 'tarea';
+        }
+        
+        // Limpiar el contenido (quitar las palabras clave del inicio)
+        if (type === 'tarea' && items.length === 0) {
+            mainContent = content.replace(/^tarea\s*/i, '').trim();
+        } else if (type === 'proyecto') {
+            mainContent = content.replace(/^proyecto\s*/i, '').trim();
+        } else if (type === 'directorio') {
+            mainContent = content.replace(/^(enlace|link)\s*/i, '').trim();
+        } else if (type === 'tarea' && text.includes('alarma')) {
+            mainContent = content.replace(/^alarma\s*/i, '').replace(/recordatorio\s*/i, '').trim();
+        }
+        
+        return {
+            type,
+            content: mainContent,
+            tags,
+            items,
+            hasDeadline: text.includes('alarma') || text.includes('recordatorio')
+        };
+    }
+
     async handleSubmit() {
         const { content, type } = ui.getMainInputData();
         if (!content) return;
 
-        // 1. Detectar alarmas (comando en cualquier parte)
+        // 1. Primero: análisis offline (sin internet)
+        const offlineParsed = this.parseInputOffline(content);
+        
+        // 2. Detectar alarmas (comando en cualquier parte)
         const alarmaData = ai.detectarAlarmas(content);
-        // console.log('🔔 Detección alarma:', content, '->', alarmaData);
 
         if (alarmaData.esAlarma) {
             await this.crearAlarma(alarmaData);
             return;
         }
 
-        // 2. Detectar tags (salud, emocion)
+        // 3. Detectar tags adicionales (salud, emocion)
         const detectedTags = ai.detectarTags(content);
-        // console.log('🏷️ Detección tags:', content, '->', detectedTags);
+        const allTags = [...new Set([...offlineParsed.tags, ...detectedTags])];
 
         if (!this.currentUser && !this.isDemoMode) {
             ui.showNotification('¡Ups! Necesitas entrar para que Kai recuerde esto.', 'warning');
@@ -620,26 +690,33 @@ REGLAS:
         }
 
         try {
-            // Usar IA para inferir tipo y tags si el usuario no especificó tipo
-            let finalType = type !== 'note' ? type : 'nota';
-            let finalTags = [...detectedTags];
+            // Usar análisis offline como base, luego mejorar con IA si hay conexión
+            let finalType = type !== 'note' ? type : offlineParsed.type;
+            let finalTags = [...allTags];
+            let finalContent = offlineParsed.content || content;
+            let finalItems = offlineParsed.items || [];
             
-            if (type === 'note' || !type) {
-                const aiParsed = await this.parseIntentWithAI(content);
-                finalType = aiParsed.type;
-                finalTags = [...new Set([...finalTags, ...aiParsed.tags])];
+            // Si no detectó tipo específico o hay internet, usar IA para mejorar
+            if (offlineParsed.type === 'nota' || !offlineParsed.type) {
+                try {
+                    const aiParsed = await this.parseIntentWithAI(content);
+                    if (aiParsed.type) finalType = aiParsed.type;
+                    finalTags = [...new Set([...finalTags, ...aiParsed.tags])];
+                } catch (e) {
+                    // Sin internet, usar análisis offline
+                }
             }
 
             if (this.isDemoMode) {
                 const newItem = {
                     id: 'demo-' + Date.now(),
-                    content,
+                    content: finalContent,
                     type: finalType,
                     parent_id: this.currentParentId,
                     tags: finalTags,
                     descripcion: '',
-                    url: '',
-                    tareas: [],
+                    url: finalType === 'directorio' ? this.extractUrl(content) : '',
+                    tareas: finalItems,
                     deadline: null,
                     anclado: false,
                     created_at: new Date().toISOString()
@@ -649,22 +726,34 @@ REGLAS:
                 localStorage.setItem('kaiDemoItems', JSON.stringify(items));
             } else {
                 await data.createItem({
-                    content,
+                    content: finalContent,
                     type: finalType,
                     parent_id: this.currentParentId,
                     tags: finalTags,
+                    url: finalType === 'directorio' ? this.extractUrl(content) : '',
+                    tareas: finalItems,
                     deadline: null
                 });
             }
 
+            const itemCount = finalItems.length;
+            let message = '¡Anotado con éxito!';
+            if (itemCount > 0) {
+                message = `¡Tarea con ${itemCount} items creada!`;
+            }
+            
             ui.clearMainInput();
-            ui.showNotification('¡Anotado con éxito!', 'success');
+            ui.showNotification(message, 'success');
             await this.loadItems();
         } catch (error) {
             console.error('Error al crear:', error);
             ui.showNotification('KAI no pudo guardar eso. ¿Intentamos de nuevo?', 'error');
         }
     }
+    
+    extractUrl(text) {
+        const urlMatch = text.match(/(https?:\/\/[^\s]+)/);
+        return urlMatch ? urlMatch[1] : '';
 
     async crearAlarma(alarmaData) {
         // console.log('crearAlarma - alarmaData:', alarmaData);
