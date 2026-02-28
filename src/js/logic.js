@@ -754,7 +754,8 @@ REGLAS:
     extractUrl(text) {
         const urlMatch = text.match(/(https?:\/\/[^\s]+)/);
         return urlMatch ? urlMatch[1] : '';
-
+    }
+    
     async crearAlarma(alarmaData) {
         // console.log('crearAlarma - alarmaData:', alarmaData);
         try {
