@@ -33,12 +33,20 @@ export const ui = {
         directorio: { color: 'directorio', icon: '🔗', solid: 'theme-directorio', label: 'ENLACE' },
     },
 
-    // Configuración de etiquetas (diseño sutil, sin color de header)
+    // Configuración de etiquetas (tags: solo texto brand, tipos: bg brand)
     tagConfig: {
-        logro: { bg: '', text: 'text-ink/70', border: 'border-brand' },
-        salud: { bg: '', text: 'text-ink/70', border: 'border-brand' },
-        emocion: { bg: '', text: 'text-ink/70', border: 'border-brand' },
-        alarma: { bg: '', text: 'text-ink/70', border: 'border-brand' },
+        logro: { bg: 'bg-transparent', text: 'text-brand', border: 'border-brand' },
+        salud: { bg: 'bg-transparent', text: 'text-brand', border: 'border-brand' },
+        emocion: { bg: 'bg-transparent', text: 'text-brand', border: 'border-brand' },
+        alarma: { bg: 'bg-transparent', text: 'text-brand', border: 'border-brand' },
+    },
+
+    // Configuración de tipos (para las cards)
+    typeConfig: {
+        nota: { color: 'nota', icon: '📝', bg: 'bg-brand', text: 'text-white', solid: 'theme-nota', label: 'NOTA' },
+        tarea: { color: 'tarea', icon: '✅', bg: 'bg-brand', text: 'text-white', solid: 'theme-tarea', label: 'TAREA' },
+        proyecto: { color: 'proyecto', icon: '📁', bg: 'bg-brand', text: 'text-white', solid: 'theme-proyecto', label: 'PROYECTO' },
+        directorio: { color: 'directorio', icon: '🔗', bg: 'bg-brand', text: 'text-white', solid: 'theme-directorio', label: 'ENLACE' },
     },
 
 
@@ -56,7 +64,7 @@ export const ui = {
         return tags.map(tag => {
             const config = this.tagConfig[tag];
             if (!config) return '';
-            return `<span class="${config.text} ${config.border} border bg-transparent px-2 py-0.5 rounded-full text-[10px] font-semibold">${tag}</span>`;
+            return `<span class="${config.bg} ${config.text} ${config.border} border px-2 py-0.5 rounded-full text-[10px] font-semibold">${tag}</span>`;
         }).join('');
     },
 
@@ -284,7 +292,7 @@ export const ui = {
                         <span class="text-xl bg-white/30 p-2 rounded-xl backdrop-blur-md">${typeConfig.icon}</span>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2 mb-0.5">
-                                <span class="${tagClass} text-[9px] px-2 py-0.5 bg-white/20">${typeConfig.label}</span>
+                                <span class="${typeConfig.bg} ${typeConfig.text} text-[9px] px-2 py-0.5 rounded-full font-semibold">${typeConfig.label}</span>
                                 ${deadlineHtml ? `<span class="opacity-60">${deadlineHtml}</span>` : ''}
                             </div>
                             <h3 class="txt-title text-ink">${this.escapeHtml(item.content)}</h3>
@@ -435,7 +443,7 @@ export const ui = {
                     </div>
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 mb-1 flex-wrap">
-                            <span class="${tagClass} text-[9px] px-2 py-0.5">${typeConfig.label}</span>
+                            <span class="${typeConfig.bg} ${typeConfig.text} text-[9px] px-2 py-0.5 rounded-full font-semibold">${typeConfig.label}</span>
                             ${deadlineHtml}
                             ${fechaHtml}
                         </div>

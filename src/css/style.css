@@ -9,10 +9,10 @@
     --ink-light: #64748B;
     --app-bg: #FFFFFF;
 
-    --color-proyecto: #EDE9FE;
-    --color-proyecto-dark: #A78BFA;
-    --color-note: #E0E7FF;
-    --color-note-dark: #6366F1;
+    --color-proyecto: #37d9e0;
+    --color-proyecto-dark: #2fc8d5;
+    --color-note: #a1e4f5;
+    --color-note-dark: #59a8cf;
     --color-link: #CFFAFE;
     --color-link-dark: #06B6D4;
     --color-alarm: #FFE4E6;
@@ -37,6 +37,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+
     *,
     *::before,
     *::after {
@@ -89,18 +90,40 @@ body {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .animate-fadeIn {
     animation: fadeIn 0.3s ease-out forwards;
 }
 
-.theme-nota { background-color: var(--color-note); color: var(--ink); }
-.theme-tarea { background-color: var(--color-link); color: var(--ink); }
-.theme-proyecto { background-color: var(--color-proyecto); color: var(--ink); }
-.theme-directorio { background-color: var(--color-alarm); color: var(--ink); }
+.theme-nota {
+    background-color: var(--color-note);
+    color: var(--ink);
+}
+
+.theme-tarea {
+    background-color: var(--color-link);
+    color: var(--ink);
+}
+
+.theme-proyecto {
+    background-color: var(--color-proyecto);
+    color: var(--ink);
+}
+
+.theme-directorio {
+    background-color: var(--color-alarm);
+    color: var(--ink);
+}
 
 .tag-type {
     display: inline-flex;
