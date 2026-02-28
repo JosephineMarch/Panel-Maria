@@ -1,62 +1,32 @@
-/* 🎨 KAI - Kawaii Productive Design System */
-/* 🆕 UI/UX Pro Max Audit Fixes Applied */
-@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&family=Patrick+Hand&display=swap');
+/* 🎨 KAI - ADHD-Friendly Design System */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Patrick+Hand&display=swap');
 
 :root {
-    --brand: #ffa3b5;
-    --brand-dark: #ff8492;
-    --action: #A1DFFF;
-    --success: #B8FFB8;
-    --warning: #FFF2A1;
-    --urgent: #FFB8C5;
+    --brand: #FFB7C5;
+    --brand-dark: #FF9EAA;
     --cream: #FFFDF5;
-    --ink: #4A4A4A;
-    --ink-light: #6B7280;
-    --app-bg: #FFFDF5;
+    --ink: #1E293B;
+    --ink-light: #64748B;
+    --app-bg: #FFFFFF;
 
-    /* Paleta Ultra-Suave por Tipo */
-    --color-proyecto: #F3F0FF;
-    --color-proyecto-dark: #C9B8FF;
+    --color-proyecto: #EDE9FE;
+    --color-proyecto-dark: #A78BFA;
+    --color-note: #E0E7FF;
+    --color-note-dark: #6366F1;
+    --color-link: #CFFAFE;
+    --color-link-dark: #06B6D4;
+    --color-alarm: #FFE4E6;
+    --color-alarm-dark: #F43F5E;
+    --color-logro: #DCFCE7;
+    --color-logro-dark: #22C55E;
 
-    --color-idea: #FFFDEB;
-    --color-idea-dark: #FFF2A1;
-
-    --color-note: #F7F7FF;
-    --color-note-dark: #F0F0FF;
-
-    --color-link: #E6F8FF;
-    --color-link-dark: #A1DFFF;
-
-    --color-alarm: #FFF0F3;
-    --color-alarm-dark: #FFB8C5;
-
-    --color-logro: #F0FFF0;
-    --color-logro-dark: #B8FFB8;
-
-    --color-bitacora: #E8F4F8;
-    --color-bitacora-dark: #A8D8EA;
-
-    /* Text colors */
-    .text-bitacora {
-        color: #5BA4C4;
-    }
-
-    .bg-bitacora {
-        background-color: #E8F4F8;
-    }
-
-    .bg-bitacora\/30 {
-        background-color: rgba(232, 244, 248, 0.3);
-    }
-
-    /* Escala Tipográfica Profesional */
-    --text-xl: 1.25rem;
-    --text-lg: 1.125rem;
-    --text-base: 1rem;
-    --text-sm: 0.875rem;
     --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
+    --text-base: 1rem;
+    --text-lg: 1.125rem;
+    --text-xl: 1.25rem;
+    --text-2xl: 1.5rem;
 
-    /* Z-Index Scale */
     --z-dropdown: 10;
     --z-sticky: 20;
     --z-fixed: 30;
@@ -76,16 +46,7 @@
     }
 }
 
-* :focus-visible {
-    outline: 2px solid var(--brand);
-    outline-offset: 2px;
-}
-
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-select:focus-visible,
-[tabindex]:focus-visible {
+*:focus-visible {
     outline: 2px solid var(--brand);
     outline-offset: 2px;
 }
@@ -95,95 +56,52 @@ body {
     background-image: radial-gradient(#E2E8F0 1px, transparent 1px);
     background-size: 20px 20px;
     color: var(--ink);
-    font-family: 'Quicksand', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     margin: 0;
     min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
 }
 
-/* Ocultar scrollbar */
-.no-scrollbar::-webkit-scrollbar {
-    display: none;
-}
-
-.no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-}
-
-/* Scrollbar hide horizontal */
+.no-scrollbar::-webkit-scrollbar,
 .scrollbar-hide::-webkit-scrollbar {
     display: none;
 }
 
+.no-scrollbar,
 .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
 
-/* Snap scrolling for horizontal scroll containers */
-.snap-x {
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-}
-
-.snap-center {
-    scroll-snap-align: center;
-}
-
-.snap-start {
-    scroll-snap-align: start;
-}
-
-/* Efecto Sticker */
 .shadow-sticker {
-    box-shadow: 0 6px 0px 0px rgba(0, 0, 0, 0.05);
-    transition: all 0.2s ease-in-out;
+    box-shadow: 0 4px 0px 0px rgba(0, 0, 0, 0.08);
+    transition: all 0.2s ease;
 }
 
 .shadow-sticker:hover {
-    box-shadow: 0 8px 0px 0px rgba(0, 0, 0, 0.08);
-    transform: translateY(-2px);
+    box-shadow: 0 6px 0px 0px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
 }
 
-/* Animaciones */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
+.shadow-sticker:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0px 0px rgba(0, 0, 0, 0.08);
+}
 
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-fadeIn {
     animation: fadeIn 0.3s ease-out forwards;
 }
 
-/* Themes por Tipo (Header Sólido) */
-.theme-nota {
-    background-color: #FFF2A1;
-    color: var(--ink);
-}
+.theme-nota { background-color: var(--color-note); color: var(--ink); }
+.theme-tarea { background-color: var(--color-link); color: var(--ink); }
+.theme-proyecto { background-color: var(--color-proyecto); color: var(--ink); }
+.theme-directorio { background-color: var(--color-alarm); color: var(--ink); }
 
-.theme-tarea {
-    background-color: #A1DFFF;
-    color: var(--ink);
-}
-
-.theme-proyecto {
-    background-color: var(--brand);
-    color: var(--ink);
-}
-
-.theme-directorio {
-    background-color: #C9B8FF;
-    color: var(--ink);
-}
-
-/* Etiquetas de Tipo Minimalistas */
 .tag-type {
     display: inline-flex;
     padding: 2px 10px;
@@ -195,32 +113,6 @@ body {
     color: var(--ink);
 }
 
-/* Tags de Tipo con color de fondo */
-.tag-nota {
-    background-color: #FFF2A1;
-}
-
-.tag-tarea {
-    background-color: #A1DFFF;
-}
-
-.tag-proyecto {
-    background-color: #FFB7C5;
-}
-
-.tag-directorio {
-    background-color: #C9B8FF;
-}
-
-.tag-bitacora {
-    background-color: var(--color-bitacora-dark);
-}
-
-.card-body-soft {
-    background-color: var(--color-soft-white);
-}
-
-/* Checkbox Kawaii Custom */
 .kawaii-checkbox {
     appearance: none;
     width: 22px;
@@ -232,12 +124,10 @@ body {
     transition: all 0.2s;
     background: var(--brand);
     opacity: 0.4;
-    /* Estado desmarcado: rosa suave */
 }
 
 .kawaii-checkbox:checked {
     opacity: 1;
-    /* Estado marcado: rosa vibrante */
 }
 
 .kawaii-checkbox:checked::after {
@@ -250,14 +140,8 @@ body {
     font-size: 14px;
 }
 
-/* Tipografía e Interactivos */
 .font-hand {
     font-family: 'Patrick Hand', cursive;
-}
-
-a,
-button:not(.btn-category) {
-    font-weight: 700;
 }
 
 i {
@@ -266,9 +150,8 @@ i {
     justify-content: center;
 }
 
-/* Bloque Expandido Estilo */
 .card-body-soft {
-    background-color: var(--color-soft-white);
+    background-color: rgba(0, 0, 0, 0.02);
 }
 
 .card-body-soft input:not(.kawaii-checkbox),
@@ -297,73 +180,31 @@ i {
     transform: scale(1.05);
 }
 
-/* Clases de Utilidad de Texto (Contraste) */
-.text-proyecto {
-    color: #9B86FA;
-}
-
-.text-idea {
-    color: #C4A400;
-}
-
-.text-note {
-    color: #8F8FFF;
-}
-
-.text-link {
-    color: #008DCF;
-}
-
-.text-alarm {
-    color: #EB4A66;
-}
-
-.text-logro {
-    color: #2D8B2D;
-}
-
-/* ✍️ Jerarquía Tipográfica Unificada - Solo 3 tamaños */
-:root {
-    --text-base-size: 16px;
-}
-
 .txt-title {
-    font-size: var(--text-base-size);
+    font-size: var(--text-base);
     font-weight: 700;
     line-height: 1.3;
 }
 
 .txt-display {
-    font-size: 1.25rem; /* 20px */
+    font-size: 1.25rem;
     font-weight: 800;
     line-height: 1.2;
 }
 
 .txt-body {
-    font-size: var(--text-base-size); /* 16px */
+    font-size: var(--text-base);
     font-weight: 500;
     line-height: 1.6;
 }
 
 .txt-label {
-    font-size: 0.75rem; /* 12px - SOLO para badges de type y tags */
+    font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
 
-.txt-small {
-    font-size: var(--text-base-size); /* 16px - igual al body */
-    font-weight: 600;
-}
-
-.txt-button {
-    font-size: var(--text-base-size); /* 16px */
-    font-weight: 700;
-    text-transform: uppercase;
-}
-
-/* Estabilización de Rotaciones Humildes */
 #items-container .item-card:nth-child(even) {
     transform: rotate(0.5deg);
 }
@@ -377,13 +218,6 @@ i {
     z-index: 10;
 }
 
-/* Modal Blur */
-.backdrop-blur-sm {
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-}
-
-/* Textareas auto-expand */
 textarea.inline-task-input,
 textarea.task-item-input {
     field-sizing: content;
@@ -396,13 +230,6 @@ textarea.task-item-input:focus {
     min-height: 3em;
 }
 
-/* Card body sin scroll */
-.card-body-soft {
-    overflow-y: visible !important;
-    max-height: none !important;
-}
-
-/* Auto text-growareas globally */
 textarea {
     field-sizing: content;
 }
