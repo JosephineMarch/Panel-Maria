@@ -1,6 +1,50 @@
 export const utils = {
+    isDev: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1',
+    
     generateId() {
         return crypto.randomUUID();
+    },
+
+    log(...args) {
+        if (this.isDev) console.log(...args);
+    },
+
+    warn(...args) {
+        if (this.isDev) console.warn(...args);
+    },
+
+    error(...args) {
+        if (this.isDev) console.error(...args);
+    },
+
+    debug(...args) {
+        if (this.isDev) console.debug(...args);
+    },
+
+    sanitizeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    },
+
+    sanitizeInput(text) {
+        if (typeof text !== 'string') return text;
+        return text
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#x27;')
+            .replace(/\//g, '&#x2F;');
+    },
+
+    stripHtml(html) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        return tmp.textContent || tmp.innerText || '';
+    },
+
+    escapeRegex(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     },
 
     formatDate(dateString, format = 'short') {

@@ -6,14 +6,19 @@ CREATE TABLE IF NOT EXISTS items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
-    type TEXT NOT NULL DEFAULT 'note' CHECK (type IN ('note', 'task', 'project', 'reminder', 'link', 'mood', 'voice')),
+    type TEXT NOT NULL DEFAULT 'nota' CHECK (type IN ('nota', 'tarea', 'proyecto', 'directorio')),
     parent_id UUID REFERENCES items(id) ON DELETE CASCADE,
     status TEXT NOT NULL DEFAULT 'inbox' CHECK (status IN ('inbox', 'active', 'completed', 'archived')),
+    descripcion TEXT DEFAULT '',
+    url TEXT DEFAULT '',
+    tareas JSONB DEFAULT '[]',
     tags TEXT[] DEFAULT '{}',
     deadline TIMESTAMPTZ,
+    anclado BOOLEAN DEFAULT false,
     meta JSONB DEFAULT '{}',
     embedding VECTOR(1536),
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- 2. Habilitar Row Level Security (RLS)
@@ -49,5 +54,17 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- 6. Habilitar extensión pgvector (si no está habilitada)
+-- 6. Agregar trigger para updated_at
+DROP TRIGGER IF EXISTS update_items_updated_at ON items;
+CREATE TRIGGER update_items_updated_at
+    BEFORE UPDATE ON items
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- 7. Prevenir acceso anónimo
+CREATE POLICY "No anonymous access" ON items
+    FOR ALL
+    USING (auth.role() = 'authenticated');
+
+-- 8. Habilitar extensión pgvector (si no está habilitada)
 CREATE EXTENSION IF NOT EXISTS vector;

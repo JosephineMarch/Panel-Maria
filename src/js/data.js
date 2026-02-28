@@ -1,4 +1,5 @@
 import { supabase } from './supabase.js';
+import { utils } from './utils.js';
 
 export const data = {
     /**
@@ -14,12 +15,12 @@ export const data = {
 
         const item = {
             user_id: user.id,
-            content: itemData.content,
+            content: utils.sanitizeInput(itemData.content || ''),
             type: itemData.type || 'nota',
             parent_id: itemData.parent_id || null,
             status: itemData.status || 'inbox',
-            descripcion: itemData.descripcion || '',
-            url: itemData.url || '',
+            descripcion: utils.sanitizeInput(itemData.descripcion || ''),
+            url: utils.sanitizeInput(itemData.url || ''),
             tareas: itemData.tareas || [],
             tags: itemData.tags || [],
             deadline: itemData.deadline || null,
@@ -81,9 +82,29 @@ export const data = {
      * Actualiza un item existente
      */
     async updateItem(id, updates) {
+        const sanitizedUpdates = {};
+        
+        if (updates.content !== undefined) {
+            sanitizedUpdates.content = utils.sanitizeInput(updates.content);
+        }
+        if (updates.descripcion !== undefined) {
+            sanitizedUpdates.descripcion = utils.sanitizeInput(updates.descripcion);
+        }
+        if (updates.url !== undefined) {
+            sanitizedUpdates.url = utils.sanitizeInput(updates.url);
+        }
+        if (updates.type !== undefined) sanitizedUpdates.type = updates.type;
+        if (updates.parent_id !== undefined) sanitizedUpdates.parent_id = updates.parent_id;
+        if (updates.status !== undefined) sanitizedUpdates.status = updates.status;
+        if (updates.tareas !== undefined) sanitizedUpdates.tareas = updates.tareas;
+        if (updates.tags !== undefined) sanitizedUpdates.tags = updates.tags;
+        if (updates.deadline !== undefined) sanitizedUpdates.deadline = updates.deadline;
+        if (updates.anclado !== undefined) sanitizedUpdates.anclado = updates.anclado;
+        if (updates.meta !== undefined) sanitizedUpdates.meta = updates.meta;
+
         const { data, error } = await supabase
             .from('items')
-            .update(updates)
+            .update(sanitizedUpdates)
             .eq('id', id)
             .select()
             .single();

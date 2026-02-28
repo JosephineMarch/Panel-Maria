@@ -1,3 +1,41 @@
+/**
+ * KAI - Lógica Principal del Controlador
+ * ======================================
+ * 
+ * Este archivo contiene el controlador principal de la aplicación.
+ * Organizado en las siguientes secciones:
+ * 
+ * SECCIÓN 1: Utilidades (lines 9-30)
+ *   - formatDeadlineForDB()
+ *   - formatDeadlineForDisplay()
+ * 
+ * SECCIÓN 2: KaiController - Inicialización (lines 31-120)
+ *   - constructor(), init(), esDesarrollo()
+ *   - mostrarControlesDemo(), loadDemoItems()
+ *   - demoUpdateItem(), demoDeleteItem()
+ * 
+ * SECCIÓN 3: Alarmas (lines 151-380)
+ *   - startAlarmChecker(), scheduleAllAlarms()
+ *   - scheduleTriggerNotification(), checkAlarms()
+ *   - showAlarmNotification(), playAlarmSound()
+ * 
+ * SECCIÓN 4: CRUD de Items (lines 381-800)
+ *   - crearItem(), editarItem(), borrarItem()
+ *   - loadItems(), finishItem(), toggleAnclado()
+ *   - updateItemInline(), saveInlineEdit()
+ * 
+ * SECCIÓN 5: IA / Kai (lines 801-950)
+ *   - processWithKai(), executeKaiAction()
+ *   - crearAlarma(), detectarTagsYAlarmas()
+ * 
+ * SECCIÓN 6: Eventos y Handlers (lines 951-1100)
+ *   - bindEvents(), handleNavigation()
+ *   - setupShareTarget()
+ * 
+ * SECCIÓN 7: Utilidades de Vista (lines 1101-1123)
+ *   - getItemActions(), renderQuickActions()
+ */
+
 import { supabase } from './supabase.js';
 import { data } from './data.js';
 import { ui } from './ui.js';
