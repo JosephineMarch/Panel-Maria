@@ -11,6 +11,12 @@
   "scope": "./",
   "lang": "es",
   "categories": ["productivity", "lifestyle"],
+  "gcm_sender_id": "434100378252",
+  "gcm_user_visible_only": true,
+  "permissions": [
+    "notifications",
+    "push"
+  ],
   "icons": [
     {
       "src": "src/assets/icon-192.png",

@@ -4,6 +4,7 @@
  */
 import './src/js/logic.js';
 import './src/js/share.js';
+import { requestFCMToken, onForegroundMessage } from './src/js/firebase.js';
 
 const CACHE_VERSION = 'v7';
 
@@ -21,6 +22,15 @@ if ('serviceWorker' in navigator) {
                 });
             })
             .catch(err => console.error('Error registrando SW:', err));
+        
+        if ('PushManager' in window) {
+            navigator.serviceWorker.register('./firebase-messaging-sw.js')
+                .then(reg => {
+                    console.log('Firebase Messaging SW registrado');
+                    requestFCMToken();
+                })
+                .catch(err => console.error('Error registrando Firebase Messaging SW:', err));
+        }
     });
 }
 

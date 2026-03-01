@@ -782,6 +782,30 @@ REGLAS:
         const urlMatch = text.match(/(https?:\/\/[^\s]+)/);
         return urlMatch ? urlMatch[1] : '';
     }
+
+    async sendPushNotification(token, title, body, deadlineTimestamp, itemId) {
+        try {
+            const response = await fetch('https://jiufptuxadjavjfbfwka.supabase.co/functions/v1/hyper-endpoint', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppdWZwdHV4YWRqYXZqZmJmd2thIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwODY0NzgsImV4cCI6MjA4NTY2MjQ3OH0.LCXYWsmD-ZM45O_HNVwFHu8dJFzxns3Zd_2BHusm2CY'
+                },
+                body: JSON.stringify({
+                    token: token,
+                    title: title,
+                    body: body,
+                    timestamp: deadlineTimestamp,
+                    itemId: itemId
+                })
+            });
+            const result = await response.json();
+            console.log('Push notification sent:', result);
+            return result;
+        } catch (error) {
+            console.error('Error sending push notification:', error);
+        }
+    }
     
     async crearAlarma(alarmaData) {
         // console.log('crearAlarma - alarmaData:', alarmaData);
@@ -790,6 +814,7 @@ REGLAS:
             const deadline = alarmaData.deadline;
             // console.log('crearAlarma - deadline antes de format:', deadline, 'tipo:', typeof deadline);
 
+            let newItemId = null;
             if (this.isDemoMode) {
                 const newItem = {
                     id: 'demo-' + Date.now(),
@@ -807,16 +832,18 @@ REGLAS:
                 let items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
                 items.unshift(newItem);
                 localStorage.setItem('kaiDemoItems', JSON.stringify(items));
+                newItemId = newItem.id;
             } else if (this.currentUser) {
                 const deadlineForDB = formatDeadlineForDB(deadline);
                 // console.log('crearAlarma - deadline para Supabase:', deadlineForDB);
-                await data.createItem({
+                const result = await data.createItem({
                     content: contenidoAlarma,
                     type: 'nota',
                     parent_id: this.currentParentId,
                     tags: ['alarma'],
                     deadline: deadlineForDB
                 });
+                newItemId = result[0]?.id || result?.id || null;
             }
 
             ui.clearMainInput();
@@ -836,6 +863,18 @@ REGLAS:
             ];
             const mensajeAleatorio = mensajesAlarma[Math.floor(Math.random() * mensajesAlarma.length)];
             ui.showNotification(mensajeAleatorio, 'success');
+
+            const fcmToken = localStorage.getItem('fcmToken');
+            if (fcmToken && deadline) {
+                const deadlineTimestamp = new Date(deadline).getTime();
+                await this.sendPushNotification(
+                    fcmToken,
+                    '⏰ KAI - Recordatorio',
+                    contenidoAlarma,
+                    deadlineTimestamp,
+                    newItemId
+                );
+            }
 
             await this.loadItems();
         } catch (error) {
