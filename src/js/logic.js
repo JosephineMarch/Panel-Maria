@@ -798,6 +798,7 @@ REGLAS:
             
             if (!fcmToken && !this.isDemoMode) {
                 alert('⚠️ No hay token FCM. Asegúrate de permitir notificaciones.');
+            }
             if (deadline && !this.isDemoMode) {
                 const deadlineTimestamp = new Date(deadline).getTime();
                 
