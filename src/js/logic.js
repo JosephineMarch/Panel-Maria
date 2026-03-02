@@ -242,80 +242,7 @@ class KaiController {
     }
 
     async scheduleTriggerNotification(item, reminderTime, deadlineTime) {
-        const now = Date.now();
-
-        if (reminderTime <= now && deadlineTime > now) {
-            this.triggerAlarm(item);
-            return;
-        }
-
-        if (deadlineTime <= now) {
-            return;
-        }
-
-        if ('serviceWorker' in navigator) {
-            try {
-                const registration = await navigator.serviceWorker.ready;
-                
-                if ('showNotification' in registration && 'trigger' in Notification.prototype) {
-                    await registration.showNotification('⏰ KAI - Recordatorio', {
-                        body: `Se acerca: ${item.content}`,
-                        icon: '/src/assets/icon-192.png',
-                        tag: `alarm-${item.id}`,
-                        data: { itemId: item.id, type: 'reminder' },
-                        vibrate: [200, 100, 200],
-                        requireInteraction: true,
-                        trigger: { 
-                            type: 'timestamp', 
-                            timestamp: reminderTime 
-                        }
-                    });
-                    
-                    await registration.showNotification('⏰ ¡KAI Te Recuerdas!', {
-                        body: item.content,
-                        icon: '/src/assets/icon-192.png',
-                        tag: `alarm-final-${item.id}`,
-                        data: { itemId: item.id, type: 'alarm' },
-                        vibrate: [300, 100, 300, 100, 300],
-                        requireInteraction: true,
-                        trigger: { 
-                            type: 'timestamp', 
-                            timestamp: deadlineTime 
-                        }
-                    });
-                }
-            } catch (error) {
-                console.log('SW trigger not supported, using fallback:', error.message);
-            }
-        }
-
-        if ('Notification' in window && 'trigger' in Notification.prototype) {
-            try {
-                new Notification('⏰ KAI - Recordatorio', {
-                    body: `Se acerca: ${item.content}`,
-                    icon: '/src/assets/icon-192.png',
-                    tag: `alarm-${item.id}`,
-                    data: { itemId: item.id, type: 'reminder' },
-                    trigger: { 
-                        type: 'timestamp', 
-                        timestamp: reminderTime 
-                    }
-                });
-
-                new Notification('⏰ ¡KAI Te Recuerdas!', {
-                    body: item.content,
-                    icon: '/src/assets/icon-192.png',
-                    tag: `alarm-final-${item.id}`,
-                    data: { itemId: item.id, type: 'alarm' },
-                    trigger: { 
-                        type: 'timestamp', 
-                        timestamp: deadlineTime 
-                    }
-                });
-            } catch (error) {
-                console.log('Notification trigger not supported, using fallback');
-            }
-        }
+        console.log('scheduleTriggerNotification: usando FCM Push en lugar de Notification Trigger');
     }
 
     async checkAlarms() {
@@ -785,7 +712,7 @@ REGLAS:
 
     async sendPushNotification(token, title, body, deadlineTimestamp, itemId) {
         try {
-            const response = await fetch('https://jiufptuxadjavjfbfwka.supabase.co/functions/v1/hyper-endpoint', {
+            const response = await fetch('https://jiufptuxadjavjfbfwka.supabase.co/functions/v1/send-push', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

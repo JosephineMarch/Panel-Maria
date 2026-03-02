@@ -28,6 +28,7 @@ if ('serviceWorker' in navigator) {
                 .then(reg => {
                     console.log('Firebase Messaging SW registrado');
                     requestFCMToken();
+                    onForegroundMessage();
                 })
                 .catch(err => console.error('Error registrando Firebase Messaging SW:', err));
         }
