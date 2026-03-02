@@ -32,26 +32,9 @@ if ('serviceWorker' in navigator) {
         }
     });
 }
-                    });
-                });
-            })
-            .catch(err => console.error('Error registrando SW:', err));
-        
-        if ('PushManager' in window) {
-            navigator.serviceWorker.register('./firebase-messaging-sw.js')
-                .then(reg => {
-                    console.log('Firebase Messaging SW registrado');
-                    requestFCMToken();
-                    onForegroundMessage();
-                })
-                .catch(err => console.error('Error registrando Firebase Messaging SW:', err));
-        }
-    });
-}
 
 if (window.matchMedia('(display-mode: standalone)').matches) {
     document.body.classList.add('app-installed');
-    // console.log('📱 KAI: Ejecutando como app instalada');
 }
 
 window.addEventListener('DOMContentLoaded', () => {
