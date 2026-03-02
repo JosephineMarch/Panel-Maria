@@ -15,9 +15,10 @@ const STATIC_ASSETS = [
     './src/js/logic.js',
     './src/js/ai.js',
     './src/js/cerebras.js',
-    './src/js/gemini.js',
     './src/js/utils.js',
-    './src/js/share.js'
+    './src/js/share.js',
+    './src/js/firebase.js',
+    './src/js/demo-data.js'
 ];
 
 const CACHE_STRATEGIES = {
@@ -99,7 +100,7 @@ self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             // console.log('[SW] Caché inicial abierta');
-            return cache.addAll(STATIC_ASSETS);
+            return Promise.all(STATIC_ASSETS.map(a => cache.add(a).catch(e => console.warn("[SW] Cache fallback:", a))));
         }).then(() => {
             return self.skipWaiting();
         })
@@ -204,3 +205,4 @@ self.addEventListener('push', (event) => {
         self.registration.showNotification(data.title || 'KAI', options)
     );
 });
+

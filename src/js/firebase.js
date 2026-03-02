@@ -24,18 +24,18 @@ export async function requestFCMToken() {
 
         const registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
         console.log('Firebase SW registrado manualmente:', registration);
-        
+
         const token = await getToken(messaging, {
-            vapidKey: 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp2Nghs5Ug',
+            vapidKey: 'BCHREiBU8nAuYsdRrXCovUK5a1hCoQGHMAAeITKaWWD8eAg8Urp8_dKPkNv7zSbmJDLJ-nz04Mz3wdN13NV417Q',
             serviceWorkerRegistration: registration
         });
-        
+
         if (token) {
             console.log('FCM Token:', token);
             localStorage.setItem('fcmToken', token);
-            
+
             await saveTokenToSupabase(token);
-            
+
             return token;
         }
     } catch (error) {
@@ -47,18 +47,18 @@ export async function requestFCMToken() {
 async function saveTokenToSupabase(token) {
     try {
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         if (user) {
             const deviceName = navigator.userAgent || 'Unknown';
-            
+
             const { error } = await supabase
                 .from('fcm_tokens')
-                .upsert({ 
-                    user_id: user.id, 
+                .upsert({
+                    user_id: user.id,
                     token: token,
                     device_name: deviceName.substring(0, 100)
                 }, { onConflict: 'token' });
-            
+
             if (error) {
                 console.error('Error guardando token en Supabase:', error);
             } else {
@@ -81,7 +81,7 @@ export async function onForegroundMessage() {
             tag: payload.data?.tag || 'kai-notification',
             data: payload.data
         };
-        
+
         if (Notification.permission === 'granted') {
             new Notification(notificationTitle, notificationOptions);
         }
