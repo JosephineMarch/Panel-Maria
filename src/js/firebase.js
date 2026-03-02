@@ -26,7 +26,7 @@ export async function requestFCMToken() {
         console.log('Firebase SW registrado manualmente:', registration);
         
         const token = await getToken(messaging, {
-            vapidKey: 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp2Nghs5Ug',
+            vapidKey: 'BBiOq6whqyn5VNaUOmt5Va7rOUZcTAhXR2Te-AQHYeWQC2uiVwYmaH05p1OVEcD0auMvJIp5vU3bBDnPmUhOKwc',
             serviceWorkerRegistration: registration
         });
         
