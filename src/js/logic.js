@@ -712,6 +712,8 @@ REGLAS:
 
     async sendPushNotification(token, title, body, deadlineTimestamp, itemId) {
         try {
+            console.log('📲 Enviando push notification...', { token: token?.substring(0, 20) + '...', title, body, deadlineTimestamp });
+            
             const response = await fetch('https://jiufptuxadjavjfbfwka.supabase.co/functions/v1/send-push', {
                 method: 'POST',
                 headers: {
@@ -792,15 +794,38 @@ REGLAS:
             ui.showNotification(mensajeAleatorio, 'success');
 
             const fcmToken = localStorage.getItem('fcmToken');
-            if (fcmToken && deadline) {
+            console.log('🔔 FCM Token local disponible:', !!fcmToken);
+            
+            if (!fcmToken && !this.isDemoMode) {
+                alert('⚠️ No hay token FCM. Asegúrate de permitir notificaciones.');
+            if (deadline && !this.isDemoMode) {
                 const deadlineTimestamp = new Date(deadline).getTime();
-                await this.sendPushNotification(
-                    fcmToken,
-                    '⏰ KAI - Recordatorio',
-                    contenidoAlarma,
-                    deadlineTimestamp,
-                    newItemId
-                );
+                
+                const { data: tokens } = await supabase
+                    .from('fcm_tokens')
+                    .select('token');
+                
+                const allTokens = tokens?.map(t => t.token) || [];
+                console.log('📱 Tokens encontrados para el usuario:', allTokens.length);
+                
+                if (allTokens.length === 0 && fcmToken) {
+                    allTokens.push(fcmToken);
+                }
+                
+                if (allTokens.length > 0) {
+                    for (const token of allTokens) {
+                        await this.sendPushNotification(
+                            token,
+                            '⏰ KAI - Recordatorio',
+                            contenidoAlarma,
+                            deadlineTimestamp,
+                            newItemId
+                        );
+                    }
+                    alert(`📲 Push programada para ${allTokens.length} dispositivo(s)`);
+                } else {
+                    alert('⚠️ No hay dispositivos registrados. Permite notificaciones.');
+                }
             }
 
             await this.loadItems();

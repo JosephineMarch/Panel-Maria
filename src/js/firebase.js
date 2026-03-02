@@ -1,5 +1,6 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js';
+import { supabase } from './supabase.js';
 
 const firebaseConfig = {
     apiKey: "AIzaSyAgsf640E_y-Ry8C6bf5cHMNB7BYjFk6FA",
@@ -28,12 +29,41 @@ export async function requestFCMToken() {
         if (token) {
             console.log('FCM Token:', token);
             localStorage.setItem('fcmToken', token);
+            
+            await saveTokenToSupabase(token);
+            
             return token;
         }
     } catch (error) {
         console.error('FCM Error:', error);
     }
     return null;
+}
+
+async function saveTokenToSupabase(token) {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+            const deviceName = navigator.userAgent || 'Unknown';
+            
+            const { error } = await supabase
+                .from('fcm_tokens')
+                .upsert({ 
+                    user_id: user.id, 
+                    token: token,
+                    device_name: deviceName.substring(0, 100)
+                }, { onConflict: 'token' });
+            
+            if (error) {
+                console.error('Error guardando token en Supabase:', error);
+            } else {
+                console.log('✅ Token FCM guardado en Supabase para multi-dispositivo');
+            }
+        }
+    } catch (error) {
+        console.error('Error obteniendo usuario:', error);
+    }
 }
 
 export async function onForegroundMessage() {
