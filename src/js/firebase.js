@@ -22,8 +22,12 @@ export async function requestFCMToken() {
             return null;
         }
 
+        const registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+        console.log('Firebase SW registrado manualmente:', registration);
+        
         const token = await getToken(messaging, {
-            vapidKey: 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp2Nghs5Ug'
+            vapidKey: 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp2Nghs5Ug',
+            serviceWorkerRegistration: registration
         });
         
         if (token) {

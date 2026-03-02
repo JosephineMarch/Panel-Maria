@@ -21,6 +21,20 @@ if ('serviceWorker' in navigator) {
                     });
                 });
             })
+            .catch(err => console.error('Error registering SW:', err));
+        
+        if ('PushManager' in window) {
+            setTimeout(() => {
+                requestFCMToken().then(() => {
+                    onForegroundMessage();
+                });
+            }, 1000);
+        }
+    });
+}
+                    });
+                });
+            })
             .catch(err => console.error('Error registrando SW:', err));
         
         if ('PushManager' in window) {
