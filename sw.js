@@ -158,6 +158,11 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
     const { request } = event;
+
+    // IMPORTANTE: Solo interceptamos peticiones GET. 
+    // POST, PUT, DELETE, etc., deben pasar directo a la red.
+    if (request.method !== 'GET') return;
+
     const url = new URL(request.url);
 
     if (url.origin !== location.origin && !url.pathname.startsWith('/')) {

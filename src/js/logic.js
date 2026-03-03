@@ -228,7 +228,7 @@ class KaiController {
                 }
 
                 const reminderTime = deadlineTime - 60000;
-                
+
                 if (deadlineTime > now && deadlineTime - now < 7 * 24 * 60 * 60 * 1000) {
                     await this.scheduleTriggerNotification(item, reminderTime, deadlineTime);
                     scheduledIds.push(item.id);
@@ -381,9 +381,6 @@ class KaiController {
             });
         });
 
-        // La gestión de breadcrumbs ahora está centralizada en ui.renderBreadcrumb
-        // por lo que eliminamos el listener manual de aquí para evitar recargas.
-
         // --- Modals & Sidebar ---
         document.getElementById('btn-user')?.addEventListener('click', () => ui.toggleSidebar());
         document.getElementById('btn-close-sidebar')?.addEventListener('click', () => ui.closeSidebar());
@@ -396,35 +393,26 @@ class KaiController {
             location.reload();
         });
 
-        // Tag suggestions - agregar tags al input
+        // Tag suggestions
         document.querySelectorAll('.tag-suggestion').forEach(tag => {
             tag.addEventListener('click', () => {
                 const input = document.getElementById('edit-tags');
                 const current = input.value || '';
                 const newTag = tag.dataset.tag;
-                if (current) {
-                    input.value = current + ', ' + newTag;
-                } else {
-                    input.value = newTag;
-                }
+                input.value = current ? current + ', ' + newTag : newTag;
             });
         });
 
-        // El botón de voz central en el footer
+        // Voz e Interfaz
         document.getElementById('btn-voice-footer')?.addEventListener('click', () => this.toggleVoiceInput());
-        
-        document.getElementById('btn-close-voice')?.addEventListener('click', () => {
-            ai.stopVoice();
-            ui.toggleVoiceOverlay(false);
-        });
-        
+        document.getElementById('btn-close-voice')?.addEventListener('click', () => this.stopVoiceInput());
         document.getElementById('btn-stop-voice')?.addEventListener('click', () => this.stopVoiceInput());
 
         document.querySelectorAll('.modal-close').forEach(btn => {
             btn.addEventListener('click', () => ui.toggleModal(false));
         });
 
-        // --- Kai Chat Events ---
+        // Kai Chat
         ui.elements.kaiAvatarContainer()?.addEventListener('click', () => ui.toggleKaiChat());
         document.getElementById('kai-chat-back')?.addEventListener('click', () => ui.toggleKaiChat(false));
         document.getElementById('kai-chat-minimize')?.addEventListener('click', () => ui.toggleKaiChat(false));
@@ -433,45 +421,51 @@ class KaiController {
             if (e.key === 'Enter') this.handleKaiChat();
         });
 
-        // --- Demo Regenerate Button ---
-        document.addEventListener('click', (e) => {
-            const regenerateBtn = e.target.closest('#btn-regenerate-in-timeline');
-            if (regenerateBtn) {
-                regenerarDemoItems();
-                this.isDemoMode = true;
-                this.loadItems();
-            }
-        });
-
         // --- Delegación de Items (Stickers) ---
         ui.elements.container()?.addEventListener('click', async (e) => {
             const finishBtn = e.target.closest('.action-finish');
             const deleteBtn = e.target.closest('.action-delete');
             const openBtn = e.target.closest('.action-open');
-            const pinBtn = e.target.closest('.btn-pin');
+            const pinBtn = e.target.closest('.action-pin');
+            const editBtn = e.target.closest('.action-edit');
             const taskCheckbox = e.target.closest('.timeline-task-checkbox');
 
             if (taskCheckbox) {
                 e.stopPropagation();
                 await this.toggleTimelineTask(taskCheckbox.dataset.id, parseInt(taskCheckbox.dataset.index), taskCheckbox.checked);
-            } else if (deleteBtn) {
-                e.stopPropagation();
-                if (confirm('¿Eliminar este elemento?')) {
-                    await this.deleteItem(deleteBtn.dataset.id);
-                }
             } else if (finishBtn) {
                 e.stopPropagation();
-                await this.finishItem(finishBtn.dataset.id);
+                this.finishItem(finishBtn.dataset.id);
+            } else if (deleteBtn) {
+                e.stopPropagation();
+                if (confirm('¿Borrar este recuerdo?')) this.deleteItem(deleteBtn.dataset.id);
             } else if (openBtn) {
                 e.stopPropagation();
                 this.openProject(openBtn.dataset.id);
             } else if (pinBtn) {
                 e.stopPropagation();
-                await this.togglePin(pinBtn.dataset.id);
+                this.togglePin(pinBtn.dataset.id);
+            } else if (editBtn) {
+                e.stopPropagation();
+                this.openEditModal(editBtn.dataset.id);
             }
         });
 
-        // --- Eventos Globales ---
+        // --- Auth Listeners ---
+        window.addEventListener('auth-SIGNED_IN', async () => {
+            this.currentUser = await auth.getUser();
+            if (this.currentUser) {
+                ui.updateUserInfo(this.currentUser);
+                await this.loadItems();
+            }
+        });
+
+        window.addEventListener('auth-SIGNED_OUT', () => {
+            this.currentUser = null;
+            ui.updateUserInfo(null);
+            this.goHome();
+        });
+
         window.addEventListener('voice-result', (e) => {
             const input = ui.elements.inputMain();
             if (input) input.value = e.detail.transcript;
@@ -506,9 +500,9 @@ REGLAS:
 
             const { cerebras } = await import('./cerebras.js');
             const response = await cerebras.ask(prompt);
-            
+
             let parsed = { type: 'nota', tags: [] };
-            
+
             if (response.response) {
                 try {
                     const jsonMatch = response.response.match(/\{[\s\S]*\}/);
@@ -519,7 +513,7 @@ REGLAS:
                     console.log('Error parsing AI response, using default');
                 }
             }
-            
+
             return {
                 type: parsed.type || 'nota',
                 tags: parsed.tags || []
@@ -533,15 +527,15 @@ REGLAS:
     // --- ANÁLISIS OFFLINE (sin IA) ---
     parseInputOffline(content) {
         const text = content.toLowerCase().trim();
-        
+
         // Detectar tipo por palabra clave
         let type = 'nota';
         let tareas = [];
-        
+
         // Detectar formato "tarea título, item a, b, c" o "tarea título item a, b, c"
         // Ejemplo: "tarea que hare hoy, item 1, 2, 3" o "tarea lavar platos item comprar leche, pagar luz"
         const itemMatchWithTitle = content.match(/^tarea\s+(.+?)(?:,\s*|\s+)item\s+(.+)$/i);
-        
+
         if (itemMatchWithTitle) {
             const titulo = itemMatchWithTitle[1].trim();
             const itemsText = itemMatchWithTitle[2];
@@ -555,7 +549,7 @@ REGLAS:
                 hasDeadline: false
             };
         }
-        
+
         // Detectar solo "item a, b, c" (sin título antes)
         const onlyItemsMatch = content.match(/^item\s+(.+)$/i);
         if (onlyItemsMatch) {
@@ -570,7 +564,7 @@ REGLAS:
                 hasDeadline: false
             };
         }
-        
+
         // Orden importa: alarma primero porque puede combinarse con tarea
         if (text.includes('alarma') || text.includes('recordatorio') || text.includes('avísame') || text.includes('recuérdame')) {
             type = 'tarea';
@@ -584,7 +578,7 @@ REGLAS:
         if (text.startsWith('enlace') || text.includes('enlace') || text.startsWith('link') || text.includes(' youtube') || text.includes('http')) {
             type = 'directorio';
         }
-        
+
         // Detectar tags por palabra clave
         const tags = [];
         if (text.includes('logro') || text.includes('logré') || text.includes('completé') || text.includes('terminé')) {
@@ -596,7 +590,7 @@ REGLAS:
         if (text.includes('emocion') || text.includes('emoción') || text.includes('triste') || text.includes('feliz')) {
             tags.push('emocion');
         }
-        
+
         // Limpiar el contenido (quitar las palabras clave del inicio)
         let mainContent = content;
         if (type === 'tarea') {
@@ -608,7 +602,7 @@ REGLAS:
         } else if (type === 'tarea' && text.includes('alarma')) {
             mainContent = content.replace(/^alarma\s*/i, '').replace(/recordatorio\s*/i, '').trim();
         }
-        
+
         return {
             type,
             content: mainContent,
@@ -624,7 +618,7 @@ REGLAS:
 
         // 1. Primero: análisis offline (sin internet)
         const offlineParsed = this.parseInputOffline(content);
-        
+
         // 2. Detectar alarmas (comando en cualquier parte)
         const alarmaData = ai.detectarAlarmas(content);
 
@@ -649,7 +643,7 @@ REGLAS:
             let finalTags = [...allTags];
             let finalContent = offlineParsed.content || content;
             let finalItems = offlineParsed.items || [];
-            
+
             // Si no detectó tipo específico o hay internet, usar IA para mejorar
             if (offlineParsed.type === 'nota' || !offlineParsed.type) {
                 try {
@@ -695,7 +689,7 @@ REGLAS:
             if (itemCount > 0) {
                 message = `¡Tarea con ${itemCount} items creada!`;
             }
-            
+
             ui.clearMainInput();
             ui.showNotification(message, 'success');
             await this.loadItems();
@@ -704,7 +698,7 @@ REGLAS:
             ui.showNotification('KAI no pudo guardar eso. ¿Intentamos de nuevo?', 'error');
         }
     }
-    
+
     extractUrl(text) {
         const urlMatch = text.match(/(https?:\/\/[^\s]+)/);
         return urlMatch ? urlMatch[1] : '';
@@ -713,7 +707,7 @@ REGLAS:
     async sendPushNotification(token, title, body, deadlineTimestamp, itemId) {
         try {
             console.log('📲 Enviando push notification...', { token: token?.substring(0, 20) + '...', title, body, deadlineTimestamp });
-            
+
             const response = await fetch('https://jiufptuxadjavjfbfwka.supabase.co/functions/v1/send-push', {
                 method: 'POST',
                 headers: {
@@ -735,7 +729,7 @@ REGLAS:
             console.error('Error sending push notification:', error);
         }
     }
-    
+
     async crearAlarma(alarmaData) {
         // console.log('crearAlarma - alarmaData:', alarmaData);
         try {
@@ -795,24 +789,24 @@ REGLAS:
 
             const fcmToken = localStorage.getItem('fcmToken');
             console.log('🔔 FCM Token local disponible:', !!fcmToken);
-            
+
             if (!fcmToken && !this.isDemoMode) {
                 alert('⚠️ No hay token FCM. Asegúrate de permitir notificaciones.');
             }
             if (deadline && !this.isDemoMode) {
                 const deadlineTimestamp = new Date(deadline).getTime();
-                
+
                 const { data: tokens } = await supabase
                     .from('fcm_tokens')
                     .select('token');
-                
+
                 const allTokens = tokens?.map(t => t.token) || [];
                 console.log('📱 Tokens encontrados para el usuario:', allTokens.length);
-                
+
                 if (allTokens.length === 0 && fcmToken) {
                     allTokens.push(fcmToken);
                 }
-                
+
                 if (allTokens.length > 0) {
                     for (const token of allTokens) {
                         await this.sendPushNotification(
@@ -874,7 +868,7 @@ REGLAS:
             } else {
                 updates.deadline = null;
             }
-            
+
             if (this.isDemoMode) {
                 await this.demoUpdateItem(id, updates);
                 ui.showNotification('¡Bloque actualizado! ✨', 'success');
@@ -1280,15 +1274,6 @@ REGLAS:
 // Inicialización global
 window.addEventListener('DOMContentLoaded', () => {
     window.kai = new KaiController();
-});
-
-// listeners de auth — Supabase emite 'SIGNED_IN' (mayúsculas)
-window.addEventListener('auth-SIGNED_IN', async () => {
-    if (window.kai) {
-        window.kai.currentUser = await auth.getUser();
-        ui.updateUserInfo(window.kai.currentUser);
-        await window.kai.loadItems();
-    }
 });
 
 export default KaiController;
