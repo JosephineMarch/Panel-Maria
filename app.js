@@ -6,7 +6,7 @@ import './src/js/logic.js';
 import './src/js/share.js';
 import { requestFCMToken, onForegroundMessage } from './src/js/firebase.js';
 
-const CACHE_VERSION = 'v8';
+const CACHE_VERSION = 'v9';
 
 let hasReloaded = false;
 let fcmInitialized = false;
@@ -18,15 +18,21 @@ if ('serviceWorker' in navigator) {
                 reg.addEventListener('updatefound', () => {
                     const newWorker = reg.installing;
                     newWorker.addEventListener('statechange', () => {
-                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller && !hasReloaded) {
-                            hasReloaded = true;
+                        // Solo recargar si hay controlador anterior (es una actualización)
+                        // y no hemos recargado en los últimos 10 segundos (safeguard)
+                        const lastReload = sessionStorage.getItem('last_sw_reload');
+                        const now = Date.now();
+                        const recentlyReloaded = lastReload && (now - parseInt(lastReload) < 10000);
+
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller && !recentlyReloaded) {
+                            sessionStorage.setItem('last_sw_reload', now.toString());
                             window.location.reload();
                         }
                     });
                 });
             })
             .catch(err => console.error('Error registering SW:', err));
-        
+
         if ('PushManager' in window && !fcmInitialized) {
             fcmInitialized = true;
             setTimeout(() => {
@@ -46,7 +52,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const action = urlParams.get('action');
     const type = urlParams.get('type');
-    
+
     if (action === 'new' && type) {
         setTimeout(() => {
             const input = document.getElementById('item-input');

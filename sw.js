@@ -1,11 +1,42 @@
-const CACHE_NAME = 'kai-cache-v8';
+const CACHE_NAME = 'kai-cache-v9';
+// Importamos Firebase para notificaciones
+importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js');
+
+// Inicializar Firebase en el Service Worker
+firebase.initializeApp({
+    apiKey: "AIzaSyAgsf640E_y-Ry8C6bf5cHMNB7BYjFk6FA",
+    authDomain: "panel-de-control-maria.firebaseapp.com",
+    projectId: "panel-de-control-maria",
+    storageBucket: "panel-de-control-maria.firebasestorage.app",
+    messagingSenderId: "434100378252",
+    appId: "1:434100378252:web:56c7355bca874a940979a9"
+});
+
+const messaging = firebase.messaging();
+
+// Manejo de mensajes en segundo plano de Firebase
+messaging.onBackgroundMessage((payload) => {
+    console.log('[SW] Recibido mensaje en segundo plano (FCM):', payload);
+    const notificationTitle = payload.notification?.title || '⏰ KAI - Recordatorio';
+    const notificationOptions = {
+        body: payload.notification?.body || 'Tienes una alarma programada',
+        icon: '/src/assets/icon-192.png',
+        badge: '/src/assets/icon-192.png',
+        tag: payload.data?.tag || 'kai-alarm',
+        data: payload.data,
+        vibrate: [200, 100, 200],
+        requireInteraction: true
+    };
+    self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
 const STATIC_ASSETS = [
     './',
     './index.html',
     './app.js',
     './manifest.json',
     './icon.svg',
-    './firebase-messaging-sw.js',
     './src/css/style.css',
     './src/assets/icon-192.png',
     './src/assets/icon-512.png',
@@ -86,7 +117,7 @@ async function networkFirst(request) {
 
 async function staleWhileRevalidate(request) {
     const cachedResponse = await caches.match(request);
-    
+
     const fetchPromise = fetch(request).then((networkResponse) => {
         if (networkResponse.ok) {
             const responseToCache = networkResponse.clone();
@@ -96,7 +127,7 @@ async function staleWhileRevalidate(request) {
         }
         return networkResponse;
     }).catch(() => null);
-    
+
     return cachedResponse || fetchPromise || new Response('Offline', { status: 503 });
 }
 
@@ -164,10 +195,10 @@ self.addEventListener('message', (event) => {
 // Manejo de Trigger Notifications (Notificaciones Programadas)
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
-    
+
     const action = event.action;
     const data = event.notification.data || {};
-    
+
     if (action === 'open' || !action) {
         event.waitUntil(
             clients.matchAll({ type: 'window', includeUncontrolled: true })
@@ -193,7 +224,7 @@ self.addEventListener('notificationclose', (event) => {
 // Manejo de Push Notifications (para futuro uso con servidor)
 self.addEventListener('push', (event) => {
     if (!event.data) return;
-    
+
     const data = event.data.json();
     const options = {
         body: data.body || '',
@@ -204,7 +235,7 @@ self.addEventListener('push', (event) => {
         vibrate: [200, 100, 200],
         requireInteraction: true
     };
-    
+
     event.waitUntil(
         self.registration.showNotification(data.title || 'KAI', options)
     );

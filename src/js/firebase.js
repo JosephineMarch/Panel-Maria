@@ -23,14 +23,14 @@ export async function requestFCMToken() {
         }
 
         const registrations = await navigator.serviceWorker.getRegistrations();
-        let registration = registrations.find(reg => reg.active?.scriptURL.includes('firebase-messaging-sw'));
-        
+        const registration = registrations.find(reg => reg.active?.scriptURL.includes('sw.js'));
+
         if (!registration) {
-            registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
-            console.log('Firebase SW registrado:', registration);
-        } else {
-            console.log('Firebase SW ya estaba registrado:', registration);
+            console.error('FCM: No se encontró el Service Worker principal (sw.js) registrado');
+            return null;
         }
+
+        console.log('FCM usando SW principal:', registration);
 
         const token = await getToken(messaging, {
             vapidKey: 'BCHREiBU8nAuYsdRrXCovUK5a1hCoQGHMAAeITKaWWD8eAg8Urp8_dKPkNv7zSbmJDLJ-nz04Mz3wdN13NV417Q',
