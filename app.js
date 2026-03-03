@@ -6,7 +6,10 @@ import './src/js/logic.js';
 import './src/js/share.js';
 import { requestFCMToken, onForegroundMessage } from './src/js/firebase.js';
 
-const CACHE_VERSION = 'v7';
+const CACHE_VERSION = 'v8';
+
+let hasReloaded = false;
+let fcmInitialized = false;
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -15,7 +18,8 @@ if ('serviceWorker' in navigator) {
                 reg.addEventListener('updatefound', () => {
                     const newWorker = reg.installing;
                     newWorker.addEventListener('statechange', () => {
-                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller && !hasReloaded) {
+                            hasReloaded = true;
                             window.location.reload();
                         }
                     });
@@ -23,12 +27,13 @@ if ('serviceWorker' in navigator) {
             })
             .catch(err => console.error('Error registering SW:', err));
         
-        if ('PushManager' in window) {
+        if ('PushManager' in window && !fcmInitialized) {
+            fcmInitialized = true;
             setTimeout(() => {
                 requestFCMToken().then(() => {
                     onForegroundMessage();
-                });
-            }, 1000);
+                }).catch(err => console.error('FCM init error:', err));
+            }, 2000);
         }
     });
 }

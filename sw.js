@@ -1,10 +1,11 @@
-const CACHE_NAME = 'kai-cache-v7';
+const CACHE_NAME = 'kai-cache-v8';
 const STATIC_ASSETS = [
     './',
     './index.html',
     './app.js',
     './manifest.json',
     './icon.svg',
+    './firebase-messaging-sw.js',
     './src/css/style.css',
     './src/assets/icon-192.png',
     './src/assets/icon-512.png',
@@ -34,7 +35,10 @@ function getStrategy(url) {
     if (url.includes('fonts.googleapis') || url.includes('fonts.gstatic') || url.includes('cdnjs')) {
         return CACHE_STRATEGIES.CACHE_FIRST;
     }
-    if (url.includes('.js') || url.includes('.css') || url.includes('.png') || url.includes('.svg') || url.includes('index.html') || url.includes('manifest.json')) {
+    if (url.includes('.js') || url.includes('.css') || url.includes('.png') || url.includes('.svg')) {
+        return CACHE_STRATEGIES.CACHE_FIRST;
+    }
+    if (url.includes('index.html') || url.includes('manifest.json')) {
         return CACHE_STRATEGIES.STALE_WHILE_REVALIDATE;
     }
     return CACHE_STRATEGIES.STALE_WHILE_REVALIDATE;
