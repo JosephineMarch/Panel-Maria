@@ -61,10 +61,8 @@ CREATE TRIGGER update_items_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
--- 7. Prevenir acceso anónimo
-CREATE POLICY "No anonymous access" ON items
-    FOR ALL
-    USING (auth.role() = 'authenticated');
+-- 7. (Eliminado por seguridad militar) Prevenir acceso anónimo con FOR ALL anula RLS cruzado. 
+-- El aislamiento de inquilinos lo hacen las políticas individuales de auth.uid() = user_id.
 
 -- 8. Habilitar extensión pgvector (si no está habilitada)
 CREATE EXTENSION IF NOT EXISTS vector;

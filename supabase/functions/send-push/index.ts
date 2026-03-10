@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 
 const FCM_PROJECT_ID = 'panel-de-control-maria';
 const FIREBASE_CLIENT_EMAIL = Deno.env.get('FIREBASE_CLIENT_EMAIL');
@@ -15,6 +16,29 @@ serve(async (req) => {
       );
     }
 
+    // --- BLOQUE DE SEGURIDAD AÑADIDO: VALIDACIÓN JWT vs TOKEN ---
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Falta Token de Autorización (JWT)' }), { status: 401 });
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    // Intentamos buscar el FCM del supuesto dueño asumiendo la sesión RLS del JWT
+    const { data: validTokens, error: sbError } = await supabase
+      .from('fcm_tokens')
+      .select('token')
+      .eq('token', token);
+
+    if (sbError || !validTokens || validTokens.length === 0) {
+      return new Response(JSON.stringify({ error: 'Acceso Denegado. El token Push no pertenece a tu sesión.' }), { status: 403 });
+    }
+    // -----------------------------------------------------------
+
     const scheduledTime = timestamp || Date.now() + 60000;
     const timeToSend = new Date(scheduledTime).getTime();
     const now = Date.now();
@@ -24,10 +48,10 @@ serve(async (req) => {
       setTimeout(async () => {
         await sendFCMMessageV1(token, title, body, itemId);
       }, delay);
-      
+
       return new Response(
-        JSON.stringify({ 
-          success: true, 
+        JSON.stringify({
+          success: true,
           message: 'Notificación programada',
           scheduledFor: new Date(scheduledTime).toISOString()
         }),
@@ -65,10 +89,10 @@ async function getAccessToken(): Promise<string> {
   }));
 
   const signInput = `${header}.${payload}`;
-  
+
   const encoder = new TextEncoder();
   const data = encoder.encode(signInput);
-  
+
   const cryptoKey = await crypto.subtle.importKey(
     'pkcs8',
     decodeBase64ToArrayBuffer(FIREBASE_PRIVATE_KEY),
@@ -79,7 +103,7 @@ async function getAccessToken(): Promise<string> {
 
   const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', cryptoKey, data);
   const signatureB64 = arrayBufferToBase64(signature);
-  
+
   const jwt = `${signInput}.${signatureB64}`;
 
   const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
