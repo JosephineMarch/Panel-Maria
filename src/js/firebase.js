@@ -83,8 +83,8 @@ export async function onForegroundMessage() {
         const notificationTitle = payload.notification?.title || 'KAI';
         const notificationOptions = {
             body: payload.notification?.body || 'Tienes una nueva alerta',
-            icon: '/src/assets/icon-192.png',
-            badge: '/src/assets/icon-192.png',
+            icon: './src/assets/icon-192.png',
+            badge: './src/assets/icon-192.png',
             tag: payload.data?.tag || 'kai-notification',
             data: payload.data,
             vibrate: [200, 100, 200]

@@ -25,8 +25,8 @@ messaging.onBackgroundMessage((payload) => {
         const notificationTitle = payload.data?.title || '⏰ KAI - Recordatorio';
         const notificationOptions = {
             body: payload.data?.body || 'Tienes una alarma programada',
-            icon: '/src/assets/icon-192.png',
-            badge: '/src/assets/icon-192.png',
+            icon: './src/assets/icon-192.png',
+            badge: './src/assets/icon-192.png',
             tag: payload.data?.tag || 'kai-alarm',
             data: payload.data,
             vibrate: [200, 100, 200],

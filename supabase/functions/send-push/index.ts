@@ -152,13 +152,18 @@ async function sendFCMMessageV1(token: string, title: string, body: string, item
             body: body
           },
           webpush: {
+            headers: {
+              Urgency: "high",
+              TTL: "86400"
+            },
             notification: {
-              icon: '/src/assets/icon-192.png',
+              icon: 'https://josephinemarch.github.io/Panel-Maria/src/assets/icon-192.png',
+              badge: 'https://josephinemarch.github.io/Panel-Maria/src/assets/icon-192.png',
               tag: itemId ? `kai-alarm-${itemId}` : 'kai-alarm',
               sound: 'default'
             },
             fcmOptions: {
-              link: './index.html'
+              link: 'https://josephinemarch.github.io/Panel-Maria/?action=alarm'
             }
           },
           data: {
