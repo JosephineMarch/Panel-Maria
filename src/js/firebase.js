@@ -78,19 +78,33 @@ async function saveTokenToSupabase(token) {
 }
 
 export async function onForegroundMessage() {
-    onMessage(messaging, (payload) => {
+    onMessage(messaging, async (payload) => {
         console.log('Mensaje recibido en foreground:', payload);
-        const notificationTitle = payload.notification.title || 'KAI';
+        const notificationTitle = payload.notification?.title || 'KAI';
         const notificationOptions = {
-            body: payload.notification.body,
+            body: payload.notification?.body || 'Tienes una nueva alerta',
             icon: '/src/assets/icon-192.png',
             badge: '/src/assets/icon-192.png',
             tag: payload.data?.tag || 'kai-notification',
-            data: payload.data
+            data: payload.data,
+            vibrate: [200, 100, 200]
         };
 
         if (Notification.permission === 'granted') {
-            new Notification(notificationTitle, notificationOptions);
+            try {
+                // En móviles (Android Chrome), 'new Notification' está bloqueado. Debe usarse el ServiceWorker.
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                const sw = registrations.find(reg => reg.active && reg.active.scriptURL.includes('sw.js'));
+
+                if (sw) {
+                    await sw.showNotification(notificationTitle, notificationOptions);
+                } else {
+                    // Fallback para escritorio si no hay SW activo
+                    new Notification(notificationTitle, notificationOptions);
+                }
+            } catch (error) {
+                console.error('Error mostrando notificación en foreground:', error);
+            }
         }
     });
 }

@@ -18,17 +18,22 @@ const messaging = firebase.messaging();
 // Manejo de mensajes en segundo plano de Firebase
 messaging.onBackgroundMessage((payload) => {
     console.log('[SW] Recibido mensaje en segundo plano (FCM):', payload);
-    const notificationTitle = payload.notification?.title || '⏰ KAI - Recordatorio';
-    const notificationOptions = {
-        body: payload.notification?.body || 'Tienes una alarma programada',
-        icon: '/src/assets/icon-192.png',
-        badge: '/src/assets/icon-192.png',
-        tag: payload.data?.tag || 'kai-alarm',
-        data: payload.data,
-        vibrate: [200, 100, 200],
-        requireInteraction: true
-    };
-    self.registration.showNotification(notificationTitle, notificationOptions);
+
+    // IMPORTANTE: El SDK de Firebase ya pinta notificaciones automáticamente en Móvil si detecta payload.notification.
+    // Con este IF evitamos crear una notificación duplicada en Android:
+    if (!payload.notification) {
+        const notificationTitle = payload.data?.title || '⏰ KAI - Recordatorio';
+        const notificationOptions = {
+            body: payload.data?.body || 'Tienes una alarma programada',
+            icon: '/src/assets/icon-192.png',
+            badge: '/src/assets/icon-192.png',
+            tag: payload.data?.tag || 'kai-alarm',
+            data: payload.data,
+            vibrate: [200, 100, 200],
+            requireInteraction: true
+        };
+        self.registration.showNotification(notificationTitle, notificationOptions);
+    }
 });
 
 const STATIC_ASSETS = [
@@ -226,23 +231,5 @@ self.addEventListener('notificationclose', (event) => {
     }
 });
 
-// Manejo de Push Notifications (para futuro uso con servidor)
-self.addEventListener('push', (event) => {
-    if (!event.data) return;
-
-    const data = event.data.json();
-    const options = {
-        body: data.body || '',
-        icon: data.icon || '/src/assets/icon-192.png',
-        badge: '/src/assets/icon-192.png',
-        tag: data.tag || 'kai-notification',
-        data: data.data || {},
-        vibrate: [200, 100, 200],
-        requireInteraction: true
-    };
-
-    event.waitUntil(
-        self.registration.showNotification(data.title || 'KAI', options)
-    );
-});
+// El listener manual de 'push' se ha eliminado porque Firebase maneja internamente las notificaciones en Móviles.
 
