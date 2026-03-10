@@ -708,23 +708,20 @@ REGLAS:
         try {
             console.log('📲 Enviando push notification...', { token: token?.substring(0, 20) + '...', title, body, deadlineTimestamp });
 
-            const response = await fetch('https://jiufptuxadjavjfbfwka.supabase.co/functions/v1/send-push', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppdWZwdHV4YWRqYXZqZmJmd2thIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwODY0NzgsImV4cCI6MjA4NTY2MjQ3OH0.LCXYWsmD-ZM45O_HNVwFHu8dJFzxns3Zd_2BHusm2CY'
-                },
-                body: JSON.stringify({
+            const { data, error } = await supabase.functions.invoke('send-push', {
+                body: {
                     token: token,
                     title: title,
                     body: body,
                     timestamp: deadlineTimestamp,
                     itemId: itemId
-                })
+                }
             });
-            const result = await response.json();
-            console.log('Push notification sent:', result);
-            return result;
+
+            if (error) throw error;
+
+            console.log('Push notification sent:', data);
+            return data;
         } catch (error) {
             console.error('Error sending push notification:', error);
         }
