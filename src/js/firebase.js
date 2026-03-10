@@ -47,6 +47,7 @@ export async function requestFCMToken() {
         }
     } catch (error) {
         console.error('FCM Error:', error);
+        alert('DEBUG MÓVIL - Error Pidiendo Token: ' + error.message + '\\nDetalles: ' + JSON.stringify(error));
     }
     return null;
 }

@@ -12,16 +12,16 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="KAI">
-    <link rel="apple-touch-icon" href="src/assets/icon-192.png">
-    <link rel="apple-touch-icon" sizes="192x192" href="src/assets/icon-192.png">
-    <link rel="apple-touch-icon" sizes="512x512" href="src/assets/icon-512.png">
-    <link rel="apple-touch-startup-image" href="src/assets/icon-512.png">
+    <link rel="apple-touch-icon" href="./src/assets/icon-192.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="./src/assets/icon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="./src/assets/icon-512.png">
+    <link rel="apple-touch-startup-image" href="./src/assets/icon-512.png">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="format-detection" content="telephone=no">
 
-    <link rel="stylesheet" href="src/css/style.css">
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="src/assets/icon-192.png">
+    <link rel="stylesheet" href="./src/css/style.css">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/png" href="./src/assets/icon-192.png">
 
     <!-- Google Fonts: Poppins & Patrick Hand (Handwritten) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -223,215 +223,214 @@
         <section id="items-container" class="max-w-2xl mx-auto flex flex-col gap-8 pb-10">
             <!-- Los items se inyectarán aquí uno debajo de otro -->
         </section>
-        </main>
+    </main>
 
-        <!-- FOOTER / BARRA DE CAPTURA PRO -->
-        <footer
-            class="fixed bottom-0 left-0 right-0 px-2 py-3 bg-white border-t border-gray-100 z-40">
-            <div
-                class="bg-white border-2 border-gray-100 px-3 py-2 rounded-[2rem] shadow-lg flex items-center gap-2 max-w-full mx-auto">
-                <input type="text" id="item-input" placeholder="¿Qué tienes en mente?"
-                    class="flex-1 bg-gray-50 text-ink py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand rounded-lg placeholder-gray-400 min-w-0"
-                    aria-label="Escribe tu nota o tarea">
+    <!-- FOOTER / BARRA DE CAPTURA PRO -->
+    <footer class="fixed bottom-0 left-0 right-0 px-2 py-3 bg-white border-t border-gray-100 z-40">
+        <div
+            class="bg-white border-2 border-gray-100 px-3 py-2 rounded-[2rem] shadow-lg flex items-center gap-2 max-w-full mx-auto">
+            <input type="text" id="item-input" placeholder="¿Qué tienes en mente?"
+                class="flex-1 bg-gray-50 text-ink py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand rounded-lg placeholder-gray-400 min-w-0"
+                aria-label="Escribe tu nota o tarea">
 
-                <div class="flex items-center gap-1">
-                    <button id="btn-submit" aria-label="Guardar elemento"
-                        class="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shrink-0 shadow-md active:scale-95 transition-all focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1 cursor-pointer">
-                        <i class="fa-solid fa-plus text-sm" aria-hidden="true"></i>
-                    </button>
+            <div class="flex items-center gap-1">
+                <button id="btn-submit" aria-label="Guardar elemento"
+                    class="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shrink-0 shadow-md active:scale-95 transition-all focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1 cursor-pointer">
+                    <i class="fa-solid fa-plus text-sm" aria-hidden="true"></i>
+                </button>
 
-                    <!-- Botón Micrófono -->
-                    <button id="btn-voice-footer" aria-label="Grabar nota de voz"
-                        class="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shrink-0 shadow-md hover:scale-105 active:scale-95 transition border-2 border-white focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer">
-                        <i class="fa-solid fa-microphone text-sm" aria-hidden="true"></i>
-                    </button>
-                </div>
-            </div>
-        </footer>
-
-        <!-- El Asistente Kai (Floating Widget con Chat) -->
-        <!-- Kai Chat Full Screen -->
-        <div id="kai-chat-overlay" class="fixed inset-0 bg-white z-[100] hidden flex flex-col">
-            <!-- Chat Header -->
-            <div class="bg-brand px-4 py-3 text-white flex items-center justify-between shrink-0">
-                <div class="flex items-center gap-3">
-                    <button id="kai-chat-back"
-                        class="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition">
-                        <i class="fa-solid fa-arrow-left text-sm"></i>
-                    </button>
-                    <div class="flex items-center gap-2">
-                        <img src="icon.svg" class="w-7 h-7 rounded-full bg-white" alt="KAI">
-                        <span class="font-bold text-sm">Kai</span>
-                    </div>
-                </div>
-                <button id="kai-chat-minimize"
-                    class="w-9 h-9 rounded-full hover:bg-white/20 flex items-center justify-center transition">
-                    <i class="fa-solid fa-xmark text-sm"></i>
+                <!-- Botón Micrófono -->
+                <button id="btn-voice-footer" aria-label="Grabar nota de voz"
+                    class="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shrink-0 shadow-md hover:scale-105 active:scale-95 transition border-2 border-white focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer">
+                    <i class="fa-solid fa-microphone text-sm" aria-hidden="true"></i>
                 </button>
             </div>
-
-            <!-- Chat Messages -->
-            <div id="kai-chat-messages" class="flex-1 overflow-y-auto p-3 space-y-2 bg-cream">
-                <div class="bg-white p-3 rounded-2xl rounded-bl-none shadow-sm max-w-[85%]">
-                    <p class="text-sm text-ink">¡Hola Maria! ✨ Soy Kai. Estoy listo para ayudarte. ¿Qué tienes en mente?
-                    </p>
-                </div>
-            </div>
-
-            <!-- Chat Input -->
-            <div class="p-3 bg-white border-t border-gray-100 shrink-0">
-                <div class="flex gap-2 items-center">
-                    <input type="text" id="kai-chat-input" placeholder="Escribe..."
-                        class="flex-1 bg-gray-100 border-none rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-brand outline-none">
-                    <button id="kai-chat-send"
-                        class="w-9 h-9 rounded-full bg-brand text-white flex items-center justify-center shrink-0">
-                        <i class="fa-solid fa-paper-plane text-xs"></i>
-                    </button>
-                </div>
-            </div>
         </div>
+    </footer>
 
-        <!-- Kai Avatar (Floating Trigger) -->
-        <div id="kai-widget" class="fixed bottom-20 md:bottom-6 right-4 z-50" role="complementary"
-            aria-label="Asistente Kai">
-            <div id="kai-avatar-container" class="cursor-pointer relative" role="button" tabindex="0"
-                aria-label="Abrir asistente Kai">
-                <div
-                    class="w-14 h-14 md:w-16 md:h-16 bg-white rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 overflow-hidden border-4 border-brand focus:outline-none focus:ring-2 focus:ring-brand">
-                    <img src="icon.svg" class="w-full h-full object-cover" id="kai-avatar" alt="Kai">
-                </div>
-                <div id="kai-status"
-                    class="absolute bottom-0 right-0 w-3 h-3 md:w-4 md:h-4 bg-green-400 border-2 border-white rounded-full"
-                    aria-label="Estado: en línea"></div>
-            </div>
-        </div>
-
-        <!-- Reutilizamos el modal de edición con clases Tailwind -->
-        <div id="modal-edit"
-            class="fixed inset-0 bg-ink/20 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-4"
-            role="dialog" aria-modal="true" aria-labelledby="modal-title">
-            <div class="bg-white w-full max-w-lg rounded-blob shadow-2xl max-h-[90vh] overflow-y-auto p-8 relative">
-                <button
-                    class="modal-close absolute top-6 right-6 w-12 h-12 rounded-full hover:bg-gray-100 flex items-center justify-center transition focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer"
-                    aria-label="Cerrar modal">
-                    <i class="fa-solid fa-xmark text-xl" aria-hidden="true"></i>
+    <!-- El Asistente Kai (Floating Widget con Chat) -->
+    <!-- Kai Chat Full Screen -->
+    <div id="kai-chat-overlay" class="fixed inset-0 bg-white z-[100] hidden flex flex-col">
+        <!-- Chat Header -->
+        <div class="bg-brand px-4 py-3 text-white flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-3">
+                <button id="kai-chat-back"
+                    class="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition">
+                    <i class="fa-solid fa-arrow-left text-sm"></i>
                 </button>
-                <h3 id="modal-title" class="text-2xl font-bold mb-6 text-brand">Personalizar Bloque</h3>
-
-                <form id="edit-form" class="space-y-6">
-                    <input type="hidden" id="edit-id">
-
-                    <div class="space-y-2">
-                        <label for="edit-type" class="font-bold text-sm ml-2 flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-brand"></span>
-                            Tipo
-                        </label>
-                        <select id="edit-type"
-                            class="w-full bg-input-bg border-none rounded-blob px-4 py-3 font-bold text-ink focus:ring-2 focus:ring-brand"
-                            required>
-                            <option value="nota">📝 Nota</option>
-                            <option value="tarea">✅ Tarea</option>
-                            <option value="proyecto">📁 Proyecto</option>
-                            <option value="directorio">🔗 Enlace</option>
-                        </select>
-                    </div>
-
-                    <div class="space-y-2">
-                        <label for="edit-content" class="font-bold text-sm ml-2">Título</label>
-                        <input type="text" id="edit-content"
-                            class="w-full bg-input-bg border-none rounded-blob px-6 py-4 font-bold focus:ring-2 focus:ring-brand"
-                            required>
-                    </div>
-
-                    <div id="alarm-section" class="space-y-2">
-                        <label class="font-bold text-sm ml-2">⏰ Programar Alarma (Fecha y Hora)</label>
-                        <div class="flex gap-2">
-                            <input type="date" id="edit-deadline-date"
-                                class="flex-1 bg-input-bg border-none rounded-blob px-4 py-3 font-bold focus:ring-2 focus:ring-brand">
-                            <input type="time" id="edit-deadline-time"
-                                class="flex-1 bg-input-bg border-none rounded-blob px-4 py-3 font-bold focus:ring-2 focus:ring-brand">
-                        </div>
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="font-bold text-sm ml-2">Descripción</label>
-                        <textarea id="edit-description"
-                            class="w-full bg-input-bg border-none rounded-blob px-6 py-4 min-h-[60px] focus:ring-2 focus:ring-brand resize-none field-sizing-content"
-                            placeholder="Añade más detalles aquí..."></textarea>
-                    </div>
-
-                    <div class="space-y-2">
-                        <div class="flex justify-between items-center ml-2">
-                            <label class="font-bold text-sm">Tareas</label>
-                            <button type="button" id="btn-add-task"
-                                class="text-brand font-bold text-xs hover:underline">+ Añadir tarea</button>
-                        </div>
-                        <div id="edit-tasks-container" class="space-y-2"></div>
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="font-bold text-sm ml-2">Enlace Directo</label>
-                        <input type="url" id="edit-url"
-                            class="w-full bg-input-bg border-none rounded-blob px-6 py-4 text-action font-medium"
-                            placeholder="https://...">
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="font-bold text-sm ml-2 flex items-center gap-2">
-                            <i class="fa-solid fa-tag text-xs text-lavender"></i>
-                            Etiquetas
-                            <span class="text-[10px] font-normal text-gray-400">(para análisis personal)</span>
-                        </label>
-                        <div class="flex gap-2 mb-2 flex-wrap">
-                            <span
-                                class="tag-suggestion px-2 py-1 rounded-lg text-[10px] font-semibold text-brand border border-brand/30 cursor-pointer hover:border-brand hover:bg-brand/5 transition"
-                                data-tag="logro">logro</span>
-                            <span
-                                class="tag-suggestion px-2 py-1 rounded-lg text-[10px] font-semibold text-brand border border-brand/30 cursor-pointer hover:border-brand hover:bg-brand/5 transition"
-                                data-tag="salud">salud</span>
-                            <span
-                                class="tag-suggestion px-2 py-1 rounded-lg text-[10px] font-semibold text-brand border border-brand/30 cursor-pointer hover:border-brand hover:bg-brand/5 transition"
-                                data-tag="emocion">emocion</span>
-                            <span
-                                class="tag-suggestion px-2 py-1 rounded-lg text-[10px] font-semibold text-brand border border-brand/30 cursor-pointer hover:border-brand hover:bg-brand/5 transition"
-                                data-tag="alarma">alarma</span>
-                        </div>
-                        <input type="text" id="edit-tags"
-                            class="w-full bg-lavender/30 border border-lavender rounded-blob px-6 py-4 text-purple-600 font-bold placeholder-gray-400"
-                            placeholder="logro, salud, emocion...">
-                    </div>
-
-                    <div class="flex gap-4 pt-4">
-                        <button type="submit"
-                            class="flex-1 bg-brand text-white font-bold py-2 rounded-blob shadow-sticker hover:bg-brand-dark transition-all">Guardar</button>
-                        <button type="button"
-                            class="flex-1 bg-gray-100 text-gray-500 font-bold py-2 rounded-blob shadow-sticker hover:bg-gray-200 transition-all modal-close">Quizás
-                            luego</button>
-                    </div>
-                </form>
+                <div class="flex items-center gap-2">
+                    <img src="icon.svg" class="w-7 h-7 rounded-full bg-white" alt="KAI">
+                    <span class="font-bold text-sm">Kai</span>
+                </div>
             </div>
-        </div>
-
-        <div id="voice-overlay"
-            class="fixed inset-0 bg-brand/90 backdrop-blur-md z-[200] flex items-center justify-center hidden">
-            <button id="btn-close-voice" aria-label="Cerrar"
-                class="absolute top-4 right-4 w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition text-white">
-                <i class="fa-solid fa-xmark text-xl"></i>
+            <button id="kai-chat-minimize"
+                class="w-9 h-9 rounded-full hover:bg-white/20 flex items-center justify-center transition">
+                <i class="fa-solid fa-xmark text-sm"></i>
             </button>
-            <div class="text-center text-white px-8">
-                <div
-                    class="w-32 h-32 bg-white rounded-full mx-auto mb-8 flex items-center justify-center animate-pulse shadow-lg">
-                    <span class="text-6xl">🎤</span>
-                </div>
-                <h2 class="font-bold mb-4">¡Te escucho!</h2>
-                <p id="voice-text" class="font-hand mb-10 min-h-[1.5em]"></p>
-                <button id="btn-stop-voice"
-                    class="bg-white text-brand font-bold px-12 py-4 rounded-full shadow-lg active:scale-95 transition">Ya
-                    terminé</button>
+        </div>
+
+        <!-- Chat Messages -->
+        <div id="kai-chat-messages" class="flex-1 overflow-y-auto p-3 space-y-2 bg-cream">
+            <div class="bg-white p-3 rounded-2xl rounded-bl-none shadow-sm max-w-[85%]">
+                <p class="text-sm text-ink">¡Hola Maria! ✨ Soy Kai. Estoy listo para ayudarte. ¿Qué tienes en mente?
+                </p>
             </div>
         </div>
 
-        <script type="module" src="app.js"></script>
+        <!-- Chat Input -->
+        <div class="p-3 bg-white border-t border-gray-100 shrink-0">
+            <div class="flex gap-2 items-center">
+                <input type="text" id="kai-chat-input" placeholder="Escribe..."
+                    class="flex-1 bg-gray-100 border-none rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-brand outline-none">
+                <button id="kai-chat-send"
+                    class="w-9 h-9 rounded-full bg-brand text-white flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-paper-plane text-xs"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kai Avatar (Floating Trigger) -->
+    <div id="kai-widget" class="fixed bottom-20 md:bottom-6 right-4 z-50" role="complementary"
+        aria-label="Asistente Kai">
+        <div id="kai-avatar-container" class="cursor-pointer relative" role="button" tabindex="0"
+            aria-label="Abrir asistente Kai">
+            <div
+                class="w-14 h-14 md:w-16 md:h-16 bg-white rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 overflow-hidden border-4 border-brand focus:outline-none focus:ring-2 focus:ring-brand">
+                <img src="icon.svg" class="w-full h-full object-cover" id="kai-avatar" alt="Kai">
+            </div>
+            <div id="kai-status"
+                class="absolute bottom-0 right-0 w-3 h-3 md:w-4 md:h-4 bg-green-400 border-2 border-white rounded-full"
+                aria-label="Estado: en línea"></div>
+        </div>
+    </div>
+
+    <!-- Reutilizamos el modal de edición con clases Tailwind -->
+    <div id="modal-edit"
+        class="fixed inset-0 bg-ink/20 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-4"
+        role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="bg-white w-full max-w-lg rounded-blob shadow-2xl max-h-[90vh] overflow-y-auto p-8 relative">
+            <button
+                class="modal-close absolute top-6 right-6 w-12 h-12 rounded-full hover:bg-gray-100 flex items-center justify-center transition focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer"
+                aria-label="Cerrar modal">
+                <i class="fa-solid fa-xmark text-xl" aria-hidden="true"></i>
+            </button>
+            <h3 id="modal-title" class="text-2xl font-bold mb-6 text-brand">Personalizar Bloque</h3>
+
+            <form id="edit-form" class="space-y-6">
+                <input type="hidden" id="edit-id">
+
+                <div class="space-y-2">
+                    <label for="edit-type" class="font-bold text-sm ml-2 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-brand"></span>
+                        Tipo
+                    </label>
+                    <select id="edit-type"
+                        class="w-full bg-input-bg border-none rounded-blob px-4 py-3 font-bold text-ink focus:ring-2 focus:ring-brand"
+                        required>
+                        <option value="nota">📝 Nota</option>
+                        <option value="tarea">✅ Tarea</option>
+                        <option value="proyecto">📁 Proyecto</option>
+                        <option value="directorio">🔗 Enlace</option>
+                    </select>
+                </div>
+
+                <div class="space-y-2">
+                    <label for="edit-content" class="font-bold text-sm ml-2">Título</label>
+                    <input type="text" id="edit-content"
+                        class="w-full bg-input-bg border-none rounded-blob px-6 py-4 font-bold focus:ring-2 focus:ring-brand"
+                        required>
+                </div>
+
+                <div id="alarm-section" class="space-y-2">
+                    <label class="font-bold text-sm ml-2">⏰ Programar Alarma (Fecha y Hora)</label>
+                    <div class="flex gap-2">
+                        <input type="date" id="edit-deadline-date"
+                            class="flex-1 bg-input-bg border-none rounded-blob px-4 py-3 font-bold focus:ring-2 focus:ring-brand">
+                        <input type="time" id="edit-deadline-time"
+                            class="flex-1 bg-input-bg border-none rounded-blob px-4 py-3 font-bold focus:ring-2 focus:ring-brand">
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="font-bold text-sm ml-2">Descripción</label>
+                    <textarea id="edit-description"
+                        class="w-full bg-input-bg border-none rounded-blob px-6 py-4 min-h-[60px] focus:ring-2 focus:ring-brand resize-none field-sizing-content"
+                        placeholder="Añade más detalles aquí..."></textarea>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center ml-2">
+                        <label class="font-bold text-sm">Tareas</label>
+                        <button type="button" id="btn-add-task" class="text-brand font-bold text-xs hover:underline">+
+                            Añadir tarea</button>
+                    </div>
+                    <div id="edit-tasks-container" class="space-y-2"></div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="font-bold text-sm ml-2">Enlace Directo</label>
+                    <input type="url" id="edit-url"
+                        class="w-full bg-input-bg border-none rounded-blob px-6 py-4 text-action font-medium"
+                        placeholder="https://...">
+                </div>
+
+                <div class="space-y-2">
+                    <label class="font-bold text-sm ml-2 flex items-center gap-2">
+                        <i class="fa-solid fa-tag text-xs text-lavender"></i>
+                        Etiquetas
+                        <span class="text-[10px] font-normal text-gray-400">(para análisis personal)</span>
+                    </label>
+                    <div class="flex gap-2 mb-2 flex-wrap">
+                        <span
+                            class="tag-suggestion px-2 py-1 rounded-lg text-[10px] font-semibold text-brand border border-brand/30 cursor-pointer hover:border-brand hover:bg-brand/5 transition"
+                            data-tag="logro">logro</span>
+                        <span
+                            class="tag-suggestion px-2 py-1 rounded-lg text-[10px] font-semibold text-brand border border-brand/30 cursor-pointer hover:border-brand hover:bg-brand/5 transition"
+                            data-tag="salud">salud</span>
+                        <span
+                            class="tag-suggestion px-2 py-1 rounded-lg text-[10px] font-semibold text-brand border border-brand/30 cursor-pointer hover:border-brand hover:bg-brand/5 transition"
+                            data-tag="emocion">emocion</span>
+                        <span
+                            class="tag-suggestion px-2 py-1 rounded-lg text-[10px] font-semibold text-brand border border-brand/30 cursor-pointer hover:border-brand hover:bg-brand/5 transition"
+                            data-tag="alarma">alarma</span>
+                    </div>
+                    <input type="text" id="edit-tags"
+                        class="w-full bg-lavender/30 border border-lavender rounded-blob px-6 py-4 text-purple-600 font-bold placeholder-gray-400"
+                        placeholder="logro, salud, emocion...">
+                </div>
+
+                <div class="flex gap-4 pt-4">
+                    <button type="submit"
+                        class="flex-1 bg-brand text-white font-bold py-2 rounded-blob shadow-sticker hover:bg-brand-dark transition-all">Guardar</button>
+                    <button type="button"
+                        class="flex-1 bg-gray-100 text-gray-500 font-bold py-2 rounded-blob shadow-sticker hover:bg-gray-200 transition-all modal-close">Quizás
+                        luego</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="voice-overlay"
+        class="fixed inset-0 bg-brand/90 backdrop-blur-md z-[200] flex items-center justify-center hidden">
+        <button id="btn-close-voice" aria-label="Cerrar"
+            class="absolute top-4 right-4 w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition text-white">
+            <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+        <div class="text-center text-white px-8">
+            <div
+                class="w-32 h-32 bg-white rounded-full mx-auto mb-8 flex items-center justify-center animate-pulse shadow-lg">
+                <span class="text-6xl">🎤</span>
+            </div>
+            <h2 class="font-bold mb-4">¡Te escucho!</h2>
+            <p id="voice-text" class="font-hand mb-10 min-h-[1.5em]"></p>
+            <button id="btn-stop-voice"
+                class="bg-white text-brand font-bold px-12 py-4 rounded-full shadow-lg active:scale-95 transition">Ya
+                terminé</button>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
 </body>
 
 </html>
