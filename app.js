@@ -35,10 +35,10 @@ if ('serviceWorker' in navigator) {
 
         if ('PushManager' in window && !fcmInitialized) {
             fcmInitialized = true;
+            // Quitamos la petición obligatoria al inicio (Bloqueado por iOS Safari)
+            // requestFCMToken se llamará cuando el usuario intente crear una alarma explícitamente.
             setTimeout(() => {
-                requestFCMToken().then(() => {
-                    onForegroundMessage();
-                }).catch(err => console.error('FCM init error:', err));
+                onForegroundMessage();
             }, 2000);
         }
     });

@@ -43,6 +43,7 @@ import { auth } from './auth.js';
 import { ai } from './ai.js';
 import { cerebras } from './cerebras.js';
 import { generarDemoData, regenerarDemoItems } from './demo-data.js';
+import { requestFCMToken } from './firebase.js';
 
 function formatDeadlineForDB(deadline) {
     if (!deadline) return null;
@@ -784,12 +785,18 @@ REGLAS:
             const mensajeAleatorio = mensajesAlarma[Math.floor(Math.random() * mensajesAlarma.length)];
             ui.showNotification(mensajeAleatorio, 'success');
 
-            const fcmToken = localStorage.getItem('fcmToken');
-            console.log('🔔 FCM Token local disponible:', !!fcmToken);
-
+            // --- CORRECCIÓN PWA MÓVIL (iOS/Android): Solicitar token on-click ---
+            let fcmToken = localStorage.getItem('fcmToken');
             if (!fcmToken && !this.isDemoMode) {
-                alert('⚠️ No hay token FCM. Asegúrate de permitir notificaciones.');
+                console.log('🔔 Solicitando permiso FCM interactivo al usuario...');
+                fcmToken = await requestFCMToken();
+                if (!fcmToken) {
+                    alert('⚠️ Permiso denegado o fallo al obtener token FCM. Las notificaciones Push podrían no llegar a tu móvil.');
+                }
+            } else {
+                console.log('🔔 FCM Token local disponible:', !!fcmToken);
             }
+
             if (deadline && !this.isDemoMode) {
                 const deadlineTimestamp = new Date(deadline).getTime();
 
