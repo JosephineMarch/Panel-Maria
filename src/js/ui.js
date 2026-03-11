@@ -25,14 +25,6 @@ export const ui = {
         kaiChatClose: () => document.getElementById('kai-chat-back'),
     },
 
-    // Configuración de tipos (con color de header)
-    typeConfig: {
-        nota: { color: 'nota', icon: '📝', solid: 'theme-nota', label: 'NOTA' },
-        tarea: { color: 'tarea', icon: '✅', solid: 'theme-tarea', label: 'TAREA' },
-        proyecto: { color: 'proyecto', icon: '📁', solid: 'theme-proyecto', label: 'PROYECTO' },
-        directorio: { color: 'directorio', icon: '🔗', solid: 'theme-directorio', label: 'ENLACE' },
-    },
-
     // Configuración de etiquetas (tags: solo texto brand, tipos: bg brand)
     tagConfig: {
         logro: { bg: 'bg-transparent', text: 'text-brand', border: 'border-brand' },
@@ -168,7 +160,7 @@ export const ui = {
         // Luego mostrar los no anclados agrupados por fecha
         if (unpinnedItems.length > 0) {
             const grouped = this.groupItemsByDate(unpinnedItems);
-            
+
             Object.keys(grouped).forEach(dateLabel => {
                 const dateSeparator = document.createElement('div');
                 dateSeparator.className = 'flex items-center gap-4 my-6';
@@ -178,7 +170,7 @@ export const ui = {
                     <div class="h-px flex-1 bg-gray-200"></div>
                 `;
                 container.appendChild(dateSeparator);
-                
+
                 grouped[dateLabel].forEach(item => {
                     container.appendChild(this.createItemCard(item));
                 });
@@ -190,17 +182,17 @@ export const ui = {
         const groups = {};
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        
+
         const yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
-        
+
         const last7Days = new Date(today);
         last7Days.setDate(last7Days.getDate() - 7);
 
         items.forEach(item => {
             const itemDate = new Date(item.created_at);
             itemDate.setHours(0, 0, 0, 0);
-            
+
             let label;
             if (itemDate.getTime() === today.getTime()) {
                 label = 'Hoy';
@@ -211,7 +203,7 @@ export const ui = {
             } else {
                 label = itemDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
             }
-            
+
             if (!groups[label]) groups[label] = [];
             groups[label].push(item);
         });
@@ -258,9 +250,6 @@ export const ui = {
 
     renderCollapsedCard(card, item, config, isProject) {
         const themeClass = `theme-${config.color}`;
-        card.className = isProject
-            ? `${themeClass} rounded-[2rem] shadow-sticker border-2 transition-all hover:shadow-lg overflow-hidden mb-4 w-full cursor-pointer group`
-            : `${themeClass} rounded-[1.5rem] p-4 shadow-sticker border-2 flex gap-4 items-center group relative hover:z-10 transition-all mb-4 w-full cursor-pointer`;
 
         if (isProject) {
             let progressWidth = '0%';
@@ -322,9 +311,9 @@ export const ui = {
                 <div class="card-body-soft p-4">
                     <!-- Previsualización de Descripción -->
                     ${item.descripcion ? (() => {
-                        const descTruncada = item.descripcion.length > 120 ? item.descripcion.substring(0, 120) + '...' : item.descripcion;
-                        return `<p class="text-sm text-ink/70 mb-3">${this.escapeHtml(descTruncada)}</p>`;
-                    })() : ''}
+                    const descTruncada = item.descripcion.length > 120 ? item.descripcion.substring(0, 120) + '...' : item.descripcion;
+                    return `<p class="text-sm text-ink/70 mb-3">${this.escapeHtml(descTruncada)}</p>`;
+                })() : ''}
 
                     <!-- Previsualización de Tareas (Interactiva) -->
                     ${item.tareas && item.tareas.length > 0 ? `
@@ -522,25 +511,25 @@ export const ui = {
                     ${hasTags ? `<div class="space-y-2"><label class="txt-label ml-1">Etiquetas</label><div class="flex gap-2 flex-wrap">${tagsHtml}</div></div>` : ''}
                     
                     ${(() => {
-                        let deadlineDate = null;
-                        const dl = item.deadline;
-                        if (dl) {
-                            // Si es número (timestamp)
-                            if (typeof dl === 'number') {
-                                deadlineDate = new Date(dl);
-                            } 
-                            // Si es string ISO (de Supabase)
-                            else if (typeof dl === 'string' && dl.includes('T')) {
-                                deadlineDate = new Date(dl);
-                            }
-                            // Si es string de fecha simple (YYYY-MM-DD)
-                            else if (typeof dl === 'string') {
-                                deadlineDate = new Date(dl);
-                            }
-                        }
-                        const dateStr = deadlineDate && !isNaN(deadlineDate.getTime()) ? deadlineDate.toLocaleDateString('en-CA') : '';
-                        const timeStr = deadlineDate && !isNaN(deadlineDate.getTime()) ? deadlineDate.toTimeString().substring(0, 5) : '';
-                        return `
+                let deadlineDate = null;
+                const dl = item.deadline;
+                if (dl) {
+                    // Si es número (timestamp)
+                    if (typeof dl === 'number') {
+                        deadlineDate = new Date(dl);
+                    }
+                    // Si es string ISO (de Supabase)
+                    else if (typeof dl === 'string' && dl.includes('T')) {
+                        deadlineDate = new Date(dl);
+                    }
+                    // Si es string de fecha simple (YYYY-MM-DD)
+                    else if (typeof dl === 'string') {
+                        deadlineDate = new Date(dl);
+                    }
+                }
+                const dateStr = deadlineDate && !isNaN(deadlineDate.getTime()) ? deadlineDate.toLocaleDateString('en-CA') : '';
+                const timeStr = deadlineDate && !isNaN(deadlineDate.getTime()) ? deadlineDate.toTimeString().substring(0, 5) : '';
+                return `
                     <div id="section-alarm-${item.id}" class="space-y-2 ${hasAlarm ? '' : 'hidden'}">
                         <label class="txt-label ml-1">⏰ Alarma</label>
                         <div class="flex gap-2">
@@ -550,7 +539,7 @@ export const ui = {
                                    class="flex-1 bg-white/40 border-none rounded-2xl px-4 py-3 txt-small focus:ring-2 focus:ring-white/50 outline-none text-ink">
                         </div>
                     </div>`;
-                    })()}
+            })()}
                 </div>
 
                 <div id="section-desc-${item.id}" class="space-y-2 ${hasDesc ? '' : 'hidden'}">
@@ -711,7 +700,7 @@ export const ui = {
         const url = document.getElementById(`inline-url-${id}`)?.value || '';
         const date = document.getElementById(`inline-date-${id}`)?.value || '';
         const time = document.getElementById(`inline-time-${id}`)?.value || '';
-        
+
         let deadline = null;
         if (date && time) {
             // Crear fecha local y convertir a ISO string

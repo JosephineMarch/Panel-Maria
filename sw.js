@@ -227,7 +227,6 @@ self.addEventListener('notificationclick', (event) => {
 self.addEventListener('notificationclose', (event) => {
     const data = event.notification.data || {};
     if (data.itemId) {
-        console.log('Notification closed:', data.itemId);
     }
 });
 

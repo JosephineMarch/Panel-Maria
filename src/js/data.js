@@ -47,7 +47,6 @@ export const data = {
     async getItems(filters = {}) {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
-            console.warn('data.getItems: No hay usuario autenticado');
             return [];
         }
 
@@ -83,7 +82,7 @@ export const data = {
      */
     async updateItem(id, updates) {
         const sanitizedUpdates = {};
-        
+
         if (updates.content !== undefined) {
             sanitizedUpdates.content = utils.sanitizeInput(updates.content);
         }

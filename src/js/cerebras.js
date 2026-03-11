@@ -55,65 +55,65 @@ export const cerebras = {
      */
     offlineParse(message) {
         const text = message.toLowerCase();
-        
+
         // Detectar tipo
         let type = 'nota';
         let items = [];
         let tags = [];
-        
+
         // Detectar formato "tarea título, item a, b, c"
         const itemMatch = message.match(/^tarea\s+(.+?),\s*item\s+(.+)$/i);
-        
+
         if (itemMatch) {
             const titulo = itemMatch[1].trim();
             const itemsText = itemMatch[2];
             items = itemsText.split(',').map(s => s.trim()).filter(s => s.length > 0);
             items = items.map(titulo => ({ titulo, completado: false }));
-            
+
             // Detectar tags
             if (text.includes('logro') || text.includes('logré')) tags.push('logro');
             if (text.includes('salud') || text.includes('dolor') || text.includes('enfermo')) tags.push('salud');
             if (text.includes('emocion') || text.includes('emoción') || text.includes('triste')) tags.push('emocion');
-            
+
             const actionData = {
                 type: 'tarea',
                 content: titulo,
                 tags: tags,
                 tareas: items
             };
-            
+
             const responses = [
                 "¡Tarea con checklist creada! ✅",
                 "¡Listo! Tarea con items guardada ✨",
                 "Hecho! Tu tarea está lista 💫"
             ];
-            
+
             return {
                 response: responses[Math.floor(Math.random() * responses.length)],
                 action: { type: 'CREATE_ITEM', data: actionData }
             };
         }
-        
+
         // Detectar solo "item a, b, c" (sin título)
         const onlyItemsMatch = message.match(/^item\s+(.+)$/i);
         if (onlyItemsMatch) {
             const itemsText = onlyItemsMatch[1];
             items = itemsText.split(',').map(s => s.trim()).filter(s => s.length > 0);
             items = items.map(titulo => ({ titulo, completado: false }));
-            
+
             const actionData = {
                 type: 'tarea',
                 content: '',
                 tags: tags,
                 tareas: items
             };
-            
+
             return {
                 response: "¡Tarea con checklist creada! ✅",
                 action: { type: 'CREATE_ITEM', data: actionData }
             };
         }
-        
+
         if (text.includes('tarea') || text.includes('tengo que') || text.includes('necesito') || text.includes('pendiente')) {
             type = 'tarea';
         }
@@ -123,12 +123,12 @@ export const cerebras = {
         if (text.includes('enlace') || text.includes('link') || text.includes('youtube') || text.includes('http')) {
             type = 'directorio';
         }
-        
+
         // Detectar tags
         if (text.includes('logro') || text.includes('logré')) tags.push('logro');
         if (text.includes('salud') || text.includes('dolor') || text.includes('enfermo')) tags.push('salud');
         if (text.includes('emocion') || text.includes('emoción') || text.includes('triste')) tags.push('emocion');
-        
+
         // Detectar acción
         let action = null;
         const actionData = {
@@ -137,20 +137,20 @@ export const cerebras = {
             tags: tags,
             tareas: items
         };
-        
+
         // Crear siempre un item
         action = {
             type: 'CREATE_ITEM',
             data: actionData
         };
-        
+
         const responses = [
             "¡Anotado! 🧸✨",
             "¡Listo! Ya lo guardé 💫",
             "Hecho! Tu panel está actualizado 🌟",
             "¡Creado con cariño! 🫰"
         ];
-        
+
         return {
             response: responses[Math.floor(Math.random() * responses.length)],
             action: action
@@ -285,7 +285,6 @@ ${JSON.stringify(this.history.slice(-4))}
 `;
 
         try {
-            // console.log(`🧠 KAI: Llamando a Cerebras (${this.model})...`);
             const response = await fetch(this.apiUrl, {
                 method: 'POST',
                 headers: {

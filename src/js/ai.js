@@ -39,7 +39,6 @@ export const ai = {
 
     startVoice() {
         if (!this.recognition) {
-            console.warn('Speech recognition not supported');
             return false;
         }
         this.isRecording = true;

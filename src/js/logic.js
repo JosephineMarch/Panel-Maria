@@ -78,17 +78,12 @@ class KaiController {
     }
 
     async init() {
-        // console.log('🧠 KAI: Controlador iniciado.');
-
-        // Detectar si estamos en desarrollo (localhost)
         this.isDevMode = this.esDesarrollo();
 
         ui.init();
         this.bindEvents();
         this.startAlarmChecker();
 
-        // En desarrollo, mostrar botón para generar demo
-        // En producción, nunca mostrar demo
         if (this.isDevMode) {
             this.mostrarControlesDemo(true);
         } else {
@@ -97,7 +92,6 @@ class KaiController {
 
         try {
             this.currentUser = await auth.init();
-            // console.log('Usuario:', this.currentUser);
             if (this.currentUser) {
                 ui.updateUserInfo(this.currentUser);
                 await this.loadItems();
@@ -306,28 +300,18 @@ class KaiController {
     }
 
     async triggerAlarm(item) {
-        if (Notification.permission === 'granted') {
-            try {
-                new Notification('⏰ ¡KAI Te Recuerdas!', {
-                    body: item.content,
-                    icon: '/src/assets/icon-192.png',
-                    tag: item.id,
-                    data: { itemId: item.id },
-                    vibrate: [200, 100, 200],
-                    requireInteraction: true
-                });
-            } catch (error) {
-                console.error('Error showing notification:', error);
-            }
-        }
-
+        // En producción esta alerta es gestionada de manera remota vía Push 
+        // para garantizar la entrega en móviles con la pantalla apagada.
+        // Solo mostraremos la alerta visual si el usuario tiene la app abierta:
         ui.showNotification(`⏰ ¡Hora de: ${item.content}!`, 'warning');
 
-        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleR4GOKjm');
-        audio.volume = 0.5;
-        audio.play().catch((err) => {
-            console.warn('🔇 No se pudo reproducir audio de alarma:', err.message);
-        });
+        try {
+            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleR4GOKjm');
+            audio.volume = 0.5;
+            await audio.play();
+        } catch (err) {
+            // Silenciamos el log del Catch porque el Autoplay Policy bloqueado es un warning conocido y molesto.
+        }
     }
 
     bindEvents() {
@@ -729,11 +713,9 @@ REGLAS:
     }
 
     async crearAlarma(alarmaData) {
-        // console.log('crearAlarma - alarmaData:', alarmaData);
         try {
             const contenidoAlarma = alarmaData.contenido || 'Recordatorio';
             const deadline = alarmaData.deadline;
-            // console.log('crearAlarma - deadline antes de format:', deadline, 'tipo:', typeof deadline);
 
             let newItemId = null;
             if (this.isDemoMode) {
@@ -756,7 +738,6 @@ REGLAS:
                 newItemId = newItem.id;
             } else if (this.currentUser) {
                 const deadlineForDB = formatDeadlineForDB(deadline);
-                // console.log('crearAlarma - deadline para Supabase:', deadlineForDB);
                 const result = await data.createItem({
                     content: contenidoAlarma,
                     type: 'nota',
@@ -852,7 +833,6 @@ REGLAS:
     }
 
     async dataUpdateInline(id, updates) {
-        // console.log('dataUpdateInline - isDemoMode:', this.isDemoMode, 'id:', id, 'updates:', updates);
         try {
             // Convertir deadline a formato ISO si es necesario
             if (updates.deadline) {
