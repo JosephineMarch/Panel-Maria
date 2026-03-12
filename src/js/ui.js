@@ -39,6 +39,7 @@ export const ui = {
         tarea: { color: 'tarea', icon: '✅', bg: 'bg-brand', text: 'text-white', solid: 'theme-tarea', label: 'TAREA' },
         proyecto: { color: 'proyecto', icon: '📁', bg: 'bg-brand', text: 'text-white', solid: 'theme-proyecto', label: 'PROYECTO' },
         directorio: { color: 'directorio', icon: '🔗', bg: 'bg-brand', text: 'text-white', solid: 'theme-directorio', label: 'ENLACE' },
+        logro: { color: 'logro', icon: '🏆', bg: 'bg-success', text: 'text-white', solid: 'theme-logro', label: 'LOGRO' },
     },
 
 
@@ -105,13 +106,100 @@ export const ui = {
         }
     },
 
-    // --- RENDERIZADO ---
+    renderTodayWidget(items) {
+        const today = new Date().toDateString();
+        const todayTasks = items.filter(item => {
+            const itemDate = new Date(item.created_at).toDateString();
+            return itemDate === today && (item.type === 'tarea' || item.type === 'proyecto');
+        });
+
+        if (todayTasks.length === 0) return;
+
+        const widget = document.createElement('div');
+        widget.className = 'bg-brand/5 border-2 border-brand/20 p-6 rounded-[2.5rem] mb-8 shadow-sm';
+        widget.innerHTML = `
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold text-brand flex items-center gap-2">
+                    <span class="text-2xl">⚡</span> Mi enfoque para hoy
+                </h2>
+                <span class="bg-brand text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                    ${todayTasks.length} pendientes
+                </span>
+            </div>
+            <div class="space-y-3">
+                ${todayTasks.slice(0, 3).map(task => `
+                    <div class="flex items-center gap-3 bg-white/60 p-3 rounded-2xl border border-brand/10 group cursor-pointer hover:bg-white transition-all shadow-sm">
+                        <input type="checkbox" class="kawaii-checkbox timeline-task-checkbox" data-id="${task.id}" data-index="-1">
+                        <span class="flex-1 text-base font-bold text-ink truncate">${this.escapeHtml(task.content)}</span>
+                        <i class="fa-solid fa-chevron-right text-brand/30 group-hover:translate-x-1 transition-transform"></i>
+                    </div>
+                `).join('')}
+                ${todayTasks.length > 3 ? `<p class="text-center text-xs font-bold text-brand mt-2">+ ${todayTasks.length - 3} tareas más en tu lista</p>` : ''}
+            </div>
+        `;
+        this.elements.container().prepend(widget);
+    },
+
+    renderAchievementsDashboard(items) {
+        const achievements = items.filter(item => item.type === 'logro' || (item.tags && item.tags.includes('logro')));
+        const container = this.elements.container();
+        
+        container.innerHTML = `
+            <div class="space-y-8 animate-fadeIn">
+                <div class="text-center py-6">
+                    <div class="inline-block bg-success/10 p-4 rounded-blob mb-4 scale-125">
+                        <span class="text-5xl">🏆</span>
+                    </div>
+                    <h1 class="text-2xl font-black text-ink">Mis Logros</h1>
+                    <p class="text-base text-ink/50 mt-2 font-medium">Llevas ${achievements.length} hitos alcanzados. ¡Sigue así!</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    ${achievements.length > 0 ? achievements.map(item => `
+                        <div class="bg-white border-2 border-success/20 p-5 rounded-[2rem] shadow-sticker hover:scale-[1.02] transition-all group relative overflow-hidden">
+                            <div class="absolute -right-4 -top-4 text-success/5 text-8xl grayscale opacity-20 group-hover:grayscale-0 group-hover:opacity-10 transition-all">🏆</div>
+                            <div class="flex items-start gap-4">
+                                <span class="text-3xl bg-success/10 p-3 rounded-2xl">✨</span>
+                                <div class="flex-1 min-w-0">
+                                    <h3 class="text-base font-bold text-ink leading-tight">${this.escapeHtml(item.content)}</h3>
+                                    <p class="text-sm text-ink/60 mt-1">${item.descripcion ? this.escapeHtml(this.truncate(item.descripcion, 60)) : 'Sin descripción'}</p>
+                                    <div class="mt-3 text-[10px] font-bold text-success flex items-center gap-1 uppercase tracking-wider">
+                                        <i class="fa-solid fa-calendar"></i>
+                                        ${new Date(item.created_at).toLocaleDateString()}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('') : `
+                        <div class="col-span-full py-20 text-center opacity-30">
+                            <p class="text-xl font-bold italic text-ink">Aún no hay logros aquí... ¡Pero pronto los habrá! 😉</p>
+                        </div>
+                    `}
+                </div>
+            </div>
+        `;
+    },
+
+    // --- CARD RENDERERS ---
 
     render(items = [], isDemo = false) {
         const container = this.elements.container();
         if (!container) return;
 
         container.innerHTML = '';
+
+        const currentFilter = document.querySelector('.nav-btn.active')?.dataset.filter || 'todos';
+
+        // Dashboard de Logros (Si el filtro es logros)
+        if (currentFilter === 'logro' || currentFilter === 'logros') {
+            this.renderAchievementsDashboard(items);
+            return;
+        }
+
+        // Tareas de Hoy (Si hay items para hoy, mostrar widget)
+        if (currentFilter === 'todos' || currentFilter === 'hoy') {
+            this.renderTodayWidget(items);
+        }
 
         if (isDemo) {
             container.innerHTML += `
@@ -311,8 +399,8 @@ export const ui = {
                 <div class="card-body-soft p-4">
                     <!-- Previsualización de Descripción -->
                     ${item.descripcion ? (() => {
-                    const descTruncada = item.descripcion.length > 120 ? item.descripcion.substring(0, 120) + '...' : item.descripcion;
-                    return `<p class="text-sm text-ink/70 mb-3">${this.escapeHtml(descTruncada)}</p>`;
+                    const descTruncada = item.descripcion.length > 200 ? item.descripcion.substring(0, 200) + '...' : item.descripcion;
+                    return `<p class="text-base text-ink/70 mb-3 whitespace-pre-wrap leading-relaxed">${this.escapeHtml(descTruncada)}</p>`;
                 })() : ''}
 
                     <!-- Previsualización de Tareas (Interactiva) -->
@@ -369,8 +457,8 @@ export const ui = {
 
             // 1. Previsualización de Descripción (para Ideas, Notas, Proyectos)
             if (item.descripcion) {
-                const descTruncada = item.descripcion.length > 120 ? item.descripcion.substring(0, 120) + '...' : item.descripcion;
-                previewHtml += `<p class="text-sm text-ink/70 mt-2">${this.escapeHtml(descTruncada)}</p>`;
+                const descTruncada = item.descripcion.length > 150 ? item.descripcion.substring(0, 150) + '...' : item.descripcion;
+                previewHtml += `<p class="text-base text-ink/70 mt-2 whitespace-pre-wrap leading-relaxed">${this.escapeHtml(descTruncada)}</p>`;
             }
 
             // 2. Previsualización de Tareas (Checklist)
@@ -394,14 +482,17 @@ export const ui = {
             }
 
             // 3. Previsualización de Enlace
-            if (item.url && item.type === 'directorio') {
-                const urlLabel = item.url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
-                previewHtml += `
-                    <div class="mt-2 flex items-center gap-1 text-[10px] text-action font-bold">
-                        <i class="fa-solid fa-link text-[8px]"></i>
-                        <span class="truncate">${urlLabel}</span>
-                    </div>
-                `;
+            if (item.url) {
+                const urls = Array.isArray(item.url) ? item.url : [item.url];
+                urls.forEach(u => {
+                    const urlLabel = u.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
+                    previewHtml += `
+                        <div class="mt-2 flex items-center gap-1 text-[11px] text-action font-bold hover:underline underline-offset-2">
+                            <i class="fa-solid fa-link text-[9px]"></i>
+                            <span class="truncate">${urlLabel}</span>
+                        </div>
+                    `;
+                });
             }
 
             // 4. Barra de Progreso (Solo si hay tareas)

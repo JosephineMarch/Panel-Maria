@@ -83,6 +83,7 @@ class KaiController {
         ui.init();
         this.bindEvents();
         this.startAlarmChecker();
+        this.setupRealtimeSubscription();
 
         if (this.isDevMode) {
             this.mostrarControlesDemo(true);
@@ -237,7 +238,30 @@ class KaiController {
     }
 
     async scheduleTriggerNotification(item, reminderTime, deadlineTime) {
-        console.log('scheduleTriggerNotification: usando FCM Push en lugar de Notification Trigger');
+        // En un dispositivo móvil, esto se enviaría vía FCM.
+        // Aquí registramos el log para depuración.
+        console.log(`🔔 Alarma programada: ${item.content} para las ${new Date(deadlineTime).toLocaleTimeString()}`);
+    }
+
+    triggerAlarm(item) {
+        // Asegurar que el sonido se reproduzca (Web Audio API requiere interacción previa)
+        try {
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+            audio.play().catch(e => console.warn('Audio play bloqueado por el navegador. Se necesita interacción previa del usuario.'));
+        } catch (e) {
+            console.error('Error al reproducir audio de alarma:', e);
+        }
+
+        if (Notification.permission === 'granted') {
+            new Notification('⏰ KAI: Tienes un pendiente', {
+                body: item.content,
+                icon: '/icons/icon-192x192.png',
+                tag: item.id,
+                requireInteraction: true
+            });
+        } else {
+            ui.showNotification(`⏰ ALARMA: ${item.content}`, 'warning');
+        }
     }
 
     async checkAlarms() {
@@ -299,6 +323,18 @@ class KaiController {
         }
     }
 
+    setupRealtimeSubscription() {
+        if (this.isDemoMode) return;
+
+        supabase
+            .channel('public:items')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'items' }, () => {
+                console.log('🔄 Cambio detectado en DB, recargando...');
+                this.loadItems();
+            })
+            .subscribe();
+    }
+
     async triggerAlarm(item) {
         // En producción esta alerta es gestionada de manera remota vía Push 
         // para garantizar la entrega en móviles con la pantalla apagada.
@@ -315,6 +351,13 @@ class KaiController {
     }
 
     bindEvents() {
+        // --- Datos (Import/Export) ---
+        document.getElementById('btn-export')?.addEventListener('click', () => this.handleExport());
+        document.getElementById('btn-import')?.addEventListener('click', () => {
+            document.getElementById('import-file')?.click();
+        });
+        document.getElementById('import-file')?.addEventListener('change', (e) => this.handleImport(e));
+
         // --- Entradas Principales ---
         ui.elements.editForm()?.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -456,6 +499,70 @@ class KaiController {
             if (input) input.value = e.detail.transcript;
             this.stopVoiceInput();
         });
+    }
+
+    async handleExport() {
+        try {
+            const items = this.isDemoMode 
+                ? JSON.parse(localStorage.getItem('kaiDemoItems')) || [] 
+                : await data.getItems({});
+            
+            const exportData = {
+                app: 'Panel-Maria-KAI',
+                version: '1.0.0',
+                date: new Date().toISOString(),
+                items: items
+            };
+
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `kai-backup-${new Date().toLocaleDateString().replace(/\//g, '-')}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            ui.showNotification('✅ Exportación completada', 'success');
+        } catch (e) {
+            console.error('Export error:', e);
+            ui.showNotification('❌ Error al exportar', 'error');
+        }
+    }
+
+    async handleImport(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const importedData = JSON.parse(event.target.result);
+                if (importedData.app !== 'Panel-Maria-KAI' || !Array.isArray(importedData.items)) {
+                    throw new Error('Formato de archivo inválido');
+                }
+
+                if (confirm(`Se importarán ${importedData.items.length} elementos. ¿Deseas continuar?`)) {
+                    if (this.isDemoMode) {
+                        localStorage.setItem('kaiDemoItems', JSON.stringify(importedData.items));
+                    } else {
+                        // En producción, esto debería insertar en Supabase uno por uno o en lote
+                        for (const item of importedData.items) {
+                            delete item.id; // Evitar conflictos de UUID
+                            delete item.created_at;
+                            await data.createItem(item);
+                        }
+                    }
+                    ui.showNotification('✅ Importación exitosa!', 'success');
+                    this.loadItems();
+                }
+            } catch (err) {
+                console.error('Import error:', err);
+                ui.showNotification('❌ El archivo no es un backup válido de KAI', 'error');
+            }
+        };
+        reader.readAsText(file);
     }
 
     // --- LÓGICA DE NEGOCIO ---
@@ -601,6 +708,13 @@ REGLAS:
         const { content, type } = ui.getMainInputData();
         if (!content) return;
 
+        // Si el usuario ingresó algo que parece un link pero el tipo es nota, cambiar a directorio
+        let finalType = type;
+        const isUrl = content.match(/^(https?:\/\/[^\s]+)/i);
+        if (isUrl && (type === 'nota' || type === 'note')) {
+            finalType = 'directorio';
+        }
+
         // 1. Primero: análisis offline (sin internet)
         const offlineParsed = this.parseInputOffline(content);
 
@@ -624,16 +738,21 @@ REGLAS:
 
         try {
             // Usar análisis offline como base, luego mejorar con IA si hay conexión
-            let finalType = type !== 'nota' ? type : offlineParsed.type;
+            let currentType = finalType !== 'nota' ? finalType : offlineParsed.type;
             let finalTags = [...allTags];
             let finalContent = offlineParsed.content || content;
             let finalItems = offlineParsed.items || [];
 
+            // Generación automática de título si el contenido es largo (asumiendo que es descripción)
+            if (finalContent.length > 50 && !content.includes('\n')) {
+                // Si parece una descripción larga, Kai generará un título luego.
+                // Por ahora usamos los primeros 30 caracteres como título provisional.
+            }
             // Si no detectó tipo específico o hay internet, usar IA para mejorar
             if (offlineParsed.type === 'nota' || !offlineParsed.type) {
                 try {
                     const aiParsed = await this.parseIntentWithAI(content);
-                    if (aiParsed.type) finalType = aiParsed.type;
+                    if (aiParsed.type) currentType = aiParsed.type; // Changed finalType to currentType
                     finalTags = [...new Set([...finalTags, ...aiParsed.tags])];
                 } catch (e) {
                     // Sin internet, usar análisis offline

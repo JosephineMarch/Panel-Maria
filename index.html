@@ -139,8 +139,23 @@
             <button id="btn-logout"
                 class="hidden w-full text-left px-4 py-3 rounded-xl hover:bg-red-50 text-red-500 flex items-center gap-3 transition focus:outline-none focus:ring-2 focus:ring-red-400 cursor-pointer">
                 <i class="fa-solid fa-sign-out-alt" aria-hidden="true"></i>
-                <span class="font-bold text-sm">Cerrar sesión</span>
+                <span class="font-bold text-base">Cerrar sesión</span>
             </button>
+
+            <div class="pt-4 border-t border-gray-100 space-y-2">
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 mb-2">Datos y Seguridad</p>
+                <button id="btn-export"
+                    class="w-full text-left px-4 py-3 rounded-xl hover:bg-brand/5 text-ink flex items-center gap-3 transition focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer">
+                    <i class="fa-solid fa-file-export text-brand" aria-hidden="true"></i>
+                    <span class="font-bold text-base">Exportar JSON</span>
+                </button>
+                <button id="btn-import"
+                    class="w-full text-left px-4 py-3 rounded-xl hover:bg-brand/5 text-ink flex items-center gap-3 transition focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer">
+                    <i class="fa-solid fa-file-import text-brand" aria-hidden="true"></i>
+                    <span class="font-bold text-base">Importar JSON</span>
+                </button>
+                <input type="file" id="import-file" class="hidden" accept=".json">
+            </div>
 
             <div id="demo-controls" class="hidden pt-4 border-t border-gray-100">
                 <button type="button" id="btn-regenerate-demo"
@@ -230,7 +245,7 @@
         <div
             class="bg-white border-2 border-gray-100 px-3 py-2 rounded-[2rem] shadow-lg flex items-center gap-2 max-w-full mx-auto">
             <input type="text" id="item-input" placeholder="¿Qué tienes en mente?"
-                class="flex-1 bg-gray-50 text-ink py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand rounded-lg placeholder-gray-400 min-w-0"
+                class="flex-1 bg-gray-50 text-base py-2 text-base font-bold focus:outline-none focus:ring-2 focus:ring-brand rounded-lg placeholder-gray-400 min-w-0"
                 aria-label="Escribe tu nota o tarea">
 
             <div class="flex items-center gap-1">
@@ -321,7 +336,7 @@
                 <input type="hidden" id="edit-id">
 
                 <div class="space-y-2">
-                    <label for="edit-type" class="font-bold text-sm ml-2 flex items-center gap-2">
+                    <label for="edit-type" class="font-bold text-base ml-2 flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-brand"></span>
                         Tipo
                     </label>
@@ -336,14 +351,14 @@
                 </div>
 
                 <div class="space-y-2">
-                    <label for="edit-content" class="font-bold text-sm ml-2">Título</label>
+                    <label for="edit-content" class="font-bold text-base ml-2">Título</label>
                     <input type="text" id="edit-content"
                         class="w-full bg-input-bg border-none rounded-blob px-6 py-4 font-bold focus:ring-2 focus:ring-brand"
                         required>
                 </div>
 
                 <div id="alarm-section" class="space-y-2">
-                    <label class="font-bold text-sm ml-2">⏰ Programar Alarma (Fecha y Hora)</label>
+                    <label class="font-bold text-base ml-2">⏰ Programar Alarma (Fecha y Hora)</label>
                     <div class="flex gap-2">
                         <input type="date" id="edit-deadline-date"
                             class="flex-1 bg-input-bg border-none rounded-blob px-4 py-3 font-bold focus:ring-2 focus:ring-brand">
@@ -353,7 +368,7 @@
                 </div>
 
                 <div class="space-y-2">
-                    <label class="font-bold text-sm ml-2">Descripción</label>
+                    <label class="font-bold text-base ml-2">Descripción</label>
                     <textarea id="edit-description"
                         class="w-full bg-input-bg border-none rounded-blob px-6 py-4 min-h-[60px] focus:ring-2 focus:ring-brand resize-none field-sizing-content"
                         placeholder="Añade más detalles aquí..."></textarea>
@@ -369,7 +384,7 @@
                 </div>
 
                 <div class="space-y-2">
-                    <label class="font-bold text-sm ml-2">Enlace Directo</label>
+                    <label class="font-bold text-base ml-2">Enlace Directo</label>
                     <input type="url" id="edit-url"
                         class="w-full bg-input-bg border-none rounded-blob px-6 py-4 text-action font-medium"
                         placeholder="https://...">
