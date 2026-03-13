@@ -65,8 +65,11 @@ const ShareUtils = {
     async handleSharedData(data) {
         this.currentData = data;
         
-        let url = data.url || this.extractUrl(data.text) || '';
         let textOnly = (data.text || '').trim();
+        let titleOnly = (data.title || '').trim();
+
+        // Extraer URL si viene en el texto o en el título
+        let url = data.url || this.extractUrl(textOnly) || this.extractUrl(titleOnly) || '';
         
         // Si el texto es solo una URL, tratarlo como tal
         if (!url && textOnly.match(/^https?:\/\/[^\s]+$/i)) {
@@ -74,15 +77,17 @@ const ShareUtils = {
             textOnly = '';
         }
 
-        if (url && textOnly.includes(url)) {
-            textOnly = textOnly.replace(url, '').trim();
+        // Si la URL está en el texto o título, limpiarlos para que no se repitan
+        if (url) {
+            if (textOnly.includes(url)) textOnly = textOnly.replace(url, '').trim();
+            if (titleOnly.includes(url)) titleOnly = titleOnly.replace(url, '').trim();
         }
         
-        const fullText = `${data.title} ${textOnly}`.trim();
+        const fullText = `${titleOnly} ${textOnly}`.trim();
         const suggested = this.suggestType(fullText, url);
         this.suggestedType = suggested;
         
-        const content = data.title || textOnly || (url ? 'Enlace compartido' : 'Nota compartida');
+        const content = titleOnly || textOnly || (url ? 'Enlace compartido' : 'Nota compartida');
         
         await this.showShareModal(url, content, fullText, suggested);
     },
@@ -138,6 +143,15 @@ const ShareUtils = {
         const colors = this.getTypeColor(suggestedType);
         
         const hasTitle = title && title !== 'Enlace compartido' && title !== 'Nota compartida';
+
+        // Obtener proyectos para el selector
+        let proyectos = [];
+        try {
+            const { data } = await import('./data.js');
+            proyectos = await data.getItems({ type: 'proyecto' });
+        } catch (e) {
+            console.error('Error loading projects for share modal:', e);
+        }
         
         const modal = document.createElement('div');
         modal.id = 'share-modal';
@@ -171,32 +185,43 @@ const ShareUtils = {
                         </a>
                     ` : ''}
 
-                    <div class="space-y-2 pt-2">
-                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">O clasificar como:</p>
-                        
-                        <div class="grid grid-cols-2 gap-2">
-                            <button class="share-option ${colors.bg} hover:brightness-95 ${colors.text} font-bold py-2 px-3 rounded-xl flex items-center gap-2 transition text-sm"
-                                    data-type="${suggestedType}" data-url="${url || ''}">
-                                <i class="fa-solid ${this.getTypeIcon(suggestedType)}"></i>
-                                ${this.getTypeLabel(suggestedType)}
+                    <div class="space-y-4 pt-2">
+                        <!-- Selector de Proyecto -->
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">📍 Guardar en:</label>
+                            <select id="share-parent-id" class="w-full bg-gray-50 border-none rounded-xl px-3 py-2 text-sm font-bold text-ink focus:ring-2 focus:ring-brand outline-none">
+                                <option value="">📥 Bandeja de entrada</option>
+                                ${proyectos.map(p => `<option value="${p.id}">📁 ${p.content}</option>`).join('')}
+                            </select>
+                        </div>
+
+                        <div class="space-y-2">
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">O clasificar como:</p>
+                            
+                            <div class="grid grid-cols-2 gap-2">
+                                <button class="share-option ${colors.bg} hover:brightness-95 ${colors.text} font-bold py-2 px-3 rounded-xl flex items-center gap-2 transition text-sm"
+                                        data-type="${suggestedType}" data-url="${url || ''}">
+                                    <i class="fa-solid ${this.getTypeIcon(suggestedType)}"></i>
+                                    ${this.getTypeLabel(suggestedType)}
+                                </button>
+                                
+                                ${['nota', 'tarea', 'proyecto', 'directorio'].filter(t => t !== suggestedType).map(type => `
+                                    <button class="share-option bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2 px-3 rounded-xl flex items-center gap-2 transition text-sm"
+                                            data-type="${type}" data-url="${url || ''}">
+                                        <i class="fa-solid ${this.getTypeIcon(type)}"></i>
+                                        ${this.getTypeLabel(type)}
+                                    </button>
+                                `).join('')}
+                            </div>
+                            
+                            <button id="kai-classify-btn" class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition hover:brightness-110">
+                                <span class="text-lg">🧠</span> Kai decide por mí
                             </button>
                             
-                            ${['nota', 'tarea', 'proyecto', 'directorio'].filter(t => t !== suggestedType).map(type => `
-                                <button class="share-option bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2 px-3 rounded-xl flex items-center gap-2 transition text-sm"
-                                        data-type="${type}" data-url="${url || ''}">
-                                    <i class="fa-solid ${this.getTypeIcon(type)}"></i>
-                                    ${this.getTypeLabel(type)}
-                                </button>
-                            `).join('')}
+                            <button id="dismiss-share" class="w-full bg-gray-100 text-gray-500 font-bold py-2 px-4 rounded-xl transition text-sm">
+                                Descartar
+                            </button>
                         </div>
-                        
-                        <button id="kai-classify-btn" class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition hover:brightness-110">
-                            <span class="text-lg">🧠</span> Kai decide por mí
-                        </button>
-                        
-                        <button id="dismiss-share" class="w-full bg-gray-100 text-gray-500 font-bold py-2 px-4 rounded-xl transition text-sm">
-                            Descartar
-                        </button>
                     </div>
                 </div>
             </div>
@@ -207,14 +232,18 @@ const ShareUtils = {
         document.getElementById('close-share-modal').onclick = () => this.closeModal();
         document.getElementById('dismiss-share').onclick = () => this.closeModal();
         
-        document.getElementById('kai-classify-btn').onclick = () => this.classifyWithKai(url, document.getElementById('share-title-input').value || fullText);
+        document.getElementById('kai-classify-btn').onclick = () => {
+            const parentId = document.getElementById('share-parent-id').value;
+            this.classifyWithKai(url, document.getElementById('share-title-input').value || fullText, parentId);
+        };
         
         document.querySelectorAll('.share-option').forEach(btn => {
             btn.onclick = () => {
                 const type = btn.dataset.type;
                 const itemUrl = btn.dataset.url;
                 const itemTitle = document.getElementById('share-title-input').value || 'Contenido compartido';
-                this.saveSharedItem(type, itemTitle, itemUrl);
+                const parentId = document.getElementById('share-parent-id').value;
+                this.saveSharedItem(type, itemTitle, itemUrl, parentId);
             };
         });
 
@@ -223,9 +252,8 @@ const ShareUtils = {
         };
     },
 
-    async classifyWithKai(url, text) {
+    async classifyWithKai(url, text, parentId) {
         const btn = document.getElementById('kai-classify-btn');
-        const originalHtml = btn.innerHTML;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Kai está pensando...';
         btn.disabled = true;
 
@@ -246,14 +274,14 @@ Responde SOLO con una palabra de las opciones anteriores.`;
             const matchedType = validTypes.find(t => type.includes(t)) || 'nota';
             
             const title = document.getElementById('share-title-input').value || text;
-            this.saveSharedItem(matchedType, title, url);
+            this.saveSharedItem(matchedType, title, url, parentId);
             
         } catch (error) {
             console.error('Kai classification error:', error);
             btn.innerHTML = '❌ Error, usando sugerencia';
             setTimeout(() => {
                 const title = document.getElementById('share-title-input').value || 'Contenido compartido';
-                this.saveSharedItem(this.suggestedType, title, url);
+                this.saveSharedItem(this.suggestedType, title, url, parentId);
             }, 1000);
         }
     },
@@ -272,12 +300,13 @@ Responde SOLO con una palabra de las opciones anteriores.`;
         }
     },
 
-    saveSharedItem(type, title, url) {
+    saveSharedItem(type, title, url, parentId) {
         window.dispatchEvent(new CustomEvent('kai:add-item', {
             detail: {
                 type: type,
                 content: title,
-                url: url
+                url: url,
+                parent_id: parentId || null
             }
         }));
         

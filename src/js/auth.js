@@ -43,7 +43,9 @@ export const auth = {
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: 'https://josephinemarch.github.io/Panel-Maria/'
+                redirectTo: window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')
+                    ? window.location.origin 
+                    : 'https://josephinemarch.github.io/Panel-Maria/'
             }
         });
         if (error) throw error;

@@ -188,6 +188,11 @@
         <nav class="flex px-3 pb-3 gap-1 md:gap-2" role="navigation" aria-label="Filtrar por tipo">
             <button
                 class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
+                data-category="hoy" aria-label="Tareas de hoy">
+                <i class="fa-solid fa-star" aria-hidden="true"></i>
+            </button>
+            <button
+                class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
                 data-category="all" aria-label="Ver todos">
                 <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
             </button>
@@ -245,7 +250,7 @@
         <div
             class="bg-white border-2 border-gray-100 px-3 py-2 rounded-[2rem] shadow-lg flex items-center gap-2 max-w-full mx-auto">
             <input type="text" id="item-input" placeholder="¿Qué tienes en mente?"
-                class="flex-1 bg-gray-50 text-base py-2 text-base font-bold focus:outline-none focus:ring-2 focus:ring-brand rounded-lg placeholder-gray-400 min-w-0"
+                class="flex-1 bg-gray-50 text-sm py-2 font-bold focus:outline-none focus:ring-2 focus:ring-brand rounded-lg placeholder-gray-400 min-w-0"
                 aria-label="Escribe tu nota o tarea">
 
             <div class="flex items-center gap-1">

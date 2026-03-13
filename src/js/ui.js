@@ -201,19 +201,6 @@ export const ui = {
             this.renderTodayWidget(items);
         }
 
-        if (isDemo) {
-            container.innerHTML += `
-                <div class="bg-lemon border-2 border-warning p-4 rounded-2xl mb-6 text-center flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div>
-                        <p class="font-bold text-ink">📺 Modo Demo</p>
-                        <p class="text-xs text-ink/60">Inicia sesión para ver tu contenido real</p>
-                    </div>
-                    <button id="btn-regenerate-in-timeline" class="bg-white border-2 border-warning text-ink font-bold py-2 px-4 rounded-xl text-sm shadow-sticker hover:brightness-95 transition-all">
-                        🔄 Regenerar Demo
-                    </button>
-                </div>
-            `;
-        }
 
         if (items.length === 0 && !isDemo) {
             container.innerHTML = `
@@ -411,7 +398,7 @@ export const ui = {
                                     <input type="checkbox" class="kawaii-checkbox timeline-task-checkbox" 
                                            ${t.completado ? 'checked' : ''} 
                                            data-id="${item.id}" data-index="${idx}">
-                                    <span class="text-sm text-ink ${t.completado ? 'line-through opacity-50' : 'font-medium'}">${this.escapeHtml(t.titulo)}</span>
+                                    <span class="text-base text-ink ${t.completado ? 'line-through opacity-50' : 'font-medium'}">${this.escapeHtml(t.titulo)}</span>
                                 </div>
                             `).join('')}
                             ${item.tareas.length > 3 ? `<p class="text-[10px] font-bold text-brand ml-7">+ ${item.tareas.length - 3} más...</p>` : ''}
@@ -469,7 +456,7 @@ export const ui = {
                         <input type="checkbox" class="kawaii-checkbox timeline-task-checkbox" 
                                ${t.completado ? 'checked' : ''} 
                                data-id="${item.id}" data-index="${idx}">
-                        <span class="text-sm text-ink ${t.completado ? 'line-through opacity-50' : 'font-medium'}">${this.escapeHtml(t.titulo)}</span>
+                        <span class="text-base text-ink ${t.completado ? 'line-through opacity-50' : 'font-medium'}">${this.escapeHtml(t.titulo)}</span>
                     </div>
                 `).join('');
 
@@ -487,7 +474,7 @@ export const ui = {
                 urls.forEach(u => {
                     const urlLabel = u.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
                     previewHtml += `
-                        <div class="mt-2 flex items-center gap-1 text-[11px] text-action font-bold hover:underline underline-offset-2">
+                        <div class="mt-2 flex items-center gap-1 text-base text-action font-normal hover:underline underline-offset-2">
                             <i class="fa-solid fa-link text-[9px]"></i>
                             <span class="truncate">${urlLabel}</span>
                         </div>
@@ -527,7 +514,7 @@ export const ui = {
                             ${deadlineHtml}
                             ${fechaHtml}
                         </div>
-                        <h3 class="text-sm text-ink font-bold leading-snug">${this.escapeHtml(this.truncate(item.content, 80))}</h3>
+                        <h3 class="text-base text-ink font-bold leading-snug">${this.escapeHtml(this.truncate(item.content, 80))}</h3>
                         ${progressHtml}
                         ${previewHtml}
                         ${tagsHtml ? `<div class="flex gap-1.5 flex-wrap mt-2">${tagsHtml}</div>` : ''}
@@ -557,7 +544,7 @@ export const ui = {
             <div class="flex items-start gap-3 p-2 rounded-xl group/task border-b border-gray-100/50">
                 <input type="checkbox" class="kawaii-checkbox mt-1" ${t.completado ? 'checked' : ''} data-index="${idx}">
                 <textarea rows="1" 
-                        class="flex-1 bg-transparent border-none font-bold text-sm text-ink outline-none focus:ring-0 inline-task-input resize-none" 
+                        class="flex-1 bg-transparent border-none font-medium text-base text-ink outline-none focus:ring-0 inline-task-input resize-none" 
                         placeholder="¿Qué sigue?" data-index="${idx}">${this.escapeHtml(t.titulo)}</textarea>
                 <button class="btn-remove-inline text-ink/20 hover:text-ink px-2 transition-colors mt-1" data-index="${idx}"><i class="fa-solid fa-xmark"></i></button>
             </div>
@@ -591,7 +578,7 @@ export const ui = {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-2">
                         <label class="txt-label ml-1">Tipo</label>
-                        <select id="inline-type-${item.id}" class="w-full bg-white/40 border-none rounded-2xl px-4 py-3 txt-small text-ink focus:ring-2 focus:ring-white/50 outline-none">
+                        <select id="inline-type-${item.id}" class="w-full bg-white/40 border-none rounded-2xl px-4 py-3 text-base text-ink focus:ring-2 focus:ring-white/50 outline-none font-bold">
                             <option value="nota" ${item.type === 'nota' || item.type === 'idea' || item.type === 'note' ? 'selected' : ''}>📝 Nota</option>
                             <option value="tarea" ${item.type === 'tarea' || item.type === 'task' ? 'selected' : ''}>✅ Tarea (Checklist)</option>
                             <option value="proyecto" ${item.type === 'proyecto' || item.type === 'project' ? 'selected' : ''}>📁 Proyecto</option>
@@ -625,9 +612,9 @@ export const ui = {
                         <label class="txt-label ml-1">⏰ Alarma</label>
                         <div class="flex gap-2">
                             <input type="date" id="inline-date-${item.id}" value="${dateStr}" 
-                                   class="flex-1 bg-white/40 border-none rounded-2xl px-4 py-3 txt-small focus:ring-2 focus:ring-white/50 outline-none text-ink">
+                                   class="flex-1 bg-white/40 border-none rounded-2xl px-4 py-3 text-base focus:ring-2 focus:ring-white/50 outline-none text-ink font-bold">
                             <input type="time" id="inline-time-${item.id}" value="${timeStr}" 
-                                   class="flex-1 bg-white/40 border-none rounded-2xl px-4 py-3 txt-small focus:ring-2 focus:ring-white/50 outline-none text-ink">
+                                   class="flex-1 bg-white/40 border-none rounded-2xl px-4 py-3 text-base focus:ring-2 focus:ring-white/50 outline-none text-ink font-bold">
                         </div>
                     </div>`;
             })()}
@@ -642,10 +629,15 @@ export const ui = {
                 <div id="section-tasks-${item.id}" class="space-y-3 ${hasTasks ? '' : 'hidden'}">
                     <div class="flex justify-between items-center px-1">
                         <label class="txt-label">Tareas</label>
-                        <button class="btn-add-inline-task txt-button text-ink hover:opacity-70 border-b border-current">+ Añadir tarea</button>
                     </div>
                     <div id="inline-tasks-list-${item.id}" class="space-y-2">
                         ${tareasHtml}
+                    </div>
+                    <div class="flex justify-center pt-2">
+                        <button class="btn-add-inline-task group flex items-center gap-2 px-6 py-3 bg-gray-50 hover:bg-gray-100 rounded-2xl text-base font-bold text-gray-400 hover:text-brand transition-all border-2 border-dashed border-gray-200 hover:border-brand/30">
+                            <i class="fa-solid fa-plus-circle text-lg"></i>
+                            Añadir tarea
+                        </button>
                     </div>
                 </div>
 
@@ -654,7 +646,7 @@ export const ui = {
                     <div class="relative">
                         <i class="fa-solid fa-link absolute left-4 top-1/2 -translate-y-1/2 text-ink/30"></i>
                         <input type="url" id="inline-url-${item.id}" value="${item.url || ''}" 
-                               class="w-full bg-white/40 border-none rounded-2xl pl-10 pr-5 py-4 txt-small text-ink placeholder-ink/30 focus:ring-2 focus:ring-white/50 outline-none" 
+                               class="w-full bg-white/40 border-none rounded-2xl pl-10 pr-5 py-4 text-base text-ink placeholder-ink/30 focus:ring-2 focus:ring-white/50 outline-none font-medium" 
                                placeholder="https://google.com/ejemplo">
                     </div>
                 </div>
@@ -775,7 +767,7 @@ export const ui = {
         div.className = 'flex items-start gap-3 p-2 rounded-xl group/task animate-fadeIn border-b border-gray-100/50';
         div.innerHTML = `
             <input type="checkbox" class="kawaii-checkbox mt-1">
-            <textarea rows="1" class="flex-1 bg-transparent border-none font-bold text-sm text-ink outline-none focus:ring-0 inline-task-input resize-none" placeholder="¿Qué sigue?"></textarea>
+            <textarea rows="1" class="flex-1 bg-transparent border-none font-medium text-base text-ink outline-none focus:ring-0 inline-task-input resize-none" placeholder="¿Qué sigue?"></textarea>
             <button class="btn-remove-inline text-ink/20 hover:text-ink px-2 transition-colors mt-1"><i class="fa-solid fa-xmark"></i></button>
         `;
         div.querySelector('.btn-remove-inline').addEventListener('click', () => div.remove());
@@ -961,7 +953,7 @@ export const ui = {
         div.className = 'flex items-start gap-3 bg-gray-50 p-3 rounded-xl border-2 border-transparent hover:border-brand/20 transition-all';
         div.innerHTML = `
             <input type="checkbox" class="kawaii-checkbox mt-1" ${task.completado ? 'checked' : ''} onchange="this.parentElement.querySelector('.task-item-input').dataset.completado = this.checked">
-            <textarea rows="1" class="task-item-input flex-1 bg-transparent border-none font-bold text-ink outline-none resize-none" 
+            <textarea rows="1" class="task-item-input flex-1 bg-transparent border-none font-medium text-base text-ink outline-none resize-none" 
                    data-completado="${task.completado}" placeholder="¿Cuál es el siguiente paso?">${this.escapeHtml(task.titulo)}</textarea>
             <button type="button" class="btn-remove-task text-ink/30 hover:text-urgent transition-colors mt-1"><i class="fa-solid fa-xmark"></i></button>
         `;

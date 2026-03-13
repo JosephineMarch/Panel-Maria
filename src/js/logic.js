@@ -10,9 +10,7 @@
  *   - formatDeadlineForDisplay()
  * 
  * SECCIÓN 2: KaiController - Inicialización (lines 31-120)
- *   - constructor(), init(), esDesarrollo()
- *   - mostrarControlesDemo(), loadDemoItems()
- *   - demoUpdateItem(), demoDeleteItem()
+ *   - constructor(), init()
  * 
  * SECCIÓN 3: Alarmas (lines 151-380)
  *   - startAlarmChecker(), scheduleAllAlarms()
@@ -42,7 +40,6 @@ import { ui } from './ui.js';
 import { auth } from './auth.js';
 import { ai } from './ai.js';
 import { cerebras } from './cerebras.js';
-import { generarDemoData, regenerarDemoItems } from './demo-data.js';
 import { requestFCMToken } from './firebase.js';
 
 function formatDeadlineForDB(deadline) {
@@ -78,18 +75,10 @@ class KaiController {
     }
 
     async init() {
-        this.isDevMode = this.esDesarrollo();
-
         ui.init();
         this.bindEvents();
         this.startAlarmChecker();
         this.setupRealtimeSubscription();
-
-        if (this.isDevMode) {
-            this.mostrarControlesDemo(true);
-        } else {
-            this.mostrarControlesDemo(false);
-        }
 
         try {
             this.currentUser = await auth.init();
@@ -110,7 +99,7 @@ class KaiController {
     }
 
     loadEmptyState() {
-        // Mostrar estado vacío con opción de generar demo
+        // Mostrar estado vacío
         ui.render([], false);
         const container = ui.elements.container();
         if (container) {
@@ -118,68 +107,10 @@ class KaiController {
                 <div class="text-center py-12">
                     <div class="text-6xl mb-4">🧠</div>
                     <h2 class="text-2xl font-bold text-ink mb-2">Bienvenido a KAI</h2>
-                    <p class="text-ink/60 mb-6">Tu segundo cerebro está listo para usar</p>
-                    <button id="btn-generate-demo" class="bg-brand text-white font-bold py-3 px-8 rounded-blob shadow-sticker hover:bg-brand-dark transition-all">
-                        ✨ Probar con datos de ejemplo
-                    </button>
+                    <p class="text-ink/60 mb-6">Tu segundo cerebro está listo para usar. Inicia sesión para guardar tus pensamientos.</p>
                 </div>
             `;
-            document.getElementById('btn-generate-demo')?.addEventListener('click', () => {
-                regenerarDemoItems();
-                this.isDemoMode = true;
-                this.loadItems();
-            });
         }
-    }
-
-    esDesarrollo() {
-        const hostname = window.location.hostname;
-        return hostname === 'localhost' ||
-            hostname === '127.0.0.1' ||
-            hostname === '0.0.0.0' ||
-            hostname.includes('localhost') ||
-            window.location.href.includes('localhost') ||
-            window.location.href.includes('127.0.0.1');
-    }
-
-    mostrarControlesDemo(mostrar) {
-        const controls = document.getElementById('demo-controls');
-        if (controls) {
-            controls.style.display = mostrar ? 'block' : 'none';
-        }
-    }
-
-    loadDemoItems() {
-        // console.log('loadDemoItems llamado');
-
-        let demoItems = JSON.parse(localStorage.getItem('kaiDemoItems'));
-
-        if (!demoItems) {
-            // Usar generador automático de demo data
-            demoItems = generarDemoData();
-            localStorage.setItem('kaiDemoItems', JSON.stringify(demoItems));
-        }
-
-        this.isDemoMode = true;
-
-        ui.render(demoItems, true);
-    }
-
-    isDemoMode = false;
-
-    async demoUpdateItem(id, updates) {
-        let items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
-        const index = items.findIndex(i => i.id === id);
-        if (index !== -1) {
-            items[index] = { ...items[index], ...updates };
-            localStorage.setItem('kaiDemoItems', JSON.stringify(items));
-        }
-    }
-
-    async demoDeleteItem(id) {
-        let items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
-        items = items.filter(i => i.id !== id);
-        localStorage.setItem('kaiDemoItems', JSON.stringify(items));
     }
 
     startAlarmChecker() {
@@ -243,26 +174,6 @@ class KaiController {
         console.log(`🔔 Alarma programada: ${item.content} para las ${new Date(deadlineTime).toLocaleTimeString()}`);
     }
 
-    triggerAlarm(item) {
-        // Asegurar que el sonido se reproduzca (Web Audio API requiere interacción previa)
-        try {
-            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-            audio.play().catch(e => console.warn('Audio play bloqueado por el navegador. Se necesita interacción previa del usuario.'));
-        } catch (e) {
-            console.error('Error al reproducir audio de alarma:', e);
-        }
-
-        if (Notification.permission === 'granted') {
-            new Notification('⏰ KAI: Tienes un pendiente', {
-                body: item.content,
-                icon: '/icons/icon-192x192.png',
-                tag: item.id,
-                requireInteraction: true
-            });
-        } else {
-            ui.showNotification(`⏰ ALARMA: ${item.content}`, 'warning');
-        }
-    }
 
     async checkAlarms() {
         try {
@@ -326,27 +237,41 @@ class KaiController {
     setupRealtimeSubscription() {
         if (this.isDemoMode) return;
 
+        let refreshTimeout;
         supabase
             .channel('public:items')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'items' }, () => {
-                console.log('🔄 Cambio detectado en DB, recargando...');
-                this.loadItems();
+                console.log('🔄 Cambio detectado en DB, programando recarga silenciosa...');
+                clearTimeout(refreshTimeout);
+                refreshTimeout = setTimeout(() => this.loadItems(true), 1000); // Recarga silenciosa con debounce
             })
             .subscribe();
     }
 
-    async triggerAlarm(item) {
-        // En producción esta alerta es gestionada de manera remota vía Push 
-        // para garantizar la entrega en móviles con la pantalla apagada.
-        // Solo mostraremos la alerta visual si el usuario tiene la app abierta:
+    triggerAlarm(item) {
+        console.log(`⏰ Ejecutando alarma para: ${item.content}`);
         ui.showNotification(`⏰ ¡Hora de: ${item.content}!`, 'warning');
 
         try {
-            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleR4GOKjm');
-            audio.volume = 0.5;
-            await audio.play();
+            // Sonido de campana suave
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+            audio.volume = 0.7;
+            audio.play().catch(e => {
+                console.warn('Audio play bloqueado. Se requiere interacción previa.', e);
+                // Fallback: vibración si está disponible
+                if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
+            });
         } catch (err) {
-            // Silenciamos el log del Catch porque el Autoplay Policy bloqueado es un warning conocido y molesto.
+            console.error('Error al reproducir audio:', err);
+        }
+
+        if (Notification.permission === 'granted') {
+            new Notification('⏰ KAI: Tienes un pendiente', {
+                body: item.content,
+                icon: './src/assets/icon-192.png',
+                tag: item.id,
+                requireInteraction: true
+            });
         }
     }
 
@@ -378,14 +303,15 @@ class KaiController {
 
         // --- Share Target Event ---
         window.addEventListener('kai:add-item', async (e) => {
-            const { type, content, url } = e.detail;
+            const { type, content, url, parent_id } = e.detail;
             try {
                 await data.createItem({
                     type: type,
                     content: content,
-                    url: url || ''
+                    url: url || '',
+                    parent_id: parent_id || null
                 });
-                ui.showNotification(`¡Guardado como ${type}! ✨`, 'success');
+                ui.showNotification(`¡Guardado en ${parent_id ? 'el proyecto' : type}! ✨`, 'success');
                 await this.loadItems();
             } catch (error) {
                 console.error('Error adding shared item:', error);
@@ -416,10 +342,6 @@ class KaiController {
         document.getElementById('btn-google')?.addEventListener('click', () => this.handleGoogleLogin());
         document.getElementById('btn-logout')?.addEventListener('click', () => this.handleLogout());
         document.getElementById('btn-add-task')?.addEventListener('click', () => ui.addTaskToModal());
-        document.getElementById('btn-regenerate-demo')?.addEventListener('click', () => {
-            regenerarDemoItems();
-            location.reload();
-        });
 
         // Tag suggestions
         document.querySelectorAll('.tag-suggestion').forEach(tag => {
@@ -503,9 +425,7 @@ class KaiController {
 
     async handleExport() {
         try {
-            const items = this.isDemoMode 
-                ? JSON.parse(localStorage.getItem('kaiDemoItems')) || [] 
-                : await data.getItems({});
+            const items = await data.getItems({});
             
             const exportData = {
                 app: 'Panel-Maria-KAI',
@@ -544,15 +464,11 @@ class KaiController {
                 }
 
                 if (confirm(`Se importarán ${importedData.items.length} elementos. ¿Deseas continuar?`)) {
-                    if (this.isDemoMode) {
-                        localStorage.setItem('kaiDemoItems', JSON.stringify(importedData.items));
-                    } else {
-                        // En producción, esto debería insertar en Supabase uno por uno o en lote
-                        for (const item of importedData.items) {
-                            delete item.id; // Evitar conflictos de UUID
-                            delete item.created_at;
-                            await data.createItem(item);
-                        }
+                    // En producción, esto debería insertar en Supabase uno por uno o en lote
+                    for (const item of importedData.items) {
+                        delete item.id; // Evitar conflictos de UUID
+                        delete item.created_at;
+                        await data.createItem(item);
                     }
                     ui.showNotification('✅ Importación exitosa!', 'success');
                     this.loadItems();
@@ -730,7 +646,7 @@ REGLAS:
         const detectedTags = ai.detectarTags(content);
         const allTags = [...new Set([...offlineParsed.tags, ...detectedTags])];
 
-        if (!this.currentUser && !this.isDemoMode) {
+        if (!this.currentUser) {
             ui.showNotification('¡Ups! Necesitas entrar para que Kai recuerde esto.', 'warning');
             ui.toggleSidebar();
             return;
@@ -759,34 +675,15 @@ REGLAS:
                 }
             }
 
-            if (this.isDemoMode) {
-                const newItem = {
-                    id: 'demo-' + Date.now(),
-                    content: finalContent,
-                    type: currentType,
-                    parent_id: this.currentParentId,
-                    tags: finalTags,
-                    descripcion: '',
-                    url: currentType === 'directorio' ? this.extractUrl(content) : '',
-                    tareas: finalItems,
-                    deadline: null,
-                    anclado: false,
-                    created_at: new Date().toISOString()
-                };
-                let items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
-                items.unshift(newItem);
-                localStorage.setItem('kaiDemoItems', JSON.stringify(items));
-            } else {
-                await data.createItem({
-                    content: finalContent,
-                    type: currentType,
-                    parent_id: this.currentParentId,
-                    tags: finalTags,
-                    url: currentType === 'directorio' ? this.extractUrl(content) : '',
-                    tareas: finalItems,
-                    deadline: null
-                });
-            }
+            await data.createItem({
+                content: finalContent,
+                type: currentType,
+                parent_id: this.currentParentId,
+                tags: finalTags,
+                url: currentType === 'directorio' ? this.extractUrl(content) : '',
+                tareas: finalItems,
+                deadline: null
+            });
 
             const itemCount = finalItems.length;
             let message = '¡Anotado con éxito!';
@@ -837,25 +734,7 @@ REGLAS:
             const deadline = alarmaData.deadline;
 
             let newItemId = null;
-            if (this.isDemoMode) {
-                const newItem = {
-                    id: 'demo-' + Date.now(),
-                    content: contenidoAlarma,
-                    type: 'nota', // Mantener como nota, deadline hace la magia
-                    parent_id: this.currentParentId,
-                    tags: ['alarma'],
-                    descripcion: '',
-                    url: '',
-                    tareas: [],
-                    deadline: deadline,
-                    anclado: false,
-                    created_at: new Date().toISOString()
-                };
-                let items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
-                items.unshift(newItem);
-                localStorage.setItem('kaiDemoItems', JSON.stringify(items));
-                newItemId = newItem.id;
-            } else if (this.currentUser) {
+            if (this.currentUser) {
                 const deadlineForDB = formatDeadlineForDB(deadline);
                 const result = await data.createItem({
                     content: contenidoAlarma,
@@ -887,17 +766,7 @@ REGLAS:
 
             // --- CORRECCIÓN PWA MÓVIL (iOS/Android): Solicitar token on-click ---
             let fcmToken = localStorage.getItem('fcmToken');
-            if (!fcmToken && !this.isDemoMode) {
-                console.log('🔔 Solicitando permiso FCM interactivo al usuario...');
-                fcmToken = await requestFCMToken();
-                if (!fcmToken) {
-                    alert('⚠️ Permiso denegado o fallo al obtener token FCM. Las notificaciones Push podrían no llegar a tu móvil.');
-                }
-            } else {
-                console.log('🔔 FCM Token local disponible:', !!fcmToken);
-            }
-
-            if (deadline && !this.isDemoMode) {
+            if (deadline) {
                 const deadlineTimestamp = new Date(deadline).getTime();
 
                 const { data: tokens } = await supabase
@@ -937,11 +806,7 @@ REGLAS:
     async handleEdit() {
         const updates = ui.getEditFormData();
         try {
-            if (this.isDemoMode) {
-                await this.demoUpdateItem(updates.id, updates);
-            } else {
-                await data.updateItem(updates.id, updates);
-            }
+            await data.updateItem(updates.id, updates);
             ui.toggleModal(false);
             ui.showNotification('¡Cambios guardados con amor!', 'success');
             await this.loadItems();
@@ -972,15 +837,9 @@ REGLAS:
                 updates.deadline = null;
             }
 
-            if (this.isDemoMode) {
-                await this.demoUpdateItem(id, updates);
-                ui.showNotification('¡Bloque actualizado! ✨', 'success');
-                await this.loadItems();
-            } else {
-                await data.updateItem(id, updates);
-                ui.showNotification('¡Bloque actualizado! ✨', 'success');
-                await this.loadItems();
-            }
+            await data.updateItem(id, updates);
+            ui.showNotification('¡Bloque actualizado! ✨', 'success');
+            await this.loadItems();
         } catch (error) {
             console.error('Error al actualizar inline:', error);
             ui.showNotification('No pude guardar los cambios del bloque.', 'error');
@@ -989,60 +848,48 @@ REGLAS:
 
     async deleteItem(id) {
         try {
-            if (this.isDemoMode) {
-                await this.demoDeleteItem(id);
-                ui.showNotification('Recuerdo borrado con éxito. 🗑️', 'info');
-                await this.loadItems(); // ← corregido: recargar UI en modo demo
-            } else {
-                await data.deleteItem(id);
-                ui.showNotification('Recuerdo borrado con éxito. 🗑️', 'info');
-                await this.loadItems();
-            }
+            await data.deleteItem(id);
+            ui.showNotification('Recuerdo borrado con éxito. 🗑️', 'info');
+            await this.loadItems();
         } catch (error) {
             console.error('Error al borrar:', error);
             ui.showNotification('No pude borrar eso. ¿Reintentamos?', 'error');
         }
     }
 
-    async loadItems() {
-        // Verificar si hay demo items en localStorage
-        const demoItems = JSON.parse(localStorage.getItem('kaiDemoItems') || 'null');
-
-        if (this.isDemoMode || demoItems) {
-            this.isDemoMode = true;
-            let items = demoItems || [];
-
-            // Filtrar por categoría o tag
-            if (this.currentTag) {
-                // Filtrar por tag
-                items = items.filter(item => item.tags && item.tags.includes(this.currentTag));
-            } else if (this.currentCategory && this.currentCategory !== 'all') {
-                // Filtrar por tipo
-                items = items.filter(item => item.type === this.currentCategory);
-            }
-
-            ui.render(items, true);
-            return;
-        }
-
-        ui.renderLoading();
+    async loadItems(silent = false) {
+        if (!silent) ui.renderLoading();
         try {
             const filters = { parent_id: this.currentParentId };
-            if (this.currentCategory !== 'all') filters.type = this.currentCategory;
+            
+            // Si la categoría es 'hoy', ignoramos el filtro de tipo y buscamos todo para filtrar por fecha localmente
+            if (this.currentCategory === 'hoy') {
+                const items = await data.getItems({ parent_id: this.currentParentId });
+                const today = new Date().toISOString().split('T')[0];
+                
+                const filteredItems = items.filter(item => {
+                    const d = item.deadline ? item.deadline.split('T')[0] : item.created_at.split('T')[0];
+                    return d === today && item.status !== 'completed';
+                });
 
-            const items = await data.getItems(filters);
+                ui.render(filteredItems);
+            } else {
+                if (this.currentCategory !== 'all') filters.type = this.currentCategory;
+                const items = await data.getItems(filters);
 
-            // Filtrar por tag si aplica
-            let filteredItems = items;
-            if (this.currentTag) {
-                filteredItems = items.filter(item => item.tags && item.tags.includes(this.currentTag));
+                // Filtrar por tag si aplica
+                let filteredItems = items;
+                if (this.currentTag) {
+                    filteredItems = items.filter(item => item.tags && item.tags.includes(this.currentTag));
+                }
+
+                ui.render(filteredItems);
             }
-
-            ui.render(filteredItems);
+            
             this.updateBreadcrumb();
         } catch (error) {
             console.error('Error al cargar:', error);
-            ui.renderError('No pudimos cargar tus pensamientos. ¿Reintentamos?');
+            if (!silent) ui.renderError('No pudimos cargar tus pensamientos. ¿Reintentamos?');
         }
     }
 
@@ -1082,31 +929,12 @@ REGLAS:
 
             switch (action.type) {
                 case 'CREATE_ITEM':
-                    if (this.isDemoMode) {
-                        const newItem = {
-                            id: 'demo-' + Date.now(),
-                            content: actionData.content || '',
-                            type: actionData.type || 'nota',
-                            parent_id: this.currentParentId,
-                            tags: actionData.tags || [],
-                            descripcion: actionData.descripcion || '',
-                            url: actionData.url || '',
-                            tareas: actionData.tareas || [],
-                            deadline: actionData.deadline || null,
-                            anclado: false,
-                            created_at: new Date().toISOString()
-                        };
-                        let items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
-                        items.unshift(newItem);
-                        localStorage.setItem('kaiDemoItems', JSON.stringify(items));
-                    } else {
-                        if (!this.currentUser) {
-                            ui.showNotification('¡Ups! Necesitas entrar para guardar.', 'warning');
-                            ui.toggleSidebar();
-                            return;
-                        }
-                        await data.createItem(actionData);
+                    if (!this.currentUser) {
+                        ui.showNotification('¡Ups! Necesitas entrar para guardar.', 'warning');
+                        ui.toggleSidebar();
+                        return;
                     }
+                    await data.createItem(actionData);
                     await this.loadItems();
                     ui.showNotification('¡Creado con éxito! ✨', 'success');
                     break;
@@ -1191,23 +1019,12 @@ REGLAS:
 
     async togglePin(id) {
         try {
-            if (this.isDemoMode) {
-                let items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
-                const item = items.find(i => i.id === id);
-                if (item) {
-                    item.anclado = !item.anclado;
-                    localStorage.setItem('kaiDemoItems', JSON.stringify(items));
-                    ui.showNotification(item.anclado ? '📌 Anclado al panel' : '📍 Desanclado', 'success');
-                    await this.loadItems();
-                }
-            } else {
-                const items = await data.getItems({ id });
-                const item = Array.isArray(items) ? items[0] : items;
-                const newPinned = !item.anclado;
-                await data.updateItem(id, { anclado: newPinned });
-                ui.showNotification(newPinned ? '📌 Anclado al panel' : '📍 Desanclado', 'success');
-                await this.loadItems();
-            }
+            const items = await data.getItems({ id });
+            const item = Array.isArray(items) ? items[0] : items;
+            const newPinned = !item.anclado;
+            await data.updateItem(id, { anclado: newPinned });
+            ui.showNotification(newPinned ? '📌 Anclado al panel' : '📍 Desanclado', 'success');
+            await this.loadItems();
         } catch (error) {
             console.error('Error pin:', error);
         }
@@ -1215,22 +1032,12 @@ REGLAS:
 
     async toggleTimelineTask(id, taskIndex, isCompleted) {
         try {
-            if (this.isDemoMode) {
-                let items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
-                const item = items.find(i => i.id === id);
-                if (item && item.tareas && item.tareas[taskIndex]) {
-                    item.tareas[taskIndex].completado = isCompleted;
-                    localStorage.setItem('kaiDemoItems', JSON.stringify(items));
-                    await this.loadItems();
-                }
-            } else {
-                const items = await data.getItems({ id });
-                const item = Array.isArray(items) ? items.find(i => i.id === id) : items;
-                if (item && item.tareas && item.tareas[taskIndex]) {
-                    item.tareas[taskIndex].completado = isCompleted;
-                    await data.updateItem(id, { tareas: item.tareas });
-                    await this.loadItems();
-                }
+            const items = await data.getItems({ id });
+            const item = Array.isArray(items) ? items.find(i => i.id === id) : items;
+            if (item && item.tareas && item.tareas[taskIndex]) {
+                item.tareas[taskIndex].completado = isCompleted;
+                await data.updateItem(id, { tareas: item.tareas });
+                await this.loadItems();
             }
         } catch (error) {
             console.error('Error toggle timeline task:', error);
@@ -1239,26 +1046,13 @@ REGLAS:
 
     async finishItem(id) {
         try {
-            if (this.isDemoMode) {
-                let items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
-                const item = items.find(i => i.id === id);
-                if (item) {
-                    item.tags = item.tags || [];
-                    if (!item.tags.includes('logro')) item.tags.push('logro');
-                    item.status = 'completed';
-                    localStorage.setItem('kaiDemoItems', JSON.stringify(items));
-                    ui.showNotification('¡Felicidades por tu logro! 🏆', 'success');
-                    await this.loadItems();
-                }
-            } else {
-                const items = await data.getItems({ id });
-                const item = Array.isArray(items) ? items.find(i => i.id === id) : items;
-                const currentTags = item.tags || [];
-                const newTags = currentTags.includes('logro') ? currentTags : [...currentTags, 'logro'];
-                await data.updateItem(id, { tags: newTags, status: 'completed' });
-                ui.showNotification('¡Felicidades por tu logro! 🏆', 'success');
-                await this.loadItems();
-            }
+            const items = await data.getItems({ id });
+            const item = Array.isArray(items) ? items.find(i => i.id === id) : items;
+            const currentTags = item.tags || [];
+            const newTags = currentTags.includes('logro') ? currentTags : [...currentTags, 'logro'];
+            await data.updateItem(id, { tags: newTags, status: 'completed' });
+            ui.showNotification('¡Felicidades por tu logro! 🏆', 'success');
+            await this.loadItems();
         } catch (error) {
             console.error('Error finish:', error);
         }
@@ -1268,14 +1062,8 @@ REGLAS:
 
     async openProject(id) {
         try {
-            let project;
-            if (this.isDemoMode) {
-                const items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
-                project = items.find(i => i.id === id);
-            } else {
-                const items = await data.getItems({ id });
-                project = Array.isArray(items) ? items.find(i => i.id === id) : items;
-            }
+            const items = await data.getItems({ id });
+            const project = Array.isArray(items) ? items.find(i => i.id === id) : items;
 
             if (project) {
                 this.breadcrumbPath.push({ id, content: project.content });
@@ -1322,14 +1110,8 @@ REGLAS:
 
     async openEditModal(id, focus = null) {
         try {
-            let item;
-            if (this.isDemoMode) {
-                const items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
-                item = items.find(i => i.id === id);
-            } else {
-                const items = await data.getItems({ id });
-                item = Array.isArray(items) ? items.find(i => i.id === id) : items;
-            }
+            const items = await data.getItems({ id });
+            const item = Array.isArray(items) ? items.find(i => i.id === id) : items;
             if (item) {
                 ui.fillEditModal(item, focus);
                 ui.toggleModal(true);
