@@ -859,7 +859,7 @@ export const ui = {
         const type = this.elements.typeSelect();
         return {
             content: input ? input.value.trim() : '',
-            type: type ? type.value : 'note'
+            type: type ? type.value : 'nota'
         };
     },
 

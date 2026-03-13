@@ -763,11 +763,11 @@ REGLAS:
                 const newItem = {
                     id: 'demo-' + Date.now(),
                     content: finalContent,
-                    type: finalType,
+                    type: currentType,
                     parent_id: this.currentParentId,
                     tags: finalTags,
                     descripcion: '',
-                    url: finalType === 'directorio' ? this.extractUrl(content) : '',
+                    url: currentType === 'directorio' ? this.extractUrl(content) : '',
                     tareas: finalItems,
                     deadline: null,
                     anclado: false,
@@ -779,10 +779,10 @@ REGLAS:
             } else {
                 await data.createItem({
                     content: finalContent,
-                    type: finalType,
+                    type: currentType,
                     parent_id: this.currentParentId,
                     tags: finalTags,
-                    url: finalType === 'directorio' ? this.extractUrl(content) : '',
+                    url: currentType === 'directorio' ? this.extractUrl(content) : '',
                     tareas: finalItems,
                     deadline: null
                 });
