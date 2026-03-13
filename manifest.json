@@ -61,28 +61,15 @@
       "icons": [{ "src": "src/assets/icon-192.png", "sizes": "192x192" }]
     }
   ],
-  "share_target": [
-    {
-      "action": "./index.html",
-      "method": "GET",
-      "params": {
-        "title": "title",
-        "text": "text",
-        "url": "url"
-      }
-    },
-    {
-      "action": "./index.html",
-      "method": "POST",
-      "enctype": "multipart/form-data",
-      "params": {
-        "title": "title",
-        "text": "text",
-        "url": "url",
-        "files": "files"
-      }
+  "share_target": {
+    "action": "./index.html",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
     }
-  ],
+  },
   "related_applications": [],
   "prefer_related_applications": false
 }
