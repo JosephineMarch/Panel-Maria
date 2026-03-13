@@ -1413,6 +1413,10 @@ export const ui = {
     },
 
     showCheckinModal(data) {
+        const esManana = data.momento.id === 'mañana';
+        const esNoche = data.momento.id === 'noche';
+        const horaActual = new Date().toTimeString().slice(0, 5);
+        
         const overlay = document.createElement('div');
         overlay.id = 'checkin-modal-overlay';
         overlay.className = 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4';
@@ -1424,6 +1428,17 @@ export const ui = {
                     <h2 class="text-xl font-bold text-ink mt-2">${data.momento.pregunta}</h2>
                     <p class="text-sm text-ink/50">${new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
                 </div>
+                
+                ${esManana || esNoche ? `
+                <div class="mb-6 p-4 bg-purple-50 rounded-2xl">
+                    <label class="block text-sm font-bold text-purple-700 mb-3">
+                        ${esManana ? '⏰ ¿A qué hora despertaste?' : '🌙 ¿A qué hora te dormiste?'}
+                    </label>
+                    <input type="time" id="checkin-hora-sueno" 
+                        class="w-full p-3 rounded-xl border-2 border-purple-200 focus:border-purple-500 focus:outline-none text-lg"
+                        value="${horaActual}">
+                </div>
+                ` : ''}
                 
                 <div class="mb-6">
                     <label class="block text-sm font-bold text-ink/70 mb-3">ENERGÍA</label>
@@ -1502,7 +1517,8 @@ export const ui = {
         
         document.getElementById('checkin-save-btn').onclick = async () => {
             const momento = data.momento.id;
-            const success = await kai?.saveCheckin(momento, energiaSeleccionada, emocionSeleccionada, data.timestamp);
+            const horaSueno = document.getElementById('checkin-hora-sueno')?.value || null;
+            const success = await kai?.saveCheckin(momento, energiaSeleccionada, emocionSeleccionada, horaSueno);
             if (success) {
                 overlay.remove();
             }
