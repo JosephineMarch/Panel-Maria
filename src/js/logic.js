@@ -32,6 +32,12 @@
  * 
  * SECCIÓN 7: Utilidades de Vista (lines 1101-1123)
  *   - getItemActions(), renderQuickActions()
+ * 
+ * SECCIÓN 8: Check-ins de Bienestar (lines >1411)
+ *   - initCheckinSystem(), checkPendingCheckin()
+ *   - renderCheckinButton(), showCheckinModal()
+ *   - saveCheckin(), getCheckinHistory()
+ *   - calculateCheckinTrend(), requestNotificationPermission()
  */
 
 import { supabase } from './supabase.js';
@@ -342,6 +348,10 @@ class KaiController {
         document.getElementById('btn-google')?.addEventListener('click', () => this.handleGoogleLogin());
         document.getElementById('btn-logout')?.addEventListener('click', () => this.handleLogout());
         document.getElementById('btn-add-task')?.addEventListener('click', () => ui.addTaskToModal());
+        document.getElementById('btn-dashboard')?.addEventListener('click', () => {
+            ui.closeSidebar();
+            this.showDashboard();
+        });
 
         // Tag suggestions
         document.querySelectorAll('.tag-suggestion').forEach(tag => {
@@ -407,12 +417,14 @@ class KaiController {
             if (this.currentUser) {
                 ui.updateUserInfo(this.currentUser);
                 await this.loadItems();
+                await this.initCheckinSystem();
             }
         });
 
         window.addEventListener('auth-SIGNED_OUT', () => {
             this.currentUser = null;
             ui.updateUserInfo(null);
+            ui.toggleCheckinButton(false);
             this.goHome();
         });
 
@@ -535,85 +547,67 @@ REGLAS:
     // --- ANÁLISIS OFFLINE (sin IA) ---
     parseInputOffline(content) {
         const text = content.toLowerCase().trim();
-
-        // Detectar tipo por palabra clave
         let type = 'nota';
         let tareas = [];
+        let tags = [];
 
-        // Detectar formato "tarea título, item a, b, c" o "tarea título item a, b, c"
-        // Ejemplo: "tarea que hare hoy, item 1, 2, 3" o "tarea lavar platos item comprar leche, pagar luz"
-        const itemMatchWithTitle = content.match(/^tarea\s+(.+?)(?:,\s*|\s+)item\s+(.+)$/i);
-
-        if (itemMatchWithTitle) {
-            const titulo = itemMatchWithTitle[1].trim();
-            const itemsText = itemMatchWithTitle[2];
-            tareas = itemsText.split(',').map(s => s.trim()).filter(s => s.length > 0);
-            tareas = tareas.map(titulo => ({ titulo, completado: false }));
+        // 1. Detección de URLs (prioridad alta)
+        const isUrl = content.match(/^(https?:\/\/[^\s]+)/i);
+        if (isUrl) {
             return {
-                type: 'tarea',
-                content: titulo,
+                type: 'directorio',
+                content: '', // El título lo pondrá Kai o quedará vacío
+                descripcion: content,
+                url: isUrl[1],
                 tags: [],
-                items: tareas,
+                items: [],
                 hasDeadline: false
             };
         }
 
-        // Detectar solo "item a, b, c" (sin título antes)
-        const onlyItemsMatch = content.match(/^item\s+(.+)$/i);
-        if (onlyItemsMatch) {
-            const itemsText = onlyItemsMatch[1];
-            tareas = itemsText.split(',').map(s => s.trim()).filter(s => s.length > 0);
-            tareas = tareas.map(titulo => ({ titulo, completado: false }));
-            return {
-                type: 'tarea',
-                content: '',
-                tags: [],
-                items: tareas,
-                hasDeadline: false
-            };
+        // 2. Detección de Checklist (formato item1, item2, item3)
+        // Si contiene al menos dos comas y no parece una frase larga, o si empieza por "tarea"
+        const commaCount = (content.match(/,/g) || []).length;
+        const isList = commaCount >= 2 && content.length < 150;
+        
+        if (text.startsWith('tarea') || isList) {
+            let taskText = content.replace(/^tarea\s*/i, '').trim();
+            let titulo = '';
+            let itemsPart = taskText;
+
+            // Formato: "Título: item1, item2" o "Título item1, item2"
+            const splitMatch = taskText.match(/^(.+?)(?::|,|\s+item\s+)(.+)$/i);
+            if (splitMatch) {
+                titulo = splitMatch[1].trim();
+                itemsPart = splitMatch[2];
+            }
+
+            tareas = itemsPart.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            if (tareas.length > 1 || text.startsWith('tarea')) {
+                return {
+                    type: 'tarea',
+                    content: titulo,
+                    descripcion: '',
+                    tags: [],
+                    items: tareas.map(t => ({ titulo: t, completado: false })),
+                    hasDeadline: false
+                };
+            }
         }
 
-        // Orden importa: alarma primero porque puede combinarse con tarea
-        if (text.includes('alarma') || text.includes('recordatorio') || text.includes('avísame') || text.includes('recuérdame')) {
-            type = 'tarea';
-        }
-        if (text.startsWith('tarea') || text.includes('tengo que') || text.includes('necesito') || text.includes('pendiente')) {
-            type = 'tarea';
-        }
-        if (text.startsWith('proyecto') || text.includes('proyecto')) {
-            type = 'proyecto';
-        }
-        if (text.startsWith('enlace') || text.includes('enlace') || text.startsWith('link') || text.includes(' youtube') || text.includes('http')) {
-            type = 'directorio';
-        }
+        // 3. Detección de Proyectos y Enlaces por palabras clave
+        if (text.startsWith('proyecto') || text.includes('proyecto')) type = 'proyecto';
+        if (text.startsWith('enlace') || text.includes('enlace') || text.startsWith('link')) type = 'directorio';
 
-        // Detectar tags por palabra clave
-        const tags = [];
-        if (text.includes('logro') || text.includes('logré') || text.includes('completé') || text.includes('terminé')) {
-            tags.push('logro');
-        }
-        if (text.includes('salud') || text.includes('dolor') || text.includes('enfermo') || text.includes('médico')) {
-            tags.push('salud');
-        }
-        if (text.includes('emocion') || text.includes('emoción') || text.includes('triste') || text.includes('feliz')) {
-            tags.push('emocion');
-        }
-
-        // Limpiar el contenido (quitar las palabras clave del inicio)
-        let mainContent = content;
-        if (type === 'tarea') {
-            mainContent = content.replace(/^tarea\s*/i, '').trim();
-        } else if (type === 'proyecto') {
-            mainContent = content.replace(/^proyecto\s*/i, '').trim();
-        } else if (type === 'directorio') {
-            mainContent = content.replace(/^(enlace|link)\s*/i, '').trim();
-        } else if (type === 'tarea' && text.includes('alarma')) {
-            mainContent = content.replace(/^alarma\s*/i, '').replace(/recordatorio\s*/i, '').trim();
-        }
+        // 4. Tags por palabras clave
+        if (text.includes('logro') || text.includes('logré') || text.includes('terminé')) tags.push('logro');
+        if (text.includes('salud') || text.includes('dolor') || text.includes('médico')) tags.push('salud');
+        if (text.includes('emocion') || text.includes('triste') || text.includes('feliz')) tags.push('emocion');
 
         return {
             type,
-            content: mainContent,
+            content: content,
+            descripcion: content.length > 50 ? content : '',
             tags,
             items: [],
             hasDeadline: text.includes('alarma') || text.includes('recordatorio')
@@ -624,76 +618,86 @@ REGLAS:
         const { content, type } = ui.getMainInputData();
         if (!content) return;
 
-        // Si el usuario ingresó algo que parece un link pero el tipo es nota, cambiar a directorio
-        let finalType = type;
-        const isUrl = content.match(/^(https?:\/\/[^\s]+)/i);
-        if (isUrl && (type === 'nota' || type === 'note')) {
-            finalType = 'directorio';
-        }
-
-        // 1. Primero: análisis offline (sin internet)
-        const offlineParsed = this.parseInputOffline(content);
-
-        // 2. Detectar alarmas (comando en cualquier parte)
-        const alarmaData = ai.detectarAlarmas(content);
-
-        if (alarmaData.esAlarma) {
-            await this.crearAlarma(alarmaData);
-            return;
-        }
-
-        // 3. Detectar tags adicionales (salud, emocion)
-        const detectedTags = ai.detectarTags(content);
-        const allTags = [...new Set([...offlineParsed.tags, ...detectedTags])];
-
         if (!this.currentUser) {
             ui.showNotification('¡Ups! Necesitas entrar para que Kai recuerde esto.', 'warning');
             ui.toggleSidebar();
             return;
         }
 
+        ui.showNotification('Kai está pensando... 🧠', 'info');
+
         try {
-            // Usar análisis offline como base, luego mejorar con IA si hay conexión
-            let currentType = finalType !== 'nota' ? finalType : offlineParsed.type;
-            let finalTags = [...allTags];
-            let finalContent = offlineParsed.content || content;
-            let finalItems = offlineParsed.items || [];
+            // 1. Análisis base (Offline)
+            const offline = this.parseInputOffline(content);
+            let finalType = type !== 'nota' ? type : offline.type;
+            let finalContent = offline.content;
+            let finalDesc = offline.descripcion;
+            let finalUrl = offline.url || (finalType === 'directorio' ? this.extractUrl(content) : '');
+            let finalItems = offline.items || [];
+            let finalTags = offline.tags || [];
 
-            // Generación automática de título si el contenido es largo (asumiendo que es descripción)
-            if (finalContent.length > 50 && !content.includes('\n')) {
-                // Si parece una descripción larga, Kai generará un título luego.
-                // Por ahora usamos los primeros 30 caracteres como título provisional.
-            }
-            // Si no detectó tipo específico o hay internet, usar IA para mejorar
-            if (offlineParsed.type === 'nota' || !offlineParsed.type) {
-                try {
-                    const aiParsed = await this.parseIntentWithAI(content);
-                    if (aiParsed.type) currentType = aiParsed.type; // Changed finalType to currentType
-                    finalTags = [...new Set([...finalTags, ...aiParsed.tags])];
-                } catch (e) {
-                    // Sin internet, usar análisis offline
+            // 2. Mejora con IA
+            try {
+                const prompt = `Analiza esta entrada de Maria y genera los campos adecuados para su panel.
+Maria tiene TDHA, así que a veces escribe rollos largos que son descripciones sin título, o listas de tareas sin decir que son tareas.
+
+Entrada: "${content}"
+Contexto Sugerido: Tipo=${finalType}, Tags=[${finalTags.join(', ')}]
+
+REGLAS:
+1. Si el texto es largo, genera un TÍTULO creativo y corto (máximo 5 palabras) para "titulo" y pon el texto original en "descripcion".
+2. Si es un ENLACE, pon la URL del link en "url", y en "titulo" pon un título descriptivo (puedes dejarlo vacío si no sabes qué es).
+3. Si es una TAREA, extrae los elementos de la lista en "tareas" (array de strings).
+4. El "tipo" debe ser uno de: nota, tarea, proyecto, directorio.
+
+Responde SOLO JSON con esta estructura:
+{
+  "tipo": "...",
+  "titulo": "...",
+  "descripcion": "...",
+  "url": "...",
+  "tareas": ["item1", "item2"],
+  "tags": ["..."]
+}`;
+
+                const response = await cerebras.ask(prompt);
+                // Si la respuesta tiene una acción de IA estructurada o JSON
+                let aiData = null;
+                if (response.response) {
+                    const jsonMatch = response.response.match(/\{[\s\S]*\}/);
+                    if (jsonMatch) aiData = JSON.parse(jsonMatch[0]);
                 }
+
+                if (aiData) {
+                    finalType = aiData.tipo || finalType;
+                    finalContent = aiData.titulo || (content.length > 50 ? 'Nota de Maria' : content);
+                    finalDesc = aiData.descripcion || content;
+                    finalUrl = aiData.url || finalUrl;
+                    if (aiData.tareas && aiData.tareas.length > 0) {
+                        finalItems = aiData.tareas.map(t => ({ titulo: t, completado: false }));
+                    }
+                    finalTags = [...new Set([...finalTags, ...(aiData.tags || [])])];
+                }
+            } catch (aiError) {
+                console.warn('IA falló en handleSubmit, usando offline:', aiError);
             }
 
+            // 3. Guardar en DB
             await data.createItem({
                 content: finalContent,
-                type: currentType,
+                descripcion: finalDesc,
+                type: finalType,
                 parent_id: this.currentParentId,
                 tags: finalTags,
-                url: currentType === 'directorio' ? this.extractUrl(content) : '',
+                url: finalUrl,
                 tareas: finalItems,
-                deadline: null
+                deadline: null // Las alarmas se manejan aparte por ahora
             });
 
-            const itemCount = finalItems.length;
-            let message = '¡Anotado con éxito!';
-            if (itemCount > 0) {
-                message = `¡Tarea con ${itemCount} items creada!`;
-            }
-
             ui.clearMainInput();
-            ui.showNotification(message, 'success');
+            ui.showNotification('¡Anotado con éxito! ✨', 'success');
             await this.loadItems();
+
         } catch (error) {
             console.error('Error al crear:', error);
             ui.showNotification('KAI no pudo guardar eso. ¿Intentamos de nuevo?', 'error');
@@ -858,6 +862,10 @@ REGLAS:
     }
 
     async loadItems(silent = false) {
+        // Si estamos en el dashboard y no es un refresco silencioso, no hacemos nada
+        // o podríamos refrescar el dashboard. Por ahora, permitimos que las categorías/tags rompan el modo dashboard.
+        if (this.currentView === 'dashboard' && !silent) return;
+
         if (!silent) ui.renderLoading();
         try {
             const filters = { parent_id: this.currentParentId };
@@ -1087,6 +1095,7 @@ REGLAS:
     async goHome() {
         this.breadcrumbPath = [];
         this.currentParentId = null;
+        this.currentView = 'feed';
         await this.loadItems();
     }
 
@@ -1104,8 +1113,284 @@ REGLAS:
         // Manejar tanto categorías como tags
         this.currentCategory = button.dataset.category || null;
         this.currentTag = button.dataset.tag || null;
+        this.currentView = 'feed'; // Al hacer clic en un filtro, volvemos al feed normal
 
         await this.loadItems();
+    }
+
+    async showDashboard(periodo = 'total') {
+        try {
+            // Cargar todos los items para procesarlos
+            const allItems = await data.getItems({});
+            
+            // Aplicar filtro de periodo si no es 'total'
+            let filteredItems = allItems;
+            if (periodo !== 'total') {
+                const now = new Date();
+                const limitDate = new Date();
+                if (periodo === 'semana') limitDate.setDate(now.getDate() - 7);
+                if (periodo === 'mes') limitDate.setMonth(now.getMonth() - 1);
+                
+                filteredItems = allItems.filter(i => new Date(i.created_at) >= limitDate);
+            }
+
+            // Agrupamiento inteligente
+            const grouped = {
+                salud: filteredItems.filter(i => i.tags && (i.tags.includes('salud') || i.tags.includes('emocion'))),
+                productividad: filteredItems.filter(i => 
+                    (i.tags && i.tags.includes('logro')) || 
+                    i.type === 'proyecto' || 
+                    (i.type === 'tarea' && i.status !== 'completed')
+                ),
+                hecho: filteredItems.filter(i => i.status === 'completed')
+            };
+
+            // Cálculo de estadísticas
+            const stats = this.calculateStats(filteredItems, allItems);
+
+            // Cambiar vista en UI inicialmente con lo cuantitativo
+            ui.renderDashboard(grouped, stats, periodo);
+            
+            // Tendencia de Energía (Para el gráfico) - ahora incluye check-ins
+            const checkins = await this.getCheckinHistory(periodo === 'mes' ? 30 : 7);
+            const energyTrend = this.calculateEnergyTrend(grouped.salud, periodo, checkins);
+            ui.renderEnergyChart(energyTrend);
+
+            // Manejo de Informes de Bienestar (Auto para semana/mes, manual para diario/total)
+            if (grouped.salud.length > 0 || checkins.length > 0) {
+                this.handleWellbeingReporting(grouped.salud, periodo);
+            }
+
+            // Actualizar estado interno
+            this.currentView = 'dashboard';
+        } catch (error) {
+            console.error('Error al cargar dashboard:', error);
+            ui.showNotification('No pude cargar tu estadísticas. 🧸🔌', 'error');
+        }
+    }
+
+    calculateStats(items, allItems) {
+        // Tareas totales vs completadas en el periodo
+        let totalTareas = 0;
+        let tareasCompletas = 0;
+        
+        items.forEach(item => {
+            if (item.tareas && item.tareas.length > 0) {
+                totalTareas += item.tareas.length;
+                tareasCompletas += item.tareas.filter(t => t.completado).length;
+            }
+        });
+
+        const progresoTareas = totalTareas > 0 ? Math.round((tareasCompletas / totalTareas) * 100) : 0;
+
+        // Logros (items completados)
+        const totalLogros = items.filter(i => i.status === 'completed' || (i.tags && i.tags.includes('logro'))).length;
+
+        // Racha (basada en todos los items para consistencia)
+        const racha = this.calculateStreak(allItems);
+
+        return {
+            progresoTareas,
+            totalLogros,
+            racha,
+            totalItems: items.length
+        };
+    }
+
+    calculateStreak(items) {
+        if (!items || items.length === 0) return 0;
+        
+        const dates = [...new Set(items.map(i => i.created_at.split('T')[0]))].sort().reverse();
+        let streak = 0;
+        let today = new Date().toISOString().split('T')[0];
+        let yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        yesterday = yesterday.toISOString().split('T')[0];
+
+        // Si no hay actividad hoy ni ayer, la racha es 0
+        if (dates[0] !== today && dates[0] !== yesterday) return 0;
+
+        for (let i = 0; i < dates.length; i++) {
+            const current = new Date(dates[i]);
+            const next = dates[i+1] ? new Date(dates[i+1]) : null;
+            
+            streak++;
+            
+            if (next) {
+                const diff = (current - next) / (1000 * 60 * 60 * 24);
+                if (diff > 1) break; // Hueco en la racha
+            }
+        }
+        return streak;
+    }
+
+    calculateEnergyTrend(items, periodo, checkins = []) {
+        const groupedEnergy = {};
+        
+        // Procesar items de salud existentes
+        if (items && items.length > 0) {
+            items.forEach(item => {
+                if (item.meta && item.meta.energia) {
+                    const energia = parseInt(item.meta.energia);
+                    if (!isNaN(energia) && energia >= 0 && energia <= 10) {
+                        const dateKey = new Date(item.created_at).toLocaleDateString();
+                        if (!groupedEnergy[dateKey]) {
+                            groupedEnergy[dateKey] = { sum: 0, count: 0 };
+                        }
+                        groupedEnergy[dateKey].sum += energia;
+                        groupedEnergy[dateKey].count++;
+                    }
+                }
+            });
+        }
+        
+        // Procesar check-ins (tienen prioridad porque son más precisos)
+        if (checkins && checkins.length > 0) {
+            checkins.forEach(checkin => {
+                if (checkin.meta?.energia !== undefined) {
+                    const energia = parseInt(checkin.meta.energia);
+                    if (!isNaN(energia) && energia >= 0 && energia <= 10) {
+                        const dateKey = new Date(checkin.created_at).toLocaleDateString();
+                        const momento = checkin.meta.momento;
+                        
+                        if (!groupedEnergy[dateKey]) {
+                            groupedEnergy[dateKey] = { sum: 0, count: 0, momentos: {} };
+                        }
+                        if (!groupedEnergy[dateKey].momentos) {
+                            groupedEnergy[dateKey].momentos = {};
+                        }
+                        
+                        // Agregar por momento del día
+                        groupedEnergy[dateKey].momentos[momento] = energia;
+                        groupedEnergy[dateKey].sum += energia;
+                        groupedEnergy[dateKey].count++;
+                    }
+                }
+            });
+        }
+
+        if (Object.keys(groupedEnergy).length === 0) return [];
+
+        // Convertir a lista de puntos [ { label, value } ]
+        return Object.entries(groupedEnergy)
+            .map(([date, data]) => ({
+                label: date.split('/')[0] + '/' + date.split('/')[1], // Solo día/mes
+                value: Math.round(data.sum / data.count),
+                momentos: data.momentos || {},
+                timestamp: new Date(date).getTime()
+            }))
+            .sort((a, b) => a.timestamp - b.timestamp)
+            .slice(-7); // Limitar a las últimas 7 entradas para el gráfico
+    }
+
+    async handleWellbeingReporting(items, periodo) {
+        try {
+            const now = new Date();
+            const todayStr = now.toISOString().split('T')[0];
+            
+            // 1. Buscar si ya existe un reporte para este periodo hoy
+            // Buscamos items de tipo 'reporte' creados hoy
+            const recentReports = await data.getItems({ type: 'reporte' });
+            const existingReport = recentReports.find(r => 
+                r.meta?.periodo === periodo && 
+                r.created_at.startsWith(todayStr)
+            );
+
+            if (existingReport) {
+                console.log(`Cargando reporte persistido para ${periodo}`);
+                ui.renderWellbeingReport(existingReport.content);
+                return;
+            }
+
+            // 2. Si no existe, verificar si es "hora de reporte"
+            let shouldGenerate = false;
+            if (periodo === 'total') shouldGenerate = true; // El total siempre genera si no hay
+            if (periodo === 'semana' && now.getDay() === 0 && now.getHours() >= 12) shouldGenerate = true; // Domingo mediodía
+            if (periodo === 'mes') {
+                const isLastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() === now.getDate();
+                if (isLastDay && now.getHours() >= 18) shouldGenerate = true;
+            }
+            
+            // Reporte Total siempre genera si no hay
+            if (periodo === 'total') shouldGenerate = true;
+
+            if (shouldGenerate) {
+                await this.generateAndSaveWellbeingReport(items, periodo);
+            } else {
+                // Si es periodo 'semana' pero no es domingo, permitimos disparo manual ( Diario )
+                if (periodo === 'semana' || periodo === 'total') {
+                    ui.renderWellbeingReportTrigger();
+                } else {
+                    ui.renderWellbeingReport("Kai te tendrá listo tu informe consolidado al final del periodo. ¡Sigue cuidándote! 🌸🏠");
+                }
+            }
+        } catch (error) {
+            console.error('Error en manejo de reportes:', error);
+        }
+    }
+
+    async triggerManualReport() {
+        try {
+            // Obtener items de salud para el reporte
+            const allItems = await data.getItems({});
+            const limitDate = new Date();
+            limitDate.setDate(limitDate.getDate() - 7); // Última semana para el diario
+            
+            const healthItems = allItems.filter(i => 
+                (i.tags && (i.tags.includes('salud') || i.tags.includes('emocion'))) &&
+                new Date(i.created_at) >= limitDate
+            );
+
+            if (healthItems.length > 0) {
+                await this.generateAndSaveWellbeingReport(healthItems, 'diario');
+            } else {
+                ui.showNotification('No hay suficientes registros hoy para un informe. 🧸', 'info');
+            }
+        } catch (error) {
+            console.error('Error en trigger manual:', error);
+        }
+    }
+
+    async generateAndSaveWellbeingReport(items, periodo) {
+        try {
+            ui.renderWellbeingReportLoading();
+
+            const dataForKai = items.map(i => ({
+                fecha: new Date(i.created_at).toLocaleDateString(),
+                contenido: i.content,
+                energia: i.meta?.energia || 'Texto libre (infiere tú)',
+                descripcion: i.descripcion || ''
+            }));
+
+            const prompt = `Actúa como Kai, el asistente empático de Maria. 
+            Analiza estos registros de bienestar y energía (${periodo}):
+            ${JSON.stringify(dataForKai)}
+
+            INSTRUCCIONES CRÍTICAS:
+            1. Si el campo "energia" dice "Texto libre", analiza el texto (ej: "cansada", "sin ganas", "a tope") para inferir su nivel de energía.
+            2. Escribe un informe de 3-4 párrafos que sea muy motivador y use su nombre "Maria".
+            3. Identifica patrones entre lo que come/duerme/hace y cómo se siente.
+            4. Tono amoroso, cercano y sin juicios.
+            
+            Solo devuelve el texto plano del informe. No incluyas JSON ni bloques de acción.`;
+
+            const response = await cerebras.ask(prompt);
+            const reportText = response.response || "Hoy mis pensamientos están en calma. Sigue brillando, Maria. ✨";
+
+            // Guardar en DB para no repetir - CORREGIDO: data.createItem
+            await data.createItem({
+                content: reportText,
+                type: 'reporte',
+                meta: { periodo, energyAverage: 0 },
+                tags: ['kai', 'bienestar'],
+                created_at: new Date().toISOString()
+            });
+
+            ui.renderWellbeingReport(reportText);
+        } catch (error) {
+            console.error('Error generando/guardando reporte:', error);
+            ui.renderWellbeingReport("Kai tuvo un problema guardando tus pensamientos: " + error.message);
+        }
     }
 
     async openEditModal(id, focus = null) {
@@ -1151,6 +1436,279 @@ REGLAS:
     stopVoiceInput() {
         ai.stopVoice();
         ui.toggleVoiceOverlay(false);
+    }
+
+    // =====================================
+    // SECCIÓN 8: CHECK-INS DE BIENESTAR
+    // =====================================
+
+    getCheckinConfig() {
+        return {
+            momentos: [
+                { id: 'mañana', label: 'Mañana', hora: 10, icono: '🌅', pregunta: '¿Cómo amaneciste?' },
+                { id: 'tarde', label: 'Tarde', hora: 15, icono: '🌞', pregunta: '¿Cómo va tu día?' },
+                { id: 'noche', label: 'Noche', hora: 21, icono: '🌙', pregunta: '¿Cómo te sientes?' }
+            ],
+            opcionesEnergia: [
+                { valor: 10, label: 'A tope', icono: '🔥' },
+                { valor: 9, label: 'Explosiva', icono: '⚡' },
+                { valor: 8, label: 'Activa', icono: '💪' },
+                { valor: 7, label: 'Bien', icono: '🙂' },
+                { valor: 6, label: 'Normal', icono: '😐' },
+                { valor: 5, label: 'Regular', icono: '😌' },
+                { valor: 4, label: 'Cansada', icono: '😔' },
+                { valor: 3, label: 'Agotada', icono: '😴' },
+                { valor: 2, label: 'Sin ganas', icono: '😞' },
+                { valor: 1, label: 'Sin energía', icono: '💀' },
+                { valor: 0, label: 'Ausente', icono: '⬛' }
+            ],
+            opcionesEmocion: [
+                { valor: 'feliz', label: 'Feliz', icono: '😊' },
+                { valor: 'contenta', label: 'Contenta', icono: '😄' },
+                { valor: 'bien', label: 'Bien', icono: '🙂' },
+                { valor: 'tranquila', label: 'Tranquila', icono: '😌' },
+                { valor: 'neutral', label: 'Neutral', icono: '😐' },
+                { valor: 'ansiosa', label: 'Ansiosa', icono: '😰' },
+                { valor: 'triste', label: 'Triste', icono: '😢' },
+                { valor: 'molesta', label: 'Molesta', icono: '😠' },
+                { valor: 'frustrada', label: 'Frustrada', icono: '😤' },
+                { valor: 'abrumada', label: 'Abrumada', icono: '😵' }
+            ]
+        };
+    }
+
+    async initCheckinSystem() {
+        try {
+            await this.requestNotificationPermission();
+            this.checkPendingCheckin();
+            this.startCheckinChecker();
+            console.log('✓ Sistema de check-in inicializado');
+        } catch (error) {
+            console.error('Error initCheckinSystem:', error);
+        }
+    }
+
+    async requestNotificationPermission() {
+        if (!('Notification' in window)) return;
+        if (Notification.permission === 'granted') return;
+        if (Notification.permission === 'denied') return;
+        
+        const permission = await Notification.requestPermission();
+        console.log('Permiso de notificaciones:', permission);
+    }
+
+    getCurrentMoment() {
+        const hora = new Date().getHours();
+        if (hora >= 5 && hora < 12) return 'mañana';
+        if (hora >= 12 && hora < 18) return 'tarde';
+        return 'noche';
+    }
+
+    getNextMoment() {
+        const hora = new Date().getHours();
+        if (hora < 10) return 'mañana';
+        if (hora < 15) return 'tarde';
+        return 'noche';
+    }
+
+    getCheckinId(momento, fecha) {
+        const fechaStr = fecha || new Date().toISOString().split('T')[0];
+        return `checkin_${momento}_${fechaStr}`;
+    }
+
+    async checkPendingCheckin() {
+        if (!this.currentUser) return;
+        
+        const momento = this.getCurrentMoment();
+        const checkinId = this.getCheckinId(momento);
+        
+        try {
+            const items = await data.getItems({ type: 'checkin' });
+            const yaRespondio = items.some(item => item.meta?.checkin_id === checkinId);
+            
+            ui.toggleCheckinButton(!yaRespondio, momento);
+            
+            if (!yaRespondio) {
+                this.scheduleCheckinNotification(momento);
+            }
+        } catch (error) {
+            console.error('Error checkPendingCheckin:', error);
+        }
+    }
+
+    renderCheckinButton() {
+        ui.renderCheckinButton(this.getCheckinConfig().momentos);
+    }
+
+    async showCheckinModal(momento = null) {
+        const momentoActual = momento || this.getCurrentMoment();
+        const momentoConfig = this.getCheckinConfig().momentos.find(m => m.id === momentoActual);
+        const ahora = new Date();
+        
+        const checkinData = {
+            momento: momentoConfig,
+            energia: this.getCheckinConfig().opcionesEnergia,
+            emocion: this.getCheckinConfig().opcionesEmocion,
+            timestamp: ahora.toISOString()
+        };
+        
+        ui.showCheckinModal(checkinData);
+    }
+
+    async saveCheckin(momento, energia, emocion, hora = null) {
+        const fecha = new Date().toISOString().split('T')[0];
+        const checkinId = this.getCheckinId(momento, fecha);
+        
+        const momentoConfig = this.getCheckinConfig().momentos.find(m => m.id === momento);
+        const momentoLabel = momentoConfig ? momentoConfig.label : momento;
+        
+        let horaDespertar = null;
+        let horaDormir = null;
+        if (momento === 'mañana' && hora) {
+            horaDespertar = hora;
+        } else if (momento === 'noche' && hora) {
+            horaDormir = hora;
+        }
+
+        const itemData = {
+            content: `Check-in ${momentoLabel} - ${fecha}`,
+            type: 'checkin',
+            tags: ['salud', 'emocion', momento],
+            meta: {
+                energia: parseInt(energia),
+                emocion: emocion,
+                momento: momento,
+                checkin_id: checkinId,
+                horaDespertar: horaDespertar,
+                horaDormir: horaDormir,
+                timestamp: new Date().toISOString()
+            }
+        };
+
+        if (!this.currentUser) {
+            const localCheckins = JSON.parse(localStorage.getItem('checkins_local') || '[]');
+            localCheckins.push(itemData);
+            localStorage.setItem('checkins_local', JSON.stringify(localCheckins));
+            ui.showNotification('Check-in guardado localmente (inicia sesión para sincronizar)', 'success');
+            return true;
+        }
+
+        try {
+            await data.createItem(itemData);
+            ui.showNotification('¡Check-in guardado! 💚', 'success');
+            ui.toggleCheckinButton(false);
+            await this.loadItems();
+            return true;
+        } catch (error) {
+            console.error('Error saveCheckin:', error);
+            ui.showNotification('Error al guardar check-in.', 'error');
+            return false;
+        }
+    }
+
+    async getCheckinHistory(dias = 7) {
+        try {
+            const items = await data.getItems({ type: 'checkin' });
+            const limite = new Date();
+            limite.setDate(limite.getDate() - dias);
+            
+            return items.filter(item => 
+                new Date(item.created_at) >= limite &&
+                item.meta?.energia !== undefined
+            );
+        } catch (error) {
+            console.error('Error getCheckinHistory:', error);
+            return [];
+        }
+    }
+
+    calculateCheckinTrend(checkins, periodo = 'semana') {
+        if (!checkins || checkins.length === 0) return { energia: [], emocion: [] };
+        
+        const grouped = { energia: {}, emocion: {} };
+        
+        checkins.forEach(checkin => {
+            const momento = checkin.meta?.momento;
+            if (!momento) return;
+            
+            if (!grouped.energia[momento]) {
+                grouped.energia[momento] = { suma: 0, count: 0 };
+            }
+            grouped.energia[momento].suma += parseInt(checkin.meta.energia) || 0;
+            grouped.energia[momento].count++;
+            
+            if (checkin.meta?.emocion) {
+                if (!grouped.emocion[momento]) {
+                    grouped.emocion[momento] = {};
+                }
+                const emo = checkin.meta.emocion;
+                grouped.emocion[momento][emo] = (grouped.emocion[momento][emo] || 0) + 1;
+            }
+        });
+        
+        const energiaTrend = Object.entries(grouped.energia).map(([momento, data]) => ({
+            momento,
+            promedio: Math.round((data.suma / data.count) * 10) / 10,
+            count: data.count
+        }));
+        
+        const emocionTrend = Object.entries(grouped.emocion).map(([momento, emociones]) => ({
+            momento,
+            dominante: Object.entries(emociones).sort((a, b) => b[1] - a[1])[0]?.[0] || 'neutral'
+        }));
+        
+        return { energia: energiaTrend, emocion: emocionTrend };
+    }
+
+    scheduleCheckinNotification(momento) {
+        const momentoConfig = this.getCheckinConfig().momentos.find(m => m.id === momento);
+        if (!momentoConfig) return;
+        
+        const ahora = new Date();
+        const horaObjetivo = momentoConfig.hora;
+        
+        let horaNotificacion = new Date(ahora);
+        horaNotificacion.setHours(horaObjetivo, 0, 0, 0);
+        
+        if (horaNotificacion <= ahora) {
+            horaNotificacion.setDate(horaNotificacion.getDate() + 1);
+        }
+        
+        const tiempoEspera = horaNotificacion - ahora;
+        
+        setTimeout(() => {
+            this.showCheckinNotification(momento);
+        }, tiempoEspera);
+        
+        console.log(`Notificación de check-in programada para ${horaNotificacion.toLocaleString()}`);
+    }
+
+    showCheckinNotification(momento) {
+        const momentoConfig = this.getCheckinConfig().momentos.find(m => m.id === momento);
+        if (!momentoConfig) return;
+        
+        if (Notification.permission === 'granted') {
+            const notification = new Notification('💭 Check-in de Bienestar', {
+                body: momentoConfig.pregunta,
+                icon: '/icon.png',
+                tag: 'checkin',
+                requireInteraction: true
+            });
+            
+            notification.onclick = () => {
+                window.focus();
+                this.showCheckinModal(momento);
+                notification.close();
+            };
+        }
+        
+        this.scheduleCheckinNotification(momento);
+    }
+
+    startCheckinChecker() {
+        setInterval(() => {
+            this.checkPendingCheckin();
+        }, 60000);
     }
 }
 

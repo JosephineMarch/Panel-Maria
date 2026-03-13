@@ -6,7 +6,7 @@ import './src/js/logic.js';
 import './src/js/share.js';
 import { requestFCMToken, onForegroundMessage } from './src/js/firebase.js';
 
-const CACHE_VERSION = 'v9';
+const CACHE_VERSION = 'v10';
 
 let hasReloaded = false;
 let fcmInitialized = false;

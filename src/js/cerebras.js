@@ -326,13 +326,28 @@ ${JSON.stringify(this.history.slice(-4))}
 
             // Parsear acción si existe
             let action = null;
-            const actionMatch = aiContent.match(/\[ACTION\]\s*(\{[\s\S]*?\})/);
+            const actionMatch = aiContent.match(/\[ACTION\]\s*(\{[\s\S]*)/); // Match desde [ACTION] hasta el final
             if (actionMatch) {
+                let rawAction = actionMatch[1].trim();
+                
+                // Intento de parsear el JSON tal cual
                 try {
-                    action = JSON.parse(actionMatch[1]);
+                    // Verificar si el JSON está completo contando llaves
+                    const openBraces = (rawAction.match(/\{/g) || []).length;
+                    const closeBraces = (rawAction.match(/\}/g) || []).length;
+                    
+                    // Si faltan llaves de cierre, agregarlas
+                    if (openBraces > closeBraces) {
+                        const missing = openBraces - closeBraces;
+                        rawAction += '}'.repeat(missing);
+                    }
+
+                    action = JSON.parse(rawAction);
                     console.log('🎯 Acción detectada:', action.type, action.data);
                 } catch (e) {
                     console.error('Error parsing AI action:', e, 'Raw:', actionMatch[1]);
+                    // Fallback a NO_ACTION si falla el parseo pero había intención
+                    action = { type: 'NO_ACTION', data: {} };
                 }
             }
 

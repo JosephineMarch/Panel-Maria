@@ -605,17 +605,29 @@ export const ui = {
                         deadlineDate = new Date(dl);
                     }
                 }
-                const dateStr = deadlineDate && !isNaN(deadlineDate.getTime()) ? deadlineDate.toLocaleDateString('en-CA') : '';
-                const timeStr = deadlineDate && !isNaN(deadlineDate.getTime()) ? deadlineDate.toTimeString().substring(0, 5) : '';
                 return `
-                    <div id="section-alarm-${item.id}" class="space-y-2 ${hasAlarm ? '' : 'hidden'}">
-                        <label class="txt-label ml-1">⏰ Alarma</label>
+                    ${hasAlarm ? `
+                    <div class="space-y-2 animate-fadeIn" id="section-alarm-${item.id}">
+                        <label class="txt-label ml-1">Alarma / Deadline</label>
                         <div class="flex gap-2">
-                            <input type="date" id="inline-date-${item.id}" value="${dateStr}" 
-                                   class="flex-1 bg-white/40 border-none rounded-2xl px-4 py-3 text-base focus:ring-2 focus:ring-white/50 outline-none text-ink font-bold">
-                            <input type="time" id="inline-time-${item.id}" value="${timeStr}" 
-                                   class="flex-1 bg-white/40 border-none rounded-2xl px-4 py-3 text-base focus:ring-2 focus:ring-white/50 outline-none text-ink font-bold">
+                            <input type="date" id="inline-date-${item.id}" value="${deadlineDate ? deadlineDate.toISOString().split('T')[0] : ''}" 
+                                   class="flex-[2] bg-white/40 border-none rounded-2xl px-4 py-3 text-sm text-ink outline-none focus:ring-2 focus:ring-white/50">
+                            <input type="time" id="inline-time-${item.id}" value="${deadlineDate && item.deadline.includes('T') ? deadlineDate.toTimeString().split(' ')[0].substring(0, 5) : ''}" 
+                                   class="flex-1 bg-white/40 border-none rounded-2xl px-4 py-3 text-sm text-ink outline-none focus:ring-2 focus:ring-white/50">
                         </div>
+                    </div>
+                    ` : `<div id="section-alarm-${item.id}" class="hidden"></div>`}
+
+                    <!-- Selector de Energía (Solo si es Salud/Bienestar) -->
+                    <div class="space-y-2 ${item.tags?.includes('salud') || item.tags?.includes('bienestar') || item.tags?.includes('emocion') ? '' : 'hidden'}" id="section-energy-${item.id}">
+                        <label class="txt-label ml-1 flex justify-between">
+                            ¿Cómo está tu energía? 
+                            <span class="font-black text-brand" id="energy-val-${item.id}">${item.meta?.energia || 5}/10</span>
+                        </label>
+                        <input type="range" id="inline-energy-${item.id}" min="1" max="10" step="1" 
+                               value="${item.meta?.energia || 5}" 
+                               class="w-full accent-brand cursor-pointer h-2 bg-gray-100 rounded-lg appearance-none"
+                               oninput="document.getElementById('energy-val-${item.id}').textContent = this.value + '/10'">
                     </div>`;
             })()}
                 </div>
@@ -758,6 +770,47 @@ export const ui = {
                 btn.closest('.group\\/task').remove();
             });
         });
+
+        // Reactividad de Tipo (Cambio dinámico)
+        const typeSelect = card.querySelector(`#inline-type-${id}`);
+        if (typeSelect) {
+            typeSelect.addEventListener('change', () => {
+                const newType = typeSelect.value;
+                const sections = {
+                    desc: card.querySelector(`#section-desc-${id}`),
+                    tasks: card.querySelector(`#section-tasks-${id}`),
+                    url: card.querySelector(`#section-url-${id}`),
+                    alarm: card.querySelector(`#section-alarm-${id}`)
+                };
+
+                // 1. Mostrar/Ocultar secciones según el tipo
+                if (newType === 'tarea') {
+                    sections.tasks?.classList.remove('hidden');
+                    if (sections.tasks && sections.tasks.querySelector('.inline-tasks-list')?.children.length === 0) {
+                        this.addInlineTask(id);
+                    }
+                } else if (newType === 'proyecto') {
+                    sections.tasks?.classList.remove('hidden');
+                    sections.desc?.classList.remove('hidden');
+                } else if (newType === 'directorio') {
+                    sections.url?.classList.remove('hidden');
+                }
+
+                // 2. Preservación de Datos: Si se cambia desde Enlace, no perder la URL
+                const urlInput = card.querySelector(`#inline-url-${id}`);
+                const descInput = card.querySelector(`#inline-desc-${id}`);
+                
+                if (newType !== 'directorio' && urlInput && urlInput.value.trim()) {
+                    // Mover URL a la descripción para no perderla
+                    const urlVal = urlInput.value.trim();
+                    if (descInput && !descInput.value.includes(urlVal)) {
+                        descInput.value = descInput.value ? descInput.value + '\n\nEnlace: ' + urlVal : 'Enlace: ' + urlVal;
+                        sections.desc?.classList.remove('hidden');
+                        urlInput.value = ''; // Limpiar campo original
+                    }
+                }
+            });
+        }
     },
 
     addInlineTask(id) {
@@ -810,7 +863,14 @@ export const ui = {
             }
         });
 
-        const updates = { id, content, type, descripcion, url, tareas, deadline };
+        // Capturar meta data (Energía)
+        const energia = document.getElementById(`inline-energy-${id}`)?.value;
+        const meta = {
+            ...item.meta,
+            energia: energia ? parseInt(energia) : (item.meta?.energia || null)
+        };
+
+        const updates = { id, content, type, descripcion, url, tareas, deadline, meta };
 
         if (window.kai) {
             await window.kai.dataUpdateInline(id, updates);
@@ -1060,7 +1120,240 @@ export const ui = {
         }, 3000);
     },
 
+    renderDashboard(grouped, stats, periodo = 'total') {
+        const container = this.elements.container();
+        if (!container) return;
+
+        container.innerHTML = `
+            <div class="animate-fadeIn space-y-10 pb-20 max-w-4xl mx-auto px-4">
+                <!-- Header del Dashboard -->
+                <div class="text-center pt-8 pb-4">
+                    <h2 class="text-4xl font-bold text-ink mb-2">Mi Progreso ✨</h2>
+                    <p class="text-ink/60 font-hand text-2xl">¡Mira todo lo que has logrado, Maria!</p>
+                </div>
+
+                <!-- SELECTOR DE PERIODO -->
+                <div class="flex justify-center gap-2 mb-8">
+                    ${['semana', 'mes', 'total'].map(p => `
+                        <button onclick="window.kai.showDashboard('${p}')" 
+                                class="px-6 py-2 rounded-full font-bold transition-all shadow-sm ${periodo === p ? 'bg-brand text-white' : 'bg-white text-ink/60 hover:bg-gray-50 border border-gray-100'}">
+                            ${p.charAt(0).toUpperCase() + p.slice(1)}
+                        </button>
+                    `).join('')}
+                </div>
+
+                <!-- WIDGETS DE ESTADÍSTICAS -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
+                    <!-- Widget: Racha -->
+                    <div class="bg-peach/10 border-2 border-peach/30 p-6 rounded-blob text-center transition-transform hover:scale-105">
+                        <div class="text-3xl mb-1">🔥</div>
+                        <div class="text-4xl font-black text-ink">${stats.racha}</div>
+                        <div class="text-sm font-bold text-ink/60 uppercase tracking-wider">Días de Racha</div>
+                    </div>
+                    
+                    <!-- Widget: Logros -->
+                    <div class="bg-success/10 border-2 border-success/30 p-6 rounded-blob text-center transition-transform hover:scale-105">
+                        <div class="text-3xl mb-1">🏆</div>
+                        <div class="text-4xl font-black text-ink">${stats.totalLogros}</div>
+                        <div class="text-sm font-bold text-ink/60 uppercase tracking-wider">Logros Guardados</div>
+                    </div>
+
+                    <!-- Widget: Progreso Tareas (Gráfico Circular CSS) -->
+                    <div class="bg-action/10 border-2 border-action/30 p-6 rounded-blob text-center transition-transform hover:scale-105">
+                        <div class="relative w-20 h-20 mx-auto mb-2 flex items-center justify-center rounded-full" 
+                             style="background: conic-gradient(var(--color-brand) ${stats.progresoTareas * 3.6}deg, rgba(255,255,255,0.5) 0deg)">
+                            <div class="absolute inset-2 bg-white rounded-full flex items-center justify-center">
+                                <span class="text-xl font-black text-ink">${stats.progresoTareas}%</span>
+                            </div>
+                        </div>
+                        <div class="text-sm font-bold text-ink/60 uppercase tracking-wider">Tareas Listas</div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN SALUD Y BIENESTAR (REDISEÑADA) -->
+                <section class="space-y-6">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl p-2 bg-peach rounded-xl shadow-sm">🌈</span>
+                            <h3 class="text-2xl font-bold text-ink">Bienestar y Energía</h3>
+                        </div>
+                    </div>
+
+                    <!-- Contenedor para el Informe de Kai -->
+                    <div id="wellbeing-report-container" class="mb-8 hidden">
+                        <!-- Aquí se inyectará el reporte de Kai -->
+                    </div>
+
+                    <!-- Contenedor para el Gráfico de Energía -->
+                    <div id="energy-chart-container" class="bg-white/40 border-2 border-brand/10 p-6 rounded-blob shadow-sm overflow-hidden mb-8">
+                        <h4 class="text-brand font-bold uppercase tracking-widest text-xs mb-6 flex items-center gap-2">
+                            Mi Energía - Tendencia ${periodo === 'semana' ? 'Semanal' : periodo === 'mes' ? 'Mensual' : 'Total'}
+                            <span class="h-px bg-brand/20 flex-1"></span>
+                        </h4>
+                        <div id="energy-chart-bars" class="flex items-end justify-around gap-2 h-40 pt-4">
+                            <!-- JS inyectará las barras aquí -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECCIÓN PRODUCTIVIDAD -->
+                <section class="space-y-6">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl p-2 bg-action rounded-xl shadow-sm">🚀</span>
+                        <h3 class="text-2xl font-bold text-ink">En Marcha</h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        ${grouped.productividad.length > 0 ? 
+                            grouped.productividad.map(item => this.renderDashboardCard(item, 'bg-action/10 border-action/30')).join('') :
+                            '<div class="col-span-full bg-white/40 border-2 border-dashed border-gray-200 py-12 rounded-blob text-center text-ink/40 italic font-hand text-xl">Todo tranquilo por aquí. ¿Alguna meta nueva en mente? 💡</div>'
+                        }
+                    </div>
+                </section>
+
+                <!-- SECCIÓN LOGROS (HECHO) -->
+                <section class="space-y-6">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl p-2 bg-success rounded-xl shadow-sm">🏆</span>
+                        <h3 class="text-2xl font-bold text-ink">Mis Victorias</h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        ${grouped.hecho.length > 0 ? 
+                            grouped.hecho.map(item => this.renderDashboardCard(item, 'bg-success/10 border-success/30')).join('') :
+                            '<div class="col-span-full bg-white/40 border-2 border-dashed border-gray-200 py-12 rounded-blob text-center text-ink/40 italic font-hand text-xl">¡Tus éxitos aparecerán aquí cuando termines tus tareas! 🏁</div>'
+                        }
+                    </div>
+                </section>
+
+                <!-- Botón para volver -->
+                <div class="pt-12 text-center">
+                    <button onclick="window.kai.goHome()" class="bg-ink text-white font-bold px-10 py-4 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all text-lg">
+                        Volver al Panel Principal 🏠
+                    </button>
+                </div>
+            </div>
+        `;
+    },
+
+    renderWellbeingReportLoading() {
+        const reportContainer = document.getElementById('wellbeing-report-container');
+        if (!reportContainer) return;
+
+        reportContainer.classList.remove('hidden');
+        reportContainer.innerHTML = `
+            <div class="bg-white/80 border-2 border-peach/20 p-8 rounded-blob shadow-sm animate-pulse flex flex-col items-center text-center">
+                <div class="text-3xl mb-4">🌸</div>
+                <p class="text-ink/60 font-hand text-xl italic">Kai está analizando tus sentimientos con mucho cariño... 🌸✨</p>
+            </div>
+        `;
+    },
+
+    renderWellbeingReportTrigger() {
+        const reportContainer = document.getElementById('wellbeing-report-container');
+        if (!reportContainer) return;
+
+        reportContainer.classList.remove('hidden');
+        reportContainer.innerHTML = `
+            <div class="bg-brand/5 border-2 border-dashed border-brand/20 p-10 rounded-blob flex flex-col items-center text-center group hover:bg-brand/10 transition-all">
+                <div class="text-4xl mb-4 group-hover:scale-110 transition-transform">✨</div>
+                <h4 class="text-brand font-bold text-xl mb-2">¿Quieres tu informe de hoy?</h4>
+                <p class="text-ink/60 font-hand text-lg mb-6">Aún no es la hora de mi reporte automático, pero si quieres puedo analizar tus notas ahora mismo. 🧸🌸</p>
+                <button onclick="window.kai.triggerManualReport()" 
+                        class="bg-brand text-white font-bold px-8 py-3 rounded-full shadow-sticker hover:scale-105 active:scale-95 transition-all">
+                    Generar Informe Ahora ✨
+                </button>
+            </div>
+        `;
+    },
+
+    renderWellbeingReport(reportText) {
+        const reportContainer = document.getElementById('wellbeing-report-container');
+        if (!reportContainer) return;
+
+        reportContainer.classList.remove('hidden');
+        reportContainer.innerHTML = `
+            <div class="bg-lavender/30 border-2 border-brand/20 p-8 rounded-blob shadow-md relative overflow-hidden group">
+                <!-- Decoración -->
+                <div class="absolute -top-4 -right-4 text-4xl opacity-10 group-hover:rotate-12 transition-transform">🌸</div>
+                <div class="absolute -bottom-4 -left-4 text-4xl opacity-10 group-hover:-rotate-12 transition-transform">✨</div>
+                
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-full bg-brand/10 flex items-center justify-center shrink-0 shadow-sm border border-brand/10 text-2xl">
+                        🤖
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h4 class="text-brand font-bold uppercase tracking-widest text-xs mb-3 flex items-center gap-2">
+                            Reporte de Bienestar por Kai
+                            <span class="h-px bg-brand/20 flex-1"></span>
+                        </h4>
+                        <div class="text-ink font-hand text-xl leading-relaxed whitespace-pre-line">
+                            ${this.escapeHtml(reportText)}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    renderEnergyChart(data) {
+        const chartBars = document.getElementById('energy-chart-bars');
+        if (!chartBars) return;
+
+        if (!data || data.length === 0) {
+            chartBars.innerHTML = '<p class="text-ink/30 italic text-sm self-center">No hay suficientes datos de energía para mostrar tendencia.</p>';
+            return;
+        }
+
+        chartBars.innerHTML = data.map(point => {
+            const height = (point.value / 10) * 100;
+            return `
+                <div class="group relative flex-1 flex flex-col items-center">
+                    <!-- Tooltip persistente al hover -->
+                    <div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-ink text-white text-[10px] font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-10 whitespace-nowrap shadow-float">
+                        Energía: ${point.value}/10
+                        <div class="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-ink"></div>
+                    </div>
+                    
+                    <div class="bg-brand/20 w-full rounded-t-xl transition-all duration-1000 origin-bottom hover:bg-brand/40 shadow-sm relative overflow-hidden" 
+                         style="height: ${height}%">
+                        <!-- Brillo dinámico -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-white/0 to-white/20"></div>
+                    </div>
+                    <span class="text-[9px] text-ink/40 font-black mt-3 uppercase truncate w-full text-center tracking-tighter">${point.label}</span>
+                </div>
+            `;
+        }).join('');
+    },
+
+    renderDashboardCard(item, customClasses) {
+        const typeConfig = this.typeConfig[item.type] || this.typeConfig.nota;
+        const fecha = new Date(item.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+        
+        return `
+            <div class="p-6 rounded-blob border-2 shadow-sm ${customClasses} transition-all hover:scale-[1.02] cursor-pointer action-edit group" data-id="${item.id}">
+                <div class="flex items-start gap-4">
+                    <span class="text-2xl group-hover:rotate-12 transition-transform">${typeConfig.icon}</span>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex justify-between items-start gap-2">
+                            <h4 class="font-bold text-ink truncate text-lg">${this.escapeHtml(item.content)}</h4>
+                            <span class="text-[10px] font-bold text-ink/40 bg-white/50 px-2 py-0.5 rounded-full uppercase shrink-0">${fecha}</span>
+                        </div>
+                        <p class="text-sm text-ink/70 mt-1 line-clamp-2 italic">${this.escapeHtml(item.descripcion || '')}</p>
+                        ${item.tareas && item.tareas.length > 0 ? `
+                            <div class="mt-4 flex items-center gap-3">
+                                <div class="flex-1 bg-white/60 h-2 rounded-full overflow-hidden shadow-inner">
+                                    <div class="bg-brand h-full transition-all duration-700" style="width: ${Math.round((item.tareas.filter(t => t.completado).length / item.tareas.length) * 100)}%"></div>
+                                </div>
+                                <span class="text-[11px] font-black text-ink/60">${item.tareas.filter(t => t.completado).length}/${item.tareas.length}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
     renderLoading() {
+
         // Instant - no loading indicator needed
         if (this.elements.container()) {
             this.elements.container().innerHTML = '';
@@ -1077,5 +1370,145 @@ export const ui = {
                 </div>
             `;
         }
+    },
+
+    // =====================================
+    // CHECK-IN UI
+    // =====================================
+
+    renderCheckinButton(momentos) {
+        const container = document.getElementById('main-content');
+        if (!container) return;
+        
+        let btnExistente = document.getElementById('checkin-float-btn');
+        if (btnExistente) btnExistente.remove();
+        
+        const momentoActual = kai?.getCurrentMoment() || 'mañana';
+        const momentoConfig = momentos.find(m => m.id === momentoActual);
+        
+        const btn = document.createElement('button');
+        btn.id = 'checkin-float-btn';
+        btn.className = 'fixed bottom-24 right-6 z-50 bg-brand text-white p-4 rounded-full shadow-float hover:scale-110 transition-all animate-pulse cursor-pointer';
+        btn.innerHTML = `
+            <div class="flex flex-col items-center gap-1">
+                <span class="text-2xl">${momentoConfig?.icono || '💭'}</span>
+                <span class="text-xs font-bold">Check-in</span>
+            </div>
+        `;
+        btn.onclick = () => kai?.showCheckinModal();
+        
+        document.body.appendChild(btn);
+    },
+
+    toggleCheckinButton(mostrar, momento = 'mañana') {
+        const btn = document.getElementById('checkin-float-btn');
+        if (!btn) {
+            if (mostrar && kai?.checkinConfig) {
+                kai.renderCheckinButton(kai.checkinConfig.momentos);
+            }
+            return;
+        }
+        
+        btn.style.display = mostrar ? 'flex' : 'none';
+    },
+
+    showCheckinModal(data) {
+        const overlay = document.createElement('div');
+        overlay.id = 'checkin-modal-overlay';
+        overlay.className = 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4';
+        
+        overlay.innerHTML = `
+            <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+                <div class="text-center mb-6">
+                    <span class="text-4xl">${data.momento.icono}</span>
+                    <h2 class="text-xl font-bold text-ink mt-2">${data.momento.pregunta}</h2>
+                    <p class="text-sm text-ink/50">${new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-ink/70 mb-3">ENERGÍA</label>
+                    <div class="grid grid-cols-6 gap-2" id="checkin-energia-grid">
+                        ${data.energia.map(e => `
+                            <button class="checkin-energia-btn flex flex-col items-center p-2 rounded-xl border-2 border-gray-100 hover:border-brand hover:bg-brand/5 transition-all"
+                                    data-valor="${e.valor}">
+                                <span class="text-xl">${e.icono}</span>
+                                <span class="text-[10px] mt-1 font-bold text-ink/60">${e.valor}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-ink/70 mb-3">EMOCIÓN</label>
+                    <div class="grid grid-cols-5 gap-2" id="checkin-emocion-grid">
+                        ${data.emocion.map(e => `
+                            <button class="checkin-emocion-btn flex flex-col items-center p-2 rounded-xl border-2 border-gray-100 hover:border-purple-400 hover:bg-purple-50 transition-all"
+                                    data-valor="${e.valor}">
+                                <span class="text-xl">${e.icono}</span>
+                                <span class="text-[9px] mt-1 font-bold text-ink/60 truncate w-full text-center">${e.label}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <button id="checkin-save-btn" class="w-full bg-brand text-white font-bold py-3 rounded-2xl shadow-sticker opacity-50 cursor-not-allowed" disabled>
+                    Guardar Check-in
+                </button>
+                
+                <button id="checkin-close-btn" class="w-full mt-2 text-ink/50 font-medium py-2">
+                    Cancelar
+                </button>
+            </div>
+        `;
+        
+        document.body.appendChild(overlay);
+        
+        let energiaSeleccionada = null;
+        let emocionSeleccionada = null;
+        
+        overlay.querySelectorAll('.checkin-energia-btn').forEach(btn => {
+            btn.onclick = () => {
+                overlay.querySelectorAll('.checkin-energia-btn').forEach(b => {
+                    b.classList.remove('border-brand', 'bg-brand/10');
+                    b.classList.add('border-gray-100');
+                });
+                btn.classList.remove('border-gray-100');
+                btn.classList.add('border-brand', 'bg-brand/10');
+                energiaSeleccionada = btn.dataset.valor;
+                checkBoton();
+            };
+        });
+        
+        overlay.querySelectorAll('.checkin-emocion-btn').forEach(btn => {
+            btn.onclick = () => {
+                overlay.querySelectorAll('.checkin-emocion-btn').forEach(b => {
+                    b.classList.remove('border-purple-400', 'bg-purple-50');
+                    b.classList.add('border-gray-100');
+                });
+                btn.classList.remove('border-gray-100');
+                btn.classList.add('border-purple-400', 'bg-purple-50');
+                emocionSeleccionada = btn.dataset.valor;
+                checkBoton();
+            };
+        });
+        
+        function checkBoton() {
+            const saveBtn = document.getElementById('checkin-save-btn');
+            if (energiaSeleccionada && emocionSeleccionada) {
+                saveBtn.disabled = false;
+                saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+        
+        document.getElementById('checkin-save-btn').onclick = async () => {
+            const momento = data.momento.id;
+            const success = await kai?.saveCheckin(momento, energiaSeleccionada, emocionSeleccionada, data.timestamp);
+            if (success) {
+                overlay.remove();
+            }
+        };
+        
+        document.getElementById('checkin-close-btn').onclick = () => overlay.remove();
+        overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
     }
 };

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kai-cache-v9';
+const CACHE_NAME = 'kai-cache-v10';
 // Importamos Firebase para notificaciones
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js');
@@ -54,8 +54,7 @@ const STATIC_ASSETS = [
     './src/js/cerebras.js',
     './src/js/utils.js',
     './src/js/share.js',
-    './src/js/firebase.js',
-    './src/js/demo-data.js'
+    './src/js/firebase.js'
 ];
 
 const CACHE_STRATEGIES = {
