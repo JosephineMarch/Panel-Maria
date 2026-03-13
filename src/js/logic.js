@@ -444,6 +444,20 @@ class KaiController {
             if (input) input.value = e.detail.transcript;
             this.stopVoiceInput();
         });
+
+        // --- TODOs (Desarrollo) ---
+        document.getElementById('btn-todos')?.addEventListener('click', () => {
+            ui.closeSidebar();
+            this.showTodosModal();
+        });
+        document.getElementById('btn-close-todos')?.addEventListener('click', () => this.hideTodosModal());
+        document.getElementById('todos-modal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'todos-modal') this.hideTodosModal();
+        });
+        document.getElementById('btn-add-todo')?.addEventListener('click', () => this.addTodo());
+        document.getElementById('todo-input')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.addTodo();
+        });
     }
 
     async handleExport() {
@@ -1720,6 +1734,160 @@ Responde SOLO JSON con esta estructura:
         setInterval(() => {
             this.checkPendingCheckin();
         }, 60000);
+    }
+
+    // === TODO: Sistema de Desarrollo ===
+
+    async showTodosModal() {
+        const modal = document.getElementById('todos-modal');
+        if (modal) modal.classList.remove('hidden');
+        await this.loadTodos();
+    }
+
+    hideTodosModal() {
+        const modal = document.getElementById('todos-modal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    async loadTodos() {
+        try {
+            const todos = await data.getTodos();
+            this.renderTodosList(todos);
+            this.updateTodosBadge(todos.length);
+        } catch (error) {
+            console.error('Error loading TODOs:', error);
+            document.getElementById('todos-list').innerHTML = '<p class="text-center text-red-400 py-4">Error al cargar TODOs</p>';
+        }
+    }
+
+    renderTodosList(todos) {
+        const container = document.getElementById('todos-list');
+        if (!container) return;
+
+        if (todos.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8 opacity-50">
+                    <span class="text-4xl">📋</span>
+                    <p class="text-ink/60 mt-2 font-medium">Sin tareas pendientes</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = todos.map(todo => {
+            const prioridadClass = todo.prioridad === 'alta' ? 'border-l-red-400 bg-red-50' : 
+                                   todo.prioridad === 'media' ? 'border-l-yellow-400 bg-yellow-50' : 
+                                   'border-l-green-400 bg-green-50';
+            
+            return `
+                <div class="flex items-start gap-3 p-3 rounded-xl ${prioridadClass} border-l-4 group" data-id="${todo.id}">
+                    <input type="checkbox" class="todo-checkbox mt-1.5" ${todo.completado ? 'checked' : ''} data-id="${todo.id}">
+                    <div class="flex-1 min-w-0">
+                        <p class="text-base font-medium text-ink ${todo.completado ? 'line-through opacity-50' : ''}">${this.escapeHtml(todo.texto)}</p>
+                        <p class="text-[10px] text-ink/40 mt-1">${new Date(todo.created_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                    <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button class="todo-edit-btn p-2 hover:bg-white rounded-lg transition" data-id="${todo.id}" title="Editar">
+                            <i class="fa-solid fa-pencil text-xs text-ink/40 hover:text-ink"></i>
+                        </button>
+                        <button class="todo-delete-btn p-2 hover:bg-white rounded-lg transition" data-id="${todo.id}" title="Borrar">
+                            <i class="fa-solid fa-trash text-xs text-ink/40 hover:text-red-400"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Bind eventos
+        container.querySelectorAll('.todo-checkbox').forEach(cb => {
+            cb.addEventListener('change', (e) => this.toggleTodo(e.target.dataset.id, e.target.checked));
+        });
+        container.querySelectorAll('.todo-delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => this.deleteTodo(e.target.closest('.todo-delete-btn').dataset.id));
+        });
+        container.querySelectorAll('.todo-edit-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => this.editTodo(e.target.closest('.todo-edit-btn').dataset.id));
+        });
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    async addTodo() {
+        const input = document.getElementById('todo-input');
+        const prioridadSelect = document.getElementById('todo-prioridad');
+        const texto = input?.value.trim();
+        
+        if (!texto) {
+            ui.showNotification('Escribe algo para agregar al TODO', 'warning');
+            return;
+        }
+
+        try {
+            await data.createTodo(texto, prioridadSelect?.value || 'media');
+            input.value = '';
+            await this.loadTodos();
+            ui.showNotification('Tarea agregada al TODO ✨', 'success');
+        } catch (error) {
+            console.error('Error adding TODO:', error);
+            ui.showNotification('No pude agregar la tarea', 'error');
+        }
+    }
+
+    async toggleTodo(id, completado) {
+        try {
+            await data.updateTodo(id, { completado });
+            await this.loadTodos();
+        } catch (error) {
+            console.error('Error toggling TODO:', error);
+            ui.showNotification('No pude actualizar la tarea', 'error');
+        }
+    }
+
+    async deleteTodo(id) {
+        if (!confirm('¿Borrar esta tarea del TODO?')) return;
+        
+        try {
+            await data.deleteTodo(id);
+            await this.loadTodos();
+            ui.showNotification('Tarea eliminada', 'info');
+        } catch (error) {
+            console.error('Error deleting TODO:', error);
+            ui.showNotification('No pude eliminar la tarea', 'error');
+        }
+    }
+
+    async editTodo(id) {
+        const todos = await data.getTodos();
+        const todo = todos.find(t => t.id === id);
+        if (!todo) return;
+
+        const nuevoTexto = prompt('Editar tarea:', todo.texto);
+        if (nuevoTexto && nuevoTexto.trim() !== todo.texto) {
+            try {
+                await data.updateTodo(id, { texto: nuevoTexto.trim() });
+                await this.loadTodos();
+                ui.showNotification('Tarea actualizada', 'success');
+            } catch (error) {
+                console.error('Error editing TODO:', error);
+                ui.showNotification('No pude actualizar la tarea', 'error');
+            }
+        }
+    }
+
+    updateTodosBadge(count) {
+        const badge = document.getElementById('todos-badge');
+        if (badge) {
+            if (count > 0) {
+                badge.textContent = count;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
     }
 }
 

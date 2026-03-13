@@ -136,5 +136,99 @@ export const data = {
      */
     async getChildItems(parentId) {
         return this.getItems({ parent_id: parentId });
+    },
+
+    // === TODOs (Desarrollo interno) ===
+
+    /**
+     * Crea un nuevo TODO
+     */
+    async createTodo(texto, prioridad = 'media') {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError) throw new Error('Error de autenticación');
+        if (!user) throw new Error('Usuario no autenticado');
+
+        const { data, error } = await supabase
+            .from('todos')
+            .insert({
+                user_id: user.id,
+                texto: utils.sanitizeInput(texto),
+                prioridad: prioridad,
+                completado: false
+            })
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error createTodo:', error);
+            throw error;
+        }
+        return data;
+    },
+
+    /**
+     * Obtiene todos los TODOs del usuario
+     */
+    async getTodos() {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return [];
+
+        const { data, error } = await supabase
+            .from('todos')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error getTodos:', error);
+            throw error;
+        }
+        return data || [];
+    },
+
+    /**
+     * Actualiza un TODO (texto, completado, prioridad)
+     */
+    async updateTodo(id, updates) {
+        const sanitizedUpdates = { updated_at: new Date().toISOString() };
+
+        if (updates.texto !== undefined) {
+            sanitizedUpdates.texto = utils.sanitizeInput(updates.texto);
+        }
+        if (updates.completado !== undefined) {
+            sanitizedUpdates.completado = updates.completado;
+        }
+        if (updates.prioridad !== undefined) {
+            sanitizedUpdates.prioridad = updates.prioridad;
+        }
+
+        const { data, error } = await supabase
+            .from('todos')
+            .update(sanitizedUpdates)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error updateTodo:', error);
+            throw error;
+        }
+        return data;
+    },
+
+    /**
+     * Elimina un TODO
+     */
+    async deleteTodo(id) {
+        const { error } = await supabase
+            .from('todos')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error deleteTodo:', error);
+            throw error;
+        }
+        return true;
     }
 };
