@@ -212,76 +212,162 @@
             <div class="w-10"></div>
         </div>
 
-        <!-- Bottom: Category Icons (Full Width) -->
-        <nav class="flex px-3 pb-3 gap-1 md:gap-2" role="navigation" aria-label="Filtrar por tipo">
-            <button
-                class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
-                data-category="hoy" aria-label="Tareas de hoy">
-                <i class="fa-solid fa-star" aria-hidden="true"></i>
+        <!-- NAV: HOY | TIMELINE -->
+        <nav class="flex px-3 pb-3 gap-2" role="navigation" aria-label="Navegación principal">
+            <button id="nav-hoy"
+                class="btn-nav flex-1 min-h-[48px] py-3 rounded-xl text-base font-bold transition-all bg-brand text-white shadow-sticker"
+                data-view="hoy" aria-label="Sección Hoy">
+                📓 Hoy
             </button>
-            <button
-                class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
-                data-category="all" aria-label="Ver todos">
-                <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
-            </button>
-            <button
-                class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
-                data-category="nota" aria-label="Filtrar notas">
-                <i class="fa-regular fa-note-sticky" aria-hidden="true"></i>
-            </button>
-            <button
-                class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
-                data-category="tarea" aria-label="Filtrar tareas">
-                <i class="fa-regular fa-circle-check" aria-hidden="true"></i>
-            </button>
-            <button
-                class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
-                data-category="proyecto" aria-label="Filtrar proyectos">
-                <i class="fa-regular fa-folder" aria-hidden="true"></i>
-            </button>
-            <button
-                class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
-                data-category="directorio" aria-label="Filtrar enlaces">
-                <i class="fa-solid fa-link" aria-hidden="true"></i>
+            <button id="nav-timeline"
+                class="btn-nav flex-1 min-h-[48px] py-3 rounded-xl text-base font-bold transition-all text-gray-500 hover:bg-gray-100"
+                data-view="timeline" aria-label="Timeline">
+                📋 Timeline
             </button>
         </nav>
     </header>
 
     <main id="app" class="flex-1 max-w-5xl mx-auto w-full px-3 py-4 md:px-8 space-y-6 pb-24 md:pb-32 no-scrollbar"
         role="main">
-        <!-- Check-in Button (How are you feeling?) -->
-        <button id="checkin-timeline-btn"
-            class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold text-lg shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 cursor-pointer">
-            <span class="text-2xl">🤔</span>
-            <span>¿Cómo te sientes?</span>
-        </button>
+        
+        <!-- ==================== SECCIÓN HOY ==================== -->
+        <section id="section-hoy" class="space-y-6">
+            <!-- Fecha actual -->
+            <div class="bg-brand/5 border-2 border-brand/20 p-4 rounded-[2.5rem] shadow-sm">
+                <div class="text-center">
+                    <h2 id="hoy-fecha" class="text-2xl font-bold text-brand">Lunes 13 de Marzo</h2>
+                    <p id="hoy-saludo" class="text-gray-500 text-sm">Buenos días</p>
+                </div>
+            </div>
 
-        <!-- Filtros de Etiquetas (Tags) - Horizontal Scroll -->
-        <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap md:overflow-visible"
-            role="group" aria-label="Filtrar por etiqueta">
-            <button
-                class="btn-tag flex-shrink-0 px-4 py-2 min-h-[44px] rounded-full text-sm font-semibold bg-gray-100 text-gray-600 border border-gray-200 hover:border-brand hover:text-brand hover:bg-brand/5 transition-all focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1 cursor-pointer"
-                data-tag="logro" aria-label="Filtrar por logro">logro</button>
-            <button
-                class="btn-tag flex-shrink-0 px-4 py-2 min-h-[44px] rounded-full text-sm font-semibold bg-gray-100 text-gray-600 border border-gray-200 hover:border-brand hover:text-brand hover:bg-brand/5 transition-all focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1 cursor-pointer"
-                data-tag="salud" aria-label="Filtrar por salud">salud</button>
-            <button
-                class="btn-tag flex-shrink-0 px-4 py-2 min-h-[44px] rounded-full text-sm font-semibold bg-gray-100 text-gray-600 border border-gray-200 hover:border-brand hover:text-brand hover:bg-brand/5 transition-all focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1 cursor-pointer"
-                data-tag="emocion" aria-label="Filtrar por emoción">emocion</button>
-            <button
-                class="btn-tag flex-shrink-0 px-4 py-2 min-h-[44px] rounded-full text-sm font-semibold bg-gray-100 text-gray-600 border border-gray-200 hover:border-brand hover:text-brand hover:bg-brand/5 transition-all focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1 cursor-pointer"
-                data-tag="alarma" aria-label="Filtrar por alarma">alarma</button>
-        </div>
+            <!-- CHECK-IN: ¿CÓMO ESTÁS? -->
+            <div class="bg-brand/5 border-2 border-brand/20 p-6 rounded-[2.5rem] shadow-sticker">
+                <h3 class="font-bold text-xl mb-4 flex items-center gap-2">
+                    <span class="text-2xl">🤠</span> ¿Cómo estás?
+                </h3>
+                
+                <!-- Estado emocional -->
+                <div class="mb-5">
+                    <label class="text-sm font-semibold text-gray-600 mb-3 block">Elegí cómo te sentís</label>
+                    <div class="flex gap-2 justify-between">
+                        <button class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-gray-100 text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm" data-emoji="feliz" title="Feliz">😊</button>
+                        <button class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-gray-100 text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm" data-emoji="bien" title="Bien">🙂</button>
+                        <button class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-gray-100 text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm" data-emoji="normal" title="Normal">😐</button>
+                        <button class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-gray-100 text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm" data-emoji="mal" title="Mal">😔</button>
+                        <button class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-gray-100 text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm" data-emoji="genial" title="Genial">🤩</button>
+                    </div>
+                </div>
 
+                <!-- Físicamente -->
+                <div class="mb-5">
+                    <label class="text-sm font-semibold text-gray-600 mb-2 block">Físicamente</label>
+                    <input type="text" id="checkin-physical" placeholder="Ej: Con sueño, con energía, dolor de cabeza..." 
+                        class="w-full bg-white border-2 border-gray-100 rounded-blob px-4 py-3 text-sm font-medium focus:outline-none focus:border-brand shadow-sm">
+                </div>
 
-        <!-- Layout de Feed Único (Enesima Style) -->
-        <section id="items-container" class="max-w-2xl mx-auto flex flex-col gap-8 pb-10">
-            <!-- Los items se inyectarán aquí uno debajo de otro -->
+                <!-- Nota rápida -->
+                <div class="mb-4">
+                    <label class="text-sm font-semibold text-gray-600 mb-2 block">Nota (opcional)</label>
+                    <textarea id="checkin-note" placeholder="¿Algo que quieras recordar de hoy?" rows="2"
+                        class="w-full bg-white border-2 border-gray-100 rounded-blob px-4 py-3 text-sm font-medium focus:outline-none focus:border-brand shadow-sm resize-none"></textarea>
+                </div>
+
+                <button id="btn-save-checkin" class="w-full bg-brand text-white font-bold py-3 rounded-2xl shadow-sticker hover:bg-brand-dark hover:scale-[1.02] active:scale-[0.98] transition-all">
+                    Guardar check-in
+                </button>
+            </div>
+
+            <!-- RUTINAS DE HOY -->
+            <div class="bg-white border-2 border-brand/20 p-5 rounded-[2rem] shadow-sticker">
+                <h3 class="font-bold text-lg mb-4 flex items-center justify-between">
+                    <span class="flex items-center gap-2">
+                        <i class="fa-solid fa-rotate text-brand"></i>
+                        Rutinas de hoy
+                    </span>
+                    <button id="btn-add-routine" class="text-xs text-brand font-bold hover:underline">+ agregar</button>
+                </h3>
+
+                <!-- Formulario agregar rutina (oculto por defecto) -->
+                <div id="add-routine-form" class="hidden mb-4 p-4 bg-brand/5 rounded-2xl border-2 border-brand/10">
+                    <input type="text" id="new-routine-input" placeholder="Nueva rutina..." 
+                        class="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-2 text-sm font-medium mb-3 focus:outline-none focus:border-brand">
+                    
+                    <label class="flex items-center gap-2 cursor-pointer mb-3">
+                        <input type="checkbox" id="set-as-default" class="w-5 h-5 rounded border-2 border-brand text-brand focus:ring-brand accent-brand">
+                        <span class="text-sm font-medium text-gray-600">Marcar como rutina por defecto</span>
+                    </label>
+                    
+                    <div class="flex gap-2">
+                        <button id="btn-cancel-routine" class="flex-1 bg-gray-100 text-gray-500 font-bold py-2 rounded-xl text-sm">Cancelar</button>
+                        <button id="btn-confirm-routine" class="flex-1 bg-brand text-white font-bold py-2 rounded-xl text-sm shadow-sticker">Agregar</button>
+                    </div>
+                </div>
+                
+                <div id="rutinas-list" class="space-y-3">
+                    <!-- Las rutinas se cargan dinámicamente -->
+                </div>
+            </div>
+
+            <!-- TAREAS DE HOY -->
+            <div class="bg-brand/5 border-2 border-brand/20 p-6 rounded-[2.5rem] shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-bold text-brand flex items-center gap-2">
+                        <span class="text-2xl">⚡</span> Tareas de hoy
+                    </h2>
+                    <button id="btn-add-task-hoy" class="text-xs text-brand font-bold hover:underline">+ agregar</button>
+                </div>
+
+                <!-- Formulario agregar tarea -->
+                <div id="add-task-form" class="hidden mb-4 flex gap-2">
+                    <input type="text" id="new-task-input" placeholder="Nueva tarea..." 
+                        class="flex-1 bg-white border-2 border-gray-100 rounded-xl px-4 py-2 text-sm font-medium focus:outline-none focus:border-brand">
+                    <button id="btn-confirm-task" class="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shadow-md">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </div>
+
+                <div id="tareas-list" class="space-y-3">
+                    <!-- Las tareas se cargan dinámicamente -->
+                </div>
+            </div>
         </section>
+
+        <!-- ==================== TIMELINE (Sections below are hidden when HOY is active) ==================== -->
+        <div id="timeline-content">
+            <!-- Filtros de Tipo (Tareas, Proyectos, Notas, Enlaces) -->
+            <nav class="flex px-3 pb-3 gap-2" role="navigation" aria-label="Filtrar por tipo">
+                <button
+                    class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
+                    data-category="tarea" aria-label="Filtrar tareas">
+                    <i class="fa-regular fa-circle-check" aria-hidden="true"></i>
+                </button>
+                <button
+                    class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
+                    data-category="proyecto" aria-label="Filtrar proyectos">
+                    <i class="fa-regular fa-folder" aria-hidden="true"></i>
+                </button>
+                <button
+                    class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
+                    data-category="nota" aria-label="Filtrar notas">
+                    <i class="fa-regular fa-note-sticky" aria-hidden="true"></i>
+                </button>
+                <button
+                    class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
+                    data-category="directorio" aria-label="Filtrar enlaces">
+                    <i class="fa-solid fa-link" aria-hidden="true"></i>
+                </button>
+            </nav>
+
+
+            <!-- Layout de Feed Único (Enesima Style) -->
+            <section id="items-container" class="max-w-2xl mx-auto flex flex-col gap-8 pb-10">
+                <!-- Los items se inyectarán aquí uno debajo de otro -->
+            </section>
+        </div>
     </main>
 
     <!-- FOOTER / BARRA DE CAPTURA PRO -->
-    <footer class="fixed bottom-0 left-0 right-0 px-2 py-3 bg-white border-t border-gray-100 z-40">
+    <footer id="app-footer" class="fixed bottom-0 left-0 right-0 px-2 py-3 bg-white border-t border-gray-100 z-40">
         <div
             class="bg-white border-2 border-gray-100 px-3 py-2 rounded-[2rem] shadow-lg flex items-center gap-2 max-w-full mx-auto">
             <input type="text" id="item-input" placeholder="¿Qué tienes en mente?"
@@ -524,6 +610,322 @@
             </div>
         </div>
     </div>
+
+    <!-- Script para navegación HOY/TIMELINE -->
+    <script type="module">
+        import { hoy } from './src/js/hoy.js';
+
+        // Estado de la vista actual
+        let currentView = 'hoy'; // 'hoy' o 'timeline'
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', () => {
+            initNavigation();
+            initFecha();
+            initCheckin();
+            initRoutineForm();
+            initTaskForm();
+            loadRoutines();
+            loadTasks();
+        });
+
+        // Navegación HOY / TIMELINE
+        function initNavigation() {
+            document.querySelectorAll('.btn-nav').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const view = btn.dataset.view;
+                    switchView(view);
+                });
+            });
+        }
+
+        function switchView(view) {
+            currentView = view;
+            
+            // Actualizar botones de navegación
+            document.querySelectorAll('.btn-nav').forEach(b => {
+                if (b.dataset.view === view) {
+                    b.classList.add('bg-brand', 'text-white', 'shadow-sticker');
+                    b.classList.remove('text-gray-500', 'hover:bg-gray-100');
+                } else {
+                    b.classList.remove('bg-brand', 'text-white', 'shadow-sticker');
+                    b.classList.add('text-gray-500', 'hover:bg-gray-100');
+                }
+            });
+
+            // Mostrar/ocultar secciones
+            document.getElementById('section-hoy').classList.toggle('hidden', view !== 'hoy');
+            document.getElementById('timeline-content').classList.toggle('hidden', view !== 'timeline');
+
+            // Footer: mostrar solo en Timeline
+            document.getElementById('app-footer').classList.toggle('hidden', view !== 'timeline');
+
+            // Cargar datos según la vista
+            if (view === 'hoy') {
+                loadRoutines();
+                loadTasks();
+                loadTodayCheckin();
+            } else if (view === 'timeline') {
+                // Cargar timeline desde el controller
+                if (window.controller) {
+                    window.controller.currentCategory = 'all';
+                    window.controller.currentTag = null;
+                    window.controller.loadItems();
+                }
+            }
+        }
+
+        // Asegurar que al hacer clic en Timeline se muestre el contenido
+        function ensureTimelineView() {
+            if (currentView !== 'timeline') {
+                switchView('timeline');
+            }
+        }
+
+        // Agregar eventos a los filtros del timeline para cambiar a vista timeline
+        document.addEventListener('DOMContentLoaded', () => {
+            // Filtros de tags en timeline (si existieran)
+            document.querySelectorAll('#timeline-content .btn-tag').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    ensureTimelineView();
+                });
+            });
+
+            // Filtros de categoría en timeline (Tareas, Proyectos, Notas, Enlaces)
+            document.querySelectorAll('#timeline-content .btn-category').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    ensureTimelineView();
+                });
+            });
+        });
+
+        // Fecha y saludo
+        function initFecha() {
+            const fecha = new Date();
+            const opcionesFecha = { weekday: 'long', day: 'numeric', month: 'long' };
+            const fechaStr = fecha.toLocaleDateString('es-ES', opcionesFecha);
+            document.getElementById('hoy-fecha').textContent = fechaStr.charAt(0).toUpperCase() + fechaStr.slice(1);
+
+            const hora = fecha.getHours();
+            let saludo = 'Buenos días';
+            if (hora >= 12 && hora < 18) saludo = 'Buenas tardes';
+            if (hora >= 18) saludo = 'Buenas noches';
+            document.getElementById('hoy-saludo').textContent = saludo;
+        }
+
+        // Check-in
+        let selectedEmoji = null;
+
+        function initCheckin() {
+            // Emoji buttons
+            document.querySelectorAll('.emoji-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    selectedEmoji = btn.dataset.emoji;
+                    document.querySelectorAll('.emoji-btn').forEach(b => {
+                        b.classList.remove('border-brand', 'bg-brand/10', 'shadow-sticker');
+                        b.classList.add('border-gray-100', 'bg-white');
+                    });
+                    btn.classList.remove('border-gray-100', 'bg-white');
+                    btn.classList.add('border-brand', 'bg-brand/10', 'shadow-sticker');
+                });
+            });
+
+            // Guardar check-in
+            document.getElementById('btn-save-checkin').addEventListener('click', async () => {
+                const physical = document.getElementById('checkin-physical').value;
+                const note = document.getElementById('checkin-note').value;
+                
+                if (!selectedEmoji) {
+                    alert('Elegí cómo te sentís 😄');
+                    return;
+                }
+
+                const success = await hoy.saveCheckin(selectedEmoji, physical, note);
+                if (success !== false) {
+                    alert('¡Check-in guardado! 💚');
+                    // Limpiar
+                    selectedEmoji = null;
+                    document.querySelectorAll('.emoji-btn').forEach(b => {
+                        b.classList.remove('border-brand', 'bg-brand/10', 'shadow-sticker');
+                        b.classList.add('border-gray-100', 'bg-white');
+                    });
+                    document.getElementById('checkin-physical').value = '';
+                    document.getElementById('checkin-note').value = '';
+                }
+            });
+        }
+
+        async function loadTodayCheckin() {
+            const checkin = await hoy.getTodayCheckin();
+            if (checkin) {
+                selectedEmoji = checkin.emotional_state;
+                document.getElementById('checkin-physical').value = checkin.physical || '';
+                document.getElementById('checkin-note').value = checkin.note || '';
+                
+                // Seleccionar el emoji
+                document.querySelectorAll('.emoji-btn').forEach(b => {
+                    if (b.dataset.emoji === selectedEmoji) {
+                        b.classList.remove('border-gray-100', 'bg-white');
+                        b.classList.add('border-brand', 'bg-brand/10', 'shadow-sticker');
+                    }
+                });
+            }
+        }
+
+        // Rutinas
+        function initRoutineForm() {
+            document.getElementById('btn-add-routine').addEventListener('click', () => {
+                document.getElementById('add-routine-form').classList.toggle('hidden');
+            });
+
+            document.getElementById('btn-cancel-routine').addEventListener('click', () => {
+                document.getElementById('add-routine-form').classList.add('hidden');
+                document.getElementById('new-routine-input').value = '';
+                document.getElementById('set-as-default').checked = false;
+            });
+
+            document.getElementById('btn-confirm-routine').addEventListener('click', async () => {
+                const name = document.getElementById('new-routine-input').value.trim();
+                const isDefault = document.getElementById('set-as-default').checked;
+                
+                if (name) {
+                    await hoy.addRoutine(name, '📌', isDefault);
+                    document.getElementById('new-routine-input').value = '';
+                    document.getElementById('set-as-default').checked = false;
+                    document.getElementById('add-routine-form').classList.add('hidden');
+                    loadRoutines();
+                }
+            });
+        }
+
+        async function loadRoutines() {
+            const routines = await hoy.getRoutines();
+            const completions = await hoy.getRoutineCompletions();
+            const completedIds = completions.map(c => c.routine_id);
+
+            const container = document.getElementById('rutinas-list');
+            
+            if (!routines || routines.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">No hay rutinas</p>';
+                return;
+            }
+
+            container.innerHTML = routines.map(r => `
+                <div class="flex items-center gap-3 p-3 rounded-2xl ${completedIds.includes(r.id) ? 'bg-brand/5 border border-brand/10' : 'bg-gray-50 border border-gray-100'} group cursor-pointer hover:bg-white transition-all shadow-sm">
+                    <input type="checkbox" class="routine-checkbox kawaii-checkbox" 
+                        data-id="${r.id}" ${completedIds.includes(r.id) ? 'checked' : ''}>
+                    <span class="flex-1 font-medium ${completedIds.includes(r.id) ? 'font-bold text-ink' : 'text-gray-500'}">${r.name}</span>
+                    <span class="text-2xl">${r.emoji}</span>
+                </div>
+            `).join('');
+
+            // Agregar eventos a los checkboxes
+            document.querySelectorAll('.routine-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', async (e) => {
+                    await hoy.toggleRoutineCompletion(e.target.dataset.id, e.target.checked);
+                    loadRoutines(); // Recargar para actualizar estilos
+                });
+            });
+        }
+
+        // Tareas de hoy
+        function initTaskForm() {
+            document.getElementById('btn-add-task-hoy').addEventListener('click', () => {
+                document.getElementById('add-task-form').classList.toggle('hidden');
+            });
+
+            document.getElementById('btn-confirm-task').addEventListener('click', async () => {
+                const content = document.getElementById('new-task-input').value.trim();
+                if (content) {
+                    await hoy.addTask(content);
+                    document.getElementById('new-task-input').value = '';
+                    document.getElementById('add-task-form').classList.add('hidden');
+                    loadTasks();
+                }
+            });
+        }
+
+        async function loadTasks() {
+            const tasks = await hoy.getTodayTasks();
+            const container = document.getElementById('tareas-list');
+            
+            if (!tasks || tasks.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-4">
+                        <div class="text-3xl mb-2">📋</div>
+                        <p class="text-gray-400 text-sm">No hay tareas para hoy</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = tasks.map(t => `
+                <div class="flex items-center gap-3 bg-white/60 p-3 rounded-2xl border border-brand/10 group cursor-pointer hover:bg-white transition-all shadow-sm">
+                    <input type="checkbox" class="task-checkbox kawaii-checkbox" 
+                        data-id="${t.id}" ${t.completed ? 'checked' : ''}>
+                    <span class="flex-1 text-base font-bold ${t.completed ? 'text-gray-400 line-through' : 'text-ink'}">${t.content}</span>
+                    <button class="delete-task-btn text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition" data-id="${t.id}">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            `).join('');
+
+            // Agregar eventos
+            document.querySelectorAll('.task-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', async (e) => {
+                    await hoy.toggleTaskCompletion(e.target.dataset.id, e.target.checked);
+                    loadTasks();
+                });
+            });
+
+            document.querySelectorAll('.delete-task-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    await hoy.deleteTask(btn.dataset.id);
+                    loadTasks();
+                });
+            });
+        }
+
+        // Estilo para checkboxes
+        const style = document.createElement('style');
+        style.textContent = `
+            .kawaii-checkbox {
+                appearance: none;
+                width: 24px;
+                height: 24px;
+                border: 2px solid #AEC6CF;
+                border-radius: 8px;
+                background: white;
+                cursor: pointer;
+                position: relative;
+                transition: all 0.2s;
+                flex-shrink: 0;
+            }
+            .kawaii-checkbox:checked {
+                background: #B9FBC0;
+                border-color: #B9FBC0;
+            }
+            .kawaii-checkbox:checked::after {
+                content: '✓';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: #4A4A4A;
+                font-size: 14px;
+                font-weight: bold;
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Exponer switchView globalmente para el controller
+        window.switchView = switchView;
+        window.getCurrentView = () => currentView;
+
+        // Inicializar: ocultar footer al inicio (porque start with HOY)
+        document.getElementById('app-footer').classList.add('hidden');
+    </script>
 
     <script type="module" src="app.js"></script>
 </body>

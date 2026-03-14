@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KAI - Hoy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                        hand: ['Patrick Hand', 'cursive'],
+                    },
+                    colors: {
+                        'cream': '#FFFDF5',
+                        'sugar-pink': '#FFB7C5',
+                        'hot-pink': '#FF69B4',
+                        'soft-blue': '#AEC6CF',
+                        'mint': '#B9FBC0',
+                        'lavender': '#E6E6FA',
+                        'lemon': '#FDFD96',
+                        'peach': '#FFDAC1',
+                        'ink': '#4A4A4A',
+                        'brand': '#FFB7C5',
+                        'brand-dark': '#FF9EAA',
+                        'brand/5': 'rgba(255, 183, 197, 0.05)',
+                        'brand/10': 'rgba(255, 183, 197, 0.1)',
+                        'brand/20': 'rgba(255, 183, 197, 0.2)',
+                    },
+                    boxShadow: {
+                        'sticker': '0 6px 0px 0px rgba(0,0,0,0.08)',
+                        'sticker-hover': '0 8px 0px 0px rgba(0,0,0,0.08)',
+                    },
+                    borderRadius: {
+                        'blob': '2rem',
+                        '[2.5rem]': '2.5rem',
+                    }
+                }
+            }
+        }
+    </script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Patrick+Hand&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        .kawaii-checkbox {
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border: 2px solid #AEC6CF;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .kawaii-checkbox:checked {
+            background: #B9FBC0;
+            border-color: #B9FBC0;
+        }
+
+        .kawaii-checkbox:checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #4A4A4A;
+            font-size: 14px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body class="bg-white font-sans text-ink min-h-screen pb-24">
+
+    <!-- HEADER CON NAVEGACIÓN HOY / TIMELINE -->
+    <header class="bg-white z-[60] border-b border-gray-100 sticky top-0">
+        <!-- Top: Title + User -->
+        <div class="flex items-center justify-between px-4 py-3">
+            <div class="w-10 h-10 rounded-full border-2 border-brand cursor-pointer overflow-hidden">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=ffdfbf" alt="Avatar"
+                    class="w-full h-full">
+            </div>
+            <h1 class="font-bold text-xl text-ink">KAI</h1>
+            <button class="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center">
+                <i class="fa-solid fa-bars text-brand"></i>
+            </button>
+        </div>
+
+        <!-- NAV: HOY | TIMELINE -->
+        <nav class="flex px-3 pb-3 gap-2" role="navigation" aria-label="Navegación principal">
+            <button
+                class="btn-nav flex-1 min-h-[48px] py-3 rounded-xl text-base font-bold transition-all bg-brand text-white shadow-sticker"
+                data-view="hoy">
+                📓 Hoy
+            </button>
+            <button
+                class="btn-nav flex-1 min-h-[48px] py-3 rounded-xl text-base font-bold transition-all text-gray-500 hover:bg-gray-100"
+                data-view="timeline">
+                📋 Timeline
+            </button>
+        </nav>
+    </header>
+
+    <main class="max-w-2xl mx-auto px-3 py-4 space-y-6">
+
+        <!-- ==================== SECCIÓN HOY ==================== -->
+        <section id="section-hoy" class="space-y-6">
+
+            <!-- Fecha actual - Estilo similar a "Mi enfoque para hoy" -->
+            <div class="bg-brand/5 border-2 border-brand/20 p-4 rounded-[2.5rem] shadow-sm">
+                <div class="text-center">
+                    <h2 class="text-2xl font-bold text-brand">Lunes 13 de Marzo</h2>
+                    <p class="text-gray-500 text-sm">Buenos días, Maria</p>
+                </div>
+            </div>
+
+            <!-- CHECK-IN: ¿CÓMO ESTÁS? - Estilo PWA -->
+            <div class="bg-brand/5 border-2 border-brand/20 p-6 rounded-[2.5rem] shadow-sticker">
+                <h3 class="font-bold text-xl mb-4 flex items-center gap-2">
+                    <span class="text-2xl">🤠</span> ¿Cómo estás?
+                </h3>
+
+                <!-- Estado emocional -->
+                <div class="mb-5">
+                    <label class="text-sm font-semibold text-gray-600 mb-3 block">Elegí cómo te sentís</label>
+                    <div class="flex gap-2 justify-between">
+                        <button
+                            class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-gray-100 text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm"
+                            data-emoji="feliz" title="Feliz">😊</button>
+                        <button
+                            class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-gray-100 text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm"
+                            data-emoji="bien" title="Bien">🙂</button>
+                        <button
+                            class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-gray-100 text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm"
+                            data-emoji="normal" title="Normal">😐</button>
+                        <button
+                            class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-gray-100 text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm"
+                            data-emoji="mal" title="Mal">😔</button>
+                        <button
+                            class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-gray-100 text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm"
+                            data-emoji="genial" title="Genial">🤩</button>
+                    </div>
+                </div>
+
+                <!-- Físicamente -->
+                <div class="mb-5">
+                    <label class="text-sm font-semibold text-gray-600 mb-2 block">Físicamente</label>
+                    <input type="text" placeholder="Ej: Con sueño, con energía, dolor de cabeza..."
+                        class="w-full bg-white border-2 border-gray-100 rounded-blob px-4 py-3 text-sm font-medium focus:outline-none focus:border-brand shadow-sm">
+                </div>
+
+                <!-- Nota rápida -->
+                <div class="mb-4">
+                    <label class="text-sm font-semibold text-gray-600 mb-2 block">Nota (opcional)</label>
+                    <textarea placeholder="¿Algo que quieras recordar de hoy?" rows="2"
+                        class="w-full bg-white border-2 border-gray-100 rounded-blob px-4 py-3 text-sm font-medium focus:outline-none focus:border-brand shadow-sm resize-none"></textarea>
+                </div>
+
+                <button
+                    class="w-full bg-brand text-white font-bold py-3 rounded-2xl shadow-sticker hover:bg-brand-dark hover:scale-[1.02] active:scale-[0.98] transition-all">
+                    Guardar check-in
+                </button>
+            </div>
+
+            <!-- RUTINAS DE HOY - Estilo Dashboard Logros -->
+            <div class="bg-white border-2 border-brand/20 p-5 rounded-[2rem] shadow-sticker">
+                <h3 class="font-bold text-lg mb-4 flex items-center justify-between">
+                    <span class="flex items-center gap-2">
+                        <i class="fa-solid fa-rotate text-brand"></i>
+                        Rutinas de hoy
+                    </span>
+                    <button class="text-xs text-brand font-bold hover:underline" onclick="toggleAddRoutine()">+
+                        agregar</button>
+                </h3>
+
+                <!-- Formulario agregar rutina (oculto por defecto) -->
+                <div id="add-routine-form" class="hidden mb-4 p-4 bg-brand/5 rounded-2xl border-2 border-brand/10">
+                    <input type="text" id="new-routine-input" placeholder="Nueva rutina..."
+                        class="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-2 text-sm font-medium mb-3 focus:outline-none focus:border-brand">
+
+                    <label class="flex items-center gap-2 cursor-pointer mb-3">
+                        <input type="checkbox" id="set-as-default"
+                            class="w-5 h-5 rounded border-2 border-brand text-brand focus:ring-brand accent-brand">
+                        <span class="text-sm font-medium text-gray-600">Marcar como rutina por defecto</span>
+                    </label>
+
+                    <div class="flex gap-2">
+                        <button onclick="toggleAddRoutine()"
+                            class="flex-1 bg-gray-100 text-gray-500 font-bold py-2 rounded-xl text-sm">Cancelar</button>
+                        <button onclick="addRoutine()"
+                            class="flex-1 bg-brand text-white font-bold py-2 rounded-xl text-sm shadow-sticker">Agregar</button>
+                    </div>
+                </div>
+
+                <div class="space-y-3" id="routines-list">
+                    <!-- Rutina por defecto: Tomar medicación -->
+                    <div
+                        class="flex items-center gap-3 p-3 rounded-2xl bg-brand/5 border border-brand/10 group cursor-pointer hover:bg-white transition-all shadow-sm">
+                        <input type="checkbox" class="kawaii-checkbox" checked>
+                        <span class="flex-1 font-bold text-ink">Tomar medicación</span>
+                        <span class="text-2xl">💊</span>
+                    </div>
+
+
+
+                </div>
+            </div>
+
+            <!-- TAREAS DE HOY - Estilo "Mi enfoque para hoy" -->
+            <div class="bg-brand/5 border-2 border-brand/20 p-6 rounded-[2.5rem] shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-bold text-brand flex items-center gap-2">
+                        <span class="text-2xl">⚡</span> Tareas de hoy
+                    </h2>
+                    <button class="text-xs text-brand font-bold hover:underline" onclick="toggleAddTask()">+
+                        agregar</button>
+                </div>
+
+                <!-- Formulario agregar tarea -->
+                <div id="add-task-form" class="hidden mb-4 flex gap-2">
+                    <input type="text" placeholder="Nueva tarea..."
+                        class="flex-1 bg-white border-2 border-gray-100 rounded-xl px-4 py-2 text-sm font-medium focus:outline-none focus:border-brand">
+                    <button
+                        class="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shadow-md">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-3">
+                    <!-- Tarea ejemplo -->
+                    <div
+                        class="flex items-center gap-3 bg-white/60 p-3 rounded-2xl border border-brand/10 group cursor-pointer hover:bg-white transition-all shadow-sm">
+                        <input type="checkbox" class="kawaii-checkbox">
+                        <span class="flex-1 text-base font-bold text-ink">Terminar presentación</span>
+                        <i
+                            class="fa-solid fa-chevron-right text-brand/30 group-hover:translate-x-1 transition-transform"></i>
+                    </div>
+
+                    <!-- Tarea ejemplo -->
+                    <div
+                        class="flex items-center gap-3 bg-white/60 p-3 rounded-2xl border border-brand/10 group cursor-pointer hover:bg-white transition-all shadow-sm">
+                        <input type="checkbox" class="kawaii-checkbox">
+                        <span class="flex-1 text-base font-medium text-gray-500">Llamar al médico</span>
+                        <i
+                            class="fa-solid fa-chevron-right text-brand/30 group-hover:translate-x-1 transition-transform"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RESUMEN RÁPIDO DEL DÍA -->
+            <div class="bg-cream border-2 border-lavender p-5 rounded-[2rem] shadow-sm">
+                <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
+                    <span class="text-xl">📊</span> Hoy
+                </h3>
+
+                <div class="text-center py-4">
+                    <div class="text-4xl mb-2">💪</div>
+                    <p class="text-gray-500 text-sm">Aún no hay actividades registradas</p>
+                    <p class="text-gray-400 text-xs mt-1">Lo que hagas se irá guardando aquí</p>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ==================== SECCIÓN TIMELINE (ejemplo) ==================== -->
+        <section id="section-timeline" class="hidden space-y-6">
+            <div class="text-center py-8">
+                <p class="text-gray-400">Aquí va el timeline actual</p>
+                <p class="text-gray-500 text-sm">Notas, proyectos, enlaces, etc.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Script para navegación -->
+    <script>
+        // Navegación HOY / TIMELINE
+        document.querySelectorAll('.btn-nav').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Quitar estilos activos
+                document.querySelectorAll('.btn-nav').forEach(b => {
+                    b.classList.remove('bg-brand', 'text-white', 'shadow-sticker');
+                    b.classList.add('text-gray-500', 'hover:bg-gray-100');
+                });
+
+                // Agregar estilo activo
+                btn.classList.add('bg-brand', 'text-white', 'shadow-sticker');
+                btn.classList.remove('text-gray-500', 'hover:bg-gray-100');
+
+                // Mostrar/ocultar secciones
+                const view = btn.dataset.view;
+                document.getElementById('section-hoy').classList.toggle('hidden', view !== 'hoy');
+                document.getElementById('section-timeline').classList.toggle('hidden', view !== 'timeline');
+            });
+        });
+
+        // Emoji buttons
+        document.querySelectorAll('.emoji-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.emoji-btn').forEach(b => {
+                    b.classList.remove('border-brand', 'bg-brand/10', 'shadow-sticker');
+                    b.classList.add('border-gray-100', 'bg-white');
+                });
+                btn.classList.remove('border-gray-100', 'bg-white');
+                btn.classList.add('border-brand', 'bg-brand/10', 'shadow-sticker');
+            });
+        });
+
+        // Toggle agregar rutina
+        function toggleAddRoutine() {
+            const form = document.getElementById('add-routine-form');
+            form.classList.toggle('hidden');
+        }
+
+        // Toggle agregar tarea
+        function toggleAddTask() {
+            const form = document.getElementById('add-task-form');
+            form.classList.toggle('hidden');
+        }
+
+        // Agregar rutina (ejemplo)
+        function addRoutine() {
+            const input = document.getElementById('new-routine-input');
+            const setAsDefault = document.getElementById('set-as-default').checked;
+            const routineName = input.value.trim();
+
+            if (routineName) {
+                const list = document.getElementById('routines-list');
+                const newRoutine = document.createElement('div');
+                newRoutine.className = 'flex items-center gap-3 p-3 rounded-2xl bg-gray-50 border border-gray-100 group cursor-pointer hover:bg-white transition-all shadow-sm';
+                newRoutine.innerHTML = `
+                    <input type="checkbox" class="kawaii-checkbox">
+                    <span class="flex-1 font-medium ${setAsDefault ? 'font-bold text-ink' : 'text-gray-500'}">${routineName}</span>
+                    <span class="text-2xl">📌</span>
+                `;
+                list.appendChild(newRoutine);
+                input.value = '';
+                document.getElementById('set-as-default').checked = false;
+                toggleAddRoutine();
+            }
+        }
+    </script>
+</body>
+
+</html>

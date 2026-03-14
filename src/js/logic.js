@@ -353,11 +353,6 @@ class KaiController {
             this.showDashboard();
         });
 
-        // Check-in Timeline Button
-        document.getElementById('checkin-timeline-btn')?.addEventListener('click', () => {
-            if (window.kai) window.kai.showCheckinModal();
-        });
-
         // Kai Sidebar Button
         document.getElementById('btn-kai-sidebar')?.addEventListener('click', () => {
             ui.closeSidebar();

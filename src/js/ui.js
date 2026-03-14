@@ -34,12 +34,48 @@ export const ui = {
     },
 
     // Configuración de tipos (para las cards)
+    // Solo el header tiene color cuando está desplegado (proyectos)
     typeConfig: {
-        nota: { color: 'nota', icon: '📝', bg: 'bg-brand', text: 'text-white', solid: 'theme-nota', label: 'NOTA' },
-        tarea: { color: 'tarea', icon: '✅', bg: 'bg-brand', text: 'text-white', solid: 'theme-tarea', label: 'TAREA' },
-        proyecto: { color: 'proyecto', icon: '📁', bg: 'bg-brand', text: 'text-white', solid: 'theme-proyecto', label: 'PROYECTO' },
-        directorio: { color: 'directorio', icon: '🔗', bg: 'bg-brand', text: 'text-white', solid: 'theme-directorio', label: 'ENLACE' },
-        logro: { color: 'logro', icon: '🏆', bg: 'bg-success', text: 'text-white', solid: 'theme-logro', label: 'LOGRO' },
+        nota: {
+            color: 'nota',
+            icon: '📝',
+            bg: 'bg-lemon',
+            text: 'text-ink',
+            headerBg: null,  // Sin header de color
+            label: 'NOTA'
+        },
+        tarea: {
+            color: 'tarea',
+            icon: '✅',
+            bg: 'bg-soft-blue',
+            text: 'text-ink',
+            headerBg: null,
+            label: 'TAREA'
+        },
+        proyecto: {
+            color: 'proyecto',
+            icon: '📁',
+            bg: 'bg-brand',
+            text: 'text-white',
+            headerBg: 'bg-brand',  // Header sólido para proyectos
+            label: 'PROYECTO'
+        },
+        directorio: {
+            color: 'directorio',
+            icon: '🔗',
+            bg: 'bg-lavender',
+            text: 'text-ink',
+            headerBg: null,
+            label: 'ENLACE'
+        },
+        logro: {
+            color: 'logro',
+            icon: '🏆',
+            bg: 'bg-success',
+            text: 'text-white',
+            headerBg: null,
+            label: 'LOGRO'
+        },
     },
 
 
@@ -106,44 +142,10 @@ export const ui = {
         }
     },
 
-    renderTodayWidget(items) {
-        const today = new Date().toDateString();
-        const todayTasks = items.filter(item => {
-            const itemDate = new Date(item.created_at).toDateString();
-            return itemDate === today && (item.type === 'tarea' || item.type === 'proyecto');
-        });
-
-        if (todayTasks.length === 0) return;
-
-        const widget = document.createElement('div');
-        widget.className = 'bg-brand/5 border-2 border-brand/20 p-6 rounded-[2.5rem] mb-8 shadow-sm';
-        widget.innerHTML = `
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-bold text-brand flex items-center gap-2">
-                    <span class="text-2xl">⚡</span> Mi enfoque para hoy
-                </h2>
-                <span class="bg-brand text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                    ${todayTasks.length} pendientes
-                </span>
-            </div>
-            <div class="space-y-3">
-                ${todayTasks.slice(0, 3).map(task => `
-                    <div class="flex items-center gap-3 bg-white/60 p-3 rounded-2xl border border-brand/10 group cursor-pointer hover:bg-white transition-all shadow-sm">
-                        <input type="checkbox" class="kawaii-checkbox timeline-task-checkbox" data-id="${task.id}" data-index="-1">
-                        <span class="flex-1 text-base font-bold text-ink truncate">${this.escapeHtml(task.content)}</span>
-                        <i class="fa-solid fa-chevron-right text-brand/30 group-hover:translate-x-1 transition-transform"></i>
-                    </div>
-                `).join('')}
-                ${todayTasks.length > 3 ? `<p class="text-center text-xs font-bold text-brand mt-2">+ ${todayTasks.length - 3} tareas más en tu lista</p>` : ''}
-            </div>
-        `;
-        this.elements.container().prepend(widget);
-    },
-
     renderAchievementsDashboard(items) {
         const achievements = items.filter(item => item.type === 'logro' || (item.tags && item.tags.includes('logro')));
         const container = this.elements.container();
-        
+
         container.innerHTML = `
             <div class="space-y-8 animate-fadeIn">
                 <div class="text-center py-6">
@@ -194,11 +196,6 @@ export const ui = {
         if (currentFilter === 'logro' || currentFilter === 'logros') {
             this.renderAchievementsDashboard(items);
             return;
-        }
-
-        // Tareas de Hoy (Si hay items para hoy, mostrar widget)
-        if (currentFilter === 'todos' || currentFilter === 'hoy') {
-            this.renderTodayWidget(items);
         }
 
 
@@ -333,7 +330,7 @@ export const ui = {
                 progressWidth = `${Math.round((completed / item.tareas.length) * 100)}%`;
             }
 
-            card.className = `group item-card bg-white rounded-[2rem] shadow-sticker border-none overflow-hidden mb-8 transition-all duration-300`;
+            card.className = `group item-card bg-white rounded-[2rem] shadow-sticker border-2 border-gray-100 overflow-hidden mb-8 transition-all duration-300`;
             card.dataset.expanded = 'false';
 
             const typeConfig = this.typeConfig[item.type] || this.typeConfig['nota'];
@@ -350,23 +347,23 @@ export const ui = {
             }
 
             card.innerHTML = `
-                <!-- Header Sólido -->
-                <div class="${typeConfig.solid || 'bg-brand'} p-4 flex justify-between items-center">
+                <!-- Header Sólido para Proyectos -->
+                <div class="${typeConfig.headerBg || typeConfig.bg} p-4 flex justify-between items-center">
                     <div class="flex items-center gap-3 min-w-0 flex-1">
-                        <span class="text-xl bg-white/30 p-2 rounded-xl backdrop-blur-md">${typeConfig.icon}</span>
+                        <span class="text-xl bg-white/20 p-2 rounded-xl backdrop-blur-sm">${typeConfig.icon}</span>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2 mb-0.5">
                                 <span class="${typeConfig.bg} ${typeConfig.text} text-[9px] px-2 py-0.5 rounded-full font-semibold">${typeConfig.label}</span>
                                 ${deadlineHtml ? `<span class="opacity-60">${deadlineHtml}</span>` : ''}
                             </div>
-                            <h3 class="txt-title text-ink">${this.escapeHtml(item.content)}</h3>
+                            <h3 class="txt-title text-white">${this.escapeHtml(item.content)}</h3>
                             <!-- Barra de Progreso en Header -->
                             ${item.tareas && item.tareas.length > 0 ? `
                                 <div class="mt-2 flex items-center gap-2 bg-white/20 p-1 px-2 rounded-full">
                                     <div class="flex-1 bg-white/40 h-1 rounded-full overflow-hidden">
                                         <div class="bg-white h-full" style="width: ${progressWidth}"></div>
                                     </div>
-                                    <span class="text-[9px] font-bold text-ink/60">${item.tareas.filter(t => t.completado).length}/${item.tareas.length}</span>
+                                    <span class="text-[9px] font-bold text-white/80">${item.tareas.filter(t => t.completado).length}/${item.tareas.length}</span>
                                 </div>
                             ` : ''}
                         </div>
@@ -383,7 +380,7 @@ export const ui = {
                 </div>
 
                 <!-- Body Minimalista -->
-                <div class="card-body-soft p-4">
+                <div class="card-body-soft p-4 bg-brand/5 border-2 border-brand/20">
                     <!-- Previsualización de Descripción -->
                     ${item.descripcion ? (() => {
                     const descTruncada = item.descripcion.length > 200 ? item.descripcion.substring(0, 200) + '...' : item.descripcion;
@@ -490,14 +487,14 @@ export const ui = {
                 progressHtml = `
                     <div class="mt-3 flex items-center gap-2">
                         <div class="flex-1 bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                            <div class="bg-brand h-full transition-all" style="width: ${progressWidth}"></div>
+                            <div class="${typeConfig.bg} h-full transition-all" style="width: ${progressWidth}"></div>
                         </div>
                         <span class="text-[10px] font-bold text-ink/60">${completed}/${item.tareas.length}</span>
                     </div>
                 `;
             }
 
-            card.className = `item-card bg-white rounded-2xl p-4 shadow-sticker border-none group relative hover:z-10 transition-all mb-4 w-full cursor-pointer`;
+            card.className = `item-card bg-white rounded-2xl p-4 shadow-sticker border-2 border-gray-100 group relative hover:z-10 transition-all mb-4 w-full cursor-pointer`;
             card.dataset.expanded = 'false';
 
             // Renderizar etiquetas (tags)
@@ -505,7 +502,7 @@ export const ui = {
 
             card.innerHTML = `
                 <div class="flex gap-4 items-start">
-                    <div class="w-12 h-12 bg-white text-ink rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-gray-50">
+                    <div class="w-12 h-12 bg-gray-100 text-ink rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-gray-200">
                         <span class="text-2xl">${typeConfig.icon}</span>
                     </div>
                     <div class="flex-1 min-w-0">
@@ -537,7 +534,7 @@ export const ui = {
         const typeConfig = this.typeConfig[item.type] || this.typeConfig.note;
         const tagClass = `tag-type tag-${item.type}`;
 
-        card.className = `item-card bg-white rounded-[2rem] shadow-sticker border-none overflow-hidden mb-8 w-full transition-all duration-300 transform scale-[1.01]`;
+        card.className = `item-card bg-white rounded-[2rem] shadow-sticker border-2 border-gray-100 overflow-hidden mb-8 w-full transition-all duration-300 transform scale-[1.01]`;
         card.dataset.expanded = 'true';
 
         const tareasHtml = (item.tareas || []).map((t, idx) => `
@@ -560,20 +557,20 @@ export const ui = {
         const hasTags = tagsHtml && tagsHtml.length > 0;
 
         card.innerHTML = `
-            <!-- Header Sólido -->
-            <div class="${typeConfig.solid || 'bg-brand'} p-6 text-ink flex justify-between items-center rounded-t-3xl">
+            <!-- Header: color sólido solo para proyectos -->
+            <div class="${typeConfig.headerBg || typeConfig.bg} p-6 ${typeConfig.headerBg ? 'text-white' : 'text-ink'} flex justify-between items-center rounded-t-3xl">
                 <div class="flex items-center gap-4 flex-1">
-                    <span class="text-3xl bg-white/40 p-3 rounded-2xl backdrop-blur-md">${typeConfig.icon}</span>
+                    <span class="text-3xl ${typeConfig.headerBg ? 'bg-white/20' : 'bg-white/40'} p-3 rounded-2xl backdrop-blur-sm">${typeConfig.icon}</span>
                     <input type="text" id="inline-content-${item.id}" value="${this.escapeHtml(item.content)}" 
-                           class="bg-white/30 border-none rounded-xl px-4 py-2 txt-display text-ink placeholder-ink/50 focus:ring-2 focus:ring-white/50 w-full outline-none" placeholder="Título...">
+                           class="bg-white/20 border-none rounded-xl px-4 py-2 txt-display ${typeConfig.headerBg ? 'text-white placeholder-white/50' : 'text-ink placeholder-ink/50'} focus:ring-2 focus:ring-white/50 w-full outline-none" placeholder="Título...">
                 </div>
-                <button class="action-collapse bg-white/30 hover:bg-white/50 p-3 rounded-full transition-all ml-4">
+                <button class="action-collapse bg-white/20 hover:bg-white/30 p-3 rounded-full transition-all ml-4">
                     <i class="fa-solid fa-compress"></i>
                 </button>
             </div>
             
-            <!-- Body Minimalista -->
-            <div class="p-6 space-y-6 rounded-b-3xl card-body-soft">
+            <!-- Body: fondo blanco suave -->
+            <div class="p-6 space-y-6 rounded-b-3xl bg-white">
                 <!-- Secciones de Contenido (Dinámicas) -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-2">
@@ -799,7 +796,7 @@ export const ui = {
                 // 2. Preservación de Datos: Si se cambia desde Enlace, no perder la URL
                 const urlInput = card.querySelector(`#inline-url-${id}`);
                 const descInput = card.querySelector(`#inline-desc-${id}`);
-                
+
                 if (newType !== 'directorio' && urlInput && urlInput.value.trim()) {
                     // Mover URL a la descripción para no perderla
                     const urlVal = urlInput.value.trim();
@@ -1203,10 +1200,10 @@ export const ui = {
                         <h3 class="text-2xl font-bold text-ink">En Marcha</h3>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        ${grouped.productividad.length > 0 ? 
-                            grouped.productividad.map(item => this.renderDashboardCard(item, 'bg-action/10 border-action/30')).join('') :
-                            '<div class="col-span-full bg-white/40 border-2 border-dashed border-gray-200 py-12 rounded-blob text-center text-ink/40 italic font-hand text-xl">Todo tranquilo por aquí. ¿Alguna meta nueva en mente? 💡</div>'
-                        }
+                        ${grouped.productividad.length > 0 ?
+                grouped.productividad.map(item => this.renderDashboardCard(item, 'bg-action/10 border-action/30')).join('') :
+                '<div class="col-span-full bg-white/40 border-2 border-dashed border-gray-200 py-12 rounded-blob text-center text-ink/40 italic font-hand text-xl">Todo tranquilo por aquí. ¿Alguna meta nueva en mente? 💡</div>'
+            }
                     </div>
                 </section>
 
@@ -1217,10 +1214,10 @@ export const ui = {
                         <h3 class="text-2xl font-bold text-ink">Mis Victorias</h3>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        ${grouped.hecho.length > 0 ? 
-                            grouped.hecho.map(item => this.renderDashboardCard(item, 'bg-success/10 border-success/30')).join('') :
-                            '<div class="col-span-full bg-white/40 border-2 border-dashed border-gray-200 py-12 rounded-blob text-center text-ink/40 italic font-hand text-xl">¡Tus éxitos aparecerán aquí cuando termines tus tareas! 🏁</div>'
-                        }
+                        ${grouped.hecho.length > 0 ?
+                grouped.hecho.map(item => this.renderDashboardCard(item, 'bg-success/10 border-success/30')).join('') :
+                '<div class="col-span-full bg-white/40 border-2 border-dashed border-gray-200 py-12 rounded-blob text-center text-ink/40 italic font-hand text-xl">¡Tus éxitos aparecerán aquí cuando termines tus tareas! 🏁</div>'
+            }
                     </div>
                 </section>
 
@@ -1327,7 +1324,7 @@ export const ui = {
     renderDashboardCard(item, customClasses) {
         const typeConfig = this.typeConfig[item.type] || this.typeConfig.nota;
         const fecha = new Date(item.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
-        
+
         return `
             <div class="p-6 rounded-blob border-2 shadow-sm ${customClasses} transition-all hover:scale-[1.02] cursor-pointer action-edit group" data-id="${item.id}">
                 <div class="flex items-start gap-4">
@@ -1379,13 +1376,13 @@ export const ui = {
     renderCheckinButton(momentos) {
         const container = document.getElementById('main-content');
         if (!container) return;
-        
+
         let btnExistente = document.getElementById('checkin-float-btn');
         if (btnExistente) btnExistente.remove();
-        
+
         const momentoActual = kai?.getCurrentMoment() || 'mañana';
         const momentoConfig = momentos.find(m => m.id === momentoActual);
-        
+
         const btn = document.createElement('button');
         btn.id = 'checkin-float-btn';
         btn.className = 'fixed bottom-24 right-6 z-50 bg-brand text-white p-4 rounded-full shadow-float hover:scale-110 transition-all animate-pulse cursor-pointer';
@@ -1396,7 +1393,7 @@ export const ui = {
             </div>
         `;
         btn.onclick = () => kai?.showCheckinModal();
-        
+
         document.body.appendChild(btn);
     },
 
@@ -1408,7 +1405,7 @@ export const ui = {
             }
             return;
         }
-        
+
         btn.style.display = mostrar ? 'flex' : 'none';
     },
 
@@ -1416,11 +1413,11 @@ export const ui = {
         const esManana = data.momento.id === 'mañana';
         const esNoche = data.momento.id === 'noche';
         const horaActual = new Date().toTimeString().slice(0, 5);
-        
+
         const overlay = document.createElement('div');
         overlay.id = 'checkin-modal-overlay';
         overlay.className = 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4';
-        
+
         overlay.innerHTML = `
             <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
                 <div class="text-center mb-6">
@@ -1475,12 +1472,12 @@ export const ui = {
                 </button>
             </div>
         `;
-        
+
         document.body.appendChild(overlay);
-        
+
         let energiaSeleccionada = null;
         let emocionSeleccionada = null;
-        
+
         overlay.querySelectorAll('.checkin-energia-btn').forEach(btn => {
             btn.onclick = () => {
                 overlay.querySelectorAll('.checkin-energia-btn').forEach(b => {
@@ -1493,7 +1490,7 @@ export const ui = {
                 checkBoton();
             };
         });
-        
+
         overlay.querySelectorAll('.checkin-emocion-btn').forEach(btn => {
             btn.onclick = () => {
                 overlay.querySelectorAll('.checkin-emocion-btn').forEach(b => {
@@ -1506,7 +1503,7 @@ export const ui = {
                 checkBoton();
             };
         });
-        
+
         function checkBoton() {
             const saveBtn = document.getElementById('checkin-save-btn');
             if (energiaSeleccionada && emocionSeleccionada) {
@@ -1514,7 +1511,7 @@ export const ui = {
                 saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
             }
         }
-        
+
         document.getElementById('checkin-save-btn').onclick = async () => {
             const momento = data.momento.id;
             const horaSueno = document.getElementById('checkin-hora-sueno')?.value || null;
@@ -1523,7 +1520,7 @@ export const ui = {
                 overlay.remove();
             }
         };
-        
+
         document.getElementById('checkin-close-btn').onclick = () => overlay.remove();
         overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
     }
