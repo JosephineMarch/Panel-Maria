@@ -17,7 +17,7 @@ import { ui } from './ui.js';
  * @property {string} [type] - Tipo: nota, tarea, proyecto, directorio
  * @property {string} [parent_id] - ID del item padre (para proyectos)
  * @property {string[]} [tags] - Array de tags
- * @property {string} [url] - URL asociada
+ * @property {string[]} [urls] - URLs asociadas (array para múltiples enlaces)
  * @property {Array<{titulo: string, completado: boolean}>} [tareas] - Subtareas
  * @property {number|string|Date} [deadline] - Fecha límite
  * @property {boolean} [completado] - Si está completado

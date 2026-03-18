@@ -20,7 +20,9 @@ export const data = {
             parent_id: itemData.parent_id || null,
             status: itemData.status || 'inbox',
             descripcion: utils.sanitizeInput(itemData.descripcion || ''),
-            url: utils.sanitizeInput(itemData.url || ''),
+            urls: Array.isArray(itemData.urls) 
+                ? itemData.urls.map(u => utils.sanitizeInput(u)).filter(Boolean)
+                : (itemData.url ? [utils.sanitizeInput(itemData.url)] : []),
             tareas: itemData.tareas || [],
             tags: itemData.tags || [],
             deadline: itemData.deadline || null,
@@ -89,8 +91,11 @@ export const data = {
         if (updates.descripcion !== undefined) {
             sanitizedUpdates.descripcion = utils.sanitizeInput(updates.descripcion);
         }
-        if (updates.url !== undefined) {
-            sanitizedUpdates.url = utils.sanitizeInput(updates.url);
+        // Guardar múltiples URLs como array
+        if (updates.urls !== undefined) {
+            sanitizedUpdates.urls = Array.isArray(updates.urls) 
+                ? updates.urls.map(u => utils.sanitizeInput(u)).filter(Boolean)
+                : (updates.url ? [utils.sanitizeInput(updates.url)] : []);
         }
         if (updates.type !== undefined) sanitizedUpdates.type = updates.type;
         if (updates.parent_id !== undefined) sanitizedUpdates.parent_id = updates.parent_id;

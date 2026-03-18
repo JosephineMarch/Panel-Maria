@@ -465,10 +465,10 @@ export const ui = {
                 `;
             }
 
-            // 3. Previsualización de Enlace
-            if (item.url) {
-                const urls = Array.isArray(item.url) ? item.url : [item.url];
-                urls.forEach(u => {
+            // 3. Previsualización de Enlaces Múltiples
+            const urls = Array.isArray(item.urls) ? item.urls : (item.url ? [item.url] : []);
+            urls.forEach(u => {
+                if (u) {
                     const urlLabel = u.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
                     previewHtml += `
                         <div class="mt-2 flex items-center gap-1 text-base text-action font-normal hover:underline underline-offset-2">
@@ -476,8 +476,8 @@ export const ui = {
                             <span class="truncate">${urlLabel}</span>
                         </div>
                     `;
-                });
-            }
+                }
+            });
 
             // 4. Barra de Progreso (Solo si hay tareas)
             let progressHtml = '';
@@ -549,8 +549,9 @@ export const ui = {
 
         const hasDesc = !!item.descripcion;
         const hasTasks = (item.tareas || []).length > 0;
-        const hasUrl = !!item.url;
-        const hasAlarm = !!item.deadline;
+        const urls = Array.isArray(item.urls) ? item.urls : (item.url ? [item.url] : []);
+        const hasUrl = urls.some(u => u);
+        const hasAlarm = false; // Eliminada la alarma
 
         // Tags del item
         const tagsHtml = this.renderTags(item.tags);
@@ -586,35 +587,8 @@ export const ui = {
                     ${hasTags ? `<div class="space-y-2"><label class="txt-label ml-1">Etiquetas</label><div class="flex gap-2 flex-wrap">${tagsHtml}</div></div>` : ''}
                     
                     ${(() => {
-                let deadlineDate = null;
-                const dl = item.deadline;
-                if (dl) {
-                    // Si es número (timestamp)
-                    if (typeof dl === 'number') {
-                        deadlineDate = new Date(dl);
-                    }
-                    // Si es string ISO (de Supabase)
-                    else if (typeof dl === 'string' && dl.includes('T')) {
-                        deadlineDate = new Date(dl);
-                    }
-                    // Si es string de fecha simple (YYYY-MM-DD)
-                    else if (typeof dl === 'string') {
-                        deadlineDate = new Date(dl);
-                    }
-                }
+                // Selector de Energía (Solo si es Salud/Bienestar)
                 return `
-                    ${hasAlarm ? `
-                    <div class="space-y-2 animate-fadeIn" id="section-alarm-${item.id}">
-                        <label class="txt-label ml-1">Alarma / Deadline</label>
-                        <div class="flex gap-2">
-                            <input type="date" id="inline-date-${item.id}" value="${deadlineDate ? deadlineDate.toISOString().split('T')[0] : ''}" 
-                                   class="flex-[2] bg-white/40 border-none rounded-2xl px-4 py-3 text-sm text-ink outline-none focus:ring-2 focus:ring-white/50">
-                            <input type="time" id="inline-time-${item.id}" value="${deadlineDate && item.deadline.includes('T') ? deadlineDate.toTimeString().split(' ')[0].substring(0, 5) : ''}" 
-                                   class="flex-1 bg-white/40 border-none rounded-2xl px-4 py-3 text-sm text-ink outline-none focus:ring-2 focus:ring-white/50">
-                        </div>
-                    </div>
-                    ` : `<div id="section-alarm-${item.id}" class="hidden"></div>`}
-
                     <!-- Selector de Energía (Solo si es Salud/Bienestar) -->
                     <div class="space-y-2 ${item.tags?.includes('salud') || item.tags?.includes('bienestar') || item.tags?.includes('emocion') ? '' : 'hidden'}" id="section-energy-${item.id}">
                         <label class="txt-label ml-1 flex justify-between">
@@ -651,20 +625,32 @@ export const ui = {
                 </div>
 
                 <div id="section-url-${item.id}" class="space-y-2 ${hasUrl ? '' : 'hidden'}">
-                    <label class="txt-label ml-1">Enlace Principal</label>
-                    <div class="relative">
-                        <i class="fa-solid fa-link absolute left-4 top-1/2 -translate-y-1/2 text-ink/30"></i>
-                        <input type="url" id="inline-url-${item.id}" value="${item.url || ''}" 
-                               class="w-full bg-white/40 border-none rounded-2xl pl-10 pr-5 py-4 text-base text-ink placeholder-ink/30 focus:ring-2 focus:ring-white/50 outline-none font-medium" 
-                               placeholder="https://google.com/ejemplo">
+                    <label class="txt-label ml-1">Enlaces</label>
+                    <div id="inline-urls-list-${item.id}" class="space-y-2">
+                        ${(() => {
+                            const urls = Array.isArray(item.urls) ? item.urls : (item.url ? [item.url] : []);
+                            return urls.map((u, idx) => `
+                                <div class="relative flex gap-2 animate-fadeIn">
+                                    <i class="fa-solid fa-link absolute left-4 top-1/2 -translate-y-1/2 text-ink/30"></i>
+                                    <input type="url" data-url-index="${idx}" value="${u || ''}" 
+                                           class="w-full bg-white/40 border-none rounded-2xl pl-10 pr-5 py-3 text-base text-ink placeholder-ink/30 focus:ring-2 focus:ring-white/50 outline-none font-medium" 
+                                           placeholder="https://...">
+                                    <button type="button" class="btn-remove-url px-3 text-ink/30 hover:text-urgent transition-colors" data-index="${idx}">
+                                        <i class="fa-solid fa-xmark"></i>
+                                    </button>
+                                </div>
+                            `).join('');
+                        })()}
                     </div>
+                    <button type="button" class="btn-add-inline-url w-full flex items-center justify-center gap-2 py-2 text-brand hover:text-brand-dark transition-all text-sm font-bold">
+                        <i class="fa-solid fa-plus-circle"></i> Añadir otro enlace
+                    </button>
                 </div>
 
                 <!-- Barra de Deseos (Wishbar) -->
                 <div class="flex flex-wrap justify-center gap-2 py-4 border-t border-gray-50">
                     ${!hasTasks ? `<button data-reveal="tasks" class="wish-item px-4 py-2 rounded-full text-gray-400 hover:text-brand transition-all text-[10px] font-bold uppercase tracking-wider flex items-center gap-2"><i class="fa-solid fa-check-double"></i> + Tareas</button>` : ''}
-                    ${!hasDesc ? `<button data-reveal="desc" class="wish-item px-4 py-2 rounded-full text-gray-400 hover:text-brand transition-all text-[10px] font-bold uppercase tracking-wider flex items-center gap-2"><i class="fa-solid fa-align-left"></i> + Notas</button>` : ''}
-                    ${!hasAlarm ? `<button data-reveal="alarm" class="wish-item px-4 py-2 rounded-full text-gray-400 hover:text-brand transition-all text-[10px] font-bold uppercase tracking-wider flex items-center gap-2"><i class="fa-solid fa-bell"></i> + Alarma</button>` : ''}
+                    ${!hasDesc ? `<button data-reveal="desc" class="wish-item px-4 py-2 rounded-full text-gray-400 hover:text-brand transition-all text-[10px] font-bold uppercase tracking-wider flex items-center gap-2"><i class="fa-solid fa-align-left"></i> + Descripción</button>` : ''}
                     ${!hasUrl ? `<button data-reveal="url" class="wish-item px-4 py-2 rounded-full text-gray-400 hover:text-brand transition-all text-[10px] font-bold uppercase tracking-wider flex items-center gap-2"><i class="fa-solid fa-link"></i> + Link</button>` : ''}
                 </div>
 
@@ -728,7 +714,6 @@ export const ui = {
                     // Foco especial según el tipo
                     if (type === 'desc') section.querySelector('textarea')?.focus();
                     if (type === 'url') section.querySelector('input')?.focus();
-                    if (type === 'alarm') section.querySelector('input[type="date"]')?.focus();
                     if (type === 'tasks') {
                         // Si no hay tareas, añadimos la primera automáticamente
                         const list = section.querySelector(`#inline-tasks-list-${id}`);
@@ -760,6 +745,21 @@ export const ui = {
             this.addInlineTask(id);
         });
 
+        // Eventos para URLs múltiples
+        card.querySelector('.btn-add-inline-url')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.addInlineUrl(id);
+        });
+
+        card.querySelectorAll('.btn-remove-url').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                btn.closest('.relative').remove();
+            });
+        });
+
         card.querySelectorAll('.btn-remove-inline').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -776,8 +776,7 @@ export const ui = {
                 const sections = {
                     desc: card.querySelector(`#section-desc-${id}`),
                     tasks: card.querySelector(`#section-tasks-${id}`),
-                    url: card.querySelector(`#section-url-${id}`),
-                    alarm: card.querySelector(`#section-alarm-${id}`)
+                    url: card.querySelector(`#section-url-${id}`)
                 };
 
                 // 1. Mostrar/Ocultar secciones según el tipo
@@ -793,19 +792,20 @@ export const ui = {
                     sections.url?.classList.remove('hidden');
                 }
 
-                // 2. Preservación de Datos: Si se cambia desde Enlace, no perder la URL
-                const urlInput = card.querySelector(`#inline-url-${id}`);
+                // 2. Preservación de Datos: Si se cambia desde Enlace, no perder las URLs
+                const urlInputs = card.querySelectorAll(`#inline-urls-list-${id} input`);
                 const descInput = card.querySelector(`#inline-desc-${id}`);
 
-                if (newType !== 'directorio' && urlInput && urlInput.value.trim()) {
-                    // Mover URL a la descripción para no perderla
-                    const urlVal = urlInput.value.trim();
-                    if (descInput && !descInput.value.includes(urlVal)) {
-                        descInput.value = descInput.value ? descInput.value + '\n\nEnlace: ' + urlVal : 'Enlace: ' + urlVal;
-                        sections.desc?.classList.remove('hidden');
-                        urlInput.value = ''; // Limpiar campo original
+                urlInputs.forEach(urlInput => {
+                    if (newType !== 'directorio' && urlInput && urlInput.value.trim()) {
+                        // Mover URLs a la descripción para no perderlas
+                        const urlVal = urlInput.value.trim();
+                        if (descInput && !descInput.value.includes(urlVal)) {
+                            descInput.value = descInput.value ? descInput.value + '\n\nEnlace: ' + urlVal : 'Enlace: ' + urlVal;
+                            sections.desc?.classList.remove('hidden');
+                        }
                     }
-                }
+                });
             });
         }
     },
@@ -825,29 +825,31 @@ export const ui = {
         div.querySelector('textarea').focus();
     },
 
+    addInlineUrl(id) {
+        const list = document.getElementById(`inline-urls-list-${id}`);
+        if (!list) return;
+        const count = list.querySelectorAll('.relative').length;
+        const div = document.createElement('div');
+        div.className = 'relative flex gap-2 animate-fadeIn';
+        div.innerHTML = `
+            <i class="fa-solid fa-link absolute left-4 top-1/2 -translate-y-1/2 text-ink/30"></i>
+            <input type="url" data-url-index="${count}" 
+                   class="w-full bg-white/40 border-none rounded-2xl pl-10 pr-5 py-3 text-base text-ink placeholder-ink/30 focus:ring-2 focus:ring-white/50 outline-none font-medium" 
+                   placeholder="https://...">
+            <button type="button" class="btn-remove-url px-3 text-ink/30 hover:text-urgent transition-colors">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        `;
+        div.querySelector('.btn-remove-url').addEventListener('click', () => div.remove());
+        list.appendChild(div);
+        div.querySelector('input').focus();
+    },
+
     async handleInlineSave(card, item) {
         const id = item.id;
         const content = document.getElementById(`inline-content-${id}`).value;
         const type = document.getElementById(`inline-type-${id}`).value;
         const descripcion = document.getElementById(`inline-desc-${id}`)?.value || '';
-        const url = document.getElementById(`inline-url-${id}`)?.value || '';
-        const date = document.getElementById(`inline-date-${id}`)?.value || '';
-        const time = document.getElementById(`inline-time-${id}`)?.value || '';
-
-        let deadline = null;
-        if (date && time) {
-            // Crear fecha local y convertir a ISO string
-            const [year, month, day] = date.split('-').map(Number);
-            const [hour, minute] = time.split(':').map(Number);
-            const d = new Date(year, month - 1, day, hour, minute, 0, 0);
-            deadline = d.toISOString();
-        } else if (date) {
-            // Solo fecha, sin hora - crear a medianoche UTC
-            deadline = date + 'T00:00:00.000Z';
-        } else {
-            // No hay deadline
-            deadline = null;
-        }
 
         const tareas = [];
         card.querySelectorAll('#inline-tasks-list-' + id + ' .group\\/task').forEach(row => {
@@ -860,6 +862,13 @@ export const ui = {
             }
         });
 
+        // Capturar múltiples URLs
+        const urls = [];
+        card.querySelectorAll(`#inline-urls-list-${id} input`).forEach(input => {
+            const val = input.value.trim();
+            if (val) urls.push(val);
+        });
+
         // Capturar meta data (Energía)
         const energia = document.getElementById(`inline-energy-${id}`)?.value;
         const meta = {
@@ -867,7 +876,7 @@ export const ui = {
             energia: energia ? parseInt(energia) : (item.meta?.energia || null)
         };
 
-        const updates = { id, content, type, descripcion, url, tareas, deadline, meta };
+        const updates = { id, content, type, descripcion, urls, tareas, meta };
 
         if (window.kai) {
             await window.kai.dataUpdateInline(id, updates);
