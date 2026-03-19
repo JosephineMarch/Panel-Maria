@@ -140,17 +140,16 @@ const ShareUtils = {
         if (existingModal) existingModal.remove();
 
         const domain = url ? (() => { try { return new URL(url).hostname; } catch { return ''; } })() : '';
-        const colors = this.getTypeColor(suggestedType);
         
         const hasTitle = title && title !== 'Enlace compartido' && title !== 'Nota compartida';
 
-        // Obtener proyectos para el selector
-        let proyectos = [];
+        // Obtener TODOS los items para el selector (para agregar a uno existente)
+        let allItems = [];
         try {
             const { data } = await import('./data.js');
-            proyectos = await data.getItems({ type: 'proyecto' });
+            allItems = await data.getItems({});
         } catch (e) {
-            console.error('Error loading projects for share modal:', e);
+            console.error('Error loading items for share modal:', e);
         }
         
         const modal = document.createElement('div');
@@ -166,16 +165,17 @@ const ShareUtils = {
                 </div>
                 
                 <div class="p-6 space-y-4">
-                    <div class="bg-gradient-to-r ${colors.bg} to-transparent rounded-2xl p-4 border-l-4 ${colors.text.replace('text-', 'border-')}">
+                    <!-- Preview del contenido -->
+                    <div class="bg-gradient-to-r from-purple-50 to-transparent rounded-2xl p-4 border-l-4 border-purple-500">
                         <div class="flex items-center gap-2 mb-2">
-                            <span class="text-xs font-bold uppercase ${colors.text}">✨ ${this.getTypeLabel(suggestedType)} sugerido</span>
+                            <span class="text-xs font-bold uppercase text-purple-600">🔗 Enlace</span>
                         </div>
                         <input type="text" id="share-title-input" 
                             class="w-full bg-white/50 border-none rounded-xl px-3 py-2 text-sm font-bold text-ink placeholder-ink/40 focus:ring-2 focus:ring-brand outline-none"
                             placeholder="${hasTitle ? '' : 'Escribe un título...'}"
-                            value="${hasTitle ? title : ''}"
+                            value="${hasTitle ? this.escapeHtml(title) : ''}"
                             autocomplete="off">
-                        ${url ? `<p class="text-xs text-gray-500 truncate mt-1">${domain}</p>` : ''}
+                        ${url ? `<p class="text-xs text-gray-500 truncate mt-1">${this.escapeHtml(domain)}</p>` : ''}
                     </div>
 
                     ${url ? `
@@ -185,43 +185,38 @@ const ShareUtils = {
                         </a>
                     ` : ''}
 
-                    <div class="space-y-4 pt-2">
-                        <!-- Selector de Proyecto -->
-                        <div class="space-y-1">
-                            <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">📍 Guardar en:</label>
-                            <select id="share-parent-id" class="w-full bg-gray-50 border-none rounded-xl px-3 py-2 text-sm font-bold text-ink focus:ring-2 focus:ring-brand outline-none">
-                                <option value="">📥 Bandeja de entrada</option>
-                                ${proyectos.map(p => `<option value="${p.id}">📁 ${p.content}</option>`).join('')}
-                            </select>
-                        </div>
+                    <!-- Selector de card existente -->
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
+                            🔗 Agregar a una card existente:
+                        </label>
+                        <select id="share-existing-card" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm font-medium text-ink focus:ring-2 focus:ring-brand outline-none">
+                            <option value="">-- Seleccionar card --</option>
+                            ${allItems.filter(item => item.id && !item.completado).map(item => {
+                                const typeIcon = this.getTypeIcon(item.type);
+                                const truncated = item.content?.length > 40 ? item.content.substring(0, 40) + '...' : item.content;
+                                return `<option value="${item.id}" data-type="${item.type || 'nota'}">${typeIcon} ${truncated || 'Sin título'}</option>`;
+                            }).join('')}
+                        </select>
+                        <p class="text-[10px] text-gray-400 text-center">O dejá vacío para crear una nueva card</p>
+                    </div>
 
-                        <div class="space-y-2">
-                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">O clasificar como:</p>
-                            
-                            <div class="grid grid-cols-2 gap-2">
-                                <button class="share-option ${colors.bg} hover:brightness-95 ${colors.text} font-bold py-2 px-3 rounded-xl flex items-center gap-2 transition text-sm"
-                                        data-type="${suggestedType}" data-url="${url || ''}">
-                                    <i class="fa-solid ${this.getTypeIcon(suggestedType)}"></i>
-                                    ${this.getTypeLabel(suggestedType)}
-                                </button>
-                                
-                                ${['nota', 'tarea', 'proyecto', 'directorio'].filter(t => t !== suggestedType).map(type => `
-                                    <button class="share-option bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2 px-3 rounded-xl flex items-center gap-2 transition text-sm"
-                                            data-type="${type}" data-url="${url || ''}">
-                                        <i class="fa-solid ${this.getTypeIcon(type)}"></i>
-                                        ${this.getTypeLabel(type)}
-                                    </button>
-                                `).join('')}
-                            </div>
-                            
-                            <button id="kai-classify-btn" class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition hover:brightness-110">
-                                <span class="text-lg">🧠</span> Kai decide por mí
-                            </button>
-                            
-                            <button id="dismiss-share" class="w-full bg-gray-100 text-gray-500 font-bold py-2 px-4 rounded-xl transition text-sm">
-                                Descartar
-                            </button>
-                        </div>
+                    <!-- Botones de acción -->
+                    <div class="space-y-2 pt-4 border-t border-gray-100">
+                        <button id="share-save-new" 
+                                class="w-full bg-brand text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition hover:bg-brand-dark active:scale-[0.98]">
+                            <i class="fa-solid fa-plus"></i> Guardar como nueva card
+                        </button>
+                        
+                        <button id="share-add-to-existing" 
+                                class="w-full bg-gray-100 text-ink font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition hover:bg-gray-200 active:scale-[0.98]">
+                            <i class="fa-solid fa-link"></i> Agregar a la card seleccionada
+                        </button>
+                        
+                        <button id="dismiss-share" 
+                                class="w-full text-gray-400 font-bold py-2 px-4 rounded-xl transition text-sm hover:text-gray-600">
+                            Descartar
+                        </button>
                     </div>
                 </div>
             </div>
@@ -232,24 +227,81 @@ const ShareUtils = {
         document.getElementById('close-share-modal').onclick = () => this.closeModal();
         document.getElementById('dismiss-share').onclick = () => this.closeModal();
         
-        document.getElementById('kai-classify-btn').onclick = () => {
-            const parentId = document.getElementById('share-parent-id').value;
-            this.classifyWithKai(url, document.getElementById('share-title-input').value || fullText, parentId);
+        // Guardar como nueva card
+        document.getElementById('share-save-new').onclick = () => {
+            const itemTitle = document.getElementById('share-title-input').value || 'Enlace compartido';
+            this.saveSharedItem('directorio', itemTitle, url, null);
         };
         
-        document.querySelectorAll('.share-option').forEach(btn => {
-            btn.onclick = () => {
-                const type = btn.dataset.type;
-                const itemUrl = btn.dataset.url;
-                const itemTitle = document.getElementById('share-title-input').value || 'Contenido compartido';
-                const parentId = document.getElementById('share-parent-id').value;
-                this.saveSharedItem(type, itemTitle, itemUrl, parentId);
-            };
+        // Agregar a card existente
+        document.getElementById('share-add-to-existing').onclick = () => {
+            const selectedId = document.getElementById('share-existing-card').value;
+            const itemTitle = document.getElementById('share-title-input').value || 'Enlace compartido';
+            
+            if (!selectedId) {
+                ui.showNotification('Seleccioná una card primero', 'warning');
+                return;
+            }
+            
+            this.addUrlToExistingItem(selectedId, url, itemTitle);
+        };
+        
+        // Deshabilitar botón "Agregar" si no hay selección
+        const existingSelect = document.getElementById('share-existing-card');
+        const addBtn = document.getElementById('share-add-to-existing');
+        existingSelect?.addEventListener('change', () => {
+            if (addBtn) {
+                addBtn.disabled = !existingSelect.value;
+                addBtn.classList.toggle('opacity-50', !existingSelect.value);
+                addBtn.classList.toggle('cursor-not-allowed', !existingSelect.value);
+            }
         });
+        if (addBtn) {
+            addBtn.disabled = true;
+            addBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
 
         modal.onclick = (e) => {
             if (e.target === modal) this.closeModal();
         };
+    },
+
+    async addUrlToExistingItem(itemId, url, title) {
+        try {
+            const { data } = await import('./data.js');
+            const items = await data.getItems({ id: itemId });
+            const item = Array.isArray(items) ? items[0] : items;
+            
+            if (!item) {
+                ui.showNotification('No encontré la card', 'error');
+                return;
+            }
+            
+            // Agregar URL a la lista existente
+            const urls = item.urls || [];
+            if (!urls.includes(url)) {
+                urls.push(url);
+            }
+            
+            await data.updateItem(itemId, { urls: urls });
+            
+            window.dispatchEvent(new CustomEvent('kai:add-item-to-existing', {
+                detail: { id: itemId, url, title }
+            }));
+            
+            ui.showNotification(`Enlace agregado a "${item.content?.substring(0, 30) || 'la card'}" ✅`, 'success');
+            this.closeModal();
+        } catch (error) {
+            console.error('Error adding URL to existing item:', error);
+            ui.showNotification('Error al agregar el enlace', 'error');
+        }
+    },
+
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     },
 
     async classifyWithKai(url, text, parentId) {

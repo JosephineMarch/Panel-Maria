@@ -47,6 +47,7 @@ import { auth } from './auth.js';
 import { ai } from './ai.js';
 import { cerebras } from './cerebras.js';
 import { requestFCMToken } from './firebase.js';
+import { hoy } from './hoy.js';
 
 function formatDeadlineForDB(deadline) {
     if (!deadline) return null;
@@ -87,20 +88,23 @@ class KaiController {
         this.bindEvents();
         this.startAlarmChecker();
         this.setupRealtimeSubscription();
-        
-        // Restaurar estado persistido
-        this.restoreState();
 
         try {
             this.currentUser = await auth.init();
             if (this.currentUser) {
                 ui.updateUserInfo(this.currentUser);
-                await this.loadItems();
+                // Restaurar estado persistido DESPUÉS de tener usuario
+                this.restoreState();
+                // Cargar según la vista actual
+                if (this.currentView === 'hoy') {
+                    await this.loadHoySection();
+                } else {
+                    await this.loadItems();
+                }
                 // Restaurar card expandida si había una
                 this.restoreExpandedCard();
             } else {
                 // No cargar demo automáticamente - esperar a que usuario lo genere
-                // console.log('Sin sesión - esperando generación de demo...');
                 this.loadEmptyState();
             }
         } catch (error) {
@@ -132,11 +136,44 @@ class KaiController {
                 this.currentCategory = state.currentCategory || 'all';
                 this.currentTag = state.currentTag || null;
                 
-                // Aplicar la vista guardada
-                this.applyViewState();
+                // Aplicar la vista guardada (sin cargar datos - eso se hace en init())
+                this.applyViewStateOnly();
             }
         } catch (e) {
             console.warn('No se pudo restaurar estado:', e);
+        }
+    }
+    
+    // Versión de applyViewState que NO carga datos (para restoreState)
+    applyViewStateOnly() {
+        const btnHoy = document.getElementById('nav-hoy');
+        const btnTimeline = document.getElementById('nav-timeline');
+        
+        if (btnHoy && btnTimeline) {
+            if (this.currentView === 'hoy') {
+                btnHoy.classList.add('bg-brand', 'text-white', 'shadow-sticker');
+                btnHoy.classList.remove('text-gray-500', 'hover:bg-gray-100');
+                btnTimeline.classList.remove('bg-brand', 'text-white', 'shadow-sticker');
+                btnTimeline.classList.add('text-gray-500', 'hover:bg-gray-100');
+            } else {
+                btnTimeline.classList.add('bg-brand', 'text-white', 'shadow-sticker');
+                btnTimeline.classList.remove('text-gray-500', 'hover:bg-gray-100');
+                btnHoy.classList.remove('bg-brand', 'text-white', 'shadow-sticker');
+                btnHoy.classList.add('text-gray-500', 'hover:bg-gray-100');
+            }
+        }
+        
+        const sectionHoy = document.getElementById('section-hoy');
+        const timelineContent = document.getElementById('timeline-content');
+        
+        if (sectionHoy && timelineContent) {
+            if (this.currentView === 'hoy') {
+                sectionHoy.classList.remove('hidden');
+                timelineContent.classList.add('hidden');
+            } else {
+                sectionHoy.classList.add('hidden');
+                timelineContent.classList.remove('hidden');
+            }
         }
     }
     
@@ -167,6 +204,10 @@ class KaiController {
             if (this.currentView === 'hoy') {
                 sectionHoy.classList.remove('hidden');
                 timelineContent.classList.add('hidden');
+                // Cargar datos de HOY si hay usuario
+                if (this.currentUser) {
+                    this.loadHoySection();
+                }
             } else {
                 sectionHoy.classList.add('hidden');
                 timelineContent.classList.remove('hidden');
@@ -185,6 +226,253 @@ class KaiController {
         if (view === 'timeline') {
             this.loadItems();
         }
+        
+        // Si es HOY, cargar datos de HOY
+        if (view === 'hoy') {
+            this.loadHoySection();
+        }
+    }
+    
+    // ==================== SECCIÓN HOY ====================
+    
+    async loadHoySection() {
+        await this.updateHoyDate();
+        await this.loadRoutines();
+        await this.loadTodayTasks();
+        this.initHoyEvents();
+    }
+    
+    updateHoyDate() {
+        const fechaEl = document.getElementById('hoy-fecha');
+        const saludoEl = document.getElementById('hoy-saludo');
+        if (!fechaEl || !saludoEl) return;
+        
+        const hoy = new Date();
+        const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        
+        fechaEl.textContent = `${diasSemana[hoy.getDay()]} ${hoy.getDate()} de ${meses[hoy.getMonth()]}`;
+        
+        const hora = hoy.getHours();
+        if (hora < 12) {
+            saludoEl.textContent = 'Buenos días ☀️';
+        } else if (hora < 18) {
+            saludoEl.textContent = 'Buenas tardes 🌤️';
+        } else {
+            saludoEl.textContent = 'Buenas noches 🌙';
+        }
+    }
+    
+    async loadRoutines() {
+        const container = document.getElementById('rutinas-list');
+        if (!container) return;
+        
+        try {
+            const routines = await hoy.getRoutines();
+            const completions = await hoy.getRoutineCompletions();
+            const completedIds = completions.map(c => c.routine_id || c.id);
+            
+            container.innerHTML = routines.map(r => `
+                <div class="flex items-center gap-3 p-3 rounded-xl bg-brand/5 border border-brand/10 group hover:bg-brand/10 transition">
+                    <input type="checkbox" 
+                           class="routine-checkbox w-6 h-6 rounded border-2 border-brand text-brand focus:ring-brand accent-brand cursor-pointer"
+                           data-routine-id="${r.id}"
+                           ${completedIds.includes(r.id) ? 'checked' : ''}>
+                    <span class="text-2xl">${r.emoji || '📌'}</span>
+                    <span class="flex-1 font-medium text-ink ${completedIds.includes(r.id) ? 'line-through opacity-50' : ''}">${r.name}</span>
+                    ${r.is_default ? '<span class="text-[10px] text-brand font-bold">DEFAULT</span>' : ''}
+                </div>
+            `).join('');
+            
+            // Bind eventos de checkboxes
+            container.querySelectorAll('.routine-checkbox').forEach(cb => {
+                cb.addEventListener('change', async (e) => {
+                    const routineId = e.target.dataset.routineId;
+                    const completed = e.target.checked;
+                    await hoy.toggleRoutineCompletion(routineId, completed);
+                    
+                    // Actualizar UI
+                    const row = e.target.closest('.flex');
+                    const text = row.querySelector('span:nth-child(3)');
+                    if (text) {
+                        if (completed) {
+                            text.classList.add('line-through', 'opacity-50');
+                        } else {
+                            text.classList.remove('line-through', 'opacity-50');
+                        }
+                    }
+                });
+            });
+        } catch (error) {
+            console.error('Error loading routines:', error);
+            container.innerHTML = '<p class="text-center text-gray-400 py-4">Error al cargar rutinas</p>';
+        }
+    }
+    
+    async loadTodayTasks() {
+        const container = document.getElementById('tareas-list');
+        if (!container) return;
+        
+        try {
+            let tasks = [];
+            
+            if (this.currentUser) {
+                tasks = await hoy.getTodayTasks();
+            } else {
+                tasks = hoy.getLocalTodayTasks();
+            }
+            
+            if (tasks.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-6 text-gray-400">
+                        <span class="text-4xl">📋</span>
+                        <p class="mt-2 text-sm">No hay tareas para hoy. ¡Agrega una!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = tasks.map(t => `
+                <div class="flex items-center gap-3 p-3 rounded-xl bg-white border border-gray-100 hover:border-brand/20 transition group" data-task-id="${t.id}">
+                    <input type="checkbox"
+                           class="hoy-task-checkbox w-5 h-5 rounded border-2 border-gray-200 text-brand focus:ring-brand accent-brand cursor-pointer"
+                           data-task-id="${t.id}"
+                           ${t.completed ? 'checked' : ''}>
+                    <span class="flex-1 text-ink ${t.completed ? 'line-through opacity-50' : 'font-medium'}">${t.content}</span>
+                    <button class="hoy-task-delete opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition p-1" data-task-id="${t.id}">
+                        <i class="fa-solid fa-xmark text-sm"></i>
+                    </button>
+                </div>
+            `).join('');
+            
+            // Bind eventos de checkboxes
+            container.querySelectorAll('.hoy-task-checkbox').forEach(cb => {
+                cb.addEventListener('change', async (e) => {
+                    const taskId = e.target.dataset.taskId;
+                    const completed = e.target.checked;
+                    await hoy.toggleTaskCompletion(taskId, completed);
+                    
+                    // Actualizar UI
+                    const row = e.target.closest('.flex');
+                    const text = row.querySelector('span:nth-child(2)');
+                    if (text) {
+                        if (completed) {
+                            text.classList.add('line-through', 'opacity-50');
+                        } else {
+                            text.classList.remove('line-through', 'opacity-50');
+                        }
+                    }
+                });
+            });
+            
+            // Bind eventos de eliminar
+            container.querySelectorAll('.hoy-task-delete').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const taskId = btn.dataset.taskId;
+                    if (confirm('¿Eliminar esta tarea?')) {
+                        await hoy.deleteTask(taskId);
+                        await this.loadTodayTasks();
+                    }
+                });
+            });
+        } catch (error) {
+            console.error('Error loading tasks:', error);
+            container.innerHTML = '<p class="text-center text-gray-400 py-4">Error al cargar tareas</p>';
+        }
+    }
+    
+    initHoyEvents() {
+        // Botón agregar tarea
+        const btnAddTask = document.getElementById('btn-add-task-hoy');
+        const addTaskForm = document.getElementById('add-task-form');
+        const newTaskInput = document.getElementById('new-task-input');
+        const btnConfirmTask = document.getElementById('btn-confirm-task');
+        
+        btnAddTask?.addEventListener('click', () => {
+            addTaskForm?.classList.toggle('hidden');
+            if (!addTaskForm?.classList.contains('hidden')) {
+                newTaskInput?.focus();
+            }
+        });
+        
+        btnConfirmTask?.addEventListener('click', async () => {
+            const content = newTaskInput?.value.trim();
+            if (content) {
+                await hoy.addTask(content);
+                newTaskInput.value = '';
+                addTaskForm?.classList.add('hidden');
+                await this.loadTodayTasks();
+            }
+        });
+        
+        newTaskInput?.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                btnConfirmTask?.click();
+            }
+        });
+        
+        // Botón cancelar en formulario de tarea
+        newTaskInput?.closest('.flex')?.querySelector('button:first-child')?.addEventListener('click', () => {
+            addTaskForm?.classList.add('hidden');
+            newTaskInput.value = '';
+        });
+        
+        // Botón guardar check-in
+        document.getElementById('btn-save-checkin')?.addEventListener('click', async () => {
+            const emotionalState = document.querySelector('.emoji-btn.selected')?.dataset.emoji || null;
+            const physical = document.getElementById('checkin-physical')?.value.trim() || '';
+            const note = document.getElementById('checkin-note')?.value.trim() || '';
+            
+            if (!emotionalState) {
+                ui.showNotification('Selecciona cómo te sientes 😊', 'warning');
+                return;
+            }
+            
+            await hoy.saveCheckin(emotionalState, physical, note);
+            ui.showNotification('¡Check-in guardado! 💚', 'success');
+        });
+        
+        // Selector de emoji (para marcar selección)
+        document.querySelectorAll('.emoji-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('selected', 'border-brand', 'bg-brand/10'));
+                btn.classList.add('selected', 'border-brand', 'bg-brand/10');
+            });
+        });
+        
+        // Botón agregar rutina
+        const btnAddRoutine = document.getElementById('btn-add-routine');
+        const addRoutineForm = document.getElementById('add-routine-form');
+        const newRoutineInput = document.getElementById('new-routine-input');
+        const btnConfirmRoutine = document.getElementById('btn-confirm-routine');
+        const btnCancelRoutine = document.getElementById('btn-cancel-routine');
+        
+        btnAddRoutine?.addEventListener('click', () => {
+            addRoutineForm?.classList.toggle('hidden');
+            if (!addRoutineForm?.classList.contains('hidden')) {
+                newRoutineInput?.focus();
+            }
+        });
+        
+        btnCancelRoutine?.addEventListener('click', () => {
+            addRoutineForm?.classList.add('hidden');
+            newRoutineInput.value = '';
+        });
+        
+        btnConfirmRoutine?.addEventListener('click', async () => {
+            const name = newRoutineInput?.value.trim();
+            const isDefault = document.getElementById('set-as-default')?.checked || false;
+            
+            if (name) {
+                await hoy.addRoutine(name, '📌', isDefault);
+                newRoutineInput.value = '';
+                document.getElementById('set-as-default').checked = false;
+                addRoutineForm?.classList.add('hidden');
+                await this.loadRoutines();
+            }
+        });
     }
     
     setExpandedCard(cardId) {
@@ -2013,6 +2301,7 @@ Responde SOLO JSON con esta estructura:
 // Inicialización global
 window.addEventListener('DOMContentLoaded', () => {
     window.kai = new KaiController();
+    window.controller = window.kai; // Compatibilidad con módulos que buscan window.controller
 });
 
 export default KaiController;
