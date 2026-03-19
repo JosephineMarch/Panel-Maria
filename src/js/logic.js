@@ -77,6 +77,8 @@ class KaiController {
         this.currentCategory = 'all';
         this.currentTag = null;
         this.breadcrumbPath = [];
+        this.currentView = 'timeline'; // Default: Timeline
+        this.expandedCardId = null; // ID de la card expandida (para persistencia)
         this.init();
     }
 
@@ -85,12 +87,17 @@ class KaiController {
         this.bindEvents();
         this.startAlarmChecker();
         this.setupRealtimeSubscription();
+        
+        // Restaurar estado persistido
+        this.restoreState();
 
         try {
             this.currentUser = await auth.init();
             if (this.currentUser) {
                 ui.updateUserInfo(this.currentUser);
                 await this.loadItems();
+                // Restaurar card expandida si había una
+                this.restoreExpandedCard();
             } else {
                 // No cargar demo automáticamente - esperar a que usuario lo genere
                 // console.log('Sin sesión - esperando generación de demo...');
@@ -102,6 +109,117 @@ class KaiController {
         }
 
         ai.init();
+    }
+    
+    // === Persistencia de Estado ===
+    saveState() {
+        const state = {
+            currentView: this.currentView,
+            expandedCardId: this.expandedCardId,
+            currentCategory: this.currentCategory,
+            currentTag: this.currentTag
+        };
+        localStorage.setItem('kai_state', JSON.stringify(state));
+    }
+    
+    restoreState() {
+        try {
+            const saved = localStorage.getItem('kai_state');
+            if (saved) {
+                const state = JSON.parse(saved);
+                this.currentView = state.currentView || 'timeline';
+                this.expandedCardId = state.expandedCardId || null;
+                this.currentCategory = state.currentCategory || 'all';
+                this.currentTag = state.currentTag || null;
+                
+                // Aplicar la vista guardada
+                this.applyViewState();
+            }
+        } catch (e) {
+            console.warn('No se pudo restaurar estado:', e);
+        }
+    }
+    
+    applyViewState() {
+        // Actualizar botones de navegación
+        const btnHoy = document.getElementById('nav-hoy');
+        const btnTimeline = document.getElementById('nav-timeline');
+        
+        if (btnHoy && btnTimeline) {
+            if (this.currentView === 'hoy') {
+                btnHoy.classList.add('bg-brand', 'text-white', 'shadow-sticker');
+                btnHoy.classList.remove('text-gray-500', 'hover:bg-gray-100');
+                btnTimeline.classList.remove('bg-brand', 'text-white', 'shadow-sticker');
+                btnTimeline.classList.add('text-gray-500', 'hover:bg-gray-100');
+            } else {
+                btnTimeline.classList.add('bg-brand', 'text-white', 'shadow-sticker');
+                btnTimeline.classList.remove('text-gray-500', 'hover:bg-gray-100');
+                btnHoy.classList.remove('bg-brand', 'text-white', 'shadow-sticker');
+                btnHoy.classList.add('text-gray-500', 'hover:bg-gray-100');
+            }
+        }
+        
+        // Mostrar/ocultar secciones
+        const sectionHoy = document.getElementById('section-hoy');
+        const timelineContent = document.getElementById('timeline-content');
+        
+        if (sectionHoy && timelineContent) {
+            if (this.currentView === 'hoy') {
+                sectionHoy.classList.remove('hidden');
+                timelineContent.classList.add('hidden');
+            } else {
+                sectionHoy.classList.add('hidden');
+                timelineContent.classList.remove('hidden');
+            }
+        }
+    }
+    
+    switchView(view) {
+        if (this.currentView === view) return;
+        
+        this.currentView = view;
+        this.saveState();
+        this.applyViewState();
+        
+        // Si es Timeline, recargar items
+        if (view === 'timeline') {
+            this.loadItems();
+        }
+    }
+    
+    setExpandedCard(cardId) {
+        this.expandedCardId = cardId;
+        this.saveState();
+    }
+    
+    clearExpandedCard() {
+        this.expandedCardId = null;
+        this.saveState();
+    }
+    
+    restoreExpandedCard() {
+        if (!this.expandedCardId) return;
+        
+        // Buscar la card y expandirla
+        setTimeout(() => {
+            const card = document.querySelector(`[data-id="${this.expandedCardId}"]`);
+            if (card && card.dataset.expanded === 'false') {
+                // Necesitamos el item para expandir
+                this.loadItems().then(() => {
+                    const expandedCard = document.querySelector(`[data-id="${this.expandedCardId}"]`);
+                    if (expandedCard) {
+                        // Simular click para expandir
+                        // Pero primero necesitamos el item data
+                        data.getItems({}).then(items => {
+                            const item = items.find(i => i.id === this.expandedCardId);
+                            if (item) {
+                                ui.expandCard(expandedCard, item);
+                            }
+                        });
+                    }
+                });
+            }
+        }, 100);
     }
 
     loadEmptyState() {
@@ -282,6 +400,10 @@ class KaiController {
     }
 
     bindEvents() {
+        // --- Navegación HOY / TIMELINE ---
+        document.getElementById('nav-hoy')?.addEventListener('click', () => this.switchView('hoy'));
+        document.getElementById('nav-timeline')?.addEventListener('click', () => this.switchView('timeline'));
+        
         // --- Datos (Import/Export) ---
         document.getElementById('btn-export')?.addEventListener('click', () => this.handleExport());
         document.getElementById('btn-import')?.addEventListener('click', () => {
@@ -392,7 +514,7 @@ class KaiController {
             const finishBtn = e.target.closest('.action-finish');
             const deleteBtn = e.target.closest('.action-delete');
             const openBtn = e.target.closest('.action-open');
-            const pinBtn = e.target.closest('.action-pin');
+            const pinBtn = e.target.closest('.btn-pin');
             const editBtn = e.target.closest('.action-edit');
             const taskCheckbox = e.target.closest('.timeline-task-checkbox');
 

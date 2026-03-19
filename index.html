@@ -215,12 +215,12 @@
         <!-- NAV: HOY | TIMELINE -->
         <nav class="flex px-3 pb-3 gap-2" role="navigation" aria-label="Navegación principal">
             <button id="nav-hoy"
-                class="btn-nav flex-1 min-h-[48px] py-3 rounded-xl text-base font-bold transition-all bg-brand text-white shadow-sticker"
+                class="btn-nav flex-1 min-h-[48px] py-3 rounded-xl text-base font-bold transition-all text-gray-500 hover:bg-gray-100"
                 data-view="hoy" aria-label="Sección Hoy">
                 📓 Hoy
             </button>
             <button id="nav-timeline"
-                class="btn-nav flex-1 min-h-[48px] py-3 rounded-xl text-base font-bold transition-all text-gray-500 hover:bg-gray-100"
+                class="btn-nav flex-1 min-h-[48px] py-3 rounded-xl text-base font-bold transition-all bg-brand text-white shadow-sticker"
                 data-view="timeline" aria-label="Timeline">
                 📋 Timeline
             </button>
@@ -231,7 +231,7 @@
         role="main">
         
         <!-- ==================== SECCIÓN HOY ==================== -->
-        <section id="section-hoy" class="space-y-6">
+        <section id="section-hoy" class="space-y-6 hidden">
             <!-- Fecha actual -->
             <div class="bg-brand/5 border-2 border-brand/20 p-4 rounded-[2.5rem] shadow-sm">
                 <div class="text-center">

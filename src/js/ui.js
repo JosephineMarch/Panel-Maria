@@ -97,6 +97,29 @@ export const ui = {
         }).join('');
     },
 
+    // Previsualización de URLs clicables (consistente en todas las cards)
+    renderUrlPreviews(item, maxVisible = 2) {
+        const urls = Array.isArray(item.urls) ? item.urls : (item.url ? [item.url] : []);
+        if (urls.length === 0) return '';
+        
+        const validUrls = urls.filter(u => u);
+        if (validUrls.length === 0) return '';
+        
+        const linksHtml = validUrls.slice(0, maxVisible).map(u => {
+            const urlLabel = u.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
+            return `<a href="${encodeURI(u)}" target="_blank" rel="noopener noreferrer" 
+                        class="flex items-center gap-1.5 text-sm text-action hover:text-action/70 hover:underline underline-offset-2 transition-colors">
+                        <i class="fa-solid fa-link text-[9px] shrink-0"></i>
+                        <span class="truncate">${urlLabel}</span>
+                    </a>`;
+        }).join('');
+        
+        const hiddenCount = validUrls.length - maxVisible;
+        const moreText = hiddenCount > 0 ? `<p class="text-[10px] font-bold text-brand">+ ${hiddenCount} enlace${hiddenCount > 1 ? 's' : ''}...</p>` : '';
+        
+        return `<div class="mt-2 space-y-1">${linksHtml}${moreText}</div>`;
+    },
+
     toggleKaiChat(show = null) {
         const chatOverlay = this.elements.kaiChatWindow();
         if (!chatOverlay) return;
@@ -401,6 +424,10 @@ export const ui = {
                             ${item.tareas.length > 3 ? `<p class="text-[10px] font-bold text-brand ml-7">+ ${item.tareas.length - 3} más...</p>` : ''}
                         </div>
                     ` : ''}
+
+                    <!-- Previsualización de Enlaces (clicables) -->
+                    ${this.renderUrlPreviews(item, 2)}
+
                     ${this.renderTags(item.tags) ? `<div class="flex gap-1.5 flex-wrap mt-3">${this.renderTags(item.tags)}</div>` : ''}
                 </div>
             `;
@@ -465,19 +492,8 @@ export const ui = {
                 `;
             }
 
-            // 3. Previsualización de Enlaces Múltiples
-            const urls = Array.isArray(item.urls) ? item.urls : (item.url ? [item.url] : []);
-            urls.forEach(u => {
-                if (u) {
-                    const urlLabel = u.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
-                    previewHtml += `
-                        <div class="mt-2 flex items-center gap-1 text-base text-action font-normal hover:underline underline-offset-2">
-                            <i class="fa-solid fa-link text-[9px]"></i>
-                            <span class="truncate">${urlLabel}</span>
-                        </div>
-                    `;
-                }
-            });
+            // 3. Previsualización de Enlaces Múltiples (clicables)
+            previewHtml += this.renderUrlPreviews(item, 2);
 
             // 4. Barra de Progreso (Solo si hay tareas)
             let progressHtml = '';
@@ -684,6 +700,11 @@ export const ui = {
 
         this.updateCardContent(card, item, true);
         card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Guardar estado de card expandida
+        if (window.kai) {
+            window.kai.setExpandedCard(item.id);
+        }
     },
 
     bindInlineEvents(card, item) {
@@ -696,6 +717,10 @@ export const ui = {
                 e.stopPropagation();
                 card.dataset.expanded = 'false';
                 this.updateCardContent(card, item, false);
+                // Limpiar estado de card expandida
+                if (window.kai) {
+                    window.kai.clearExpandedCard();
+                }
             });
         });
 
