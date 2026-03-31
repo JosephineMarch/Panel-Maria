@@ -19,6 +19,7 @@ export async function requestFCMToken() {
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') {
             console.log('FCM: Permiso de notificaciones denegado');
+            alert('🔔 PERMISO DENEGADO: Necesitás permitir notificaciones en Configuración → Apps → Panel-Maria → Notificaciones');
             return null;
         }
 
@@ -27,11 +28,13 @@ export async function requestFCMToken() {
 
         if (!registration) {
             console.error('FCM: No se encontró el Service Worker principal (sw.js) registrado');
+            alert('🔔 ERROR: No se encontró el Service Worker. Probá reinstallando la PWA.');
             return null;
         }
 
         console.log('FCM usando SW principal:', registration);
 
+        // FORZAR token nuevo en vez de usar cache (para obtener token del dispositivo actual)
         const token = await getToken(messaging, {
             vapidKey: 'BCHREiBU8nAuYsdRrXCovUK5a1hCoQGHMAAeITKaWWD8eAg8Urp8_dKPkNv7zSbmJDLJ-nz04Mz3wdN13NV417Q',
             serviceWorkerRegistration: registration
@@ -47,7 +50,7 @@ export async function requestFCMToken() {
         }
     } catch (error) {
         console.error('FCM Error:', error);
-        alert('DEBUG MÓVIL - Error Pidiendo Token: ' + error.message + '\\nDetalles: ' + JSON.stringify(error));
+        alert('🔔 ERROR: ' + error.message + '\n\n' + JSON.stringify(error));
     }
     return null;
 }
