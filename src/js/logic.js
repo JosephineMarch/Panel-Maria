@@ -2242,26 +2242,6 @@ Responde SOLO JSON con esta estructura:
             ui.showNotification('❌ Error: ' + error.message, 'error');
         }
     }
-                body: JSON.stringify({
-                    token: token,
-                    title: '🔔 Test de KAI',
-                    body: 'Si ves esto, las notificaciones push funcionan! 🎉',
-                    timestamp: Date.now() // Enviar ahora
-                })
-            });
-
-            if (error) {
-                console.error('Error enviando push:', error);
-                ui.showNotification('❌ Error: ' + error.message, 'error');
-            } else {
-                console.log('Push enviado:', data);
-                ui.showNotification('✅ Notificación de prueba enviada!', 'success');
-            }
-        } catch (error) {
-            console.error('Test push error:', error);
-            ui.showNotification('❌ Error: ' + error.message, 'error');
-        }
-    }
 }
 
 
