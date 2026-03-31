@@ -158,20 +158,24 @@ async function sendFCMMessageV1(token: string, title: string, body: string, item
       body: JSON.stringify({
         message: {
           token: token,
-          notification: {
-            title: title,
-            body: body
-          },
+          // NO usar 'notification' a nivel raíz - eso muestra notificación de Chrome
+          // Usar solo webpush y data para que el Service Worker maneje la notificación
           webpush: {
             headers: {
               Urgency: "high",
               TTL: "86400"
             },
             notification: {
+              title: title,
+              body: body,
               icon: 'https://josephinemarch.github.io/Panel-Maria/src/assets/icon-192.png',
               badge: 'https://josephinemarch.github.io/Panel-Maria/src/assets/icon-192.png',
               tag: itemId ? `kai-alarm-${itemId}` : 'kai-alarm',
-              sound: 'default'
+              sound: 'default',
+              requireInteraction: 'true',
+              actions: [
+                { action: 'open', title: 'Abrir KAI' }
+              ]
             },
             fcmOptions: {
               link: 'https://josephinemarch.github.io/Panel-Maria/?action=alarm'
@@ -179,7 +183,9 @@ async function sendFCMMessageV1(token: string, title: string, body: string, item
           },
           data: {
             itemId: itemId || '',
-            type: 'alarm'
+            type: 'alarm',
+            title: title,
+            body: body
           }
         }
       })
