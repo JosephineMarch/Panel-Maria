@@ -2194,29 +2194,54 @@ Responde SOLO JSON con esta estructura:
     // === Debug: Test de Notificaciones Push ===
     async testPushNotification() {
         try {
-            // Obtener token FCM
-            const { getStoredFCMToken } = await import('./firebase.js');
-            const token = getStoredFCMToken();
+            ui.showNotification('🔔 Obteniendo token FCM...', 'info');
+            
+            // Siempre intentar obtener un token fresco del dispositivo actual
+            const { requestFCMToken, getStoredFCMToken } = await import('./firebase.js');
+            
+            // Primero ver si hay un token guardado
+            let token = getStoredFCMToken();
             
             if (!token) {
-                // Si no hay token, intentar obtener uno nuevo
-                const { requestFCMToken } = await import('./firebase.js');
-                const newToken = await requestFCMToken();
-                if (!newToken) {
-                    ui.showNotification('🔔 No hay token FCM. ¿Diste permiso de notificaciones?', 'error');
-                    return;
-                }
-                ui.showNotification('🔔 Token FCM obtenido. Probando...', 'info');
-                await this.testPushNotification();
+                console.log('🔔 No hay token en localStorage, solicitando uno nuevo...');
+                // Solicitar permiso y obtener token
+                token = await requestFCMToken();
+            } else {
+                console.log('🔔 Token encontrado en localStorage:', token.substring(0, 50) + '...');
+            }
+            
+            if (!token) {
+                ui.showNotification('🔔 ERROR: No se pudo obtener token FCM. Verificá que las notificaciones estén permitidas.', 'error');
                 return;
             }
-
+            
+            ui.showNotification('🔔 Token obtenido. Enviando notificación...', 'info');
             console.log('🔔 Token FCM:', token);
 
             // Enviar notificación de prueba via Edge Function
             const { supabase } = await import('./supabase.js');
             
             const { data, error } = await supabase.functions.invoke('send-push', {
+                body: JSON.stringify({
+                    token: token,
+                    title: '🔔 Test de KAI',
+                    body: 'Si ves esto, las notificaciones push funcionan! 🎉',
+                    timestamp: Date.now() // Enviar ahora
+                })
+            });
+
+            if (error) {
+                console.error('Error enviando push:', error);
+                ui.showNotification('❌ Error: ' + (error.message || error), 'error');
+            } else {
+                console.log('Push enviado:', data);
+                ui.showNotification('✅ Notificación enviada! Revisá tu teléfono.', 'success');
+            }
+        } catch (error) {
+            console.error('Test push error:', error);
+            ui.showNotification('❌ Error: ' + error.message, 'error');
+        }
+    }
                 body: JSON.stringify({
                     token: token,
                     title: '🔔 Test de KAI',

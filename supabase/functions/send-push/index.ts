@@ -5,14 +5,25 @@ const FCM_PROJECT_ID = 'panel-de-control-maria';
 const FIREBASE_CLIENT_EMAIL = Deno.env.get('FIREBASE_CLIENT_EMAIL');
 const FIREBASE_PRIVATE_KEY = Deno.env.get('FIREBASE_PRIVATE_KEY')?.replace(/\\n/g, '\n');
 
+// Headers CORS para permitir GitHub Pages y otros orígenes
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
     const { token, title, body, timestamp, itemId } = await req.json();
 
     if (!token || !title || !body) {
       return new Response(
         JSON.stringify({ error: 'Faltan parámetros requeridos' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -55,19 +66,19 @@ serve(async (req) => {
           message: 'Notificación programada',
           scheduledFor: new Date(scheduledTime).toISOString()
         }),
-        { headers: { 'Content-Type': 'application/json' } }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } else {
       await sendFCMMessageV1(token, title, body, itemId);
       return new Response(
         JSON.stringify({ success: true, message: 'Notificación enviada inmediatamente' }),
-        { headers: { 'Content-Type': 'application/json' } }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
   } catch (error) {
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
