@@ -12,6 +12,14 @@ const ShareUtils = {
         this.setupPostMessageHandler();
     },
 
+    // Referencia a ui (se carga lazily)
+    get ui() {
+        return window.ui || (async () => {
+            const { ui: uiModule } = await import('./ui.js');
+            return uiModule;
+        })();
+    },
+
     setupPostMessageHandler() {
         if ('launchQueue' in window && 'LaunchParams' in window) {
             window.launchQueue.setConsumer(async (launchParams) => {
@@ -107,12 +115,14 @@ const ShareUtils = {
 
     getTypeIcon(type) {
         const icons = {
-            tarea: 'fa-check',
-            proyecto: 'fa-folder',
-            nota: 'fa-sticky-note',
-            directorio: 'fa-link'
+            tarea: '✅',
+            proyecto: '📁',
+            nota: '📝',
+            directorio: '🔗',
+            checkin: '📊',
+            reporte: '📈'
         };
-        return icons[type] || 'fa-sticky-note';
+        return icons[type] || '📝';
     },
 
     getTypeColor(type) {
@@ -146,8 +156,17 @@ const ShareUtils = {
         // Obtener TODOS los items para el selector (para agregar a uno existente)
         let allItems = [];
         try {
-            const { data } = await import('./data.js');
-            allItems = await data.getItems({});
+            // Importar data y verificar si hay usuario primero
+            const { data: dataModule } = await import('./data.js');
+            const { supabase } = await import('./supabase.js');
+            const { data: { user } } = await supabase.auth.getUser();
+            
+            if (!user) {
+                console.warn('Share modal: No hay usuario logueado, no se pueden cargar cards existentes');
+            } else {
+                allItems = await dataModule.getItems({});
+                console.log('Share modal: Cargadas', allItems.length, 'cards para el usuario', user.id);
+            }
         } catch (e) {
             console.error('Error loading items for share modal:', e);
         }
@@ -234,16 +253,17 @@ const ShareUtils = {
         };
         
         // Agregar a card existente
-        document.getElementById('share-add-to-existing').onclick = () => {
+        document.getElementById('share-add-to-existing').onclick = async () => {
             const selectedId = document.getElementById('share-existing-card').value;
             const itemTitle = document.getElementById('share-title-input').value || 'Enlace compartido';
             
             if (!selectedId) {
+                const { ui } = await import('./ui.js');
                 ui.showNotification('Seleccioná una card primero', 'warning');
                 return;
             }
             
-            this.addUrlToExistingItem(selectedId, url, itemTitle);
+            await this.addUrlToExistingItem(selectedId, url, itemTitle);
         };
         
         // Deshabilitar botón "Agregar" si no hay selección
@@ -269,6 +289,7 @@ const ShareUtils = {
     async addUrlToExistingItem(itemId, url, title) {
         try {
             const { data } = await import('./data.js');
+            const { ui } = await import('./ui.js');
             const items = await data.getItems({ id: itemId });
             const item = Array.isArray(items) ? items[0] : items;
             

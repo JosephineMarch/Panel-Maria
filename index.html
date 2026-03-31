@@ -176,12 +176,11 @@
             </div>
 
             <div class="pt-4 border-t border-gray-100 space-y-2">
-                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 mb-2">Desarrollo</p>
-                <button id="btn-todos"
-                    class="w-full text-left px-4 py-3 rounded-xl hover:bg-warning/20 text-ink flex items-center gap-3 transition focus:outline-none focus:ring-2 focus:ring-yellow-400 cursor-pointer">
-                    <i class="fa-solid fa-clipboard-list text-yellow-500" aria-hidden="true"></i>
-                    <span class="font-bold text-base">TODO</span>
-                    <span id="todos-badge" class="ml-auto bg-yellow-400 text-white text-[10px] font-bold px-2 py-0.5 rounded-full hidden">0</span>
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 mb-2">Debug</p>
+                <button id="btn-test-notification"
+                    class="w-full text-left px-4 py-3 rounded-xl hover:bg-purple-100 text-ink flex items-center gap-3 transition focus:outline-none focus:ring-2 focus:ring-purple-400 cursor-pointer">
+                    <span>🔔</span>
+                    <span class="font-bold text-base">Test Notificación</span>
                 </button>
             </div>
 
@@ -357,6 +356,22 @@
                     <i class="fa-solid fa-link" aria-hidden="true"></i>
                 </button>
             </nav>
+
+            <!-- Barra de Búsqueda -->
+            <div class="max-w-2xl mx-auto px-3 mb-4">
+                <div class="relative">
+                    <input type="text" id="search-input" 
+                        placeholder="🔍 Buscar en tu panel..."
+                        class="w-full bg-white border-2 border-gray-200 rounded-2xl py-3 px-4 pl-11 text-sm font-medium focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition-all shadow-sm"
+                        aria-label="Buscar en el panel">
+                    <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true"></i>
+                    <button id="btn-clear-search" 
+                        class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center hidden transition"
+                        aria-label="Limpiar búsqueda">
+                        <i class="fa-solid fa-xmark text-xs text-gray-500"></i>
+                    </button>
+                </div>
+            </div>
 
 
             <!-- Layout de Feed Único (Enesima Style) -->
@@ -555,46 +570,6 @@
             <button id="btn-stop-voice"
                 class="bg-white text-brand font-bold px-12 py-4 rounded-full shadow-lg active:scale-95 transition">Ya
                 terminé</button>
-        </div>
-    </div>
-
-    <!-- Modal de TODOs -->
-    <div id="todos-modal"
-        class="fixed inset-0 bg-ink/20 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-4"
-        role="dialog" aria-modal="true" aria-labelledby="todos-title">
-        <div class="bg-white w-full max-w-lg rounded-blob shadow-2xl max-h-[80vh] overflow-hidden flex flex-col">
-            <div class="p-6 border-b border-gray-100 flex justify-between items-center shrink-0">
-                <div class="flex items-center gap-3">
-                    <span class="text-2xl">📋</span>
-                    <h2 id="todos-title" class="text-xl font-bold text-ink">TODO - Desarrollo</h2>
-                </div>
-                <button id="btn-close-todos"
-                    class="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer"
-                    aria-label="Cerrar">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-            </div>
-
-            <div class="p-4 border-b border-gray-100 bg-yellow-50 shrink-0">
-                <div class="flex gap-2">
-                    <input type="text" id="todo-input" placeholder="Agregar nueva tarea..."
-                        class="flex-1 bg-white border-2 border-yellow-200 rounded-xl px-4 py-2 font-bold focus:outline-none focus:border-yellow-400">
-                    <select id="todo-prioridad"
-                        class="bg-white border-2 border-yellow-200 rounded-xl px-3 py-2 font-bold text-sm focus:outline-none focus:border-yellow-400">
-                        <option value="baja">Baja</option>
-                        <option value="media" selected>Media</option>
-                        <option value="alta">Alta</option>
-                    </select>
-                    <button id="btn-add-todo"
-                        class="w-10 h-10 rounded-full bg-yellow-400 text-white flex items-center justify-center shrink-0 hover:bg-yellow-500 transition">
-                        <i class="fa-solid fa-plus text-sm"></i>
-                    </button>
-                </div>
-            </div>
-
-            <div id="todos-list" class="flex-1 overflow-y-auto p-4 space-y-2">
-                <!-- Los TODOs se renderizan aquí -->
-            </div>
         </div>
     </div>
 
