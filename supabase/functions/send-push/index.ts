@@ -39,6 +39,64 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
+    // Obtener el usuario del JWT para buscar TODOS sus tokens
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: 'Usuario no válido' }), { status: 401 });
+    }
+
+    // Buscar TODOS los tokens del usuario (multi-dispositivo)
+    const { data: allTokens, error: tokenError } = await supabase
+      .from('fcm_tokens')
+      .select('token')
+      .eq('user_id', user.id);
+
+    if (tokenError || !allTokens || allTokens.length === 0) {
+      return new Response(JSON.stringify({ error: 'No hay dispositivos registrados para este usuario' }), { status: 400 });
+    }
+
+    const tokens = allTokens.map(t => t.token);
+    console.log(`📱 Enviando a ${tokens.length} dispositivos`);
+    // -----------------------------------------------------------
+
+    const scheduledTime = timestamp || Date.now() + 60000;
+    const timeToSend = new Date(scheduledTime).getTime();
+    const now = Date.now();
+    const delay = timeToSend - now;
+
+    if (delay > 0) {
+      setTimeout(async () => {
+        await sendFCMToAll(tokens, title, body, itemId);
+      }, delay);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: `Notificación programada para ${tokens.length} dispositivos`,
+          scheduledFor: new Date(scheduledTime).toISOString(),
+          devices: tokens.length
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } else {
+      await sendFCMToAll(tokens, title, body, itemId);
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: `Notificación enviada a ${tokens.length} dispositivos`,
+          devices: tokens.length
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
     // Intentamos buscar el FCM del supuesto dueño asumiendo la sesión RLS del JWT
     const { data: validTokens, error: sbError } = await supabase
       .from('fcm_tokens')
@@ -184,4 +242,17 @@ async function sendFCMMessageV1(token: string, title: string, body: string, item
     console.error('FCM V1 Error:', error);
     return { error: error.message };
   }
+}
+
+async function sendFCMToAll(tokens: string[], title: string, body: string, itemId?: string) {
+  console.log(`📱 Enviando notificación a ${tokens.length} dispositivos`);
+  const results = await Promise.allSettled(
+    tokens.map(token => sendFCMMessageV1(token, title, body, itemId))
+  );
+  
+  const successful = results.filter(r => r.status === 'fulfilled').length;
+  const failed = results.filter(r => r.status === 'rejected').length;
+  
+  console.log(`✅ Enviados: ${successful}, ❌ Fallidos: ${failed}`);
+  return { successful, failed };
 }
