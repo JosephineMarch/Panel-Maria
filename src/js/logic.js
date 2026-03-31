@@ -581,9 +581,32 @@ class KaiController {
     }
 
     async scheduleTriggerNotification(item, reminderTime, deadlineTime) {
-        // En un dispositivo móvil, esto se enviaría vía FCM.
-        // Aquí registramos el log para depuración.
-        console.log(`🔔 Alarma programada: ${item.content} para las ${new Date(deadlineTime).toLocaleTimeString()}`);
+        try {
+            const fcmToken = localStorage.getItem('fcmToken');
+            if (!fcmToken) {
+                console.warn('🔔 No hay FCM token, saltando notificación');
+                return;
+            }
+
+            const supabase = window.supabase;
+            const { error } = await supabase.functions.invoke('send-push', {
+                body: {
+                    token: fcmToken,
+                    title: '⏰ KAI - Recordatorio',
+                    body: item.content || item.titulo || 'Tienes una tarea pendiente',
+                    timestamp: deadlineTime - 60000,
+                    itemId: item.id
+                }
+            });
+
+            if (error) {
+                console.error('🔔 Error enviando notificación:', error);
+            } else {
+                console.log(`🔔 Notificación programada para ${new Date(deadlineTime - 60000).toLocaleString()}`);
+            }
+        } catch (err) {
+            console.error('🔔 Error en scheduleTriggerNotification:', err);
+        }
     }
 
 
@@ -2222,12 +2245,12 @@ Responde SOLO JSON con esta estructura:
             const { supabase } = await import('./supabase.js');
             
             const { data, error } = await supabase.functions.invoke('send-push', {
-                body: JSON.stringify({
+                body: {
                     token: token,
                     title: '🔔 Test de KAI',
                     body: 'Si ves esto, las notificaciones push funcionan! 🎉',
                     timestamp: Date.now()
-                })
+                }
             });
 
             if (error) {

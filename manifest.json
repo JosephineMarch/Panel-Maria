@@ -5,14 +5,6 @@
   "start_url": "./index.html",
   "id": "./index.html",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#FFFDF5",
-  "theme_color": "#FFB7C5",
-  "scope": "./",
-  "lang": "es",
-  "categories": ["productivity", "lifestyle"],
-  "gcm_sender_id": "434100378252",
-  "gcm_user_visible_only": true,
   "permissions": [
     "notifications",
     "push"
