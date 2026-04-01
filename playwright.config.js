@@ -17,6 +17,13 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      name: 'Pixel 7',
+      use: { 
+        ...devices['Pixel 7'],
+        permissions: ['notifications'],
+      },
+    },
   ],
 
   webServer: {
