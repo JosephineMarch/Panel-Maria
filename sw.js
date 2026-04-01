@@ -19,49 +19,45 @@ messaging.onBackgroundMessage((payload) => {
     console.log('[SW] Notification:', payload.notification);
 
     const data = payload.data || {};
+    const notificationBlock = payload.notification || {};
     const isAlarm = data.type === 'alarm';
-    const hasNotification = !!payload.notification;
 
     console.log('[SW] Data completa:', JSON.stringify(data));
-    console.log('[SW] Hay notification en payload?:', hasNotification);
+    console.log('[SW] Hay notification en payload?:', !!notificationBlock);
 
-    if (!hasNotification) {
-        const priority = data.priority === 'high' ? 'high' : 'normal';
-        
-        const notificationOptions = {
-            body: data.body || 'Tienes algo pendiente',
-            icon: './src/assets/icon-192.png',
-            badge: './src/assets/icon-192.png',
-            tag: data.itemId || 'kai-alarm',
-            data: data,
-            vibrate: data.priority === 'high' ? [200, 100, 200, 100, 200] : [200, 100, 200],
-            requireInteraction: true,
-            actions: [
-                { action: 'snooze', title: '⏱️ 5 min' },
-                { action: 'snooze10', title: '⏱️ 10 min' },
-                { action: 'dismiss', title: '✕' }
-            ]
-        };
+    // Usar datos del bloque notification si existe, sino del bloque data
+    const title = notificationBlock.title || data.title || '⏰ KAI - Recordatorio';
+    const body = notificationBlock.body || data.body || 'Tienes algo pendiente';
+    const priority = data.priority === 'high' ? 'high' : 'normal';
+    
+    const notificationOptions = {
+        body: body,
+        icon: './src/assets/icon-192.png',
+        badge: './src/assets/icon-192.png',
+        tag: data.itemId || 'kai-alarm',
+        data: data,
+        vibrate: priority === 'high' ? [200, 100, 200, 100, 200] : [200, 100, 200],
+        requireInteraction: true,
+        actions: [
+            { action: 'snooze', title: '⏱️ 5 min' },
+            { action: 'snooze10', title: '⏱️ 10 min' },
+            { action: 'dismiss', title: '✕' }
+        ]
+    };
 
-        console.log('[SW] Opciones de notificación:', JSON.stringify(notificationOptions));
+    if (priority === 'high') {
+        notificationOptions.urgency = 'high';
+    }
 
-        if (data.priority === 'high') {
-            notificationOptions.urgency = 'high';
-        }
-
-        console.log('[SW] Por mostrar notificación con título:', data.title || '⏰ KAI - Recordatorio');
-        
-        self.registration.showNotification(
-            data.title || '⏰ KAI - Recordatorio',
-            notificationOptions
-        ).then(() => {
+    console.log('[SW] Mostrando notificación con título:', title);
+    
+    self.registration.showNotification(title, notificationOptions)
+        .then(() => {
             console.log('[SW] Notificación mostrada exitosamente');
-        }).catch((err) => {
+        })
+        .catch((err) => {
             console.error('[SW] Error al mostrar notificación:', err);
         });
-    } else {
-        console.log('[SW] Hay notification en payload - el navegador la muestra automáticamente (sin pasar por SW)');
-    }
 });
 
 self.addEventListener('notificationclick', (event) => {

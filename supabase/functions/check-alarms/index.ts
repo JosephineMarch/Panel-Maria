@@ -277,9 +277,18 @@ async function sendFCMMessageV1(token: string, title: string, body: string, item
   try {
     const accessToken = await getAccessToken();
 
+    const isHighPriority = extraData?.priority === 'high';
+
     const payload: any = {
       message: {
         token: token,
+        // BLOQUE notification: Android lo muestra en la bandeja del sistema
+        // incluso si el Service Worker no está vivo (Chrome killed, Doze mode)
+        notification: {
+          title: title,
+          body: body,
+        },
+        // BLOQUE data: El Service Worker lo recibe para acciones custom (snooze)
         data: {
           title: title,
           body: body,
@@ -290,13 +299,33 @@ async function sendFCMMessageV1(token: string, title: string, body: string, item
           ...extraData
         },
         android: {
-          priority: extraData?.priority === 'high' ? 'high' : 'normal',
-          ttl: '86400000'
+          priority: isHighPriority ? 'high' : 'default',
+          ttl: '86400000', // 24 horas — FCM reintenta si el dispositivo está offline
+          notification: {
+            // Configuración específica de Android para máxima visibilidad
+            channelId: 'alarmas',
+            title: title,
+            body: body,
+            defaultSound: true,
+            defaultVibrateTimings: true,
+            notificationCount: 1,
+            // Icono por defecto de Android
+            icon: 'ic_notification',
+          }
         },
         webpush: {
           headers: {
-            Urgency: extraData?.priority === 'high' ? 'high' : 'normal',
+            Urgency: isHighPriority ? 'high' : 'normal',
             TTL: '86400'
+          },
+          notification: {
+            title: title,
+            body: body,
+            icon: './src/assets/icon-192.png',
+            badge: './src/assets/icon-192.png',
+            tag: itemId || 'kai-alarm',
+            requireInteraction: true,
+            vibrate: isHighPriority ? [200, 100, 200, 100, 200] : [200, 100, 200],
           },
           fcmOptions: {
             link: `https://josephinemarch.github.io/Panel-Maria/?action=alarm&itemId=${itemId || ''}`
