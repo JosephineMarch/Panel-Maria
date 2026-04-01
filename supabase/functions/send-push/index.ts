@@ -25,34 +25,48 @@ serve(async (req) => {
       );
     }
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Falta Token de Autorización (JWT)' }), { status: 401 });
-    }
-
+    // Siempre crear el cliente de Supabase
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    // Obtener usuario del JWT si existe
+    const authHeader = req.headers.get('Authorization');
+    let userId = null;
     
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: 'Usuario no válido' }), { status: 401 });
+    if (authHeader) {
+        try {
+            // Crear cliente con auth header para validar el JWT
+            const authSupabase = createClient(
+                Deno.env.get('SUPABASE_URL') ?? '',
+                Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+                { global: { headers: { Authorization: authHeader } } }
+            );
+            const { data: { user } } = await authSupabase.auth.getUser();
+            if (user) {
+                userId = user.id;
+                console.log('Usuario autenticado:', userId);
+            }
+        } catch (e) {
+            console.log('JWT inválido o ausente, enviando a todos los dispositivos');
+        }
     }
 
-    const { data: allTokens, error: tokenError } = await supabase
-      .from('fcm_tokens')
-      .select('token')
-      .eq('user_id', user.id);
+    // Buscar tokens: del usuario específico o todos si no hay user
+    let query = supabase.from('fcm_tokens').select('token');
+    if (userId) {
+        query = query.eq('user_id', userId);
+    }
+    
+    const { data: allTokens, error: tokenError } = await query;
 
     if (tokenError || !allTokens || allTokens.length === 0) {
-      return new Response(JSON.stringify({ error: 'No hay dispositivos registrados para este usuario' }), { status: 400 });
+      return new Response(JSON.stringify({ error: 'No hay dispositivos registrados' }), { status: 400 });
     }
 
     const tokens = allTokens.map(t => t.token);
-    console.log(`📱 Enviando a ${tokens.length} dispositivos para usuario ${user.id}`);
+    console.log(`📱 Enviando a ${tokens.length} dispositivos (userId: ${userId || 'todos'})`);
 
     const scheduledTime = timestamp || Date.now() + 60000;
     const timeToSend = new Date(scheduledTime).getTime();
