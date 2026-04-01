@@ -48,6 +48,7 @@ import { ai } from './ai.js';
 import { cerebras } from './cerebras.js';
 import { requestFCMToken } from './firebase.js';
 import { hoy } from './hoy.js';
+import { alarms } from './alarmas.js';
 
 function formatDeadlineForDB(deadline) {
     if (!deadline) return null;
@@ -86,7 +87,7 @@ class KaiController {
     async init() {
         ui.init();
         this.bindEvents();
-        this.startAlarmChecker();
+        // Las alarmas ahora las maneja alarms.js directamente
         this.setupRealtimeSubscription();
 
         try {

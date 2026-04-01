@@ -4,7 +4,15 @@
  */
 import './src/js/logic.js';
 import './src/js/share.js';
+import './src/js/alarmas.js';
 import { requestFCMToken, onForegroundMessage } from './src/js/firebase.js';
+
+// Exponer alarms globalmente para los botones de snooze en HTML
+import { alarms } from './src/js/alarmas.js';
+window.alarms = alarms;
+
+// Iniciar el sistema de alarmas
+alarms.start();
 
 const CACHE_VERSION = 'v10';
 

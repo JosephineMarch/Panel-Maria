@@ -6,6 +6,8 @@
  */
 
 import { data } from './data.js';
+import { ui } from './ui.js';
+import { supabase } from './supabase.js';
 
 class AlarmManager {
     constructor() {
@@ -40,12 +42,11 @@ class AlarmManager {
 
     async scheduleAllAlarms() {
         try {
-            const controller = this.controller;
-            if (!controller || !controller.currentUser) {
+            // Ya no dependemos del controller - data.getItems maneja el caso de no usuario
+            const items = await data.getItems({});
+            if (!items || items.length === 0) {
                 return;
             }
-
-            const items = await data.getItems({});
             const scheduledIds = JSON.parse(localStorage.getItem('scheduledAlarms') || '[]');
             const now = Date.now();
 
@@ -163,12 +164,15 @@ class AlarmManager {
 
     async checkAlarms() {
         try {
-            const controller = this.controller;
-            if (!controller || !controller.currentUser) {
+            // Verificar permisos de notificaciones primero
+            if (!('Notification' in window)) {
                 return;
             }
 
             const items = await data.getItems({});
+            if (!items || items.length === 0) {
+                return;
+            }
             const now = Date.now();
             const triggeredIds = JSON.parse(localStorage.getItem('triggeredAlarms') || '[]');
             const alarmTimestamps = JSON.parse(localStorage.getItem('alarmTimestamps') || '{}');
