@@ -1,17 +1,15 @@
 /**
- * Módulo de Alarmas 2.0
+ * Módulo de Alarmas 2.0 (Server-side Cron)
  * =================
- * Maneja la programación y verificación de alarmas/notificaciones
- * con soporte para repetición, snooze y enrichment
+ * Maneja notificaciones locales y snooze.
+ * Las push notifications con app cerrada las maneja el cron del servidor (pg_cron + check-alarms edge function).
  */
 
 import { data } from './data.js';
 import { ui } from './ui.js';
-import { supabase } from './supabase.js';
 
 class AlarmManager {
     constructor() {
-        this.checkInterval = null;
         this.snoozeTimers = new Map();
     }
 
@@ -23,96 +21,12 @@ class AlarmManager {
         if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission();
         }
-
-        this.scheduleAllAlarms();
-        this.checkAlarms();
-
-        this.checkInterval = setInterval(() => {
-            this.scheduleAllAlarms();
-            this.checkAlarms();
-        }, 30000);
+        // Server-side cron handles push notifications.
+        // Local notifications only work with tab open.
     }
 
     stop() {
-        if (this.checkInterval) {
-            clearInterval(this.checkInterval);
-        }
         this.snoozeTimers.forEach(timer => clearTimeout(timer));
-    }
-
-    async scheduleAllAlarms() {
-        try {
-            // Ya no dependemos del controller - data.getItems maneja el caso de no usuario
-            const items = await data.getItems({});
-            if (!items || items.length === 0) {
-                return;
-            }
-            const scheduledIds = JSON.parse(localStorage.getItem('scheduledAlarms') || '[]');
-            const now = Date.now();
-
-            for (const item of items) {
-                if (!item.deadline || scheduledIds.includes(item.id)) continue;
-
-                let deadlineTime;
-                if (typeof item.deadline === 'number') {
-                    deadlineTime = item.deadline;
-                } else if (typeof item.deadline === 'string') {
-                    deadlineTime = new Date(item.deadline).getTime();
-                } else {
-                    continue;
-                }
-
-                const reminderTime = deadlineTime - 60000;
-
-                if (deadlineTime > now && deadlineTime - now < 7 * 24 * 60 * 60 * 1000) {
-                    await this.schedulePushNotification(item, reminderTime, deadlineTime);
-                    scheduledIds.push(item.id);
-                }
-            }
-
-            localStorage.setItem('scheduledAlarms', JSON.stringify(scheduledIds));
-        } catch (error) {
-            console.error('Error scheduling alarms:', error);
-        }
-    }
-
-    async schedulePushNotification(item, reminderTime, deadlineTime) {
-        try {
-            const { data: tokensData } = await supabase
-                .from('fcm_tokens')
-                .select('token');
-            
-            const tokens = tokensData?.map(t => t.token) || [];
-            if (tokens.length === 0) {
-                console.warn('🔔 No hay FCM tokens, saltando notificación');
-                return;
-            }
-
-            const extraData = this.buildEnrichmentData(item);
-
-            const { data: response, error } = await supabase.functions.invoke('send-push', {
-                body: {
-                    token: tokens[0],
-                    title: this.formatTitle(item),
-                    body: this.formatBody(item),
-                    timestamp: deadlineTime - 60000,
-                    itemId: item.id,
-                    repeat: item.repeat || null,
-                    data: extraData
-                }
-            });
-
-            if (error) {
-                console.error('🔔 Error enviando notificación:', error);
-            } else {
-                console.log(`🔔 Notificación programada para ${new Date(deadlineTime - 60000).toLocaleString()}`);
-                if (item.repeat) {
-                    console.log(`🔄 Repetición: ${item.repeat}`);
-                }
-            }
-        } catch (err) {
-            console.error('🔔 Error en schedulePushNotification:', err);
-        }
     }
 
     buildEnrichmentData(item) {
@@ -162,70 +76,8 @@ class AlarmManager {
         return content;
     }
 
-    async checkAlarms() {
-        try {
-            // Verificar permisos de notificaciones primero
-            if (!('Notification' in window)) {
-                return;
-            }
-
-            const items = await data.getItems({});
-            if (!items || items.length === 0) {
-                return;
-            }
-            const now = Date.now();
-            const triggeredIds = JSON.parse(localStorage.getItem('triggeredAlarms') || '[]');
-            const alarmTimestamps = JSON.parse(localStorage.getItem('alarmTimestamps') || '{}');
-
-            const validTriggeredIds = [];
-            for (const id of triggeredIds) {
-                const lastTriggered = alarmTimestamps[id] || 0;
-                if (now - lastTriggered < 24 * 60 * 60 * 1000) {
-                    validTriggeredIds.push(id);
-                }
-            }
-            localStorage.setItem('triggeredAlarms', JSON.stringify(validTriggeredIds));
-
-            for (const item of items) {
-                if (!item.deadline) continue;
-
-                let deadlineTime;
-                if (typeof item.deadline === 'number') {
-                    deadlineTime = item.deadline;
-                } else if (typeof item.deadline === 'string') {
-                    deadlineTime = new Date(item.deadline).getTime();
-                } else {
-                    continue;
-                }
-
-                if (deadlineTime - now <= 60000 && deadlineTime - now > 0) {
-                    if (!validTriggeredIds.includes(item.id)) {
-                        await this.triggerAlarm(item);
-                        validTriggeredIds.push(item.id);
-                        alarmTimestamps[item.id] = now;
-                    }
-                }
-            }
-
-            localStorage.setItem('triggeredAlarms', JSON.stringify(validTriggeredIds));
-            localStorage.setItem('alarmTimestamps', JSON.stringify(alarmTimestamps));
-        } catch (error) {
-            console.error('Error checking alarms:', error);
-        }
-    }
-
     async triggerAlarm(item) {
         try {
-            if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification(this.formatTitle(item), {
-                    body: this.formatBody(item),
-                    icon: '/icon-192.png',
-                    tag: item.id,
-                    requireInteraction: true,
-                    vibrate: [200, 100, 200, 100, 200]
-                });
-            }
-
             this.playAlarmSound();
             this.showAlarmNotification(item);
         } catch (error) {
@@ -280,33 +132,8 @@ class AlarmManager {
         
         if (!item) return;
 
-        const snoozeTime = Date.now() + (minutes * 60 * 1000);
-
-        const { data: tokensData } = await supabase
-            .from('fcm_tokens')
-            .select('token');
-        
-        const tokens = tokensData?.map(t => t.token) || [];
-        
-        if (tokens.length > 0) {
-            const extraData = this.buildEnrichmentData(item);
-            extraData.snooze = true;
-            extraData.snoozeMinutes = minutes;
-
-            await supabase.functions.invoke('send-push', {
-                body: {
-                    token: tokens[0],
-                    title: `⏰ KAI - Recordatorio (${minutes}min)`,
-                    body: item.content || item.titulo || 'Recordatorio',
-                    timestamp: snoozeTime,
-                    itemId: item.id,
-                    snooze: true,
-                    data: extraData
-                }
-            });
-        }
-
         this.snoozeTimers.set(itemId, setTimeout(() => {
+            this.snoozeTimers.delete(itemId);
             this.triggerAlarm(item);
         }, minutes * 60 * 1000));
 
@@ -314,15 +141,9 @@ class AlarmManager {
     }
 
     async setRepeat(itemId, repeatType) {
-        console.log(`🔄设置 repetition: ${repeatType} para ${itemId}`);
+        console.log(`🔄 Repetición: ${repeatType} para ${itemId}`);
         
         await data.updateItem(itemId, { repeat: repeatType });
-        
-        const scheduledIds = JSON.parse(localStorage.getItem('scheduledAlarms') || '[]');
-        const newScheduledIds = scheduledIds.filter(id => id !== itemId);
-        localStorage.setItem('scheduledAlarms', JSON.stringify(newScheduledIds));
-        
-        await this.scheduleAllAlarms();
         
         const repeatNames = {
             daily: 'diario',
@@ -337,10 +158,6 @@ class AlarmManager {
         console.log(`🗑️ Cancelando alarma: ${itemId}`);
         
         await data.updateItem(itemId, { deadline: null, repeat: null });
-        
-        const scheduledIds = JSON.parse(localStorage.getItem('scheduledAlarms') || '[]');
-        const newScheduledIds = scheduledIds.filter(id => id !== itemId);
-        localStorage.setItem('scheduledAlarms', JSON.stringify(newScheduledIds));
         
         ui.showNotification('🗑️ Alarma cancelada', 'success');
     }
@@ -372,7 +189,7 @@ class AlarmManager {
 
     playAlarmSound() {
         try {
-            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleQQAKpzm');
+            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2tleQQAKpzm');
             audio.volume = 0.5;
             audio.play().catch(() => {});
         } catch (e) {}

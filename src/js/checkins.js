@@ -260,7 +260,7 @@ class CheckinManager {
         if (Notification.permission === 'granted') {
             const notification = new Notification('💭 Check-in de Bienestar', {
                 body: momentoConfig.pregunta,
-                icon: '/icon.png',
+                icon: './src/assets/icon-192.png',
                 tag: 'checkin',
                 requireInteraction: true
             });

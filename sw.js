@@ -13,13 +13,6 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Listener genérico de push (para ver si llega algo)
-self.addEventListener('push', (event) => {
-    console.log('[SW] Evento push recibido!', event);
-    console.log('[SW] Data en event:', event.data ? event.data.json() : 'sin data');
-});
-
-// También listener para foreground
 messaging.onBackgroundMessage((payload) => {
     console.log('[SW] Mensaje en segundo plano recibido:', payload);
     console.log('[SW] Data:', payload.data);

@@ -5,7 +5,7 @@
 import './src/js/logic.js';
 import './src/js/share.js';
 import './src/js/alarmas.js';
-import { requestFCMToken, onForegroundMessage } from './src/js/firebase.js';
+import { requestFCMToken, refreshFCMTokenIfNeeded, onForegroundMessage } from './src/js/firebase.js';
 
 // Exponer alarms globalmente para los botones de snooze en HTML
 import { alarms } from './src/js/alarmas.js';
@@ -43,11 +43,25 @@ if ('serviceWorker' in navigator) {
 
         if ('PushManager' in window && !fcmInitialized) {
             fcmInitialized = true;
-            // Quitamos la petición obligatoria al inicio (Bloqueado por iOS Safari)
-            // requestFCMToken se llamará cuando el usuario intente crear una alarma explícitamente.
-            setTimeout(() => {
-                onForegroundMessage();
-            }, 2000);
+            onForegroundMessage();
+
+            // Token refresh automático: refresca si tiene más de 6 días o no existe
+            refreshFCMTokenIfNeeded().then(token => {
+                if (token) console.log('✅ FCM token listo (existente o refrescado)');
+            });
+
+            // Si no hay permiso, pedirlo en la PRIMERA interacción del usuario
+            if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+                const requestTokenOnInteraction = () => {
+                    document.removeEventListener('click', requestTokenOnInteraction);
+                    document.removeEventListener('touchstart', requestTokenOnInteraction);
+                    requestFCMToken().then(token => {
+                        if (token) console.log('✅ FCM token obtenido tras interacción');
+                    });
+                };
+                document.addEventListener('click', requestTokenOnInteraction, { once: true });
+                document.addEventListener('touchstart', requestTokenOnInteraction, { once: true });
+            }
         }
     });
 }
@@ -101,13 +115,15 @@ window.addEventListener('DOMContentLoaded', () => {
         const item = {
             id: 'test-' + Date.now(),
             content: '🧪 Alarma de prueba',
-            deadline: Date.now() + 35000,
             tags: ['test'],
             meta: { priority: 'high' }
         };
-        await alarms.schedulePushNotification(item, Date.now() + 30000, Date.now() + 35000);
-        console.log('⏰ Alarma programada para 30 segundos');
-        alert('⏰ Alarma creada! Sonará en 30 segundos');
+        // Dispara directamente después de 30s (test local, sin pasar por el servidor)
+        setTimeout(() => {
+            alarms.triggerAlarm(item);
+        }, 30000);
+        console.log('⏰ Alarma de prueba programada. Se disparará en 30s');
+        alert('⏰ Alarma creada! Sonará en 30 segundos (mantené la pestaña abierta)');
     });
 
     // Manejo de URLs

@@ -12,17 +12,12 @@
  * SECCIÓN 2: KaiController - Inicialización (lines 31-120)
  *   - constructor(), init()
  * 
- * SECCIÓN 3: Alarmas (lines 151-380)
- *   - startAlarmChecker(), scheduleAllAlarms()
- *   - scheduleTriggerNotification(), checkAlarms()
- *   - showAlarmNotification(), playAlarmSound()
- * 
- * SECCIÓN 4: CRUD de Items (lines 381-800)
+ * SECCIÓN 3: CRUD de Items (lines 151-380)
  *   - crearItem(), editarItem(), borrarItem()
- *   - loadItems(), finishItem(), toggleAnclado()
+ *   - loadItems(), finishItem(), toggleAnclado
  *   - updateItemInline(), saveInlineEdit()
  * 
- * SECCIÓN 5: IA / Kai (lines 801-950)
+ * SECCIÓN 4: IA / Kai (lines 381-950)
  *   - processWithKai(), executeKaiAction()
  *   - crearAlarma(), detectarTagsYAlarmas()
  * 
@@ -46,7 +41,7 @@ import { ui } from './ui.js';
 import { auth } from './auth.js';
 import { ai } from './ai.js';
 import { cerebras } from './cerebras.js';
-import { requestFCMToken } from './firebase.js';
+import { requestFCMToken, refreshFCMTokenIfNeeded } from './firebase.js';
 import { hoy } from './hoy.js';
 import { alarms } from './alarmas.js';
 
@@ -526,150 +521,6 @@ class KaiController {
         }
     }
 
-    startAlarmChecker() {
-        if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission();
-        }
-
-        this.scheduleAllAlarms();
-        this.checkAlarms();
-
-        setInterval(() => {
-            this.scheduleAllAlarms();
-            this.checkAlarms();
-        }, 30000);
-    }
-
-    async scheduleAllAlarms() {
-        try {
-            let items;
-
-            if (this.isDemoMode) {
-                items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
-            } else if (this.currentUser) {
-                items = await data.getItems({});
-            } else {
-                return;
-            }
-
-            const scheduledIds = JSON.parse(localStorage.getItem('scheduledAlarms') || '[]');
-            const now = Date.now();
-
-            for (const item of items) {
-                if (!item.deadline || scheduledIds.includes(item.id)) continue;
-
-                let deadlineTime;
-                if (typeof item.deadline === 'number') {
-                    deadlineTime = item.deadline;
-                } else if (typeof item.deadline === 'string') {
-                    deadlineTime = new Date(item.deadline).getTime();
-                } else {
-                    continue;
-                }
-
-                const reminderTime = deadlineTime - 60000;
-
-                if (deadlineTime > now && deadlineTime - now < 7 * 24 * 60 * 60 * 1000) {
-                    await this.scheduleTriggerNotification(item, reminderTime, deadlineTime);
-                    scheduledIds.push(item.id);
-                }
-            }
-
-            localStorage.setItem('scheduledAlarms', JSON.stringify(scheduledIds));
-        } catch (error) {
-            console.error('Error scheduling alarms:', error);
-        }
-    }
-
-    async scheduleTriggerNotification(item, reminderTime, deadlineTime) {
-        try {
-            const fcmToken = localStorage.getItem('fcmToken');
-            if (!fcmToken) {
-                console.warn('🔔 No hay FCM token, saltando notificación');
-                return;
-            }
-
-            const supabase = window.supabase;
-            const { error } = await supabase.functions.invoke('send-push', {
-                body: {
-                    token: fcmToken,
-                    title: '⏰ KAI - Recordatorio',
-                    body: item.content || item.titulo || 'Tienes una tarea pendiente',
-                    timestamp: deadlineTime - 60000,
-                    itemId: item.id
-                }
-            });
-
-            if (error) {
-                console.error('🔔 Error enviando notificación:', error);
-            } else {
-                console.log(`🔔 Notificación programada para ${new Date(deadlineTime - 60000).toLocaleString()}`);
-            }
-        } catch (err) {
-            console.error('🔔 Error en scheduleTriggerNotification:', err);
-        }
-    }
-
-
-    async checkAlarms() {
-        try {
-            let items;
-
-            if (this.isDemoMode) {
-                items = JSON.parse(localStorage.getItem('kaiDemoItems')) || [];
-            } else if (this.currentUser) {
-                items = await data.getItems({});
-            } else {
-                return;
-            }
-
-            const now = Date.now();
-            const triggeredIds = JSON.parse(localStorage.getItem('triggeredAlarms') || '[]');
-            const alarmTimestamps = JSON.parse(localStorage.getItem('alarmTimestamps') || '{}');
-
-            const validTriggeredIds = [];
-            for (const id of triggeredIds) {
-                const lastTriggered = alarmTimestamps[id] || 0;
-                if (now - lastTriggered < 24 * 60 * 60 * 1000) {
-                    validTriggeredIds.push(id);
-                }
-            }
-            localStorage.setItem('triggeredAlarms', JSON.stringify(validTriggeredIds));
-
-            for (const item of items) {
-                if (!item.deadline) continue;
-
-                let deadlineTime;
-                if (typeof item.deadline === 'number') {
-                    deadlineTime = item.deadline;
-                } else if (typeof item.deadline === 'string') {
-                    deadlineTime = new Date(item.deadline).getTime();
-                } else {
-                    continue;
-                }
-
-                if (deadlineTime <= now - 60000) {
-                    continue;
-                }
-
-                if (!validTriggeredIds.includes(item.id)) {
-                    const timeDiff = deadlineTime - now;
-
-                    if (timeDiff <= 0) {
-                        validTriggeredIds.push(item.id);
-                        alarmTimestamps[item.id] = now;
-                        localStorage.setItem('alarmTimestamps', JSON.stringify(alarmTimestamps));
-                        localStorage.setItem('triggeredAlarms', JSON.stringify(validTriggeredIds));
-
-                        this.triggerAlarm(item);
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('Error checking alarms:', error);
-        }
-    }
-
     setupRealtimeSubscription() {
         if (this.isDemoMode) return;
 
@@ -682,33 +533,6 @@ class KaiController {
                 refreshTimeout = setTimeout(() => this.loadItems(true), 1000); // Recarga silenciosa con debounce
             })
             .subscribe();
-    }
-
-    triggerAlarm(item) {
-        console.log(`⏰ Ejecutando alarma para: ${item.content}`);
-        ui.showNotification(`⏰ ¡Hora de: ${item.content}!`, 'warning');
-
-        try {
-            // Sonido de campana suave
-            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-            audio.volume = 0.7;
-            audio.play().catch(e => {
-                console.warn('Audio play bloqueado. Se requiere interacción previa.', e);
-                // Fallback: vibración si está disponible
-                if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
-            });
-        } catch (err) {
-            console.error('Error al reproducir audio:', err);
-        }
-
-        if (Notification.permission === 'granted') {
-            new Notification('⏰ KAI: Tienes un pendiente', {
-                body: item.content,
-                icon: './src/assets/icon-192.png',
-                tag: item.id,
-                requireInteraction: true
-            });
-        }
     }
 
     bindEvents() {
@@ -2105,8 +1929,8 @@ Responde SOLO JSON con esta estructura:
             
             // Obtener token FCM para notificaciones push
             try {
-                const { requestFCMToken, onForegroundMessage } = await import('./firebase.js');
-                await requestFCMToken();
+                const { refreshFCMTokenIfNeeded, onForegroundMessage } = await import('./firebase.js');
+                await refreshFCMTokenIfNeeded();
                 await onForegroundMessage();
                 console.log('✓ Token FCM configurado');
             } catch (fcmError) {

@@ -80,17 +80,11 @@ serve(async (req) => {
     if (token && typeof token === 'string' && token.length > 20) {
       console.log(`📱 Enviando a token específico: ${token.substring(0, 30)}...`);
       
-      const results = [];
-      for (const ts of timestamps) {
-        const delay = ts - Date.now();
-        if (delay > 0) {
-          setTimeout(() => sendFCMMessageV1(token, title, body, itemId, extraData), delay);
-          results.push({ scheduledFor: new Date(ts).toISOString(), delay });
-        } else {
-          const result = await sendFCMMessageV1(token, title, body, itemId, extraData);
-          results.push({ sent: true, result });
-        }
-      }
+      // Las edge functions son serverless — no podemos usar setTimeout para el futuro
+      // Solo enviar inmediatamente. Para notificaciones futuras, el cliente debe llamar
+      // a esta función en el momento correcto (alarmas.js ya hace polling cada 30s)
+      const result = await sendFCMMessageV1(token, title, body, itemId, extraData);
+      const results = [{ sent: true, result }];
       
       return new Response(
         JSON.stringify({ 
@@ -142,15 +136,8 @@ serve(async (req) => {
     const tokens = allTokens.map(t => t.token);
     console.log(`📱 Enviando a ${tokens.length} dispositivos`);
 
-    // Programar notificaciones
-    for (const ts of timestamps) {
-      const delay = ts - Date.now();
-      if (delay > 0) {
-        setTimeout(() => sendFCMToAll(tokens, title, body, itemId, extraData), delay);
-      } else {
-        await sendFCMToAll(tokens, title, body, itemId, extraData);
-      }
-    }
+    // Las edge functions son serverless — enviar inmediatamente
+    await sendFCMToAll(tokens, title, body, itemId, extraData);
 
     return new Response(
       JSON.stringify({
@@ -295,8 +282,16 @@ async function sendFCMMessageV1(token: string, title: string, body: string, item
     const payload: any = {
       message: {
         token: token,
-        // NO enviar notification: {}, dejar que el Service Worker la muestre
-        // así aparecen las acciones de snooze (5 min, 10 min, dismiss)
+        // SI forceNotification está activo, usar notification:{} para que el navegador muestre directamente
+        // Esto es útil para testing - comparar si el problema es FCM o el Service Worker
+        ...(extraData?.forceNotification ? {
+          notification: {
+            title: title,
+            body: body,
+            icon: './src/assets/icon-192.png'
+          }
+        } : {}),
+        // Always include data (for SW and for when notification:{} is ignored)
         data: {
           title: title,
           body: body,

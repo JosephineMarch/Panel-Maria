@@ -14,12 +14,12 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const messaging = getMessaging(app);
 
-export async function requestFCMToken() {
+export async function requestFCMToken(silent = false) {
     try {
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') {
             console.log('FCM: Permiso de notificaciones denegado');
-            alert('🔔 PERMISO DENEGADO: Necesitás permitir notificaciones en Configuración → Apps → Panel-Maria → Notificaciones');
+            if (!silent) alert('🔔 PERMISO DENEGADO: Necesitás permitir notificaciones en Configuración → Apps → Panel-Maria → Notificaciones');
             return null;
         }
 
@@ -70,9 +70,58 @@ export async function requestFCMToken() {
         }
     } catch (error) {
         console.error('FCM Error:', error);
-        alert('🔔 ERROR: ' + error.message + '\n\n' + JSON.stringify(error));
+        if (!silent) alert('🔔 ERROR: ' + error.message + '\n\n' + JSON.stringify(error));
     }
     return null;
+}
+
+export function isTokenStale() {
+    const token = localStorage.getItem('fcmToken');
+    const tokenTime = localStorage.getItem('fcmTokenTime');
+    
+    if (!token || !tokenTime) return true;
+    
+    const age = Date.now() - parseInt(tokenTime);
+    const sixDays = 6 * 24 * 60 * 60 * 1000; // 518400000 ms
+    
+    return age > sixDays;
+}
+
+export async function refreshFCMTokenIfNeeded() {
+    if (isTokenStale()) {
+        console.log('🔄 Token FCM stale o ausente, refrescando...');
+        
+        if (Notification.permission !== 'granted') {
+            return await requestFCMToken();
+        }
+        
+        try {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            let registration = registrations.find(reg => reg.active?.scriptURL.includes('sw.js'));
+            
+            if (!registration) {
+                registration = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+                await navigator.serviceWorker.ready;
+            }
+
+            const token = await getToken(messaging, {
+                vapidKey: 'BCHREiBU8nAuYsdRrXCovUK5a1hCoQGHMAAeITKaWWD8eAg8Urp8_dKPkNv7zSbmJDLJ-nz04Mz3wdN13NV417Q',
+                serviceWorkerRegistration: registration
+            });
+
+            if (token) {
+                console.log('✅ Token FCM refrescado:', token.substring(0, 50) + '...');
+                localStorage.setItem('fcmToken', token);
+                localStorage.setItem('fcmTokenTime', Date.now().toString());
+                await saveTokenToSupabase(token);
+                return token;
+            }
+        } catch (error) {
+            console.error('Error refrescando token FCM:', error);
+        }
+    }
+    
+    return localStorage.getItem('fcmToken');
 }
 
 async function saveTokenToSupabase(token) {
@@ -121,14 +170,9 @@ export async function onForegroundMessage() {
 
         if (Notification.permission === 'granted') {
             try {
-                const registrations = await navigator.serviceWorker.getRegistrations();
-                const sw = registrations.find(reg => reg.active && reg.active.scriptURL.includes('sw.js'));
-
-                if (sw) {
-                    await sw.showNotification(title, notificationOptions);
-                } else {
-                    new Notification(title, notificationOptions);
-                }
+                // En contexto de página, usar new Notification() directamente
+                // showNotification() solo funciona DENTRO del service worker
+                new Notification(title, notificationOptions);
             } catch (error) {
                 console.error('Error mostrando notificación en foreground:', error);
             }
