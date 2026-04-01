@@ -961,7 +961,8 @@ export const ui = {
 
         const date = document.getElementById('edit-deadline-date').value;
         const time = document.getElementById('edit-deadline-time').value;
-        const deadline = (date && time) ? `${date}T${time} ` : (date || null);
+        const deadline = (date && time) ? `${date}T${time}` : (date || null);
+        const repeat = document.getElementById('edit-repeat')?.value || null;
 
         const tags = tagsStr.split(',').map(t => t.trim()).filter(t => t);
 
@@ -975,7 +976,7 @@ export const ui = {
             }
         });
 
-        return { id, content, type, descripcion, url, tags, tareas, deadline };
+        return { id, content, type, descripcion, url, tags, tareas, deadline, repeat };
     },
 
     fillEditModal(item, focus = null) {
@@ -1012,6 +1013,11 @@ export const ui = {
         } else {
             document.getElementById('edit-deadline-date').value = '';
             document.getElementById('edit-deadline-time').value = '';
+        }
+
+        const repeatSelect = document.getElementById('edit-repeat');
+        if (repeatSelect) {
+            repeatSelect.value = item.repeat || '';
         }
 
         const container = this.elements.tasksContainer();

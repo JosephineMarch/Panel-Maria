@@ -1076,13 +1076,68 @@ REGLAS:
         if (text.includes('salud') || text.includes('dolor') || text.includes('médico')) tags.push('salud');
         if (text.includes('emocion') || text.includes('triste') || text.includes('feliz')) tags.push('emocion');
 
+        // 5. Detectar alarmas/deadlines en el texto
+        let deadline = null;
+        let repeat = null;
+        
+        // Patrones de repetición
+        if (text.includes('cada día') || text.includes('diario') || text.includes('todos los días')) {
+            repeat = 'daily';
+        } else if (text.includes('cada semana') || text.includes('semanal') || text.includes('todos los semanas')) {
+            repeat = 'weekly';
+        } else if (text.includes('cada mes') || text.includes('mensual') || text.includes('todos los meses')) {
+            repeat = 'monthly';
+        }
+        
+        // Detectar hora en el texto (formato: a las HH:MM, a las HHpm, a las HHam, a las HH)
+        const horaMatch = text.match(/a las\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+        let hora = null;
+        let minutos = 0;
+        if (horaMatch) {
+            hora = parseInt(horaMatch[1]);
+            if (horaMatch[2]) minutos = parseInt(horaMatch[2]);
+            const ampm = horaMatch[3]?.toLowerCase();
+            if (ampm === 'pm' && hora < 12) hora += 12;
+            if (ampm === 'am' && hora === 12) hora = 0;
+        }
+        
+        // Detectar fecha (hoy, mañana, fecha)
+        let fecha = null;
+        if (text.includes('hoy')) {
+            fecha = new Date();
+        } else if (text.includes('mañana')) {
+            fecha = new Date();
+            fecha.setDate(fecha.getDate() + 1);
+        } else {
+            const fechaMatch = text.match(/el\s+(\d{1,2})\s+de\s+(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)[oa]?/i);
+            if (fechaMatch) {
+                fecha = new Date();
+                const meses = { ene: 0, feb: 1, mar: 2, abr: 3, may: 4, jun: 5, jul: 6, ago: 7, sep: 8, oct: 9, nov: 10, dic: 11 };
+                fecha.setMonth(meses[fechaMatch[2].substring(0, 3)]);
+                fecha.setDate(parseInt(fechaMatch[1]));
+            }
+        }
+        
+        if (hora !== null || fecha) {
+            deadline = fecha || new Date();
+            if (hora !== null) {
+                deadline.setHours(hora, minutos, 0, 0);
+            }
+            // Si la hora ya pasó hoy, programar para mañana
+            if (deadline.getTime() < Date.now() && !text.includes('mañana')) {
+                deadline.setDate(deadline.getDate() + 1);
+            }
+        }
+
         return {
             type,
             content: content,
             descripcion: content.length > 50 ? content : '',
             tags,
             items: [],
-            hasDeadline: text.includes('alarma') || text.includes('recordatorio')
+            hasDeadline: !!deadline,
+            deadline: deadline ? deadline.toISOString() : null,
+            repeat
         };
     }
 
@@ -1107,6 +1162,8 @@ REGLAS:
             let finalUrl = offline.url || (finalType === 'directorio' ? this.extractUrl(content) : '');
             let finalItems = offline.items || [];
             let finalTags = offline.tags || [];
+            let finalDeadline = offline.deadline;
+            let finalRepeat = offline.repeat;
 
             // 2. Mejora con IA
             try {
@@ -1163,8 +1220,38 @@ Responde SOLO JSON con esta estructura:
                 tags: finalTags,
                 url: finalUrl,
                 tareas: finalItems,
-                deadline: null // Las alarmas se manejan aparte por ahora
+                deadline: finalDeadline,
+                repeat: finalRepeat
             });
+
+            // 4. Programar notificación push si hay deadline
+            if (finalDeadline) {
+                const deadlineTime = new Date(finalDeadline).getTime();
+                if (deadlineTime > Date.now()) {
+                    const { data: tokens } = await supabase.from('fcm_tokens').select('token');
+                    const allTokens = tokens?.map(t => t.token) || [];
+                    
+                    if (allTokens.length > 0) {
+                        const extraData = {
+                            type: 'alarm',
+                            repeat: finalRepeat,
+                            titulo: finalContent
+                        };
+                        
+                        for (const token of allTokens) {
+                            await this.sendPushNotification(
+                                token,
+                                '⏰ KAI - Recordatorio',
+                                finalContent,
+                                deadlineTime,
+                                null,
+                                extraData
+                            );
+                        }
+                        console.log(`🔔 Notificación programada para ${new Date(deadlineTime).toLocaleString()}`);
+                    }
+                }
+            }
 
             ui.clearMainInput();
             ui.showNotification('¡Anotado con éxito! ✨', 'success');
