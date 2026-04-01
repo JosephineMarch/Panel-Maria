@@ -16,9 +16,12 @@ playwright-report/
 .vscode/
 .idea/
 
-# OS
-.DS_Store
-Thumbs.db
+# OS reserved names (Windows)
+nul
+prn
+aux
+con
+
 
 # Logs
 *.log
