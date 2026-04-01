@@ -346,8 +346,20 @@ async function sendFCMMessageV1(token: string, title: string, body: string, item
 
     const result = await response.json();
     
+    // Logging detallado
+    console.log('📨 Payload enviado:', JSON.stringify(payload.message, null, 2));
+    console.log('📨 Respuesta FCM status:', response.status);
+    console.log('📨 Respuesta FCM body:', JSON.stringify(result));
+    
     if (!response.ok) {
       console.error('❌ FCM Error:', JSON.stringify(result));
+      // Devolver el error al cliente para debugging
+      return { 
+        success: false, 
+        fcmError: result,
+        tokenPrefix: token?.substring(0, 20) + '...',
+        timestamp: Date.now()
+      };
     } else {
       console.log('✅ FCM OK:', result.messageId);
     }
