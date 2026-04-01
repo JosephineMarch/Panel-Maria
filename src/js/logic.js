@@ -1181,7 +1181,7 @@ Responde SOLO JSON con esta estructura:
         return urlMatch ? urlMatch[1] : '';
     }
 
-    async sendPushNotification(token, title, body, deadlineTimestamp, itemId) {
+    async sendPushNotification(token, title, body, deadlineTimestamp, itemId, extraData = {}) {
         try {
             console.log('📲 Enviando push notification...', { token: token?.substring(0, 20) + '...', title, body, deadlineTimestamp });
 
@@ -1191,7 +1191,9 @@ Responde SOLO JSON con esta estructura:
                     title: title,
                     body: body,
                     timestamp: deadlineTimestamp,
-                    itemId: itemId
+                    itemId: itemId,
+                    repeat: extraData.repeat || null,
+                    data: extraData
                 }
             });
 
@@ -1208,6 +1210,7 @@ Responde SOLO JSON con esta estructura:
         try {
             const contenidoAlarma = alarmaData.contenido || 'Recordatorio';
             const deadline = alarmaData.deadline;
+            const repeat = alarmaData.repeat || null;
 
             let newItemId = null;
             if (this.currentUser) {
@@ -1217,7 +1220,8 @@ Responde SOLO JSON con esta estructura:
                     type: 'nota',
                     parent_id: this.currentParentId,
                     tags: ['alarma'],
-                    deadline: deadlineForDB
+                    deadline: deadlineForDB,
+                    repeat: repeat
                 });
                 newItemId = result[0]?.id || result?.id || null;
             }
@@ -1232,15 +1236,15 @@ Responde SOLO JSON con esta estructura:
                 minute: '2-digit'
             }) : '';
 
+            const repeatText = repeat ? ` (${repeat === 'daily' ? 'diario' : repeat === 'weekly' ? 'semanal' : 'mensual'})` : '';
             const mensajesAlarma = [
-                `¡Alarmas configurada para ${hora}! ⏰`,
-                `¡Te recuerdo a las ${hora}! ⏰✨`,
-                `¡Listo! Te aviso a las ${hora} ⏰`
+                `¡Alarma configurada para ${hora}${repeatText}! ⏰`,
+                `¡Te recuerdo a las ${hora}${repeatText}! ⏰✨`,
+                `¡Listo! Te aviso a las ${hora}${repeatText} ⏰`
             ];
             const mensajeAleatorio = mensajesAlarma[Math.floor(Math.random() * mensajesAlarma.length)];
             ui.showNotification(mensajeAleatorio, 'success');
 
-            // --- CORRECCIÓN PWA MÓVIL (iOS/Android): Solicitar token on-click ---
             let fcmToken = localStorage.getItem('fcmToken');
             if (deadline) {
                 const deadlineTimestamp = new Date(deadline).getTime();
@@ -1250,23 +1254,29 @@ Responde SOLO JSON con esta estructura:
                     .select('token');
 
                 const allTokens = tokens?.map(t => t.token) || [];
-                console.log('📱 Tokens encontrados para el usuario:', allTokens.length);
 
                 if (allTokens.length === 0 && fcmToken) {
                     allTokens.push(fcmToken);
                 }
 
                 if (allTokens.length > 0) {
+                    const extraData = {
+                        type: 'alarm',
+                        repeat: repeat,
+                        titulo: contenidoAlarma
+                    };
+
                     for (const token of allTokens) {
                         await this.sendPushNotification(
                             token,
                             '⏰ KAI - Recordatorio',
                             contenidoAlarma,
                             deadlineTimestamp,
-                            newItemId
+                            newItemId,
+                            extraData
                         );
                     }
-                    alert(`📲 Push programada para ${allTokens.length} dispositivo(s)`);
+                    alert(`📲 Push programada para ${allTokens.length} dispositivo(s)${repeatText}`);
                 } else {
                     alert('⚠️ No hay dispositivos registrados. Permite notificaciones.');
                 }

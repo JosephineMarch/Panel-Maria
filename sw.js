@@ -1,9 +1,7 @@
-const CACHE_NAME = 'kai-cache-v10';
-// Importamos Firebase para notificaciones
+const CACHE_NAME = 'kai-cache-v11';
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js');
 
-// Inicializar Firebase en el Service Worker
 firebase.initializeApp({
     apiKey: "AIzaSyAgsf640E_y-Ry8C6bf5cHMNB7BYjFk6FA",
     authDomain: "panel-de-control-maria.firebaseapp.com",
@@ -15,24 +13,94 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Manejo de mensajes en segundo plano de Firebase
 messaging.onBackgroundMessage((payload) => {
-    console.log('[SW] Recibido mensaje en segundo plano (FCM):', payload);
+    console.log('[SW] Mensaje en segundo plano:', payload);
 
-    // IMPORTANTE: El SDK de Firebase ya pinta notificaciones automáticamente en Móvil si detecta payload.notification.
-    // Con este IF evitamos crear una notificación duplicada en Android:
-    if (!payload.notification) {
-        const notificationTitle = payload.data?.title || '⏰ KAI - Recordatorio';
+    const data = payload.data || {};
+    const isAlarm = data.type === 'alarm';
+    const hasNotification = !!payload.notification;
+
+    if (!hasNotification) {
+        const priority = data.priority === 'high' ? 'high' : 'normal';
+        
         const notificationOptions = {
-            body: payload.data?.body || 'Tienes una alarma programada',
+            body: data.body || 'Tienes algo pendiente',
             icon: './src/assets/icon-192.png',
             badge: './src/assets/icon-192.png',
-            tag: payload.data?.tag || 'kai-alarm',
-            data: payload.data,
-            vibrate: [200, 100, 200],
-            requireInteraction: true
+            tag: data.itemId || 'kai-alarm',
+            data: data,
+            vibrate: data.priority === 'high' ? [200, 100, 200, 100, 200] : [200, 100, 200],
+            requireInteraction: true,
+            actions: [
+                { action: 'snooze', title: '⏱️ 5 min' },
+                { action: 'snooze10', title: '⏱️ 10 min' },
+                { action: 'dismiss', title: '✕' }
+            ]
         };
-        self.registration.showNotification(notificationTitle, notificationOptions);
+
+        if (data.priority === 'high') {
+            notificationOptions.urgency = 'high';
+        }
+
+        self.registration.showNotification(
+            data.title || '⏰ KAI - Recordatorio',
+            notificationOptions
+        );
+    }
+});
+
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+
+    const action = event.action;
+    const data = event.notification.data || {};
+    const itemId = data.itemId;
+
+    console.log('[SW] Notification click:', action, data);
+
+    if (action === 'dismiss') {
+        return;
+    }
+
+    if (action === 'snooze' || action === 'snooze10') {
+        const snoozeMinutes = action === 'snooze10' ? 10 : 5;
+        
+        event.waitUntil(
+            clients.matchAll({ type: 'window' }).then((clientList) => {
+                for (const client of clientList) {
+                    if (client.url.includes('Panel-Maria')) {
+                        client.postMessage({
+                            type: 'ALARM_SNOOZE',
+                            itemId: itemId,
+                            minutes: snoozeMinutes
+                        });
+                        return client.focus();
+                    }
+                }
+                return clients.openWindow('/');
+            })
+        );
+        return;
+    }
+
+    if (action === 'open' || !action) {
+        event.waitUntil(
+            clients.matchAll({ type: 'window', includeUncontrolled: true })
+                .then((clientList) => {
+                    for (const client of clientList) {
+                        if (client.url === '/' && 'focus' in client) {
+                            return client.focus();
+                        }
+                    }
+                    return clients.openWindow(`/?action=alarm&itemId=${itemId}`);
+                })
+        );
+    }
+});
+
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'SKIP_WAITING') {
+        self.skipWaiting();
     }
 });
 
@@ -54,7 +122,8 @@ const STATIC_ASSETS = [
     './src/js/cerebras.js',
     './src/js/utils.js',
     './src/js/share.js',
-    './src/js/firebase.js'
+    './src/js/firebase.js',
+    './src/js/alarmas.js'
 ];
 
 const CACHE_STRATEGIES = {
@@ -138,7 +207,6 @@ async function staleWhileRevalidate(request) {
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            // console.log('[SW] Caché inicial abierta');
             return Promise.all(STATIC_ASSETS.map(a => cache.add(a).catch(e => console.warn("[SW] Cache fallback:", a))));
         }).then(() => {
             return self.skipWaiting();
@@ -163,8 +231,6 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const { request } = event;
 
-    // IMPORTANTE: Solo interceptamos peticiones GET. 
-    // POST, PUT, DELETE, etc., deben pasar directo a la red.
     if (request.method !== 'GET') return;
 
     const url = new URL(request.url);
@@ -174,7 +240,6 @@ self.addEventListener('fetch', (event) => {
     }
 
     const urlWithoutCache = url.pathname + url.search.replace(/[?&]cache=.*$/, '');
-
     const strategy = getStrategy(urlWithoutCache || request.url);
 
     let responsePromise;
@@ -194,40 +259,3 @@ self.addEventListener('fetch', (event) => {
 
     event.respondWith(responsePromise);
 });
-
-self.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'SKIP_WAITING') {
-        self.skipWaiting();
-    }
-});
-
-// Manejo de Trigger Notifications (Notificaciones Programadas)
-self.addEventListener('notificationclick', (event) => {
-    event.notification.close();
-
-    const action = event.action;
-    const data = event.notification.data || {};
-
-    if (action === 'open' || !action) {
-        event.waitUntil(
-            clients.matchAll({ type: 'window', includeUncontrolled: true })
-                .then((clientList) => {
-                    for (const client of clientList) {
-                        if (client.url === '/' && 'focus' in client) {
-                            return client.focus();
-                        }
-                    }
-                    return clients.openWindow('/');
-                })
-        );
-    }
-});
-
-self.addEventListener('notificationclose', (event) => {
-    const data = event.notification.data || {};
-    if (data.itemId) {
-    }
-});
-
-// El listener manual de 'push' se ha eliminado porque Firebase maneja internamente las notificaciones en Móviles.
-

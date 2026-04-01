@@ -26,6 +26,7 @@ export const data = {
             tareas: itemData.tareas || [],
             tags: itemData.tags || [],
             deadline: itemData.deadline || null,
+            repeat: itemData.repeat || null,
             anclado: itemData.anclado || false,
             meta: itemData.meta || {}
         };
@@ -146,6 +147,7 @@ export const data = {
         if (updates.tareas !== undefined) sanitizedUpdates.tareas = updates.tareas;
         if (updates.tags !== undefined) sanitizedUpdates.tags = updates.tags;
         if (updates.deadline !== undefined) sanitizedUpdates.deadline = updates.deadline;
+        if (updates.repeat !== undefined) sanitizedUpdates.repeat = updates.repeat;
         if (updates.anclado !== undefined) sanitizedUpdates.anclado = updates.anclado;
         if (updates.meta !== undefined) sanitizedUpdates.meta = updates.meta;
 

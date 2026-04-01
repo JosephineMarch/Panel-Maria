@@ -43,7 +43,22 @@ serve(async (req) => {
   }
 
   try {
-    const { token, title, body, timestamp, itemId } = await req.json();
+    const { 
+      token, 
+      title, 
+      body, 
+      timestamp, 
+      itemId,
+      repeat = null,
+      snooze = false,
+      action,
+      data: extraData 
+    } = await req.json();
+
+    // Manejar acciones de notification (snooze, dismiss, etc)
+    if (action === 'snooze') {
+      return handleSnooze(extraData);
+    }
 
     if (!title || !body) {
       return new Response(
@@ -52,24 +67,43 @@ serve(async (req) => {
       );
     }
 
+    // Si es snooze, calcular nuevo timestamp
+    let finalTimestamp = timestamp;
+    if (snooze) {
+      const snoozeMinutes = extraData?.snoozeMinutes || 10;
+      finalTimestamp = Date.now() + (snoozeMinutes * 60 * 1000);
+    }
+
+    // Si es repetición, calcular próximos timestamps
+    const timestamps = calculateRepeatTimestamps(finalTimestamp, repeat);
+
     if (token && typeof token === 'string' && token.length > 20) {
       console.log(`📱 Enviando a token específico: ${token.substring(0, 30)}...`);
       
-      const result = await sendFCMMessageV1(token, title, body, itemId);
-      const successful = result.messageId ? 1 : 0;
+      const results = [];
+      for (const ts of timestamps) {
+        const delay = ts - Date.now();
+        if (delay > 0) {
+          setTimeout(() => sendFCMMessageV1(token, title, body, itemId, extraData), delay);
+          results.push({ scheduledFor: new Date(ts).toISOString(), delay });
+        } else {
+          const result = await sendFCMMessageV1(token, title, body, itemId, extraData);
+          results.push({ sent: true, result });
+        }
+      }
       
       return new Response(
         JSON.stringify({ 
-          success: successful === 1, 
-          message: successful === 1 ? 'Notificación enviada' : 'Error al enviar',
-          devices: 1,
-          successful: successful,
-          fcmResult: result
+          success: true, 
+          message: timestamps.length === 1 ? 'Notificación enviada' : `Programadas ${timestamps.length} notificaciones`,
+          scheduled: results,
+          repeat: repeat
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // Sin token específico - buscar todos los tokens del usuario
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
@@ -108,38 +142,25 @@ serve(async (req) => {
     const tokens = allTokens.map(t => t.token);
     console.log(`📱 Enviando a ${tokens.length} dispositivos`);
 
-    const scheduledTime = timestamp || Date.now() + 60000;
-    const timeToSend = new Date(scheduledTime).getTime();
-    const now = Date.now();
-    const delay = timeToSend - now;
-
-    if (delay > 0) {
-      setTimeout(async () => {
-        await sendFCMToAll(tokens, title, body, itemId);
-      }, delay);
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: `Notificación programada para ${tokens.length} dispositivos`,
-          scheduledFor: new Date(scheduledTime).toISOString(),
-          devices: tokens.length
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    } else {
-      const result = await sendFCMToAll(tokens, title, body, itemId);
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: `Notificación enviada a ${result.successful}/${tokens.length} dispositivos`,
-          devices: tokens.length,
-          successful: result.successful,
-          failed: result.failed
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Programar notificaciones
+    for (const ts of timestamps) {
+      const delay = ts - Date.now();
+      if (delay > 0) {
+        setTimeout(() => sendFCMToAll(tokens, title, body, itemId, extraData), delay);
+      } else {
+        await sendFCMToAll(tokens, title, body, itemId, extraData);
+      }
     }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: `Notificaciones programadas (${timestamps.length})`,
+        scheduled: timestamps.map(ts => new Date(ts).toISOString()),
+        repeat: repeat
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
     console.error('Error en send-push:', error);
     return new Response(
@@ -148,6 +169,56 @@ serve(async (req) => {
     );
   }
 });
+
+function calculateRepeatTimestamps(baseTimestamp: number, repeat: string | null): number[] {
+  if (!repeat) return [baseTimestamp];
+  
+  const timestamps = [baseTimestamp];
+  const now = Date.now();
+  const maxTimestamps = 365; // Máximo 1 año deprogramaciones
+  
+  let current = baseTimestamp;
+  
+  switch (repeat) {
+    case 'daily':
+      for (let i = 0; i < maxTimestamps && current < now + 365 * 24 * 60 * 60 * 1000; i++) {
+        current += 24 * 60 * 60 * 1000;
+        if (current > now) timestamps.push(current);
+      }
+      break;
+    case 'weekly':
+      for (let i = 0; i < 52 && current < now + 365 * 24 * 60 * 60 * 1000; i++) {
+        current += 7 * 24 * 60 * 60 * 1000;
+        if (current > now) timestamps.push(current);
+      }
+      break;
+    case 'monthly':
+      for (let i = 0; i < 12 && current < now + 365 * 24 * 60 * 60 * 1000; i++) {
+        const date = new Date(current);
+        date.setMonth(date.getMonth() + 1);
+        current = date.getTime();
+        if (current > now) timestamps.push(current);
+      }
+      break;
+  }
+  
+  return timestamps;
+}
+
+async function handleSnooze(extraData: any) {
+  const { itemId, snoozeMinutes = 10 } = extraData || {};
+  console.log(`💤 Snooze solicitado: ${snoozeMinutes} minutos para item ${itemId}`);
+  
+  return new Response(
+    JSON.stringify({ 
+      success: true, 
+      action: 'snooze',
+      snoozeMinutes,
+      willTriggerAt: new Date(Date.now() + snoozeMinutes * 60 * 1000).toISOString()
+    }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
 
 function base64UrlEncode(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
@@ -173,8 +244,6 @@ function pemToDer(pem: string): ArrayBuffer {
 }
 
 async function getAccessToken(): Promise<string> {
-  console.log('🔑 Generando access token para:', FIREBASE_CLIENT_EMAIL);
-  
   const header = btoa(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
   const now = Math.floor(Date.now() / 1000);
   const payload = btoa(JSON.stringify({
@@ -191,7 +260,6 @@ async function getAccessToken(): Promise<string> {
   const data = encoder.encode(signInput);
 
   const keyBuffer = pemToDer(FIREBASE_PRIVATE_KEY);
-  console.log('🔑 Clave DER decodificada, importando...');
 
   const cryptoKey = await crypto.subtle.importKey(
     'pkcs8',
@@ -201,13 +269,9 @@ async function getAccessToken(): Promise<string> {
     ['sign']
   );
 
-  console.log('🔑 Firma JWT...');
   const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', cryptoKey, data);
   const signatureB64 = base64UrlEncode(signature);
   const jwt = `${signInput}.${signatureB64}`;
-
-  console.log('🔑 JWT firmado (length:', jwt.length, ')');
-  console.log('🔑 Obteniendo access token de Google...');
 
   const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
@@ -218,17 +282,58 @@ async function getAccessToken(): Promise<string> {
   const tokenData = await tokenResponse.json();
   
   if (!tokenData.access_token) {
-    console.error('❌ Error access token:', JSON.stringify(tokenData));
     throw new Error('No se pudo obtener access token: ' + JSON.stringify(tokenData));
   }
   
-  console.log('✅ Access token OK');
   return tokenData.access_token;
 }
 
-async function sendFCMMessageV1(token: string, title: string, body: string, itemId?: string) {
+async function sendFCMMessageV1(token: string, title: string, body: string, itemId?: string, extraData?: any) {
   try {
     const accessToken = await getAccessToken();
+
+    const payload: any = {
+      message: {
+        token: token,
+        notification: {
+          title: title,
+          body: body
+        },
+        data: {
+          itemId: itemId || '',
+          type: extraData?.type || 'alarm',
+          priority: extraData?.priority || 'normal',
+          category: extraData?.category || '',
+          ...extraData
+        },
+        android: {
+          priority: extraData?.priority === 'high' ? 'high' : 'normal',
+          ttl: extraData?.repeat ? (365 * 24 * 60 * 60 * 1000).toString() : '86400000'
+        },
+        webpush: {
+          headers: {
+            Urgency: extraData?.priority === 'high' ? 'high' : 'normal',
+            TTL: extraData?.repeat ? '604800' : '86400'
+          },
+          fcmOptions: {
+            link: `https://josephinemarch.github.io/Panel-Maria/?action=alarm&itemId=${itemId || ''}`
+          }
+        }
+      }
+    };
+
+    // Agregar acciones para Android
+    if (extraData?.repeat || extraData?.snooze) {
+      payload.message.android = {
+        ...payload.message.android,
+        notification: {
+          channelId: 'alarmas',
+          priority: extraData?.priority === 'high' ? 'high' : 'normal',
+          sound: 'default',
+          vibrate: [200, 100, 200, 100, 200]
+        }
+      };
+    }
 
     const response = await fetch(`https://fcm.googleapis.com/v1/projects/${FCM_PROJECT_ID}/messages:send`, {
       method: 'POST',
@@ -236,30 +341,7 @@ async function sendFCMMessageV1(token: string, title: string, body: string, item
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${accessToken}`
       },
-      body: JSON.stringify({
-        message: {
-          token: token,
-          notification: {
-            title: title,
-            body: body
-          },
-          data: {
-            itemId: itemId || '',
-            type: 'alarm',
-            title: title,
-            body: body
-          },
-          webpush: {
-            headers: {
-              Urgency: "high",
-              TTL: "86400"
-            },
-            fcmOptions: {
-              link: 'https://josephinemarch.github.io/Panel-Maria/?action=alarm'
-            }
-          }
-        }
-      })
+      body: JSON.stringify(payload)
     });
 
     const result = await response.json();
@@ -267,7 +349,7 @@ async function sendFCMMessageV1(token: string, title: string, body: string, item
     if (!response.ok) {
       console.error('❌ FCM Error:', JSON.stringify(result));
     } else {
-      console.log('✅ FCM OK, messageId:', result.messageId);
+      console.log('✅ FCM OK:', result.messageId);
     }
     
     return result;
@@ -277,7 +359,7 @@ async function sendFCMMessageV1(token: string, title: string, body: string, item
   }
 }
 
-async function sendFCMToAll(tokens: string[], title: string, body: string, itemId?: string) {
+async function sendFCMToAll(tokens: string[], title: string, body: string, itemId?: string, extraData?: any) {
   console.log(`📱 Enviando a ${tokens.length} dispositivos`);
   
   let successful = 0;
@@ -285,7 +367,7 @@ async function sendFCMToAll(tokens: string[], title: string, body: string, itemI
   
   for (const token of tokens) {
     try {
-      const result = await sendFCMMessageV1(token, title, body, itemId);
+      const result = await sendFCMMessageV1(token, title, body, itemId, extraData);
       if (result.messageId) successful++;
       else failed++;
     } catch (e) {
