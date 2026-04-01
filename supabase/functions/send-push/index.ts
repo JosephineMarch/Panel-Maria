@@ -2,8 +2,35 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 
 const FCM_PROJECT_ID = 'panel-de-control-maria';
-const FIREBASE_CLIENT_EMAIL = Deno.env.get('FIREBASE_CLIENT_EMAIL');
-const FIREBASE_PRIVATE_KEY = Deno.env.get('FIREBASE_PRIVATE_KEY')?.replace(/\\n/g, '\n');
+const FIREBASE_CLIENT_EMAIL = 'panel-de-control-maria@appspot.gserviceaccount.com';
+const FIREBASE_PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
+MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQChKKdKFNkhKhWo
+PbtATKxC6mMttfMdSKXyANuEIaHqYeaUEHFJVzIFLGWmNPPBREESLrxipCiKaY1T
+h52kx7TkqiMjVubuVyor19JdfOy4v6gh2xhqMcvjoYwFUrLfGmemcViqzYovB0ll
+lgu/oeQMbPY2iroqpIOHKzerejJJ/wTwE3co8mk7SH0H/UzR5NoqlMiXrz6FzBu7
+rYfHgrmZlUMECvTVqLXAu7lm8Z3Nmx5AIn8fOgRa09efWBXRONvdIZeTac7D77CC
+SyoIpdpOxtnw1w5d7EiELf1cPTkPL0h+e6JdHUDRkCM+aOFCy1JwoLmHEN6OqWII
+AWCyT6hdAgMBAAECggEAAtR4F5Iae/1wCEEeltL3MBeglTloOFVBwL2ox9RgB6x0
+xEMuUheLY9GImWy9nmEIntKeRpcpCmvZv6Pr2JcUg0gaOjEjo1TO2JqUxu/TfQJf
+PUpKeUxAOdI+PLZb42oPHuTyUHwv1y09aeDCz7h+jNn5pYc1x1uV3wZFwdJGrCDx
+97vuPJ6fi0DzFrk9l5YfDN2287cN8MekcFd6m4hvEjsyB2SbrfrAvOG8CMvU0Wf8
+1KUMZgJvHIuI5LACajksQH4eOMDkLO1ClWCVKjmzKlJwEiOkxScpSVLRe5X2rtkD
+CcoWsz64gDHv2pFbTalevZHbAJdp4UA7ZWqB4AnfGwKBgQC57LxG0RUXS8BiU/lK
+rsoEoN/vz4uRRu3iI8b0+e8nk/pyGGz+Hoc6Mm9sO703dDUvoK2M7sbqwNLq7KgK
+J9zoqX7vdDUg12KfmiUJNsOw/8jsPRUoDIf24nOJtCdZJVjGEArxSTmZZoB8wMZE
+KgG176AEXshHjHGFhdngUxjHkwKBgQDd5lVz60RjWdztze6CTizSbSyZ4cGnbLX8
+y2pih38LhAHAXY3Idr9MQXxU6RfwLT+eU7QJkge0gPuZfYHdajOeTRjzfGxYGYlu
+MWiOdHxOAe2QvTNnt2Y5IPtpl/hNsjhDcuXjBF9kLwOgmEg3qB3K3EvOAlZ/zOrJ
+pD9QDbTmTwKBgFJ4TfNjnuVcdpOnB/c2nOl8qphnCVOBkNc0Y3YavxhhLUAa0Y3O
+4NDRulbaEM5eP5FGxnSzHYzXxzbpjogisnyJYoK4mzBcGaUN7MuvfRIwA2G2noHL
+PSwnunQkcye5xyzjxNbOUjxXGTs9DzUBJQ0co3AM0u3ZwCkn/ELi2ST9AoGAU2Mf
+cbRTutImR+c/XhBqn5kPTbScxYIA0cLPc79fasBsuBFwGoklUk65nl8J8+PNKH5k
+BcSuyJI/+mpDxyUFyNNIMRfszx6pmpNOq1ny7I2k7ONs0ekFrSpL0F6fnPMAWbhv
+02PtRQS15D/Vw7SVnYozonMWdmhXQvdKI5dDB9kCgYBEE7JQOD86V3lUrIHQPstl
+xloKiEWgVFv9CZHrHMcCz9KG23nT2WtfDhxtsoynlUl+84OIoknYMuoTaVy9MNkC
+G5gJqx8VDrsITTR1GV9L3tcbyaIiMvaT8FUAQCwillstP5c9VXPFA+9xLocmEJ3C
+EW4F9T9383x0zg0wwAAJIA==
+-----END PRIVATE KEY-----`;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,7 +45,13 @@ serve(async (req) => {
   try {
     const { token, title, body, timestamp, itemId } = await req.json();
 
-    // Si se pasa un token específico, enviar solo a ese token (para testing)
+    if (!title || !body) {
+      return new Response(
+        JSON.stringify({ error: 'Faltan parámetros requeridos: title y body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (token && typeof token === 'string' && token.length > 20) {
       console.log(`📱 Enviando a token específico: ${token.substring(0, 30)}...`);
       
@@ -37,38 +70,33 @@ serve(async (req) => {
       );
     }
 
-    // Sin token específico - buscar todos los tokens del usuario
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
-    // Obtener usuario del JWT si existe
     const authHeader = req.headers.get('Authorization');
     let userId = null;
     
     if (authHeader) {
-        try {
-            // Crear cliente con auth header para validar el JWT
-            const authSupabase = createClient(
-                Deno.env.get('SUPABASE_URL') ?? '',
-                Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-                { global: { headers: { Authorization: authHeader } } }
-            );
-            const { data: { user } } = await authSupabase.auth.getUser();
-            if (user) {
-                userId = user.id;
-                console.log('Usuario autenticado:', userId);
-            }
-        } catch (e) {
-            console.log('JWT inválido o ausente, enviando a todos los dispositivos');
+      try {
+        const authSupabase = createClient(
+          Deno.env.get('SUPABASE_URL') ?? '',
+          Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+          { global: { headers: { Authorization: authHeader } } }
+        );
+        const { data: { user } } = await authSupabase.auth.getUser();
+        if (user) {
+          userId = user.id;
         }
+      } catch (e) {
+        console.log('JWT inválido, enviando a todos los dispositivos');
+      }
     }
 
-    // Buscar tokens: del usuario específico o todos si no hay user
     let query = supabase.from('fcm_tokens').select('token');
     if (userId) {
-        query = query.eq('user_id', userId);
+      query = query.eq('user_id', userId);
     }
     
     const { data: allTokens, error: tokenError } = await query;
@@ -78,7 +106,7 @@ serve(async (req) => {
     }
 
     const tokens = allTokens.map(t => t.token);
-    console.log(`📱 Enviando a ${tokens.length} dispositivos (userId: ${userId || 'todos'})`);
+    console.log(`📱 Enviando a ${tokens.length} dispositivos`);
 
     const scheduledTime = timestamp || Date.now() + 60000;
     const timeToSend = new Date(scheduledTime).getTime();
@@ -121,14 +149,23 @@ serve(async (req) => {
   }
 });
 
-async function getAccessToken(): Promise<string> {
-  console.log('🔑 getAccessToken - FIREBASE_CLIENT_EMAIL:', FIREBASE_CLIENT_EMAIL ? 'OK' : 'NULL');
-  console.log('🔑 getAccessToken - FIREBASE_PRIVATE_KEY:', FIREBASE_PRIVATE_KEY ? 'OK (' + FIREBASE_PRIVATE_KEY.length + ' chars)' : 'NULL');
+function pemToDer(pem: string): ArrayBuffer {
+  const lines = pem
+    .replace(/-----BEGIN PRIVATE KEY-----/, '')
+    .replace(/-----END PRIVATE KEY-----/, '')
+    .replace(/\s+/g, '');
   
-  if (!FIREBASE_CLIENT_EMAIL || !FIREBASE_PRIVATE_KEY) {
-    throw new Error('Credenciales de Firebase no configuradas en Supabase Edge Function');
+  const binaryString = atob(lines);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
   }
+  return bytes.buffer;
+}
 
+async function getAccessToken(): Promise<string> {
+  console.log('🔑 Generando access token para:', FIREBASE_CLIENT_EMAIL);
+  
   const header = btoa(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
   const now = Math.floor(Date.now() / 1000);
   const payload = btoa(JSON.stringify({
@@ -144,29 +181,23 @@ async function getAccessToken(): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(signInput);
 
-  // Log para debug
-  const keyPreview = FIREBASE_PRIVATE_KEY.substring(0, 50) + '...';
-  console.log('🔑 Private Key preview:', keyPreview);
-
-  let keyBuffer;
-  try {
-    keyBuffer = decodeBase64ToArrayBuffer(FIREBASE_PRIVATE_KEY);
-  } catch (e) {
-    console.error('❌ Error decodificando private key:', e.message);
-    throw new Error('Error decodificando FIREBASE_PRIVATE_KEY: ' + e.message);
-  }
+  const keyBuffer = pemToDer(FIREBASE_PRIVATE_KEY);
+  console.log('🔑 Clave DER decodificada, importando...');
 
   const cryptoKey = await crypto.subtle.importKey(
     'pkcs8',
-    decodeBase64ToArrayBuffer(FIREBASE_PRIVATE_KEY),
+    keyBuffer,
     { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
     false,
     ['sign']
   );
 
+  console.log('🔑 Firma JWT...');
   const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', cryptoKey, data);
-  const signatureB64 = arrayBufferToBase64(signature);
+  const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)));
   const jwt = `${signInput}.${signatureB64}`;
+
+  console.log('🔑 Obteniendo access token de Google...');
 
   const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
@@ -175,28 +206,14 @@ async function getAccessToken(): Promise<string> {
   });
 
   const tokenData = await tokenResponse.json();
+  
   if (!tokenData.access_token) {
-    throw new Error('No se pudo obtener access token de Firebase: ' + JSON.stringify(tokenData));
+    console.error('❌ Error access token:', JSON.stringify(tokenData));
+    throw new Error('No se pudo obtener access token: ' + JSON.stringify(tokenData));
   }
+  
+  console.log('✅ Access token OK');
   return tokenData.access_token;
-}
-
-function decodeBase64ToArrayBuffer(base64: string): ArrayBuffer {
-  const binaryString = atob(base64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes.buffer;
-}
-
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
 }
 
 async function sendFCMMessageV1(token: string, title: string, body: string, itemId?: string) {
@@ -212,6 +229,10 @@ async function sendFCMMessageV1(token: string, title: string, body: string, item
       body: JSON.stringify({
         message: {
           token: token,
+          notification: {
+            title: title,
+            body: body
+          },
           data: {
             itemId: itemId || '',
             type: 'alarm',
@@ -234,39 +255,20 @@ async function sendFCMMessageV1(token: string, title: string, body: string, item
     const result = await response.json();
     
     if (!response.ok) {
-      console.error(`❌ FCM Error para token ${token.substring(0, 30)}...:`, JSON.stringify(result));
+      console.error('❌ FCM Error:', JSON.stringify(result));
     } else {
-      console.log(`✅ FCM OK para token ${token.substring(0, 30)}...`);
+      console.log('✅ FCM OK, messageId:', result.messageId);
     }
     
     return result;
   } catch (error) {
-    console.error(`❌ Exception para token ${token.substring(0, 30)}...:`, error);
+    console.error('❌ Exception:', error);
     return { error: error.message };
   }
 }
-        }
-      }
-    })
-  });
-
-  const result = await response.json();
-  
-  // Loguear el error específico de FCM
-  if (!response.ok) {
-    console.error(`❌ FCM Error para token ${token.substring(0, 30)}...:`, JSON.stringify(result));
-    if (result.error) {
-      console.error(`   Código: ${result.error.status}, Mensaje: ${result.error.message}`);
-    }
-  } else {
-    console.log(`✅ FCM OK para token ${token.substring(0, 30)}...`);
-  }
-  
-  return result;
-}
 
 async function sendFCMToAll(tokens: string[], title: string, body: string, itemId?: string) {
-  console.log(`📱 Enviando notificación a ${tokens.length} dispositivos`);
+  console.log(`📱 Enviando a ${tokens.length} dispositivos`);
   
   let successful = 0;
   let failed = 0;
@@ -274,22 +276,12 @@ async function sendFCMToAll(tokens: string[], title: string, body: string, itemI
   for (const token of tokens) {
     try {
       const result = await sendFCMMessageV1(token, title, body, itemId);
-      if (result.messageId) {
-        successful++;
-      } else {
-        failed++;
-      }
+      if (result.messageId) successful++;
+      else failed++;
     } catch (e) {
-      console.error(`❌ Token falló:`, e);
       failed++;
     }
   }
-  
-  console.log(`✅ Enviados: ${successful}, ❌ Fallidos: ${failed}`);
-  
-  return { successful, failed };
-}
-  });
   
   return { successful, failed };
 }
