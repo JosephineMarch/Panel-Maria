@@ -149,6 +149,15 @@ serve(async (req) => {
   }
 });
 
+function base64UrlEncode(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 function pemToDer(pem: string): ArrayBuffer {
   const lines = pem
     .replace(/-----BEGIN PRIVATE KEY-----/, '')
@@ -194,9 +203,10 @@ async function getAccessToken(): Promise<string> {
 
   console.log('🔑 Firma JWT...');
   const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', cryptoKey, data);
-  const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)));
+  const signatureB64 = base64UrlEncode(signature);
   const jwt = `${signInput}.${signatureB64}`;
 
+  console.log('🔑 JWT firmado (length:', jwt.length, ')');
   console.log('🔑 Obteniendo access token de Google...');
 
   const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
