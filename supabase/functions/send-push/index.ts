@@ -122,6 +122,9 @@ serve(async (req) => {
 });
 
 async function getAccessToken(): Promise<string> {
+  console.log('🔑 getAccessToken - FIREBASE_CLIENT_EMAIL:', FIREBASE_CLIENT_EMAIL ? 'OK' : 'NULL');
+  console.log('🔑 getAccessToken - FIREBASE_PRIVATE_KEY:', FIREBASE_PRIVATE_KEY ? 'OK (' + FIREBASE_PRIVATE_KEY.length + ' chars)' : 'NULL');
+  
   if (!FIREBASE_CLIENT_EMAIL || !FIREBASE_PRIVATE_KEY) {
     throw new Error('Credenciales de Firebase no configuradas en Supabase Edge Function');
   }
@@ -140,6 +143,18 @@ async function getAccessToken(): Promise<string> {
   const signInput = `${header}.${payload}`;
   const encoder = new TextEncoder();
   const data = encoder.encode(signInput);
+
+  // Log para debug
+  const keyPreview = FIREBASE_PRIVATE_KEY.substring(0, 50) + '...';
+  console.log('🔑 Private Key preview:', keyPreview);
+
+  let keyBuffer;
+  try {
+    keyBuffer = decodeBase64ToArrayBuffer(FIREBASE_PRIVATE_KEY);
+  } catch (e) {
+    console.error('❌ Error decodificando private key:', e.message);
+    throw new Error('Error decodificando FIREBASE_PRIVATE_KEY: ' + e.message);
+  }
 
   const cryptoKey = await crypto.subtle.importKey(
     'pkcs8',
