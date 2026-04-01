@@ -2217,36 +2217,24 @@ Responde SOLO JSON con esta estructura:
     // === Debug: Test de Notificaciones Push ===
     async testPushNotification() {
         try {
-            alert('🔔 Iniciando test de notificaciones...');
+            ui.showNotification('🔔 Iniciando test...', 'info');
             
-            // Siempre intentar obtener un token fresco del dispositivo actual
+            // Obtener token fresco del dispositivo actual
             const firebase = await import('./firebase.js');
-            
-            // Primero ver si hay un token guardado
-            let token = firebase.getStoredFCMToken();
+            const token = await firebase.requestFCMToken();
             
             if (!token) {
-                alert('🔔 No hay token en localStorage, solicitando uno nuevo...');
-                // Solicitar permiso y obtener token
-                token = await firebase.requestFCMToken();
-            } else {
-                alert('🔔 Token encontrado en localStorage');
-            }
-            
-            if (!token) {
-                alert('🔔 ERROR: No se pudo obtener token FCM.\n\nVerificá que las notificaciones estén permitidas en Configuración → Apps → Panel-Maria → Notificaciones');
                 ui.showNotification('🔔 ERROR: No se pudo obtener token FCM', 'error');
                 return;
             }
             
-            alert('🔔 Token obtenido! Enviando notificación...\n\nToken: ' + token.substring(0, 30) + '...');
+            console.log('Token FCM:', token.substring(0, 30) + '...');
             
-            // Enviar notificación de prueba via Edge Function
+            // Enviar notificación de prueba - NO pas token, la función lo busca automáticamente
             const { supabase } = await import('./supabase.js');
             
             const { data, error } = await supabase.functions.invoke('send-push', {
                 body: {
-                    token: token,
                     title: '🔔 Test de KAI',
                     body: 'Si ves esto, las notificaciones push funcionan! 🎉',
                     timestamp: Date.now()
@@ -2254,16 +2242,13 @@ Responde SOLO JSON con esta estructura:
             });
 
             if (error) {
-                alert('❌ Error al enviar: ' + (error.message || JSON.stringify(error)));
                 console.error('Error enviando push:', error);
-                ui.showNotification('❌ Error: ' + (error.message || error), 'error');
+                ui.showNotification('❌ Error: ' + (error.message || JSON.stringify(error)), 'error');
             } else {
-                alert('✅ Notificación enviada! Revisá tu teléfono.');
                 console.log('Push enviado:', data);
-                ui.showNotification('✅ Notificación enviada! Revisá tu teléfono.', 'success');
+                ui.showNotification(`✅ ${data.message || 'Notificación enviada!'}`, 'success');
             }
         } catch (error) {
-            alert('❌ Error: ' + error.message + '\n\n' + error.stack);
             console.error('Test push error:', error);
             ui.showNotification('❌ Error: ' + error.message, 'error');
         }

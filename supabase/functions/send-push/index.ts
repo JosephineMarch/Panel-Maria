@@ -5,29 +5,26 @@ const FCM_PROJECT_ID = 'panel-de-control-maria';
 const FIREBASE_CLIENT_EMAIL = Deno.env.get('FIREBASE_CLIENT_EMAIL');
 const FIREBASE_PRIVATE_KEY = Deno.env.get('FIREBASE_PRIVATE_KEY')?.replace(/\\n/g, '\n');
 
-// Headers CORS para permitir GitHub Pages y otros orígenes
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const { token, title, body, timestamp, itemId } = await req.json();
+    const { title, body, timestamp, itemId } = await req.json();
 
-    if (!token || !title || !body) {
+    if (!title || !body) {
       return new Response(
-        JSON.stringify({ error: 'Faltan parámetros requeridos' }),
+        JSON.stringify({ error: 'Faltan parámetros requeridos: title y body' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // --- BLOQUE DE SEGURIDAD AÑADIDO: VALIDACIÓN JWT vs TOKEN ---
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Falta Token de Autorización (JWT)' }), { status: 401 });
@@ -39,14 +36,12 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    // Obtener el usuario del JWT para buscar TODOS sus tokens
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Usuario no válido' }), { status: 401 });
     }
 
-    // Buscar TODOS los tokens del usuario (multi-dispositivo)
     const { data: allTokens, error: tokenError } = await supabase
       .from('fcm_tokens')
       .select('token')
@@ -57,8 +52,7 @@ serve(async (req) => {
     }
 
     const tokens = allTokens.map(t => t.token);
-    console.log(`📱 Enviando a ${tokens.length} dispositivos`);
-    // -----------------------------------------------------------
+    console.log(`📱 Enviando a ${tokens.length} dispositivos para usuario ${user.id}`);
 
     const scheduledTime = timestamp || Date.now() + 60000;
     const timeToSend = new Date(scheduledTime).getTime();
@@ -80,60 +74,20 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } else {
-      await sendFCMToAll(tokens, title, body, itemId);
+      const result = await sendFCMToAll(tokens, title, body, itemId);
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: `Notificación enviada a ${tokens.length} dispositivos`,
-          devices: tokens.length
+          message: `Notificación enviada a ${result.successful}/${tokens.length} dispositivos`,
+          devices: tokens.length,
+          successful: result.successful,
+          failed: result.failed
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    // Intentamos buscar el FCM del supuesto dueño asumiendo la sesión RLS del JWT
-    const { data: validTokens, error: sbError } = await supabase
-      .from('fcm_tokens')
-      .select('token')
-      .eq('token', token);
-
-    if (sbError || !validTokens || validTokens.length === 0) {
-      return new Response(JSON.stringify({ error: 'Acceso Denegado. El token Push no pertenece a tu sesión.' }), { status: 403 });
-    }
-    // -----------------------------------------------------------
-
-    const scheduledTime = timestamp || Date.now() + 60000;
-    const timeToSend = new Date(scheduledTime).getTime();
-    const now = Date.now();
-    const delay = timeToSend - now;
-
-    if (delay > 0) {
-      setTimeout(async () => {
-        await sendFCMMessageV1(token, title, body, itemId);
-      }, delay);
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: 'Notificación programada',
-          scheduledFor: new Date(scheduledTime).toISOString()
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    } else {
-      await sendFCMMessageV1(token, title, body, itemId);
-      return new Response(
-        JSON.stringify({ success: true, message: 'Notificación enviada inmediatamente' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
   } catch (error) {
+    console.error('Error en send-push:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -143,7 +97,7 @@ serve(async (req) => {
 
 async function getAccessToken(): Promise<string> {
   if (!FIREBASE_CLIENT_EMAIL || !FIREBASE_PRIVATE_KEY) {
-    throw new Error('Credenciales de Firebase no configuradas');
+    throw new Error('Credenciales de Firebase no configuradas en Supabase Edge Function');
   }
 
   const header = btoa(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
@@ -158,7 +112,6 @@ async function getAccessToken(): Promise<string> {
   }));
 
   const signInput = `${header}.${payload}`;
-
   const encoder = new TextEncoder();
   const data = encoder.encode(signInput);
 
@@ -172,7 +125,6 @@ async function getAccessToken(): Promise<string> {
 
   const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', cryptoKey, data);
   const signatureB64 = arrayBufferToBase64(signature);
-
   const jwt = `${signInput}.${signatureB64}`;
 
   const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
@@ -182,6 +134,9 @@ async function getAccessToken(): Promise<string> {
   });
 
   const tokenData = await tokenResponse.json();
+  if (!tokenData.access_token) {
+    throw new Error('No se pudo obtener access token de Firebase: ' + JSON.stringify(tokenData));
+  }
   return tokenData.access_token;
 }
 
@@ -204,48 +159,49 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 }
 
 async function sendFCMMessageV1(token: string, title: string, body: string, itemId?: string) {
-  try {
-    const accessToken = await getAccessToken();
+  const accessToken = await getAccessToken();
 
-    const response = await fetch(`https://fcm.googleapis.com/v1/projects/${FCM_PROJECT_ID}/messages:send`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`
-      },
-      body: JSON.stringify({
-        message: {
-          token: token,
-          data: {
-            itemId: itemId || '',
-            type: 'alarm',
-            title: title,
-            body: body
+  const response = await fetch(`https://fcm.googleapis.com/v1/projects/${FCM_PROJECT_ID}/messages:send`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`
+    },
+    body: JSON.stringify({
+      message: {
+        token: token,
+        data: {
+          itemId: itemId || '',
+          type: 'alarm',
+          title: title,
+          body: body
+        },
+        webpush: {
+          headers: {
+            Urgency: "high",
+            TTL: "86400"
           },
-          webpush: {
-            headers: {
-              Urgency: "high",
-              TTL: "86400"
-            },
-            fcmOptions: {
-              link: 'https://josephinemarch.github.io/Panel-Maria/?action=alarm'
-            }
+          fcmOptions: {
+            link: 'https://josephinemarch.github.io/Panel-Maria/?action=alarm'
           }
         }
-      })
-    });
+      }
+    })
+  });
 
-    const result = await response.json();
-    console.log('FCM V1 Response:', result);
-    return result;
-  } catch (error) {
-    console.error('FCM V1 Error:', error);
-    return { error: error.message };
+  const result = await response.json();
+  
+  if (!response.ok) {
+    console.error(`FCM Error para token ${token.substring(0, 20)}:`, result);
+    throw new Error(result.error?.message || JSON.stringify(result));
   }
+  
+  return result;
 }
 
 async function sendFCMToAll(tokens: string[], title: string, body: string, itemId?: string) {
   console.log(`📱 Enviando notificación a ${tokens.length} dispositivos`);
+  
   const results = await Promise.allSettled(
     tokens.map(token => sendFCMMessageV1(token, title, body, itemId))
   );
@@ -254,5 +210,13 @@ async function sendFCMToAll(tokens: string[], title: string, body: string, itemI
   const failed = results.filter(r => r.status === 'rejected').length;
   
   console.log(`✅ Enviados: ${successful}, ❌ Fallidos: ${failed}`);
+  
+  // Loguear errores específicos
+  results.forEach((r, i) => {
+    if (r.status === 'rejected') {
+      console.error(`Token ${i} falló:`, r.reason);
+    }
+  });
+  
   return { successful, failed };
 }
