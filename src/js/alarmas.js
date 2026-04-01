@@ -1,15 +1,18 @@
 /**
- * Módulo de Alarmas 2.0 (Server-side Cron)
+ * Módulo de Alarmas 2.0
  * =================
- * Maneja notificaciones locales y snooze.
- * Las push notifications con app cerrada las maneja el cron del servidor (pg_cron + check-alarms edge function).
+ * Maneja alarmas con polling local (cada 30s) para notificaciones con pestaña abierta.
+ * También intenta enviar push notifications vía edge function (funciona con internet).
+ * El servidor (pg_cron + check-alarms) maneja las push con app cerrada.
  */
 
 import { data } from './data.js';
 import { ui } from './ui.js';
+import { supabase } from './supabase.js';
 
 class AlarmManager {
     constructor() {
+        this.checkInterval = null;
         this.snoozeTimers = new Map();
     }
 
@@ -21,11 +24,18 @@ class AlarmManager {
         if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission();
         }
-        // Server-side cron handles push notifications.
-        // Local notifications only work with tab open.
+
+        // Polling local: funciona con pestaña abierta
+        this.checkAlarms();
+        this.checkInterval = setInterval(() => {
+            this.checkAlarms();
+        }, 30000);
     }
 
     stop() {
+        if (this.checkInterval) {
+            clearInterval(this.checkInterval);
+        }
         this.snoozeTimers.forEach(timer => clearTimeout(timer));
     }
 
@@ -76,7 +86,83 @@ class AlarmManager {
         return content;
     }
 
-    async triggerAlarm(item) {
+    async checkAlarms() {
+        try {
+            if (!('Notification' in window)) return;
+
+            const items = await data.getItems({});
+            if (!items || items.length === 0) return;
+
+            const now = Date.now();
+            const triggeredIds = JSON.parse(localStorage.getItem('triggeredAlarms') || '[]');
+            const alarmTimestamps = JSON.parse(localStorage.getItem('alarmTimestamps') || '{}');
+
+            // Limpiar triggeredIds viejos (más de 24h)
+            const validTriggeredIds = [];
+            for (const id of triggeredIds) {
+                const lastTriggered = alarmTimestamps[id] || 0;
+                if (now - lastTriggered < 24 * 60 * 60 * 1000) {
+                    validTriggeredIds.push(id);
+                }
+            }
+
+            for (const item of items) {
+                if (!item.deadline) continue;
+
+                let deadlineTime;
+                if (typeof item.deadline === 'number') deadlineTime = item.deadline;
+                else if (typeof item.deadline === 'string') deadlineTime = new Date(item.deadline).getTime();
+                else continue;
+
+                // Disparar cuando el deadline está a menos de 60s en el futuro o ya pasó (pero no hace más de 5min)
+                const timeDiff = deadlineTime - now;
+                if (timeDiff <= 60000 && timeDiff > -300000) {
+                    if (!validTriggeredIds.includes(item.id)) {
+                        console.log(`⏰ Alarma disparada: ${item.content} (deadline: ${new Date(deadlineTime).toLocaleString()})`);
+
+                        // 1) Intentar push notification (con internet funciona)
+                        await this.sendPushNow(item);
+
+                        // 2) Notificación local (siempre funciona con pestaña abierta)
+                        this.triggerAlarm(item);
+
+                        // 3) Si es repetición, avanzar deadline al próximo ciclo
+                        if (item.repeat) {
+                            await this.advanceRepeatDeadline(item);
+                        }
+
+                        validTriggeredIds.push(item.id);
+                        alarmTimestamps[item.id] = now;
+                    }
+                }
+            }
+
+            localStorage.setItem('triggeredAlarms', JSON.stringify(validTriggeredIds));
+            localStorage.setItem('alarmTimestamps', JSON.stringify(alarmTimestamps));
+        } catch (error) {
+            console.error('Error checking alarms:', error);
+        }
+    }
+
+    async sendPushNow(item) {
+        // Intenta enviar push notification INMEDIATAMENTE
+        // Si no hay internet o la edge function falla, la notificación local igual funciona
+        try {
+            const { error } = await supabase.functions.invoke('check-alarms', {
+                body: { force: true, itemId: item.id }
+            });
+
+            if (error) {
+                console.warn('🔔 Push falló (offline o edge function error):', error.message);
+            } else {
+                console.log('✅ Push notification enviada');
+            }
+        } catch (err) {
+            console.warn('🔔 Push falló (offline?):', err.message);
+        }
+    }
+
+    triggerAlarm(item) {
         try {
             this.playAlarmSound();
             this.showAlarmNotification(item);
@@ -138,6 +224,40 @@ class AlarmManager {
         }, minutes * 60 * 1000));
 
         ui.showNotification(`⏱️ Te recuerdo en ${minutes} minutos`, 'success');
+    }
+
+    async advanceRepeatDeadline(item) {
+        const currentDeadline = new Date(item.deadline).getTime();
+        let nextDeadline;
+
+        switch (item.repeat) {
+            case 'daily':
+                nextDeadline = currentDeadline + 24 * 60 * 60 * 1000;
+                break;
+            case 'weekly':
+                nextDeadline = currentDeadline + 7 * 24 * 60 * 60 * 1000;
+                break;
+            case 'monthly':
+                const d = new Date(item.deadline);
+                d.setMonth(d.getMonth() + 1);
+                nextDeadline = d.getTime();
+                break;
+            default:
+                return;
+        }
+
+        await data.updateItem(item.id, { deadline: nextDeadline });
+
+        // Limpiar de triggeredAlarms para que pueda dispararse de nuevo
+        const triggeredIds = JSON.parse(localStorage.getItem('triggeredAlarms') || '[]');
+        const newTriggeredIds = triggeredIds.filter(id => id !== item.id);
+        localStorage.setItem('triggeredAlarms', JSON.stringify(newTriggeredIds));
+
+        const alarmTimestamps = JSON.parse(localStorage.getItem('alarmTimestamps') || '{}');
+        delete alarmTimestamps[item.id];
+        localStorage.setItem('alarmTimestamps', JSON.stringify(alarmTimestamps));
+
+        console.log(`🔄 Repetición ${item.repeat}: próximo deadline ${new Date(nextDeadline).toLocaleString()}`);
     }
 
     async setRepeat(itemId, repeatType) {
