@@ -36,6 +36,24 @@ export async function requestFCMToken() {
 
         console.log('FCM usando SW:', registration);
 
+        // IMPORTANTE: También necesitamos subscribe al push manager para que el SW reciba mensajes
+        let pushSubscription = await registration.pushManager.getSubscription();
+        
+        if (!pushSubscription) {
+            console.log('FCM: Suscribiendo al push manager...');
+            const vapidKey = 'BCHREiBU8nAuYsdRrXCovUK5a1hCoQGHMAAeITKaWWD8eAg8Urp8_dKPkNv7zSbmJDLJ-nz04Mz3wdN13NV417Q';
+            // Convertir VAPID key de base64 a Uint8Array
+            const vapidKeyArray = Uint8Array.from(atob(vapidKey.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+            
+            pushSubscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: vapidKeyArray
+            });
+            console.log('FCM: Suscrito a push:', pushSubscription.endpoint);
+        } else {
+            console.log('FCM: Ya subscrito a push:', pushSubscription.endpoint);
+        }
+
         // FORZAR token nuevo - eliminar cache
         const token = await getToken(messaging, {
             vapidKey: 'BCHREiBU8nAuYsdRrXCovUK5a1hCoQGHMAAeITKaWWD8eAg8Urp8_dKPkNv7zSbmJDLJ-nz04Mz3wdN13NV417Q',
