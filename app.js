@@ -52,19 +52,10 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// 🔧 BOTONES DE DIAGNÓSTICO Y TEST (siempre visibles)
+// 🔧 BOTONES DE DIAGNÓSTICO Y TEST (ya están en el HTML)
 window.addEventListener('DOMContentLoaded', () => {
-    // Agregar botones de debug en la esquina inferior
-    const debugContainer = document.createElement('div');
-    debugContainer.id = 'debug-buttons';
-    debugContainer.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:99999;display:flex;gap:8px;';
-    
     // Botón Diagnóstico Push
-    const btnDiag = document.createElement('button');
-    btnDiag.innerHTML = '🔧';
-    btnDiag.title = 'Diagnóstico Push';
-    btnDiag.className = 'bg-gray-800 text-white px-3 py-2 rounded-full shadow-lg text-sm hover:bg-gray-700';
-    btnDiag.onclick = async () => {
+    document.getElementById('btn-diagnostico')?.addEventListener('click', async () => {
         console.log('📱 DIAGNÓSTICO DE PUSH NOTIFICATIONS');
         console.log('=====================================');
         
@@ -97,35 +88,27 @@ window.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({token, title: '🧪 Test Push', body: 'Notificación de prueba', test: true})
                 });
                 console.log('🔍 Edge:', res.status === 200 ? '✅ OK' : '❌ ' + res.status);
-                alert(`Diagnóstico completado\n\nPermiso: ${perm}\nSW: ${sw ? '✅' : '❌'}\nToken: ${token ? '✅' : '❌'}\nEdge: ${res.status === 200 ? '✅' : '❌'}`);
+                alert(`Diagnóstico:\nPermiso: ${perm}\nSW: ${sw ? '✅' : '❌'}\nToken: ${token ? '✅' : '❌'}\nEdge: ${res.status === 200 ? '✅' : '❌'}`);
             } catch (e) {
                 console.log('🔍 Edge:', e.message);
             }
         }
-    };
+    });
     
     // Botón Test Alarma 30s
-    const btnTest = document.createElement('button');
-    btnTest.innerHTML = '⏰';
-    btnTest.title = 'Test alarma 30s';
-    btnTest.className = 'bg-red-600 text-white px-3 py-2 rounded-full shadow-lg text-sm hover:bg-red-500';
-    btnTest.onclick = async () => {
+    document.getElementById('btn-test-alarma')?.addEventListener('click', async () => {
         const { alarms } = await import('./src/js/alarmas.js');
         const item = {
             id: 'test-' + Date.now(),
             content: '🧪 Alarma de prueba',
-            deadline: Date.now() + 35000, // 35 segundos (30 + buffer)
+            deadline: Date.now() + 35000,
             tags: ['test'],
             meta: { priority: 'high' }
         };
         await alarms.schedulePushNotification(item, Date.now() + 30000, Date.now() + 35000);
         console.log('⏰ Alarma programada para 30 segundos');
-        alert('⏰ Alarma de prueba creada\nSe disparará en 30 segundos');
-    };
-    
-    debugContainer.appendChild(btnDiag);
-    debugContainer.appendChild(btnTest);
-    document.body.appendChild(debugContainer);
+        alert('⏰ Alarma creada! Sonará en 30 segundos');
+    });
 });
     const action = urlParams.get('action');
     const type = urlParams.get('type');
