@@ -14,11 +14,16 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-    console.log('[SW] Mensaje en segundo plano:', payload);
+    console.log('[SW] Mensaje en segundo plano recibido:', payload);
+    console.log('[SW] Data:', payload.data);
+    console.log('[SW] Notification:', payload.notification);
 
     const data = payload.data || {};
     const isAlarm = data.type === 'alarm';
     const hasNotification = !!payload.notification;
+
+    console.log('[SW] Data completa:', JSON.stringify(data));
+    console.log('[SW] Hay notification en payload?:', hasNotification);
 
     if (!hasNotification) {
         const priority = data.priority === 'high' ? 'high' : 'normal';
@@ -38,14 +43,24 @@ messaging.onBackgroundMessage((payload) => {
             ]
         };
 
+        console.log('[SW] Opciones de notificación:', JSON.stringify(notificationOptions));
+
         if (data.priority === 'high') {
             notificationOptions.urgency = 'high';
         }
 
+        console.log('[SW] Por mostrar notificación con título:', data.title || '⏰ KAI - Recordatorio');
+        
         self.registration.showNotification(
             data.title || '⏰ KAI - Recordatorio',
             notificationOptions
-        );
+        ).then(() => {
+            console.log('[SW] Notificación mostrada exitosamente');
+        }).catch((err) => {
+            console.error('[SW] Error al mostrar notificación:', err);
+        });
+    } else {
+        console.log('[SW] Hay notification en payload - el navegador la muestra automáticamente (sin pasar por SW)');
     }
 });
 
