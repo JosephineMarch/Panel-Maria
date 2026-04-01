@@ -24,7 +24,7 @@ En lugar de依赖 de environment variables de Supabase (que no se cargaban corre
 
 ```typescript
 const FCM_PROJECT_ID = 'panel-de-control-maria';
-const FIREBASE_CLIENT_EMAIL = 'panel-de-control-maria@appspot.gserviceaccount.com';
+const FIREBASE_CLIENT_EMAIL = 'firebase-adminsdk-fbsvc@panel-de-control-maria.iam.gserviceaccount.com';
 const FIREBASE_PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
 ... clave privada ...
 -----END PRIVATE KEY-----`;
@@ -118,8 +118,33 @@ async function getAccessToken(): Promise<string> {
 Una vez obtenido el access token:
 
 ```typescript
-async function sendFCMMessageV1(token: string, title: string, body: string, itemId?: string) {
+async function sendFCMMessageV1(token: string, title: string, body: string, itemId?: string, extraData?: any) {
   const accessToken = await getAccessToken();
+
+  // IMPORTANTE: NO usar notification: {}, sino solo data:
+  // Así la notificación pasa por el Service Worker y muestra las acciones de snooze
+  const payload = {
+    message: {
+      token: token,
+      data: {
+        title: title,
+        body: body,
+        itemId: itemId || '',
+        type: extraData?.type || 'alarm',
+        priority: extraData?.priority || 'normal',
+        ...extraData
+      },
+      webpush: {
+        headers: {
+          Urgency: extraData?.priority === 'high' ? 'high' : 'normal',
+          TTL: extraData?.repeat ? '604800' : '86400'
+        },
+        fcmOptions: {
+          link: `https://josephinemarch.github.io/Panel-Maria/?action=alarm&itemId=${itemId || ''}`
+        }
+      }
+    }
+  };
 
   const response = await fetch(
     `https://fcm.googleapis.com/v1/projects/${FCM_PROJECT_ID}/messages:send`,
@@ -129,25 +154,24 @@ async function sendFCMMessageV1(token: string, title: string, body: string, item
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${accessToken}`
       },
-      body: JSON.stringify({
-        message: {
-          token: token,
-          notification: { title, body },
-          data: { itemId: itemId || '', type: 'alarm' },
-          webpush: {
-            headers: { Urgency: "high", TTL: "86400" },
-            fcmOptions: {
-              link: 'https://josephinemarch.github.io/Panel-Maria/?action=alarm'
-            }
-          }
-        }
-      })
+      body: JSON.stringify(payload)
     }
   );
 
   return await response.json();
 }
 ```
+
+### 6. Por qué NO usar notification: {}
+
+Si usás `notification: { title, body }` en el payload de FCM, el navegador muestra su propia notificación nativa **sin pasar por el Service Worker**, lo que significa:
+- ❌ No se muestran las acciones de snooze (5 min, 10 min, dismiss)
+- ❌ En algunos navegadores no aparece la notificación
+
+Usando solo `data: { title, body, ... }`:
+- ✅ El Service Worker (`sw.js`) muestra la notificación
+- ✅ Las acciones de snooze funcionan correctamente
+- ✅ Mayor control sobre el外观 de la notificación
 
 ## Archivos Involucrados
 
@@ -158,12 +182,18 @@ async function sendFCMMessageV1(token: string, title: string, body: string, item
 
 ## Notas de Seguridad
 
-⚠️ **IMPORTANTE**: El archivo JSON de credenciales de Firebase (`panel-de-control-maria-*.json`) contiene secretos sensibles y **NO debe subirse al repositorio**. Ya está agregado al `.gitignore`.
+⚠️ **IMPORTANTE**: Las credenciales de Firebase contienen secretos sensibles. 
 
 Si necesitás regenerar credenciales:
-1. Ir a Google Cloud Console → IAM → Service Accounts
-2. Descargar nueva clave JSON
-3. Actualizar la variable `FIREBASE_PRIVATE_KEY` en la Edge Function
+1. Ir a [Firebase Console](https://console.firebase.google.com/project/panel-de-control-maria/settings/serviceaccounts/adminsdk)
+2. Generar nueva clave privada
+3. Actualizar `FIREBASE_CLIENT_EMAIL` y `FIREBASE_PRIVATE_KEY` en la Edge Function
+
+⚠️ **NO hacer commit de credenciales al repo**. Si las subís,-rotalas inmediatamente en Firebase Console.
+
+## Actualizaciones
+
+- **Abril 2026**: Se rotaron las credenciales. Nuevo service account: `firebase-adminsdk-fbsvc@panel-de-control-maria.iam.gserviceaccount.com`
 
 ## Testing
 
