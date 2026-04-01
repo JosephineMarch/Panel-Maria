@@ -1053,34 +1053,9 @@ Responde SOLO JSON con esta estructura:
                 repeat: finalRepeat
             });
 
-            // 4. Programar notificación push si hay deadline
-            if (finalDeadline) {
-                const deadlineTime = new Date(finalDeadline).getTime();
-                if (deadlineTime > Date.now()) {
-                    const { data: tokens } = await supabase.from('fcm_tokens').select('token');
-                    const allTokens = tokens?.map(t => t.token) || [];
-                    
-                    if (allTokens.length > 0) {
-                        const extraData = {
-                            type: 'alarm',
-                            repeat: finalRepeat,
-                            titulo: finalContent
-                        };
-                        
-                        for (const token of allTokens) {
-                            await this.sendPushNotification(
-                                token,
-                                '⏰ KAI - Recordatorio',
-                                finalContent,
-                                deadlineTime,
-                                null,
-                                extraData
-                            );
-                        }
-                        console.log(`🔔 Notificación programada para ${new Date(deadlineTime).toLocaleString()}`);
-                    }
-                }
-            }
+            // 4. El trigger trg_sync_alarm_notification crea automáticamente
+            //    un registro en alarm_notifications. El cron check-alarms lo procesa.
+            //    No enviamos push aquí — el servidor lo maneja.
 
             ui.clearMainInput();
             ui.showNotification('¡Anotado con éxito! ✨', 'success');

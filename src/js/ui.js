@@ -568,7 +568,7 @@ export const ui = {
         const hasTasks = (item.tareas || []).length > 0;
         const urls = Array.isArray(item.urls) ? item.urls : (item.url ? [item.url] : []);
         const hasUrl = urls.some(u => u);
-        const hasAlarm = false; // Eliminada la alarma
+        const hasAlarm = !!item.deadline;
 
         // Tags del item
         const tagsHtml = this.renderTags(item.tags);
@@ -664,11 +664,50 @@ export const ui = {
                     </button>
                 </div>
 
+                <div id="section-alarm-${item.id}" class="space-y-4 ${hasAlarm ? '' : 'hidden'}">
+                    <div class="flex justify-between items-center px-1">
+                        <label class="txt-label flex items-center gap-2"><i class="fa-solid fa-bell text-brand"></i> Alarma / Deadline</label>
+                        <button type="button" class="btn-remove-alarm text-ink/30 hover:text-urgent transition-colors text-sm" data-item-id="${item.id}">
+                            <i class="fa-solid fa-trash"></i> Quitar
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-1">
+                            <label class="txt-label ml-1">Fecha</label>
+                            <input type="date" id="inline-alarm-date-${item.id}" value="${(() => {
+                                if (!item.deadline) return '';
+                                const d = new Date(item.deadline);
+                                return d.toISOString().split('T')[0];
+                            })()}" 
+                                   class="w-full bg-white/40 border-none rounded-2xl px-4 py-3 text-base text-ink focus:ring-2 focus:ring-white/50 outline-none font-medium">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="txt-label ml-1">Hora</label>
+                            <input type="time" id="inline-alarm-time-${item.id}" value="${(() => {
+                                if (!item.deadline) return '';
+                                const d = new Date(item.deadline);
+                                return d.toTimeString().slice(0, 5);
+                            })()}" 
+                                   class="w-full bg-white/40 border-none rounded-2xl px-4 py-3 text-base text-ink focus:ring-2 focus:ring-white/50 outline-none font-medium">
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="txt-label ml-1">Repetición</label>
+                        <select id="inline-alarm-repeat-${item.id}" class="w-full bg-white/40 border-none rounded-2xl px-4 py-3 text-base text-ink focus:ring-2 focus:ring-white/50 outline-none font-bold">
+                            <option value="" ${!item.repeat ? 'selected' : ''}>Sin repetición</option>
+                            <option value="daily" ${item.repeat === 'daily' ? 'selected' : ''}>📅 Diario</option>
+                            <option value="weekly" ${item.repeat === 'weekly' ? 'selected' : ''}>📆 Semanal</option>
+                            <option value="monthly" ${item.repeat === 'monthly' ? 'selected' : ''}>🗓️ Mensual</option>
+                        </select>
+                    </div>
+                </div>
+
                 <!-- Barra de Deseos (Wishbar) -->
                 <div class="flex flex-wrap justify-center gap-2 py-4 border-t border-gray-50">
                     ${!hasTasks ? `<button data-reveal="tasks" class="wish-item px-4 py-2 rounded-full text-gray-400 hover:text-brand transition-all text-[10px] font-bold uppercase tracking-wider flex items-center gap-2"><i class="fa-solid fa-check-double"></i> + Tareas</button>` : ''}
                     ${!hasDesc ? `<button data-reveal="desc" class="wish-item px-4 py-2 rounded-full text-gray-400 hover:text-brand transition-all text-[10px] font-bold uppercase tracking-wider flex items-center gap-2"><i class="fa-solid fa-align-left"></i> + Descripción</button>` : ''}
                     ${!hasUrl ? `<button data-reveal="url" class="wish-item px-4 py-2 rounded-full text-gray-400 hover:text-brand transition-all text-[10px] font-bold uppercase tracking-wider flex items-center gap-2"><i class="fa-solid fa-link"></i> + Link</button>` : ''}
+                    ${!hasAlarm ? `<button data-reveal="alarm" class="wish-item px-4 py-2 rounded-full text-gray-400 hover:text-brand transition-all text-[10px] font-bold uppercase tracking-wider flex items-center gap-2"><i class="fa-solid fa-bell"></i> + Alarma</button>` : ''}
                 </div>
 
                 <div class="flex gap-4 pt-6 border-t border-gray-100">
@@ -740,6 +779,7 @@ export const ui = {
                     // Foco especial según el tipo
                     if (type === 'desc') section.querySelector('textarea')?.focus();
                     if (type === 'url') section.querySelector('input')?.focus();
+                    if (type === 'alarm') section.querySelector('input[type="date"]')?.focus();
                     if (type === 'tasks') {
                         // Si no hay tareas, añadimos la primera automáticamente
                         const list = section.querySelector(`#inline-tasks-list-${id}`);
@@ -792,6 +832,26 @@ export const ui = {
                 e.stopPropagation();
                 btn.closest('.group\\/task').remove();
             });
+        });
+
+        // Evento para quitar alarma
+        card.querySelector('.btn-remove-alarm')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const alarmSection = card.querySelector(`#section-alarm-${id}`);
+            if (alarmSection) {
+                alarmSection.classList.add('hidden');
+                // Limpiar los valores
+                const dateInput = card.querySelector(`#inline-alarm-date-${id}`);
+                const timeInput = card.querySelector(`#inline-alarm-time-${id}`);
+                const repeatSelect = card.querySelector(`#inline-alarm-repeat-${id}`);
+                if (dateInput) dateInput.value = '';
+                if (timeInput) timeInput.value = '';
+                if (repeatSelect) repeatSelect.value = '';
+            }
+            // Mostrar el botón de la wishbar de nuevo
+            const alarmWishBtn = card.querySelector('[data-reveal="alarm"]');
+            if (alarmWishBtn) alarmWishBtn.classList.remove('hidden');
         });
 
         // Reactividad de Tipo (Cambio dinámico)
@@ -902,7 +962,19 @@ export const ui = {
             energia: energia ? parseInt(energia) : (item.meta?.energia || null)
         };
 
-        const updates = { id, content, type, descripcion, urls, tareas, meta };
+        // Capturar datos de alarma
+        const alarmDate = document.getElementById(`inline-alarm-date-${id}`)?.value;
+        const alarmTime = document.getElementById(`inline-alarm-time-${id}`)?.value;
+        const alarmRepeat = document.getElementById(`inline-alarm-repeat-${id}`)?.value || null;
+
+        let deadline = null;
+        if (alarmDate && alarmTime) {
+            deadline = new Date(`${alarmDate}T${alarmTime}:00`).toISOString();
+        } else if (alarmDate) {
+            deadline = new Date(`${alarmDate}T09:00:00`).toISOString();
+        }
+
+        const updates = { id, content, type, descripcion, urls, tareas, meta, deadline, repeat: alarmRepeat };
 
         if (window.kai) {
             await window.kai.dataUpdateInline(id, updates);
