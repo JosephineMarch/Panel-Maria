@@ -378,11 +378,17 @@
 
     <!-- FOOTER / BARRA DE CAPTURA PRO -->
     <footer id="app-footer" class="fixed bottom-0 left-0 right-0 px-2 py-3 bg-white border-t border-gray-100 z-40">
-        <div
-            class="bg-white border-2 border-gray-100 px-3 py-2 rounded-[2rem] shadow-lg flex items-center gap-2 max-w-full mx-auto">
-            <input type="text" id="item-input" placeholder="¿Qué tienes en mente?"
-                class="flex-1 bg-gray-50 text-sm py-2 font-bold focus:outline-none focus:ring-2 focus:ring-brand rounded-lg placeholder-gray-400 min-w-0"
-                aria-label="Escribe tu nota o tarea">
+        <div class="flex items-center justify-between gap-2 max-w-full mx-auto">
+            <button id="btn-alarms" aria-label="Ver alarmas" title="🔔 Alarmas"
+                class="w-10 h-10 rounded-full bg-rose-100 text-rose-500 flex items-center justify-center shrink-0 shadow-md hover:scale-105 active:scale-95 transition focus:outline-none focus:ring-2 focus:ring-rose-400 cursor-pointer">
+                <i class="fa-solid fa-bell text-sm" aria-hidden="true"></i>
+            </button>
+            
+            <div
+                class="bg-white border-2 border-gray-100 px-3 py-2 rounded-[2rem] shadow-lg flex items-center gap-2 flex-1">
+                <input type="text" id="item-input" placeholder="¿Qué tienes en mente?"
+                    class="bg-gray-50 text-sm py-2 font-bold focus:outline-none focus:ring-2 focus:ring-brand rounded-lg placeholder-gray-400 min-w-0"
+                    aria-label="Escribe tu nota o tarea">
 
             <div class="flex items-center gap-1">
                 <button id="btn-submit" aria-label="Guardar elemento"
@@ -390,7 +396,6 @@
                     <i class="fa-solid fa-plus text-sm" aria-hidden="true"></i>
                 </button>
 
-                <!-- Botón Micrófono -->
                 <button id="btn-voice-footer" aria-label="Grabar nota de voz"
                     class="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shrink-0 shadow-md hover:scale-105 active:scale-95 transition border-2 border-white focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer">
                     <i class="fa-solid fa-microphone text-sm" aria-hidden="true"></i>
@@ -398,6 +403,24 @@
             </div>
         </div>
     </footer>
+
+    <!-- MODAL DE ALARMAS -->
+    <div id="modal-alarms"
+        class="fixed inset-0 bg-ink/20 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-4"
+        role="dialog" aria-modal="true">
+        <div class="bg-white w-full max-w-lg rounded-blob shadow-2xl max-h-[80vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-100 flex items-center justify-between">
+                <h3 class="text-xl font-bold text-rose-500">🔔 Mis Alarmas</h3>
+                <button class="modal-alarms-close w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div id="alarms-list" class="p-4 space-y-3">
+                <!-- Las alarmas se inyectan aquí -->
+                <p class="text-center text-gray-400 py-8">No tienes alarmas activas</p>
+            </div>
+        </div>
+    </div>
 
     <!-- El Asistente Kai (Floating Widget con Chat) -->
     <!-- Kai Chat Full Screen -->

@@ -1089,6 +1089,77 @@ export const ui = {
         else modal.classList.add('hidden');
     },
 
+    toggleAlarmsModal(show = true) {
+        const modal = document.getElementById('modal-alarms');
+        if (show) modal.classList.remove('hidden');
+        else modal.classList.add('hidden');
+    },
+
+    showAlarmsModal(alarms) {
+        const container = document.getElementById('alarms-list');
+        if (!container) return;
+
+        if (!alarms || alarms.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <span class="text-4xl">🔔</span>
+                    <p class="text-gray-400 mt-4">No tienes alarmas activas</p>
+                    <p class="text-sm text-gray-300 mt-2">Crea una desde el input o editando una card</p>
+                </div>
+            `;
+        } else {
+            container.innerHTML = alarms.map(item => {
+                const deadline = new Date(item.deadline);
+                const now = new Date();
+                const diff = deadline.getTime() - now.getTime();
+                const days = Math.floor(diff / 86400000);
+                const hours = Math.floor((diff % 86400000) / 3600000);
+                const minutes = Math.floor((diff % 3600000) / 60000);
+
+                let timeText = '';
+                if (days > 0) timeText = `${days}d ${hours}h`;
+                else if (hours > 0) timeText = `${hours}h ${minutes}min`;
+                else timeText = `${minutes}min`;
+
+                const repeatText = item.repeat === 'daily' ? '📅 Diario' : 
+                                  item.repeat === 'weekly' ? '📅 Semanal' : 
+                                  item.repeat === 'monthly' ? '📅 Mensual' : '';
+
+                return `
+                    <div class="bg-rose-50 rounded-xl p-4 border border-rose-200 flex items-center justify-between">
+                        <div class="flex-1">
+                            <p class="font-bold text-ink">${this.escapeHtml(item.content || 'Sin título')}</p>
+                            <p class="text-sm text-rose-500">⏰ ${timeText} • ${deadline.toLocaleDateString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                            ${repeatText ? `<p class="text-xs text-orange-500 mt-1">${repeatText}</p>` : ''}
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="window.controller?.openEditModal('${item.id}')" class="w-8 h-8 rounded-full bg-white hover:bg-rose-100 flex items-center justify-center transition" title="Editar">
+                                <i class="fa-solid fa-pen text-xs text-rose-500"></i>
+                            </button>
+                            <button onclick="window.controller?.cancelAlarm('${item.id}')" class="w-8 h-8 rounded-full bg-white hover:bg-rose-100 flex items-center justify-center transition" title="Cancelar">
+                                <i class="fa-solid fa-trash text-xs text-rose-500"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        this.toggleAlarmsModal(true);
+    },
+
+    async cancelAlarm(id) {
+        try {
+            await data.updateItem(id, { deadline: null, repeat: null });
+            this.showNotification('Alarma cancelada', 'success');
+            await window.controller?.loadItems();
+            this.toggleAlarmsModal(false);
+        } catch (error) {
+            console.error('Error canceling alarm:', error);
+            this.showNotification('Error al cancelar alarma', 'error');
+        }
+    },
+
     toggleVoiceOverlay(show = true) {
         const overlay = this.elements.voiceOverlay();
         if (show) overlay.classList.remove('hidden');

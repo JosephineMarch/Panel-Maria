@@ -844,6 +844,12 @@ class KaiController {
             btn.addEventListener('click', () => ui.toggleModal(false));
         });
 
+        // Modal de Alarmas
+        document.getElementById('btn-alarms')?.addEventListener('click', () => this.showAlarmsModal());
+        document.querySelectorAll('.modal-alarms-close').forEach(btn => {
+            btn.addEventListener('click', () => ui.toggleAlarmsModal(false));
+        });
+
         // Kai Chat
         ui.elements.kaiAvatarContainer()?.addEventListener('click', () => ui.toggleKaiChat());
         document.getElementById('kai-chat-back')?.addEventListener('click', () => ui.toggleKaiChat(false));
@@ -1992,6 +1998,32 @@ Responde SOLO JSON con esta estructura:
             }
         } catch (error) {
             ui.showNotification('Error al cargar datos del elemento.', 'error');
+        }
+    }
+
+    // --- AUTH & VOICE ---
+
+    async showAlarmsModal() {
+        try {
+            const items = await data.getItems({});
+            const alarms = items.filter(item => item.deadline && new Date(item.deadline).getTime() > Date.now());
+            
+            ui.showAlarmsModal(alarms);
+        } catch (error) {
+            console.error('Error loading alarms:', error);
+            ui.showNotification('Error al cargar alarmas', 'error');
+        }
+    }
+
+    async cancelAlarm(id) {
+        try {
+            await data.updateItem(id, { deadline: null, repeat: null });
+            ui.showNotification('Alarma cancelada', 'success');
+            await this.loadItems();
+            ui.toggleAlarmsModal(false);
+        } catch (error) {
+            console.error('Error canceling alarm:', error);
+            ui.showNotification('Error al cancelar alarma', 'error');
         }
     }
 
