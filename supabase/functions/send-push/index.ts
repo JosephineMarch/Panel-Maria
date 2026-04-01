@@ -295,11 +295,11 @@ async function sendFCMMessageV1(token: string, title: string, body: string, item
     const payload: any = {
       message: {
         token: token,
-        notification: {
-          title: title,
-          body: body
-        },
+        // NO enviar notification: {}, dejar que el Service Worker la muestre
+        // así aparecen las acciones de snooze (5 min, 10 min, dismiss)
         data: {
+          title: title,
+          body: body,
           itemId: itemId || '',
           type: extraData?.type || 'alarm',
           priority: extraData?.priority || 'normal',
