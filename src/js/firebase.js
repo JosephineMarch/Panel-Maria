@@ -23,29 +23,31 @@ export async function requestFCMToken() {
             return null;
         }
 
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        const registration = registrations.find(reg => reg.active?.scriptURL.includes('sw.js'));
-
+        // Registrar el Service Worker si no existe
+        let registration = (await navigator.serviceWorker.getRegistrations())
+            .find(reg => reg.active?.scriptURL.includes('sw.js'));
+        
         if (!registration) {
-            console.error('FCM: No se encontró el Service Worker principal (sw.js) registrado');
-            alert('🔔 ERROR: No se encontró el Service Worker. Probá reinstallando la PWA.');
-            return null;
+            console.log('FCM: Registrando Service Worker...');
+            registration = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+            await navigator.serviceWorker.ready;
+            console.log('FCM: SW registrado:', registration);
         }
 
-        console.log('FCM usando SW principal:', registration);
+        console.log('FCM usando SW:', registration);
 
-        // FORZAR token nuevo en vez de usar cache (para obtener token del dispositivo actual)
+        // FORZAR token nuevo - eliminar cache
         const token = await getToken(messaging, {
             vapidKey: 'BCHREiBU8nAuYsdRrXCovUK5a1hCoQGHMAAeITKaWWD8eAg8Urp8_dKPkNv7zSbmJDLJ-nz04Mz3wdN13NV417Q',
             serviceWorkerRegistration: registration
         });
 
         if (token) {
-            console.log('FCM Token:', token);
+            console.log('FCM Token generado:', token.substring(0, 50) + '...');
             localStorage.setItem('fcmToken', token);
+            localStorage.setItem('fcmTokenTime', Date.now().toString());
 
             await saveTokenToSupabase(token);
-
             return token;
         }
     } catch (error) {
@@ -83,10 +85,15 @@ async function saveTokenToSupabase(token) {
 
 export async function onForegroundMessage() {
     onMessage(messaging, async (payload) => {
-        console.log('Mensaje recibido en foreground:', payload);
-        const notificationTitle = payload.notification?.title || 'KAI';
+        console.log('📥 Mensaje recibido en foreground:', payload);
+        
+        // IMPORTANTE: NO usar payload.notification - eso muestra notificación de Chrome automáticamente
+        // Solo usar payload.data para mostrar manualmente
+        const title = payload.data?.title || 'KAI';
+        const body = payload.data?.body || 'Nueva alerta';
+        
         const notificationOptions = {
-            body: payload.notification?.body || 'Tienes una nueva alerta',
+            body: body,
             icon: './src/assets/icon-192.png',
             badge: './src/assets/icon-192.png',
             tag: payload.data?.tag || 'kai-notification',
@@ -96,15 +103,13 @@ export async function onForegroundMessage() {
 
         if (Notification.permission === 'granted') {
             try {
-                // En móviles (Android Chrome), 'new Notification' está bloqueado. Debe usarse el ServiceWorker.
                 const registrations = await navigator.serviceWorker.getRegistrations();
                 const sw = registrations.find(reg => reg.active && reg.active.scriptURL.includes('sw.js'));
 
                 if (sw) {
-                    await sw.showNotification(notificationTitle, notificationOptions);
+                    await sw.showNotification(title, notificationOptions);
                 } else {
-                    // Fallback para escritorio si no hay SW activo
-                    new Notification(notificationTitle, notificationOptions);
+                    new Notification(title, notificationOptions);
                 }
             } catch (error) {
                 console.error('Error mostrando notificación en foreground:', error);

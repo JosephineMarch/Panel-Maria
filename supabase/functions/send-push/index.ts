@@ -205,9 +205,14 @@ async function sendFCMMessageV1(token: string, title: string, body: string, item
 
   const result = await response.json();
   
+  // Loguear el error específico de FCM
   if (!response.ok) {
-    console.error(`FCM Error para token ${token.substring(0, 20)}:`, result);
-    throw new Error(result.error?.message || JSON.stringify(result));
+    console.error(`❌ FCM Error para token ${token.substring(0, 30)}...:`, JSON.stringify(result));
+    if (result.error) {
+      console.error(`   Código: ${result.error.status}, Mensaje: ${result.error.message}`);
+    }
+  } else {
+    console.log(`✅ FCM OK para token ${token.substring(0, 30)}...`);
   }
   
   return result;
