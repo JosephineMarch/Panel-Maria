@@ -2228,13 +2228,14 @@ Responde SOLO JSON con esta estructura:
                 return;
             }
             
-            console.log('Token FCM:', token.substring(0, 30) + '...');
+            console.log('📱 Token FCM generado:', token.substring(0, 50) + '...');
             
-            // Enviar notificación de prueba - NO pas token, la función lo busca automáticamente
+            // Enviar directamente a este token específico para testing
             const { supabase } = await import('./supabase.js');
             
             const { data, error } = await supabase.functions.invoke('send-push', {
                 body: {
+                    token: token, // Enviar solo al token actual para testing
                     title: '🔔 Test de KAI',
                     body: 'Si ves esto, las notificaciones push funcionan! 🎉',
                     timestamp: Date.now()

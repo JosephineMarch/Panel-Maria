@@ -16,16 +16,28 @@ serve(async (req) => {
   }
 
   try {
-    const { title, body, timestamp, itemId } = await req.json();
+    const { token, title, body, timestamp, itemId } = await req.json();
 
-    if (!title || !body) {
+    // Si se pasa un token específico, enviar solo a ese token (para testing)
+    if (token && typeof token === 'string' && token.length > 20) {
+      console.log(`📱 Enviando a token específico: ${token.substring(0, 30)}...`);
+      
+      const result = await sendFCMMessageV1(token, title, body, itemId);
+      const successful = result.messageId ? 1 : 0;
+      
       return new Response(
-        JSON.stringify({ error: 'Faltan parámetros requeridos: title y body' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: successful === 1, 
+          message: successful === 1 ? 'Notificación enviada' : 'Error al enviar',
+          devices: 1,
+          successful: successful,
+          fcmResult: result
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Siempre crear el cliente de Supabase
+    // Sin token específico - buscar todos los tokens del usuario
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
@@ -173,31 +185,51 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 }
 
 async function sendFCMMessageV1(token: string, title: string, body: string, itemId?: string) {
-  const accessToken = await getAccessToken();
+  try {
+    const accessToken = await getAccessToken();
 
-  const response = await fetch(`https://fcm.googleapis.com/v1/projects/${FCM_PROJECT_ID}/messages:send`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`
-    },
-    body: JSON.stringify({
-      message: {
-        token: token,
-        data: {
-          itemId: itemId || '',
-          type: 'alarm',
-          title: title,
-          body: body
-        },
-        webpush: {
-          headers: {
-            Urgency: "high",
-            TTL: "86400"
+    const response = await fetch(`https://fcm.googleapis.com/v1/projects/${FCM_PROJECT_ID}/messages:send`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({
+        message: {
+          token: token,
+          data: {
+            itemId: itemId || '',
+            type: 'alarm',
+            title: title,
+            body: body
           },
-          fcmOptions: {
-            link: 'https://josephinemarch.github.io/Panel-Maria/?action=alarm'
+          webpush: {
+            headers: {
+              Urgency: "high",
+              TTL: "86400"
+            },
+            fcmOptions: {
+              link: 'https://josephinemarch.github.io/Panel-Maria/?action=alarm'
+            }
           }
+        }
+      })
+    });
+
+    const result = await response.json();
+    
+    if (!response.ok) {
+      console.error(`❌ FCM Error para token ${token.substring(0, 30)}...:`, JSON.stringify(result));
+    } else {
+      console.log(`✅ FCM OK para token ${token.substring(0, 30)}...`);
+    }
+    
+    return result;
+  } catch (error) {
+    console.error(`❌ Exception para token ${token.substring(0, 30)}...:`, error);
+    return { error: error.message };
+  }
+}
         }
       }
     })
@@ -221,20 +253,27 @@ async function sendFCMMessageV1(token: string, title: string, body: string, item
 async function sendFCMToAll(tokens: string[], title: string, body: string, itemId?: string) {
   console.log(`📱 Enviando notificación a ${tokens.length} dispositivos`);
   
-  const results = await Promise.allSettled(
-    tokens.map(token => sendFCMMessageV1(token, title, body, itemId))
-  );
+  let successful = 0;
+  let failed = 0;
   
-  const successful = results.filter(r => r.status === 'fulfilled').length;
-  const failed = results.filter(r => r.status === 'rejected').length;
+  for (const token of tokens) {
+    try {
+      const result = await sendFCMMessageV1(token, title, body, itemId);
+      if (result.messageId) {
+        successful++;
+      } else {
+        failed++;
+      }
+    } catch (e) {
+      console.error(`❌ Token falló:`, e);
+      failed++;
+    }
+  }
   
   console.log(`✅ Enviados: ${successful}, ❌ Fallidos: ${failed}`);
   
-  // Loguear errores específicos
-  results.forEach((r, i) => {
-    if (r.status === 'rejected') {
-      console.error(`Token ${i} falló:`, r.reason);
-    }
+  return { successful, failed };
+}
   });
   
   return { successful, failed };
