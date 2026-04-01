@@ -1,1 +1,29 @@
+# Credenciales Firebase (ya en .gitignore por el patrón *)
 panel-de-control-maria-*.json
+*.json
+
+# Clave privada Firebase
+firebase-private-key.pem
+
+# Dependencies
+node_modules/
+
+# Test outputs
+test-results/
+playwright-report/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+*.txt
+
+# Build outputs
+dist/
+build/
