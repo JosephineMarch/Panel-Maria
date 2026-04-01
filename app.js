@@ -109,7 +109,9 @@ window.addEventListener('DOMContentLoaded', () => {
         console.log('⏰ Alarma programada para 30 segundos');
         alert('⏰ Alarma creada! Sonará en 30 segundos');
     });
-});
+
+    // Manejo de URLs
+    const urlParams = new URLSearchParams(window.location.search);
     const action = urlParams.get('action');
     const type = urlParams.get('type');
 
