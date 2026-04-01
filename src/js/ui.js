@@ -1,4 +1,5 @@
 import { CONFIG } from './supabase.js';
+import { data } from './data.js';
 
 export const ui = {
     // Cache de elementos del DOM

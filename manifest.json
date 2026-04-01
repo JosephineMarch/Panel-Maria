@@ -38,14 +38,14 @@
       "name": "Nueva Idea",
       "short_name": "Idea",
       "description": "Crear una nueva idea",
-      "url": "./index.html?action=new&type=idea",
+        "url": "./index.html?action=new&type=nota",
       "icons": [{ "src": "src/assets/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Nueva Tarea",
       "short_name": "Tarea",
       "description": "Crear una nueva tarea",
-      "url": "./index.html?action=new&type=task",
+        "url": "./index.html?action=new&type=tarea",
       "icons": [{ "src": "src/assets/icon-192.png", "sizes": "192x192" }]
     }
   ],

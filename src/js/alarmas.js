@@ -41,7 +41,7 @@ class AlarmManager {
                       tags.includes('personal') ? 'personal' : 'general',
             repeat: item.repeat || null,
             hasSnooze: true,
-            titulo: item.content || item.titulo || '',
+            titulo: item.content || '',
             deadline: item.deadline
         };
     }
@@ -61,7 +61,7 @@ class AlarmManager {
     }
 
     formatBody(item) {
-        const content = item.content || item.titulo || 'Tienes algo pendiente';
+        const content = item.content || 'Tienes algo pendiente';
         const repeat = item.repeat;
         
         if (repeat === 'daily') {
@@ -93,7 +93,7 @@ class AlarmManager {
             <div class="flex items-center gap-3">
                 <span class="text-3xl">⏰</span>
                 <div class="flex-1">
-                    <p class="font-bold text-lg">${item.content || item.titulo || 'Recordatorio'}</p>
+                    <p class="font-bold text-lg">${item.content || 'Recordatorio'}</p>
                     <p class="text-sm opacity-90">${this.formatDeadline(item.deadline)}</p>
                 </div>
                 <button onclick="this.closest('.alarm-notification').remove()" class="text-white hover:text-gray-200 text-xl">✕</button>

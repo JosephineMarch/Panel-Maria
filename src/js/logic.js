@@ -41,9 +41,7 @@ import { ui } from './ui.js';
 import { auth } from './auth.js';
 import { ai } from './ai.js';
 import { cerebras } from './cerebras.js';
-import { requestFCMToken, refreshFCMTokenIfNeeded } from './firebase.js';
 import { hoy } from './hoy.js';
-import { alarms } from './alarmas.js';
 
 function formatDeadlineForDB(deadline) {
     if (!deadline) return null;
@@ -1099,31 +1097,6 @@ Responde SOLO JSON con esta estructura:
         return urlMatch ? urlMatch[1] : '';
     }
 
-    async sendPushNotification(token, title, body, deadlineTimestamp, itemId, extraData = {}) {
-        try {
-            console.log('📲 Enviando push notification...', { token: token?.substring(0, 20) + '...', title, body, deadlineTimestamp });
-
-            const { data, error } = await supabase.functions.invoke('send-push', {
-                body: {
-                    token: token,
-                    title: title,
-                    body: body,
-                    timestamp: deadlineTimestamp,
-                    itemId: itemId,
-                    repeat: extraData.repeat || null,
-                    data: extraData
-                }
-            });
-
-            if (error) throw error;
-
-            console.log('Push notification sent:', data);
-            return data;
-        } catch (error) {
-            console.error('Error sending push notification:', error);
-        }
-    }
-
     async crearAlarma(alarmaData) {
         try {
             const contenidoAlarma = alarmaData.contenido || 'Recordatorio';
@@ -1163,42 +1136,9 @@ Responde SOLO JSON con esta estructura:
             const mensajeAleatorio = mensajesAlarma[Math.floor(Math.random() * mensajesAlarma.length)];
             ui.showNotification(mensajeAleatorio, 'success');
 
-            let fcmToken = localStorage.getItem('fcmToken');
-            if (deadline) {
-                const deadlineTimestamp = new Date(deadline).getTime();
-
-                const { data: tokens } = await supabase
-                    .from('fcm_tokens')
-                    .select('token');
-
-                const allTokens = tokens?.map(t => t.token) || [];
-
-                if (allTokens.length === 0 && fcmToken) {
-                    allTokens.push(fcmToken);
-                }
-
-                if (allTokens.length > 0) {
-                    const extraData = {
-                        type: 'alarm',
-                        repeat: repeat,
-                        titulo: contenidoAlarma
-                    };
-
-                    for (const token of allTokens) {
-                        await this.sendPushNotification(
-                            token,
-                            '⏰ KAI - Recordatorio',
-                            contenidoAlarma,
-                            deadlineTimestamp,
-                            newItemId,
-                            extraData
-                        );
-                    }
-                    alert(`📲 Push programada para ${allTokens.length} dispositivo(s)${repeatText}`);
-                } else {
-                    alert('⚠️ No hay dispositivos registrados. Permite notificaciones.');
-                }
-            }
+            // El trigger en la DB crea automáticamente alarm_notifications.
+            // El cron del servidor (check-alarms) enviará la push en el momento correcto.
+            // No enviamos push aquí para evitar notificaciones duplicadas.
 
             await this.loadItems();
         } catch (error) {
@@ -1515,7 +1455,7 @@ Responde SOLO JSON con esta estructura:
     async goHome() {
         this.breadcrumbPath = [];
         this.currentParentId = null;
-        this.currentView = 'feed';
+        this.currentView = 'timeline';
         await this.loadItems();
     }
 
@@ -1533,7 +1473,7 @@ Responde SOLO JSON con esta estructura:
         // Manejar tanto categorías como tags
         this.currentCategory = button.dataset.category || null;
         this.currentTag = button.dataset.tag || null;
-        this.currentView = 'feed'; // Al hacer clic en un filtro, volvemos al feed normal
+        this.currentView = 'timeline';
 
         await this.loadItems();
     }

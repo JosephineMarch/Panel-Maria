@@ -79,7 +79,7 @@ self.addEventListener('notificationclick', (event) => {
         event.waitUntil(
             clients.matchAll({ type: 'window' }).then((clientList) => {
                 for (const client of clientList) {
-                    if (client.url.includes('Panel-Maria')) {
+                    if (client.url.includes('Panel-Maria') || client.url.includes('localhost')) {
                         client.postMessage({
                             type: 'ALARM_SNOOZE',
                             itemId: itemId,
@@ -99,11 +99,11 @@ self.addEventListener('notificationclick', (event) => {
             clients.matchAll({ type: 'window', includeUncontrolled: true })
                 .then((clientList) => {
                     for (const client of clientList) {
-                        if (client.url === '/' && 'focus' in client) {
+                        if (client.url.includes('Panel-Maria') || client.url.includes('localhost')) {
                             return client.focus();
                         }
                     }
-                    return clients.openWindow(`/?action=alarm&itemId=${itemId}`);
+                    return clients.openWindow(`./?action=alarm&itemId=${itemId}`);
                 })
         );
     }
@@ -120,10 +120,10 @@ const STATIC_ASSETS = [
     './index.html',
     './app.js',
     './manifest.json',
-    './icon.svg',
-    './src/css/style.css',
     './src/assets/icon-192.png',
     './src/assets/icon-512.png',
+    './src/assets/icon.svg',
+    './src/css/style.css',
     './src/js/supabase.js',
     './src/js/auth.js',
     './src/js/data.js',
@@ -134,7 +134,8 @@ const STATIC_ASSETS = [
     './src/js/utils.js',
     './src/js/share.js',
     './src/js/firebase.js',
-    './src/js/alarmas.js'
+    './src/js/alarmas.js',
+    './src/js/hoy.js'
 ];
 
 const CACHE_STRATEGIES = {
