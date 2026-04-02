@@ -237,20 +237,58 @@ export const ui = {
         const pinnedItems = items.filter(item => item.anclado);
         const unpinnedItems = items.filter(item => !item.anclado);
 
-        // Mostrar primero los items anclados
+        // Mostrar primero los items anclados como slider horizontal
         if (pinnedItems.length > 0) {
-            const pinnedSeparator = document.createElement('div');
-            pinnedSeparator.className = 'flex items-center gap-4 my-6';
-            pinnedSeparator.innerHTML = `
-                <div class="h-px flex-1 bg-brand/30"></div>
-                <span class="text-xs font-bold text-brand uppercase tracking-widest px-2">📌 Fijados</span>
-                <div class="h-px flex-1 bg-brand/30"></div>
+            const pinnedSection = document.createElement('div');
+            pinnedSection.className = 'pinned-section my-6';
+
+            const separatorHtml = `
+                <div class="flex items-center gap-4 mb-3">
+                    <div class="h-px flex-1 bg-brand/30"></div>
+                    <span class="text-xs font-bold text-brand uppercase tracking-widest px-2">📌 Fijados</span>
+                    <div class="h-px flex-1 bg-brand/30"></div>
+                </div>
             `;
-            container.appendChild(pinnedSeparator);
+
+            const sliderWrapper = document.createElement('div');
+            sliderWrapper.className = 'pinned-slider-wrapper relative';
+
+            const arrowLeft = document.createElement('button');
+            arrowLeft.className = 'pinned-slider-arrow pinned-slider-arrow--left';
+            arrowLeft.id = 'pinned-arrow-left';
+            arrowLeft.setAttribute('aria-label', 'Desplazar izquierda');
+            arrowLeft.textContent = '◀';
+
+            const slider = document.createElement('div');
+            slider.className = 'pinned-slider';
+            slider.id = 'pinned-slider';
 
             pinnedItems.forEach(item => {
-                container.appendChild(this.createItemCard(item));
+                const card = this.createItemCard(item, true);
+                slider.appendChild(card);
             });
+
+            const arrowRight = document.createElement('button');
+            arrowRight.className = 'pinned-slider-arrow pinned-slider-arrow--right';
+            arrowRight.id = 'pinned-arrow-right';
+            arrowRight.setAttribute('aria-label', 'Desplazar derecha');
+            arrowRight.textContent = '▶';
+
+            sliderWrapper.appendChild(arrowLeft);
+            sliderWrapper.appendChild(slider);
+            sliderWrapper.appendChild(arrowRight);
+
+            const dotsContainer = document.createElement('div');
+            dotsContainer.className = 'pinned-slider-dots';
+            dotsContainer.id = 'pinned-dots';
+
+            pinnedSection.innerHTML = separatorHtml;
+            pinnedSection.appendChild(sliderWrapper);
+            pinnedSection.appendChild(dotsContainer);
+            container.appendChild(pinnedSection);
+
+            // Inicializar slider después de renderizar
+            requestAnimationFrame(() => this.initPinnedSlider(pinnedItems.length));
         }
 
         // Luego mostrar los no anclados agrupados por fecha
@@ -307,13 +345,13 @@ export const ui = {
         return groups;
     },
 
-    createItemCard(item) {
+    createItemCard(item, isPinned = false) {
         const id = item.id;
         const card = document.createElement('div');
         card.dataset.id = id;
         card.dataset.expanded = 'false';
 
-        this.updateCardContent(card, item, false);
+        this.updateCardContent(card, item, false, isPinned);
 
         // Evento de expansión al hacer clic
         card.addEventListener('click', (e) => {
@@ -329,7 +367,7 @@ export const ui = {
         return card;
     },
 
-    updateCardContent(card, item, expanded = false) {
+    updateCardContent(card, item, expanded = false, isPinned = false) {
         // Normalizar tipo — convierte tipos viejos en inglés a español
         const tipoNorm = CONFIG.migrarTipo(item.type);
         const itemNorm = { ...item, type: tipoNorm };
@@ -340,11 +378,11 @@ export const ui = {
         if (expanded) {
             this.renderExpandedCard(card, itemNorm, config);
         } else {
-            this.renderCollapsedCard(card, itemNorm, config, isProject);
+            this.renderCollapsedCard(card, itemNorm, config, isProject, isPinned);
         }
     },
 
-    renderCollapsedCard(card, item, config, isProject) {
+    renderCollapsedCard(card, item, config, isProject, isPinned = false) {
         const themeClass = `theme-${config.color}`;
 
         if (isProject) {
@@ -354,7 +392,8 @@ export const ui = {
                 progressWidth = `${Math.round((completed / item.tareas.length) * 100)}%`;
             }
 
-            card.className = `group item-card bg-white rounded-[2rem] shadow-sticker border-2 border-gray-100 overflow-hidden mb-8 transition-all duration-300`;
+            const pinnedClass = isPinned ? 'pinned-card' : '';
+            card.className = `group item-card bg-white rounded-[2rem] shadow-sticker border-2 border-gray-100 overflow-hidden mb-8 transition-all duration-300 ${pinnedClass}`;
             card.dataset.expanded = 'false';
 
             const typeConfig = this.typeConfig[item.type] || this.typeConfig['nota'];
@@ -511,7 +550,8 @@ export const ui = {
                 `;
             }
 
-            card.className = `item-card bg-white rounded-2xl p-4 shadow-sticker border-2 border-gray-100 group relative hover:z-10 transition-all mb-4 w-full cursor-pointer`;
+            const pinnedClass = isPinned ? 'pinned-card' : '';
+            card.className = `item-card bg-white rounded-2xl p-4 shadow-sticker border-2 border-gray-100 group relative hover:z-10 transition-all mb-4 w-full cursor-pointer ${pinnedClass}`;
             card.dataset.expanded = 'false';
 
             // Renderizar etiquetas (tags)
@@ -1707,5 +1747,60 @@ export const ui = {
 
         document.getElementById('checkin-close-btn').onclick = () => overlay.remove();
         overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    },
+
+    // === PINNED SLIDER ===
+    initPinnedSlider(totalCards) {
+        const slider = document.getElementById('pinned-slider');
+        const arrowLeft = document.getElementById('pinned-arrow-left');
+        const arrowRight = document.getElementById('pinned-arrow-right');
+        const dotsContainer = document.getElementById('pinned-dots');
+
+        if (!slider) return;
+
+        // Ocultar flechas si solo hay 1 card
+        if (totalCards <= 1) {
+            if (arrowLeft) arrowLeft.style.display = 'none';
+            if (arrowRight) arrowRight.style.display = 'none';
+        }
+
+        // Crear dots si hay más de 1 card
+        if (totalCards > 1 && dotsContainer) {
+            dotsContainer.innerHTML = '';
+            for (let i = 0; i < totalCards; i++) {
+                const dot = document.createElement('span');
+                dot.className = `dot${i === 0 ? ' active' : ''}`;
+                dot.dataset.index = i;
+                dotsContainer.appendChild(dot);
+            }
+        }
+
+        // Event listeners para flechas
+        if (arrowLeft) {
+            arrowLeft.addEventListener('click', () => {
+                slider.scrollBy({ left: -300, behavior: 'smooth' });
+            });
+        }
+
+        if (arrowRight) {
+            arrowRight.addEventListener('click', () => {
+                slider.scrollBy({ left: 300, behavior: 'smooth' });
+            });
+        }
+
+        // Actualizar dots al hacer scroll
+        if (dotsContainer && totalCards > 1) {
+            const updateDots = () => {
+                const scrollLeft = slider.scrollLeft;
+                const cardWidth = 300; // 280px + 16px gap approx
+                const activeIndex = Math.round(scrollLeft / cardWidth);
+                const dots = dotsContainer.querySelectorAll('.dot');
+                dots.forEach((dot, idx) => {
+                    dot.classList.toggle('active', idx === activeIndex);
+                });
+            };
+
+            slider.addEventListener('scroll', updateDots, { passive: true });
+        }
     }
 };
