@@ -172,32 +172,16 @@ class KaiController {
     }
     
     applyViewState() {
-        // Actualizar botones de navegación
-        const btnHoy = document.getElementById('nav-hoy');
-        const btnTimeline = document.getElementById('nav-timeline');
-        
-        if (btnHoy && btnTimeline) {
-            if (this.currentView === 'hoy') {
-                btnHoy.classList.add('bg-brand', 'text-white', 'shadow-sticker');
-                btnHoy.classList.remove('text-gray-500', 'hover:bg-gray-100');
-                btnTimeline.classList.remove('bg-brand', 'text-white', 'shadow-sticker');
-                btnTimeline.classList.add('text-gray-500', 'hover:bg-gray-100');
-            } else {
-                btnTimeline.classList.add('bg-brand', 'text-white', 'shadow-sticker');
-                btnTimeline.classList.remove('text-gray-500', 'hover:bg-gray-100');
-                btnHoy.classList.remove('bg-brand', 'text-white', 'shadow-sticker');
-                btnHoy.classList.add('text-gray-500', 'hover:bg-gray-100');
-            }
-        }
-        
         // Mostrar/ocultar secciones
         const sectionHoy = document.getElementById('section-hoy');
         const timelineContent = document.getElementById('timeline-content');
+        const footer = document.getElementById('app-footer');
         
         if (sectionHoy && timelineContent) {
             if (this.currentView === 'hoy') {
                 sectionHoy.classList.remove('hidden');
                 timelineContent.classList.add('hidden');
+                if (footer) footer.classList.add('hidden');
                 // Cargar datos de HOY si hay usuario
                 if (this.currentUser) {
                     this.loadHoySection();
@@ -205,6 +189,7 @@ class KaiController {
             } else {
                 sectionHoy.classList.add('hidden');
                 timelineContent.classList.remove('hidden');
+                if (footer) footer.classList.remove('hidden');
             }
         }
     }
@@ -534,9 +519,14 @@ class KaiController {
     }
 
     bindEvents() {
-        // --- Navegación HOY / TIMELINE ---
-        document.getElementById('nav-hoy')?.addEventListener('click', () => this.switchView('hoy'));
+        // --- Navegación ---
         document.getElementById('nav-timeline')?.addEventListener('click', () => this.switchView('timeline'));
+        
+        // Hoy desde sidebar
+        document.getElementById('btn-hoy')?.addEventListener('click', () => {
+            this.switchView('hoy');
+            ui.closeSidebar();
+        });
         
         // --- Datos (Import/Export) ---
         document.getElementById('btn-export')?.addEventListener('click', () => this.handleExport());
