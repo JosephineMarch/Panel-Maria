@@ -520,7 +520,7 @@ class KaiController {
 
     bindEvents() {
         // --- Navegación ---
-        document.getElementById('nav-timeline')?.addEventListener('click', () => this.switchView('timeline'));
+        document.getElementById('btn-home')?.addEventListener('click', () => this.goHome());
         
         // Hoy desde sidebar
         document.getElementById('btn-hoy')?.addEventListener('click', () => {

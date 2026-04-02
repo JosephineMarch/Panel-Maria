@@ -66,67 +66,8 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// 🔧 BOTONES DE DIAGNÓSTICO Y TEST (ya están en el HTML)
+// Manejo de URLs
 window.addEventListener('DOMContentLoaded', () => {
-    // Botón Diagnóstico Push
-    document.getElementById('btn-diagnostico')?.addEventListener('click', async () => {
-        console.log('📱 DIAGNÓSTICO DE PUSH NOTIFICATIONS');
-        console.log('=====================================');
-        
-        const perm = Notification.permission;
-        console.log('🔍 Permiso:', perm);
-        
-        const regs = await navigator.serviceWorker.getRegistrations();
-        const sw = regs.find(r => r.active?.scriptURL.includes('sw.js'));
-        console.log('🔍 Service Worker:', sw ? '✅ OK' : '❌ NO');
-        
-        if (sw?.pushManager) {
-            const sub = await sw.pushManager.getSubscription();
-            console.log('🔍 Push:', sub ? '✅ OK' : '❌ NO');
-        }
-        
-        const token = localStorage.getItem('fcmToken');
-        console.log('🔍 FCM Token:', token ? `✅ (${token.length} chars)` : '❌ NO');
-        
-        const tokenTime = localStorage.getItem('fcmTokenTime');
-        if (tokenTime) {
-            const days = Math.round((Date.now() - parseInt(tokenTime)) / 1000 / 60 / 60 / 24);
-            console.log('🔍 Token edad:', days, 'días');
-        }
-        
-        if (token) {
-            try {
-                const res = await fetch('https://jiufptuxadjavjfbfwka.supabase.co/functions/v1/send-push', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({token, title: '🧪 Test Push', body: 'Notificación de prueba', test: true})
-                });
-                console.log('🔍 Edge:', res.status === 200 ? '✅ OK' : '❌ ' + res.status);
-                alert(`Diagnóstico:\nPermiso: ${perm}\nSW: ${sw ? '✅' : '❌'}\nToken: ${token ? '✅' : '❌'}\nEdge: ${res.status === 200 ? '✅' : '❌'}`);
-            } catch (e) {
-                console.log('🔍 Edge:', e.message);
-            }
-        }
-    });
-    
-    // Botón Test Alarma 30s
-    document.getElementById('btn-test-alarma')?.addEventListener('click', async () => {
-        const { alarms } = await import('./src/js/alarmas.js');
-        const item = {
-            id: 'test-' + Date.now(),
-            content: '🧪 Alarma de prueba',
-            tags: ['test'],
-            meta: { priority: 'high' }
-        };
-        // Dispara directamente después de 30s (test local, sin pasar por el servidor)
-        setTimeout(() => {
-            alarms.triggerAlarm(item);
-        }, 30000);
-        console.log('⏰ Alarma de prueba programada. Se disparará en 30s');
-        alert('⏰ Alarma creada! Sonará en 30 segundos (mantené la pestaña abierta)');
-    });
-
-    // Manejo de URLs
     const urlParams = new URLSearchParams(window.location.search);
     const action = urlParams.get('action');
     const type = urlParams.get('type');

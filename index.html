@@ -194,7 +194,7 @@
 
     <!-- HEADER -->
     <header class="bg-white z-[60] border-b border-gray-100 sticky top-0" role="banner">
-        <!-- Top: Title + User -->
+        <!-- Top: User + Title + Home -->
         <div class="flex items-center justify-between px-4 py-3">
             <div id="btn-user"
                 class="w-10 h-10 rounded-full border-2 border-brand cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand"
@@ -203,19 +203,34 @@
                     class="w-full h-full rounded-full">
             </div>
             <h1 class="font-bold text-xl text-ink" role="heading" aria-level="1">KAI</h1>
-            <!-- Botón de Debug Test Notificación -->
-            <button id="btn-test-notification" title="Test Notificación Push"
-                class="w-10 h-10 rounded-full bg-purple-100 hover:bg-purple-200 flex items-center justify-center transition text-xl">
-                🔔
+            <!-- Botón Home (antes Timeline) -->
+            <button id="btn-home" title="Inicio / Timeline"
+                class="w-10 h-10 rounded-full bg-brand/10 hover:bg-brand/20 flex items-center justify-center transition text-xl">
+                🏠
             </button>
         </div>
 
-        <!-- NAV: TIMELINE (único) -->
-        <nav class="flex px-3 pb-3 gap-2" role="navigation" aria-label="Navegación principal">
-            <button id="nav-timeline"
-                class="btn-nav w-full min-h-[48px] py-3 rounded-xl text-base font-bold transition-all bg-brand text-white shadow-sticker"
-                data-view="timeline" aria-label="Timeline">
-                📋 Timeline
+        <!-- Filtros de Categoría -->
+        <nav class="flex px-3 pb-3 gap-2" role="navigation" aria-label="Filtrar por tipo">
+            <button
+                class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
+                data-category="tarea" aria-label="Filtrar tareas">
+                <i class="fa-regular fa-circle-check" aria-hidden="true"></i>
+            </button>
+            <button
+                class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
+                data-category="proyecto" aria-label="Filtrar proyectos">
+                <i class="fa-regular fa-folder" aria-hidden="true"></i>
+            </button>
+            <button
+                class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
+                data-category="nota" aria-label="Filtrar notas">
+                <i class="fa-regular fa-note-sticky" aria-hidden="true"></i>
+            </button>
+            <button
+                class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
+                data-category="directorio" aria-label="Filtrar enlaces">
+                <i class="fa-solid fa-link" aria-hidden="true"></i>
             </button>
         </nav>
     </header>
@@ -327,30 +342,6 @@
 
         <!-- ==================== TIMELINE (Sections below are hidden when HOY is active) ==================== -->
         <div id="timeline-content">
-            <!-- Filtros de Tipo (Tareas, Proyectos, Notas, Enlaces) -->
-            <nav class="flex px-3 pb-3 gap-2" role="navigation" aria-label="Filtrar por tipo">
-                <button
-                    class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
-                    data-category="tarea" aria-label="Filtrar tareas">
-                    <i class="fa-regular fa-circle-check" aria-hidden="true"></i>
-                </button>
-                <button
-                    class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
-                    data-category="proyecto" aria-label="Filtrar proyectos">
-                    <i class="fa-regular fa-folder" aria-hidden="true"></i>
-                </button>
-                <button
-                    class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
-                    data-category="nota" aria-label="Filtrar notas">
-                    <i class="fa-regular fa-note-sticky" aria-hidden="true"></i>
-                </button>
-                <button
-                    class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
-                    data-category="directorio" aria-label="Filtrar enlaces">
-                    <i class="fa-solid fa-link" aria-hidden="true"></i>
-                </button>
-            </nav>
-
             <!-- Barra de Búsqueda -->
             <div class="max-w-2xl mx-auto px-3 mb-4">
                 <div class="relative">
@@ -378,17 +369,6 @@
     <!-- FOOTER / BARRA DE CAPTURA PRO -->
     <footer id="app-footer" class="fixed bottom-0 left-0 right-0 px-2 py-3 bg-white border-t border-gray-100 z-40">
         <div class="flex items-center justify-between gap-2 max-w-full mx-auto">
-            <!-- Botones de debug (solo visible en desarrollo) -->
-            <div id="debug-buttons" class="flex gap-1 shrink-0">
-                <button id="btn-diagnostico" aria-label="Diagnóstico Push" title="🔧 Diagnóstico"
-                    class="w-9 h-9 rounded-full bg-gray-800 text-white flex items-center justify-center text-xs shadow-md hover:bg-gray-700">
-                    🔧
-                </button>
-                <button id="btn-test-alarma" aria-label="Test alarma 30s" title="⏰ Test alarma 30s"
-                    class="w-9 h-9 rounded-full bg-red-600 text-white flex items-center justify-center text-xs shadow-md hover:bg-red-500">
-                    ⏰
-                </button>
-            </div>
             
             <button id="btn-alarms" aria-label="Ver alarmas" title="🔔 Alarmas"
                 class="w-10 h-10 rounded-full bg-rose-100 text-rose-500 flex items-center justify-center shrink-0 shadow-md hover:scale-105 active:scale-95 transition focus:outline-none focus:ring-2 focus:ring-rose-400 cursor-pointer">
