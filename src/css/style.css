@@ -270,6 +270,7 @@ textarea {
     -webkit-overflow-scrolling: touch;
     padding: 0.5rem 0.5rem 1rem;
     scrollbar-width: none;
+    align-items: flex-start;
 }
 
 .pinned-slider::-webkit-scrollbar {
@@ -279,9 +280,11 @@ textarea {
 .pinned-slider .item-card.pinned-card {
     flex-shrink: 0;
     scroll-snap-align: start;
-    width: 280px;
-    min-width: 280px;
+    width: 85%;
+    max-width: 500px;
     margin-bottom: 0 !important;
+    max-height: 480px;
+    overflow-y: auto;
 }
 
 /* Flechas de navegación */
@@ -355,23 +358,20 @@ textarea {
 
 .pinned-card .card-title,
 .pinned-card h3 {
-    font-size: 0.9rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 1rem;
 }
 
 /* Responsive para cards pinned */
 @media (max-width: 640px) {
     .pinned-slider .item-card.pinned-card {
-        width: 260px;
-        min-width: 260px;
+        width: 90%;
+        min-width: 280px;
     }
 }
 
 @media (min-width: 1024px) {
     .pinned-slider .item-card.pinned-card {
-        width: 300px;
-        min-width: 300px;
+        width: 500px;
+        min-width: 500px;
     }
 }

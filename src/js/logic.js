@@ -2050,18 +2050,28 @@ Responde SOLO JSON con esta estructura:
         if (!momentoConfig) return;
         
         if (Notification.permission === 'granted') {
-            const notification = new Notification('💭 Check-in de Bienestar', {
+            const title = '💭 Check-in de Bienestar';
+            const options = {
                 body: momentoConfig.pregunta,
-                icon: '/icon.png',
+                icon: './src/assets/icon-192.png',
+                badge: './src/assets/icon-192.png',
                 tag: 'checkin',
-                requireInteraction: true
-            });
-            
-            notification.onclick = () => {
-                window.focus();
-                this.showCheckinModal(momento);
-                notification.close();
+                requireInteraction: true,
+                data: { action: 'checkin', momento: momento }
             };
+
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.showNotification(title, options);
+                });
+            } else {
+                const notification = new Notification(title, options);
+                notification.onclick = () => {
+                    window.focus();
+                    this.showCheckinModal(momento);
+                    notification.close();
+                };
+            }
         }
         
         this.scheduleCheckinNotification(momento);

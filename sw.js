@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kai-cache-v12';
+const CACHE_NAME = 'kai-cache-v13';
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js');
 
@@ -100,10 +100,17 @@ self.addEventListener('notificationclick', (event) => {
                 .then((clientList) => {
                     for (const client of clientList) {
                         if (client.url.includes('Panel-Maria') || client.url.includes('localhost')) {
-                            return client.focus();
+                            client.focus();
+                            if (data.action === 'checkin' || data.type === 'checkin') {
+                                client.postMessage({ type: 'OPEN_CHECKIN', momento: data.momento });
+                            }
+                            return client;
                         }
                     }
-                    return clients.openWindow(`./?action=alarm&itemId=${itemId}`);
+                    if (data.action === 'checkin' || data.type === 'checkin') {
+                        return clients.openWindow(`./?action=checkin&momento=${data.momento || ''}`);
+                    }
+                    return clients.openWindow(`./?action=alarm&itemId=${itemId || ''}`);
                 })
         );
     }

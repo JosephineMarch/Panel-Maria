@@ -14,7 +14,7 @@ window.alarms = alarms;
 // Iniciar el sistema de alarmas
 alarms.start();
 
-const CACHE_VERSION = 'v10';
+const CACHE_VERSION = 'v11';
 
 let hasReloaded = false;
 let fcmInitialized = false;
@@ -50,7 +50,6 @@ if ('serviceWorker' in navigator) {
                 if (token) console.log('✅ FCM token listo (existente o refrescado)');
             });
 
-            // Si no hay permiso, pedirlo en la PRIMERA interacción del usuario
             if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
                 const requestTokenOnInteraction = () => {
                     document.removeEventListener('click', requestTokenOnInteraction);
@@ -62,6 +61,19 @@ if ('serviceWorker' in navigator) {
                 document.addEventListener('click', requestTokenOnInteraction, { once: true });
                 document.addEventListener('touchstart', requestTokenOnInteraction, { once: true });
             }
+
+            // Escuchar mensajes del Service Worker (Snooze, Checkins, etc.)
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                if (event.data && event.data.type === 'ALARM_SNOOZE') {
+                    if (window.alarms && window.alarms.snooze) {
+                        window.alarms.snooze(event.data.itemId, event.data.minutes);
+                    }
+                } else if (event.data && event.data.type === 'OPEN_CHECKIN') {
+                    if (window.controller && window.controller.showCheckinModal) {
+                        window.controller.showCheckinModal(event.data.momento);
+                    }
+                }
+            });
         }
     });
 }
@@ -81,5 +93,12 @@ window.addEventListener('DOMContentLoaded', () => {
                 input.focus();
             }
         }, 500);
+    } else if (action === 'checkin') {
+        const momento = urlParams.get('momento');
+        setTimeout(() => {
+            if (window.controller && window.controller.showCheckinModal) {
+                window.controller.showCheckinModal(momento);
+            }
+        }, 1000);
     }
 });
