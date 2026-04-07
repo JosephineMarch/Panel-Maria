@@ -282,11 +282,9 @@ async function sendFCMMessageV1(token: string, title: string, body: string, item
     const payload: any = {
       message: {
         token: token,
-        // Siempre incluir el bloque notification para entrega nativa (iOS/Android/Desktop Chrome)
         notification: {
           title: title,
-          body: body,
-          icon: 'https://josephinemarch.github.io/Panel-Maria/src/assets/icon-192.png'
+          body: body
         },
         // Always include data (for SW routing and click actions)
         data: {
@@ -300,12 +298,21 @@ async function sendFCMMessageV1(token: string, title: string, body: string, item
         },
         android: {
           priority: extraData?.priority === 'high' ? 'high' : 'normal',
-          ttl: extraData?.repeat ? (365 * 24 * 60 * 60 * 1000).toString() : '86400000'
+          ttl: extraData?.repeat ? '31536000s' : '86400s',
+          notification: (extraData?.repeat || extraData?.snooze) ? {
+            channelId: 'alarmas',
+            priority: extraData?.priority === 'high' ? 'high' : 'normal',
+            defaultSound: true,
+            defaultVibrateTimings: true
+          } : undefined
         },
         webpush: {
           headers: {
             Urgency: extraData?.priority === 'high' ? 'high' : 'normal',
             TTL: extraData?.repeat ? '604800' : '86400'
+          },
+          notification: {
+            icon: 'https://josephinemarch.github.io/Panel-Maria/src/assets/icon-192.png'
           },
           fcmOptions: {
             link: `https://josephinemarch.github.io/Panel-Maria/?action=alarm&itemId=${itemId || ''}`
@@ -313,19 +320,6 @@ async function sendFCMMessageV1(token: string, title: string, body: string, item
         }
       }
     };
-
-    // Agregar acciones para Android
-    if (extraData?.repeat || extraData?.snooze) {
-      payload.message.android = {
-        ...payload.message.android,
-        notification: {
-          channelId: 'alarmas',
-          priority: extraData?.priority === 'high' ? 'high' : 'normal',
-          sound: 'default',
-          vibrate: [200, 100, 200, 100, 200]
-        }
-      };
-    }
 
     const response = await fetch(`https://fcm.googleapis.com/v1/projects/${FCM_PROJECT_ID}/messages:send`, {
       method: 'POST',
