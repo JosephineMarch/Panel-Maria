@@ -140,16 +140,30 @@ async function saveTokenToSupabase(token) {
 }
 
 export function startTokenRefreshListener() {
-    messaging.onTokenRefresh(async (newToken) => {
-        console.log('🔄 Token FCM rotado por Firebase');
-        const oldToken = localStorage.getItem('fcmToken');
-        console.log('  Token anterior:', oldToken ? oldToken.substring(0, 30) + '...' : '(ninguno)');
-        console.log('  Token nuevo:', newToken.substring(0, 30) + '...');
-        
-        localStorage.setItem('fcmToken', newToken);
-        localStorage.setItem('fcmTokenTime', Date.now().toString());
-        await saveTokenToSupabase(newToken);
-    });
+    // onTokenRefresh fue eliminado en Firebase v10.
+    // Firebase maneja la rotación internamente — getToken() siempre devuelve el token actual.
+    // Usamos polling periódico como fallback para detectar cambios.
+    console.log('🔄 Token refresh listener: usando polling periódico (Firebase v10 no tiene onTokenRefresh)');
+    
+    setInterval(async () => {
+        const storedToken = localStorage.getItem('fcmToken');
+        try {
+            const currentToken = await getToken(messaging, {
+                vapidKey: 'BCHREiBU8nAuYsdRrXCovUK5a1hCoQGHMAAeITKaWWD8eAg8Urp8_dKPkNv7zSbmJDLJ-nz04Mz3wdN13NV417Q'
+            });
+            
+            if (currentToken && currentToken !== storedToken) {
+                console.log('🔄 Token FCM rotado por Firebase');
+                console.log('  Token anterior:', storedToken ? storedToken.substring(0, 30) + '...' : '(ninguno)');
+                console.log('  Token nuevo:', currentToken.substring(0, 30) + '...');
+                localStorage.setItem('fcmToken', currentToken);
+                localStorage.setItem('fcmTokenTime', Date.now().toString());
+                await saveTokenToSupabase(currentToken);
+            }
+        } catch (error) {
+            console.error('Error checking token refresh:', error);
+        }
+    }, 60 * 60 * 1000); // Cada 1 hora
 }
 
 export async function onForegroundMessage() {
