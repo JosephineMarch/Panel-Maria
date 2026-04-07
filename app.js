@@ -5,7 +5,7 @@
 import './src/js/logic.js';
 import './src/js/share.js';
 import './src/js/alarmas.js';
-import { requestFCMToken, refreshFCMTokenIfNeeded, onForegroundMessage } from './src/js/firebase.js';
+import { requestFCMToken, refreshFCMTokenIfNeeded, onForegroundMessage, startTokenRefreshListener } from './src/js/firebase.js';
 
 // Exponer alarms globalmente para los botones de snooze en HTML
 import { alarms } from './src/js/alarmas.js';
@@ -44,8 +44,9 @@ if ('serviceWorker' in navigator) {
         if ('PushManager' in window && !fcmInitialized) {
             fcmInitialized = true;
             onForegroundMessage();
+            startTokenRefreshListener();
 
-            // Token refresh automático: refresca si tiene más de 6 días o no existe
+            // Token refresh automático: compara token actual con guardado y actualiza si cambió
             refreshFCMTokenIfNeeded().then(token => {
                 if (token) console.log('✅ FCM token listo (existente o refrescado)');
             });

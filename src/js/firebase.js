@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js';
+import { getMessaging, getToken, onMessage, onTokenRefresh } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js';
 import { supabase } from './supabase.js';
 
 const firebaseConfig = {
@@ -36,25 +36,6 @@ export async function requestFCMToken(silent = false) {
 
         console.log('FCM usando SW:', registration);
 
-        // IMPORTANTE: También necesitamos subscribe al push manager para que el SW reciba mensajes
-        let pushSubscription = await registration.pushManager.getSubscription();
-        
-        if (!pushSubscription) {
-            console.log('FCM: Suscribiendo al push manager...');
-            const vapidKey = 'BCHREiBU8nAuYsdRrXCovUK5a1hCoQGHMAAeITKaWWD8eAg8Urp8_dKPkNv7zSbmJDLJ-nz04Mz3wdN13NV417Q';
-            // Convertir VAPID key de base64 a Uint8Array
-            const vapidKeyArray = Uint8Array.from(atob(vapidKey.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
-            
-            pushSubscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: vapidKeyArray
-            });
-            console.log('FCM: Suscrito a push:', pushSubscription.endpoint);
-        } else {
-            console.log('FCM: Ya subscrito a push:', pushSubscription.endpoint);
-        }
-
-        // FORZAR token nuevo - eliminar cache
         const token = await getToken(messaging, {
             vapidKey: 'BCHREiBU8nAuYsdRrXCovUK5a1hCoQGHMAAeITKaWWD8eAg8Urp8_dKPkNv7zSbmJDLJ-nz04Mz3wdN13NV417Q',
             serviceWorkerRegistration: registration
@@ -88,37 +69,45 @@ export function isTokenStale() {
 }
 
 export async function refreshFCMTokenIfNeeded() {
-    if (isTokenStale()) {
+    const storedToken = localStorage.getItem('fcmToken');
+    
+    if (!storedToken || isTokenStale()) {
         console.log('🔄 Token FCM stale o ausente, refrescando...');
+    }
+    
+    if (Notification.permission !== 'granted') {
+        return await requestFCMToken();
+    }
+    
+    try {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        let registration = registrations.find(reg => reg.active?.scriptURL.includes('sw.js'));
         
-        if (Notification.permission !== 'granted') {
-            return await requestFCMToken();
+        if (!registration) {
+            registration = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+            await navigator.serviceWorker.ready;
         }
-        
-        try {
-            const registrations = await navigator.serviceWorker.getRegistrations();
-            let registration = registrations.find(reg => reg.active?.scriptURL.includes('sw.js'));
-            
-            if (!registration) {
-                registration = await navigator.serviceWorker.register('./sw.js', { scope: './' });
-                await navigator.serviceWorker.ready;
-            }
 
-            const token = await getToken(messaging, {
-                vapidKey: 'BCHREiBU8nAuYsdRrXCovUK5a1hCoQGHMAAeITKaWWD8eAg8Urp8_dKPkNv7zSbmJDLJ-nz04Mz3wdN13NV417Q',
-                serviceWorkerRegistration: registration
-            });
+        const currentToken = await getToken(messaging, {
+            vapidKey: 'BCHREiBU8nAuYsdRrXCovUK5a1hCoQGHMAAeITKaWWD8eAg8Urp8_dKPkNv7zSbmJDLJ-nz04Mz3wdN13NV417Q',
+            serviceWorkerRegistration: registration
+        });
 
-            if (token) {
-                console.log('✅ Token FCM refrescado:', token.substring(0, 50) + '...');
-                localStorage.setItem('fcmToken', token);
+        if (currentToken) {
+            if (currentToken !== storedToken) {
+                console.log('🔄 Token FCM cambió, actualizando...');
+                console.log('  Token anterior:', storedToken ? storedToken.substring(0, 30) + '...' : '(ninguno)');
+                console.log('  Token nuevo:', currentToken.substring(0, 30) + '...');
+                localStorage.setItem('fcmToken', currentToken);
                 localStorage.setItem('fcmTokenTime', Date.now().toString());
-                await saveTokenToSupabase(token);
-                return token;
+                await saveTokenToSupabase(currentToken);
+            } else {
+                console.log('✅ Token FCM vigente, sin cambios.');
             }
-        } catch (error) {
-            console.error('Error refrescando token FCM:', error);
+            return currentToken;
         }
+    } catch (error) {
+        console.error('Error refrescando token FCM:', error);
     }
     
     return localStorage.getItem('fcmToken');
@@ -150,14 +139,25 @@ async function saveTokenToSupabase(token) {
     }
 }
 
+export function startTokenRefreshListener() {
+    onTokenRefresh(messaging, async (newToken) => {
+        console.log('🔄 Token FCM rotado por Firebase');
+        const oldToken = localStorage.getItem('fcmToken');
+        console.log('  Token anterior:', oldToken ? oldToken.substring(0, 30) + '...' : '(ninguno)');
+        console.log('  Token nuevo:', newToken.substring(0, 30) + '...');
+        
+        localStorage.setItem('fcmToken', newToken);
+        localStorage.setItem('fcmTokenTime', Date.now().toString());
+        await saveTokenToSupabase(newToken);
+    });
+}
+
 export async function onForegroundMessage() {
     onMessage(messaging, async (payload) => {
         console.log('📥 Mensaje recibido en foreground:', payload);
         
-        // IMPORTANTE: NO usar payload.notification - eso muestra notificación de Chrome automáticamente
-        // Solo usar payload.data para mostrar manualmente
-        const title = payload.data?.title || 'KAI';
-        const body = payload.data?.body || 'Nueva alerta';
+        const title = payload.data?.title || payload.notification?.title || 'KAI';
+        const body = payload.data?.body || payload.notification?.body || 'Nueva alerta';
         
         const notificationOptions = {
             body: body,
@@ -170,7 +170,7 @@ export async function onForegroundMessage() {
 
         if (Notification.permission === 'granted') {
             try {
-                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                if ('serviceWorker' in navigator) {
                     const registration = await navigator.serviceWorker.ready;
                     await registration.showNotification(title, notificationOptions);
                 } else {
