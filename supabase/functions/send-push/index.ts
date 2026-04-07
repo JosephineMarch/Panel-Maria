@@ -282,16 +282,13 @@ async function sendFCMMessageV1(token: string, title: string, body: string, item
     const payload: any = {
       message: {
         token: token,
-        // SI forceNotification está activo, usar notification:{} para que el navegador muestre directamente
-        // Esto es útil para testing - comparar si el problema es FCM o el Service Worker
-        ...(extraData?.forceNotification ? {
-          notification: {
-            title: title,
-            body: body,
-            icon: './src/assets/icon-192.png'
-          }
-        } : {}),
-        // Always include data (for SW and for when notification:{} is ignored)
+        // Siempre incluir el bloque notification para entrega nativa (iOS/Android/Desktop Chrome)
+        notification: {
+          title: title,
+          body: body,
+          icon: 'https://josephinemarch.github.io/Panel-Maria/src/assets/icon-192.png'
+        },
+        // Always include data (for SW routing and click actions)
         data: {
           title: title,
           body: body,
