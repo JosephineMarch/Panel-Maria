@@ -16,8 +16,8 @@ test.describe('Push Notifications Diagnosis', () => {
   test('1. Diagnóstico completo del sistema de push notifications', async ({ page }) => {
     const results = {
       url: page.url(),
-      errors: [] as string[],
-      checks: [] as string[]
+      errors: [],
+      checks: []
     };
 
     // ============================================
@@ -176,7 +176,7 @@ test.describe('Push Notifications Diagnosis', () => {
     console.log('\n🔍 CHECK 7: Errores en consola');
     
     // Capturar errores de red
-    const networkErrors: string[] = [];
+    const networkErrors = [];
     page.on('requestfailed', (request) => {
       networkErrors.push(`${request.url()} - ${request.failure()?.errorText}`);
     });
