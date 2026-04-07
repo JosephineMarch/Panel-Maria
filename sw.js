@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kai-cache-v15';
+const CACHE_NAME = 'kai-cache-v16';
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js');
 
@@ -15,6 +15,17 @@ const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
     console.log('[SW] Mensaje en segundo plano recibido:', payload);
+
+    // Enviar mensaje a todas las pestañas abiertas para que lo veamos en consola
+    self.clients.matchAll().then(clients => {
+        clients.forEach(client => {
+            client.postMessage({
+                type: 'FCM_SW_LOG',
+                data: payload
+            });
+        });
+    });
+
     console.log('[SW] Data:', payload.data);
     console.log('[SW] Notification:', payload.notification);
 

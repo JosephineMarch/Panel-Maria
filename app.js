@@ -14,7 +14,7 @@ window.alarms = alarms;
 // Iniciar el sistema de alarmas
 alarms.start();
 
-const CACHE_VERSION = 'v13';
+const CACHE_VERSION = 'v16';
 
 let hasReloaded = false;
 let fcmInitialized = false;
@@ -72,6 +72,8 @@ if ('serviceWorker' in navigator) {
                     if (window.controller && window.controller.showCheckinModal) {
                         window.controller.showCheckinModal(event.data.momento);
                     }
+                } else if (event.data && event.data.type === 'FCM_SW_LOG') {
+                    console.log('🚨 MISTERIO RESUELTO: El Push SÍ LLEGÓ, pero Firebase lo mandó al ServiceWorker (Background) porque no tenías el foco en la página (Estabas en DevTools):', event.data.data);
                 }
             });
         }
