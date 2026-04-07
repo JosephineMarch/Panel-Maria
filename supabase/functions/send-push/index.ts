@@ -68,7 +68,7 @@ serve(async (req) => {
     }
 
     // Si es snooze, calcular nuevo timestamp
-    let finalTimestamp = timestamp;
+    let finalTimestamp = timestamp || Date.now();
     if (snooze) {
       const snoozeMinutes = extraData?.snoozeMinutes || 10;
       finalTimestamp = Date.now() + (snoozeMinutes * 60 * 1000);
