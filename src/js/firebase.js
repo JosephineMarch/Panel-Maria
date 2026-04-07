@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getMessaging, getToken, onMessage, onTokenRefresh } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js';
+import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js';
 import { supabase } from './supabase.js';
 
 const firebaseConfig = {
@@ -140,7 +140,7 @@ async function saveTokenToSupabase(token) {
 }
 
 export function startTokenRefreshListener() {
-    onTokenRefresh(messaging, async (newToken) => {
+    messaging.onTokenRefresh(async (newToken) => {
         console.log('🔄 Token FCM rotado por Firebase');
         const oldToken = localStorage.getItem('fcmToken');
         console.log('  Token anterior:', oldToken ? oldToken.substring(0, 30) + '...' : '(ninguno)');
