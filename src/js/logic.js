@@ -2107,7 +2107,7 @@ Responde SOLO JSON con esta estructura:
                     token: token, // Enviar solo al token actual para testing
                     title: '🔔 Test de KAI',
                     body: 'Si ves esto, las notificaciones push funcionan! 🎉',
-                    timestamp: Date.now()
+                    timestamp: Date.now() - 60000 // Restar 1 minuto para forzar envío síncrono inmediato ignorando desincronización de relojes
                 }
             });
 

@@ -14,7 +14,7 @@ window.alarms = alarms;
 // Iniciar el sistema de alarmas
 alarms.start();
 
-const CACHE_VERSION = 'v12';
+const CACHE_VERSION = 'v13';
 
 let hasReloaded = false;
 let fcmInitialized = false;
