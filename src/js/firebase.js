@@ -170,9 +170,12 @@ export async function onForegroundMessage() {
 
         if (Notification.permission === 'granted') {
             try {
-                // En contexto de página, usar new Notification() directamente
-                // showNotification() solo funciona DENTRO del service worker
-                new Notification(title, notificationOptions);
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    const registration = await navigator.serviceWorker.ready;
+                    await registration.showNotification(title, notificationOptions);
+                } else {
+                    new Notification(title, notificationOptions);
+                }
             } catch (error) {
                 console.error('Error mostrando notificación en foreground:', error);
             }
