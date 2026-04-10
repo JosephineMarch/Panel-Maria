@@ -84,11 +84,13 @@ serve(async (req) => {
       try {
         console.log(`⏰ Processing alarm for item ${alarm.item_id}, deadline: ${alarm.deadline}`);
 
-        // Get FCM tokens for the user
+        // Get FCM tokens for the user - SOLO el más reciente
         const { data: tokensData, error: tokenError } = await supabase
           .from('fcm_tokens')
           .select('token')
-          .eq('user_id', alarm.user_id);
+          .eq('user_id', alarm.user_id)
+          .order('created_at', { ascending: false })
+          .limit(1);
 
         if (tokenError || !tokensData || tokensData.length === 0) {
           console.warn(`⚠️ No FCM tokens for user ${alarm.user_id}`);
@@ -103,31 +105,42 @@ serve(async (req) => {
         const tokens = tokensData.map(t => t.token);
         console.log(`📱 Found ${tokens.length} token(s) for user ${alarm.user_id}`);
 
-        // Send push to all tokens
-        let allSuccess = true;
-        for (const token of tokens) {
+        // Send push - usar solo el primer token (el más reciente)
+        const token = tokens[0];
+        if (token) {
           const result = await sendFCMMessageV1(token, alarm.title, alarm.body, alarm.item_id, {
             priority: alarm.priority,
             type: 'alarm'
           });
 
-          if (!result.messageId) {
-            allSuccess = false;
+          if (result.messageId) {
+            console.log(`✅ Alarm sent successfully for item ${alarm.item_id}`);
+            sent++;
+
+            // Update alarm status
+            await supabase
+              .from('alarm_notifications')
+              .update({ status: 'sent', sent_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+              .eq('id', alarm.id);
+          } else {
             console.error(`❌ Failed to send to token ${token.substring(0, 20)}...`);
+            failed++;
+            await supabase
+              .from('alarm_notifications')
+              .update({ status: 'failed', error_message: 'FCM failed', updated_at: new Date().toISOString() })
+              .eq('id', alarm.id);
           }
-        }
-
-        if (allSuccess) {
-          console.log(`✅ Alarm sent successfully for item ${alarm.item_id}`);
-          sent++;
-
-          // Update alarm status
+        } else {
+          console.warn(`⚠️ No valid token found`);
+          failed++;
           await supabase
             .from('alarm_notifications')
-            .update({ status: 'sent', sent_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+            .update({ status: 'failed', error_message: 'No valid token', updated_at: new Date().toISOString() })
             .eq('id', alarm.id);
+        }
 
-          // Handle repeat: update item deadline for next cycle
+        // Handle repeat: update item deadline for next cycle
+        try {
           const { data: item } = await supabase
             .from('items')
             .select('repeat, deadline')
@@ -142,16 +155,10 @@ serve(async (req) => {
                 .from('items')
                 .update({ deadline: nextDeadline })
                 .eq('id', alarm.item_id);
-              // The trigger will automatically create a new alarm_notification
             }
           }
-        } else {
-          console.error(`❌ Some tokens failed for alarm ${alarm.id}`);
-          failed++;
-          await supabase
-            .from('alarm_notifications')
-            .update({ status: 'failed', error_message: 'Some tokens failed', updated_at: new Date().toISOString() })
-            .eq('id', alarm.id);
+        } catch (e) {
+          console.log('ℹ️ No repeat handling needed or item not found');
         }
       } catch (err) {
         console.error(`❌ Error processing alarm ${alarm.id}:`, err);
