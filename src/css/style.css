@@ -260,151 +260,86 @@ textarea {
 /* ?? Ajustes Mobile (Skill: mobile-design) */
 @media (max-width: 768px) { #kai-widget { bottom: 100px !important; } }
 
-/* === Pinned Cards Slider === */
+/* === Pinned Cards Slider - Estilo Redes Sociales === */
+.pinned-section {
+    margin: 1rem 0;
+}
+
 .pinned-slider {
     display: flex;
-    gap: 1rem;
+    gap: 0.75rem;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
-    padding: 0.5rem 0.5rem 1rem;
+    padding: 0.25rem 1rem;
     scrollbar-width: none;
-    align-items: flex-start;
+    align-items: stretch;
 }
 
 .pinned-slider::-webkit-scrollbar {
     display: none;
 }
 
+/* Card pinned compacta - estilo story de Instagram */
 .pinned-slider .item-card.pinned-card {
     flex-shrink: 0;
     scroll-snap-align: start;
-    width: 85%;
-    max-width: 500px;
-    margin-bottom: 0 !important;
-    max-height: 480px;
-    overflow-y: auto;
-}
-
-/* Flechas de navegación */
-.pinned-slider-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.pinned-slider-arrow {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 20;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: white;
-    border: 2px solid var(--brand, #FFB7C5);
-    color: var(--brand, #FFB7C5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    opacity: 0;
-    transition: opacity 0.2s;
-    font-size: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.pinned-slider-wrapper:hover .pinned-slider-arrow {
-    opacity: 1;
-}
-
-.pinned-slider-arrow--left {
-    left: -16px;
-}
-
-.pinned-slider-arrow--right {
-    right: -16px;
-}
-
-/* Indicadores de posición (dots) */
-.pinned-slider-dots {
-    display: flex;
-    justify-content: center;
-    gap: 6px;
-    margin-top: 0.5rem;
-}
-
-.pinned-slider-dots .dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--brand, #FFB7C5);
-    opacity: 0.3;
-    transition: opacity 0.2s, transform 0.2s;
+    width: 140px;
+    height: 200px;
+    border-radius: 1rem;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    border: 2px solid var(--brand, #FFB7C5) !important;
+    box-shadow: 0 2px 8px rgba(255, 183, 197, 0.3);
     cursor: pointer;
 }
 
-.pinned-slider-dots .dot.active {
-    opacity: 1;
-    transform: scale(1.3);
+/* Contenido de la card pinned compacta */
+.pinned-slider .item-card.pinned-card .pinned-content {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 0.75rem;
 }
 
-/* Card pinned compacta */
+.pinned-slider .item-card.pinned-card .pinned-icon {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+}
+
+.pinned-slider .item-card.pinned-card h3 {
+    font-size: 0.8rem;
+    line-height: 1.2;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+}
+
+.pinned-slider .item-card.pinned-card .pinned-meta {
+    margin-top: auto;
+    font-size: 0.65rem;
+    color: rgba(0,0,0,0.5);
+}
+
+/* Desktop: cards un poco más grandes */
+@media (min-width: 768px) {
+    .pinned-slider .item-card.pinned-card {
+        width: 160px;
+        height: 220px;
+    }
+}
+
+/* Card pinned compacta (para cuando se mueve fuera del slider) */
 .pinned-card {
     border: 2px solid var(--brand, #FFB7C5) !important;
     box-shadow: 0 4px 12px rgba(255, 183, 197, 0.2);
-}
-
-.pinned-card .card-title,
-.pinned-card h3 {
-    font-size: 1rem;
-}
-
-/* Card pinned expandida - rompe del slider */
-.pinned-card.expanded-card {
-    position: fixed !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    width: 90vw !important;
-    max-width: 700px !important;
-    max-height: 85vh !important;
-    z-index: 1001 !important;
-    flex-shrink: unset !important;
-    scroll-snap-align: unset !important;
-    margin-bottom: 0 !important;
-    overflow-y: auto !important;
-}
-
-/* Overlay oscuro cuando se expande una card pinned */
-#pinned-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
-    cursor: pointer;
-    display: none;
-}
-
-#pinned-overlay.active {
-    display: block;
-}
-
-/* Responsive para cards pinned */
-@media (max-width: 640px) {
-    .pinned-slider .item-card.pinned-card {
-        width: 90%;
-        min-width: 280px;
-    }
-}
-
-@media (min-width: 1024px) {
-    .pinned-slider .item-card.pinned-card {
-        width: 500px;
-        min-width: 500px;
-    }
 }

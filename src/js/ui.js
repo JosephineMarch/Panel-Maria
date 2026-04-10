@@ -87,8 +87,6 @@ export const ui = {
             container.id = 'items-container';
             document.getElementById('app')?.appendChild(container);
         }
-        // Inicializar overlay para cards pinned expandidas
-        this.initPinnedOverlay();
     },
 
     renderTags(tags) {
@@ -239,58 +237,30 @@ export const ui = {
         const pinnedItems = items.filter(item => item.anclado);
         const unpinnedItems = items.filter(item => !item.anclado);
 
-        // Mostrar primero los items anclados como slider horizontal
+        // Mostrar primero los items anclados como slider horizontal estilo redes sociales
         if (pinnedItems.length > 0) {
             const pinnedSection = document.createElement('div');
-            pinnedSection.className = 'pinned-section my-6';
+            pinnedSection.className = 'pinned-section';
 
-            const separatorHtml = `
-                <div class="flex items-center gap-4 mb-3">
-                    <div class="h-px flex-1 bg-brand/30"></div>
-                    <span class="text-xs font-bold text-brand uppercase tracking-widest px-2">📌 Fijados</span>
-                    <div class="h-px flex-1 bg-brand/30"></div>
+            const headerHtml = `
+                <div class="flex items-center gap-2 px-4 py-2">
+                    <i class="fa-solid fa-thumbtack text-brand text-sm"></i>
+                    <span class="text-xs font-bold text-brand">Fijados</span>
                 </div>
             `;
-
-            const sliderWrapper = document.createElement('div');
-            sliderWrapper.className = 'pinned-slider-wrapper relative';
-
-            const arrowLeft = document.createElement('button');
-            arrowLeft.className = 'pinned-slider-arrow pinned-slider-arrow--left';
-            arrowLeft.id = 'pinned-arrow-left';
-            arrowLeft.setAttribute('aria-label', 'Desplazar izquierda');
-            arrowLeft.textContent = '◀';
 
             const slider = document.createElement('div');
             slider.className = 'pinned-slider';
             slider.id = 'pinned-slider';
 
             pinnedItems.forEach(item => {
-                const card = this.createItemCard(item, true);
+                const card = this.createPinnedCompactCard(item);
                 slider.appendChild(card);
             });
 
-            const arrowRight = document.createElement('button');
-            arrowRight.className = 'pinned-slider-arrow pinned-slider-arrow--right';
-            arrowRight.id = 'pinned-arrow-right';
-            arrowRight.setAttribute('aria-label', 'Desplazar derecha');
-            arrowRight.textContent = '▶';
-
-            sliderWrapper.appendChild(arrowLeft);
-            sliderWrapper.appendChild(slider);
-            sliderWrapper.appendChild(arrowRight);
-
-            const dotsContainer = document.createElement('div');
-            dotsContainer.className = 'pinned-slider-dots';
-            dotsContainer.id = 'pinned-dots';
-
-            pinnedSection.innerHTML = separatorHtml;
-            pinnedSection.appendChild(sliderWrapper);
-            pinnedSection.appendChild(dotsContainer);
+            pinnedSection.innerHTML = headerHtml;
+            pinnedSection.appendChild(slider);
             container.appendChild(pinnedSection);
-
-            // Inicializar slider después de renderizar
-            requestAnimationFrame(() => this.initPinnedSlider(pinnedItems.length));
         }
 
         // Luego mostrar los no anclados agrupados por fecha
@@ -367,6 +337,64 @@ export const ui = {
         });
 
         return card;
+    },
+
+    // Card pinned compacta estilo story de Instagram
+    createPinnedCompactCard(item) {
+        const card = document.createElement('div');
+        card.className = 'item-card pinned-card';
+        card.dataset.id = item.id;
+        card.dataset.expanded = 'false';
+
+        const config = this.typeConfig[item.type] || this.typeConfig['nota'];
+        
+        // Obtener fecha relativa
+        let timeAgo = '';
+        if (item.created_at) {
+            const date = new Date(item.created_at);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            if (diffMins < 60) timeAgo = `${diffMins}m`;
+            else if (diffHours < 24) timeAgo = `${diffHours}h`;
+            else if (diffDays < 7) timeAgo = `${diffDays}d`;
+            else timeAgo = date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+        }
+
+        card.innerHTML = `
+            <div class="pinned-content">
+                <div class="pinned-icon ${config.bg}" style="background: ${this.getTypeColor(item.type)}20;">
+                    <span class="text-lg">${config.icon}</span>
+                </div>
+                <h3 class="text-ink font-bold">${this.escapeHtml(this.truncate(item.content, 50))}</h3>
+                ${timeAgo ? `<span class="pinned-meta">${timeAgo}</span>` : ''}
+            </div>
+        `;
+
+        // Evento de expansión al hacer clic
+        card.addEventListener('click', (e) => {
+            if (e.target.closest('button')) return;
+            if (card.dataset.expanded !== 'true') {
+                this.expandCard(card, item);
+            }
+        });
+
+        return card;
+    },
+
+    // Obtener color del tipo para el fondo del icono
+    getTypeColor(type) {
+        const colors = {
+            nota: '#a1e4f5',
+            tarea: '#86efac',
+            proyecto: '#37d9e0',
+            directorio: '#CFFAFE',
+            logro: '#86efac'
+        };
+        return colors[type] || '#f0f0f0';
     },
 
     updateCardContent(card, item, expanded = false, isPinned = false) {
@@ -778,12 +806,117 @@ export const ui = {
         document.querySelectorAll('[data-expanded="true"]').forEach(c => {
             if (c !== card) {
                 c.dataset.expanded = 'false';
-                // Si la card que se cierra era pinned y expandida, limpiarla
+                // Si la card que se cierra era pinned y expandida, restaurarla al slider
                 if (c.classList.contains('pinned-card')) {
-                    c.classList.remove('expanded-card');
+                    this.restorePinnedCardToSlider(c);
                 }
                 hadExpanded = true;
             }
+        });
+        
+        // Recargar una sola vez si había otra tarjeta expandida
+        if (hadExpanded && window.kai) window.kai.loadItems();
+
+        // Si es una card pinned, moverla fuera del slider para que se expanda normalmente
+        if (isPinned) {
+            this.movePinnedCardOutOfSlider(card);
+        }
+        
+        // Pasar isPinned a updateCardContent (false porque ya NO está en el slider)
+        this.updateCardContent(card, item, true, false);
+        
+        if (!isPinned) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+        // Guardar estado de card expandida
+        if (window.kai) {
+            window.kai.setExpandedCard(item.id);
+        }
+    },
+
+    // Mover card pinned fuera del slider para expansión normal
+    movePinnedCardOutOfSlider(card) {
+        const container = document.getElementById('items-container');
+        const pinnedSection = container?.querySelector('.pinned-section');
+        const slider = container?.querySelector('.pinned-slider');
+        
+        if (!pinnedSection || !slider) return;
+        
+        // Guardar referencia original para restaurar después
+        card.dataset.originalParent = 'slider';
+        
+        // Remover del slider
+        card.remove();
+        
+        // Insertar la card expandida justo después del pinned-section (como las otras cards)
+        pinnedSection.insertAdjacentElement('afterend', card);
+        
+        // Quitar las clases de slider
+        card.classList.remove('pinned-card');
+        
+        // Ocultar el slider mientras una card pinned está expandida
+        const sliderWrapper = container.querySelector('.pinned-slider-wrapper');
+        if (sliderWrapper) sliderWrapper.style.display = 'none';
+    },
+
+    // Restaurar card pinned a su lugar en el slider
+    restorePinnedCardToSlider(card) {
+        const container = document.getElementById('items-container');
+        const slider = container?.querySelector('.pinned-slider');
+        const sliderWrapper = container?.querySelector('.pinned-slider-wrapper');
+        
+        if (!slider) return;
+        
+        // Mostrar el slider de nuevo
+        if (sliderWrapper) sliderWrapper.style.display = '';
+        
+        // Quitar las clases de expansión
+        card.classList.remove('expanded-card');
+        
+        // Agregar la clase pinned de vuelta
+        card.classList.add('pinned-card');
+        
+        // Remover del contenedor principal
+        card.remove();
+        
+        // Volver a insertar en el slider
+        slider.appendChild(card);
+        
+        // Limpiar dataset
+        delete card.dataset.originalParent;
+    },
+
+    collapseCard(card, item) {
+        const isPinned = card.classList.contains('pinned-card') || card.dataset.originalParent === 'slider';
+        
+        if (isPinned) {
+            this.restorePinnedCardToSlider(card);
+        }
+        
+        this.updateCardContent(card, item, false, isPinned);
+    },
+
+    bindInlineEvents(card, item) {
+        const id = item.id;
+        // Detectar si es pinned (ya sea por clase o por dataset)
+        const isPinned = card.classList.contains('pinned-card') || card.dataset.originalParent === 'slider';
+
+        card.querySelectorAll('.action-collapse').forEach(btn => {
+
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                card.dataset.expanded = 'false';
+                
+                // Usar collapseCard que maneja tanto pins como cards normales
+                this.collapseCard(card, item);
+                
+                // Limpiar estado de card expandida
+                if (window.kai) {
+                    window.kai.clearExpandedCard();
+                }
+            });
         });
         
         // Ocultar overlay de pinned si había alguno activo
@@ -813,47 +946,8 @@ export const ui = {
         }
     },
 
-    collapsePinnedCard(card) {
-        card.classList.remove('expanded-card');
-        const overlay = document.getElementById('pinned-overlay');
-        if (overlay) overlay.classList.remove('active');
-        document.body.style.overflow = '';
-    },
-
-    initPinnedOverlay() {
-        // Crear overlay si no existe
-        let overlay = document.getElementById('pinned-overlay');
-        if (!overlay) {
-            overlay = document.createElement('div');
-            overlay.id = 'pinned-overlay';
-            document.body.appendChild(overlay);
-        }
-        
-        overlay.addEventListener('click', () => {
-            const expandedCard = document.querySelector('.pinned-card.expanded-card');
-            if (expandedCard) {
-                const itemId = expandedCard.dataset.id;
-                expandedCard.dataset.expanded = 'false';
-                this.collapsePinnedCard(expandedCard);
-                // Encontrar el item desde la UI o desde kai
-                if (window.kai && window.kai.state && window.kai.state.items) {
-                    const item = window.kai.state.items.find(i => i.id === itemId);
-                    if (item) {
-                        this.updateCardContent(expandedCard, item, false, true);
-                    }
-                } else {
-                    this.updateCardContent(expandedCard, { id: itemId }, false, true);
-                }
-                if (window.kai) {
-                    window.kai.clearExpandedCard();
-                }
-            }
-        });
-    },
-
     bindInlineEvents(card, item) {
         const id = item.id;
-        const isPinned = card.classList.contains('pinned-card');
 
         card.querySelectorAll('.action-collapse').forEach(btn => {
 
@@ -861,11 +955,10 @@ export const ui = {
                 e.preventDefault();
                 e.stopPropagation();
                 card.dataset.expanded = 'false';
-                // Si es pinned, usar el método especial de colapso
-                if (isPinned) {
-                    this.collapsePinnedCard(card);
-                }
-                this.updateCardContent(card, item, false, isPinned);
+                
+                // Usar collapseCard que maneja tanto pins como cards normales
+                this.collapseCard(card, item);
+                
                 // Limpiar estado de card expandida
                 if (window.kai) {
                     window.kai.clearExpandedCard();
@@ -1817,59 +1910,4 @@ export const ui = {
         document.getElementById('checkin-close-btn').onclick = () => overlay.remove();
         overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
     },
-
-    // === PINNED SLIDER ===
-    initPinnedSlider(totalCards) {
-        const slider = document.getElementById('pinned-slider');
-        const arrowLeft = document.getElementById('pinned-arrow-left');
-        const arrowRight = document.getElementById('pinned-arrow-right');
-        const dotsContainer = document.getElementById('pinned-dots');
-
-        if (!slider) return;
-
-        // Ocultar flechas si solo hay 1 card
-        if (totalCards <= 1) {
-            if (arrowLeft) arrowLeft.style.display = 'none';
-            if (arrowRight) arrowRight.style.display = 'none';
-        }
-
-        // Crear dots si hay más de 1 card
-        if (totalCards > 1 && dotsContainer) {
-            dotsContainer.innerHTML = '';
-            for (let i = 0; i < totalCards; i++) {
-                const dot = document.createElement('span');
-                dot.className = `dot${i === 0 ? ' active' : ''}`;
-                dot.dataset.index = i;
-                dotsContainer.appendChild(dot);
-            }
-        }
-
-        // Event listeners para flechas
-        if (arrowLeft) {
-            arrowLeft.addEventListener('click', () => {
-                slider.scrollBy({ left: -300, behavior: 'smooth' });
-            });
-        }
-
-        if (arrowRight) {
-            arrowRight.addEventListener('click', () => {
-                slider.scrollBy({ left: 300, behavior: 'smooth' });
-            });
-        }
-
-        // Actualizar dots al hacer scroll
-        if (dotsContainer && totalCards > 1) {
-            const updateDots = () => {
-                const scrollLeft = slider.scrollLeft;
-                const cardWidth = 300; // 280px + 16px gap approx
-                const activeIndex = Math.round(scrollLeft / cardWidth);
-                const dots = dotsContainer.querySelectorAll('.dot');
-                dots.forEach((dot, idx) => {
-                    dot.classList.toggle('active', idx === activeIndex);
-                });
-            };
-
-            slider.addEventListener('scroll', updateDots, { passive: true });
-        }
-    }
 };
