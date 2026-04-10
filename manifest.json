@@ -2,35 +2,29 @@
   "name": "KAI - Tu Segundo Cerebro",
   "short_name": "KAI",
   "description": "PWA ADHD-Friendly para organizar tu vida",
-  "start_url": "./index.html",
+  "start_url": "./?source=pwa",
   "id": "./index.html",
   "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4F46E5",
   "icons": [
     {
-      "src": "src/assets/icon-192.png",
+      "src": "https://josephinemarch.github.io/Panel-Maria/src/assets/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "src/assets/icon-512.png",
+      "src": "https://josephinemarch.github.io/Panel-Maria/src/assets/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "src/assets/icon-512.png",
+      "src": "https://josephinemarch.github.io/Panel-Maria/src/assets/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "1.png",
-      "sizes": "390x844",
-      "type": "image/png",
-      "form_factor": "narrow"
     }
   ],
   "shortcuts": [
@@ -38,19 +32,19 @@
       "name": "Nueva Idea",
       "short_name": "Idea",
       "description": "Crear una nueva idea",
-        "url": "./index.html?action=new&type=nota",
-      "icons": [{ "src": "src/assets/icon-192.png", "sizes": "192x192" }]
+      "url": "./?action=new&type=nota",
+      "icons": [{ "src": "https://josephinemarch.github.io/Panel-Maria/src/assets/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Nueva Tarea",
       "short_name": "Tarea",
       "description": "Crear una nueva tarea",
-        "url": "./index.html?action=new&type=tarea",
-      "icons": [{ "src": "src/assets/icon-192.png", "sizes": "192x192" }]
+      "url": "./?action=new&type=tarea",
+      "icons": [{ "src": "https://josephinemarch.github.io/Panel-Maria/src/assets/icon-192.png", "sizes": "192x192" }]
     }
   ],
   "share_target": {
-    "action": "./index.html",
+    "action": "./",
     "method": "GET",
     "params": {
       "title": "title",

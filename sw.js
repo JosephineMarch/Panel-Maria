@@ -43,8 +43,8 @@ messaging.onBackgroundMessage((payload) => {
     
     const notificationOptions = {
         body: body,
-        icon: './src/assets/icon-192.png',
-        badge: './src/assets/icon-192.png',
+        icon: 'https://josephinemarch.github.io/Panel-Maria/src/assets/icon-192.png',
+        badge: 'https://josephinemarch.github.io/Panel-Maria/src/assets/icon-192.png',
         tag: data.itemId || 'kai-alarm',
         data: data,
         vibrate: priority === 'high' ? [200, 100, 200, 100, 200] : [200, 100, 200],
@@ -138,6 +138,7 @@ const STATIC_ASSETS = [
     './index.html',
     './app.js',
     './manifest.json',
+    './offline.html',
     './src/assets/icon-192.png',
     './src/assets/icon-512.png',
     './src/assets/icon.svg',
@@ -194,6 +195,11 @@ async function cacheFirst(request) {
         }
         return networkResponse;
     } catch (error) {
+        // Devolver offline.html para navegación, Response genérico para otros recursos
+        const url = new URL(request.url);
+        if (url.origin === location.origin) {
+            return caches.match('./offline.html') || new Response('Offline', { status: 503 });
+        }
         return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
     }
 }
@@ -213,6 +219,10 @@ async function networkFirst(request) {
         const cachedResponse = await caches.match(request);
         if (cachedResponse) {
             return cachedResponse;
+        }
+        // Devolver offline.html solo para navigations (HTML)
+        if (request.mode === 'navigate') {
+            return caches.match('./offline.html') || new Response('Offline', { status: 503 });
         }
         return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
     }

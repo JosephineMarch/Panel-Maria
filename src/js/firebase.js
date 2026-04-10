@@ -175,8 +175,8 @@ export async function onForegroundMessage() {
         
         const notificationOptions = {
             body: body,
-            icon: './src/assets/icon-192.png',
-            badge: './src/assets/icon-192.png',
+            icon: 'https://josephinemarch.github.io/Panel-Maria/src/assets/icon-192.png',
+            badge: 'https://josephinemarch.github.io/Panel-Maria/src/assets/icon-192.png',
             tag: payload.data?.tag || 'kai-notification',
             data: payload.data,
             vibrate: [200, 100, 200]
@@ -186,12 +186,24 @@ export async function onForegroundMessage() {
             try {
                 if ('serviceWorker' in navigator) {
                     const registration = await navigator.serviceWorker.ready;
-                    await registration.showNotification(title, notificationOptions);
+                    if (registration) {
+                        await registration.showNotification(title, notificationOptions);
+                    } else {
+                        // Fallback si SW no está ready
+                        new Notification(title, notificationOptions);
+                    }
                 } else {
+                    // Fallback para browsers sin SW
                     new Notification(title, notificationOptions);
                 }
             } catch (error) {
                 console.error('Error mostrando notificación en foreground:', error);
+                // Último fallback
+                try {
+                    new Notification(title, notificationOptions);
+                } catch (e) {
+                    console.error('Fallback notification también falló:', e);
+                }
             }
         }
     });

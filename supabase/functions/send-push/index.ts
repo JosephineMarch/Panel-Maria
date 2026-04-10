@@ -77,13 +77,17 @@ serve(async (req) => {
     // Si es repetición, calcular próximos timestamps
     const timestamps = calculateRepeatTimestamps(finalTimestamp, repeat);
 
+    // Extraer origen del request para construir URLs dinámicas
+    const requestOrigin = req.headers.get('origin') || req.headers.get('referer');
+    const baseUrl = requestOrigin ? new URL(requestOrigin).origin : undefined;
+
     if (token && typeof token === 'string' && token.length > 20) {
       console.log(`📱 Enviando a token específico: ${token.substring(0, 30)}...`);
       
       // Las edge functions son serverless — no podemos usar setTimeout para el futuro
       // Solo enviar inmediatamente. Para notificaciones futuras, el cliente debe llamar
       // a esta función en el momento correcto (alarmas.js ya hace polling cada 30s)
-      const result = await sendFCMMessageV1(token, title, body, itemId, extraData);
+      const result = await sendFCMMessageV1(token, title, body, itemId, extraData, baseUrl);
       const results = [{ sent: true, result }];
       
       return new Response(
@@ -137,7 +141,7 @@ serve(async (req) => {
     console.log(`📱 Enviando a ${tokens.length} dispositivos`);
 
     // Las edge functions son serverless — enviar inmediatamente
-    await sendFCMToAll(tokens, title, body, itemId, extraData);
+    await sendFCMToAll(tokens, title, body, itemId, extraData, baseUrl);
 
     return new Response(
       JSON.stringify({
@@ -275,9 +279,14 @@ async function getAccessToken(): Promise<string> {
   return tokenData.access_token;
 }
 
-async function sendFCMMessageV1(token: string, title: string, body: string, itemId?: string, extraData?: any) {
+async function sendFCMMessageV1(token: string, title: string, body: string, itemId?: string, extraData?: any, requestOrigin?: string) {
   try {
     const accessToken = await getAccessToken();
+
+    // Usar el origen de la request o fallback a GitHub Pages
+    const appOrigin = requestOrigin || 'https://josephinemarch.github.io/Panel-Maria';
+    const iconUrl = `${appOrigin}/src/assets/icon-192.png`;
+    const alarmLink = `${appOrigin}/?action=alarm&itemId=${itemId || ''}`;
 
     const payload: any = {
       message: {
@@ -312,10 +321,10 @@ async function sendFCMMessageV1(token: string, title: string, body: string, item
             TTL: extraData?.repeat ? '604800' : '86400'
           },
           notification: {
-            icon: 'https://josephinemarch.github.io/Panel-Maria/src/assets/icon-192.png'
+            icon: iconUrl
           },
           fcmOptions: {
-            link: `https://josephinemarch.github.io/Panel-Maria/?action=alarm&itemId=${itemId || ''}`
+            link: alarmLink
           }
         }
       }
@@ -357,7 +366,7 @@ async function sendFCMMessageV1(token: string, title: string, body: string, item
   }
 }
 
-async function sendFCMToAll(tokens: string[], title: string, body: string, itemId?: string, extraData?: any) {
+async function sendFCMToAll(tokens: string[], title: string, body: string, itemId?: string, extraData?: any, baseUrl?: string) {
   console.log(`📱 Enviando a ${tokens.length} dispositivos`);
   
   let successful = 0;
@@ -365,7 +374,7 @@ async function sendFCMToAll(tokens: string[], title: string, body: string, itemI
   
   for (const token of tokens) {
     try {
-      const result = await sendFCMMessageV1(token, title, body, itemId, extraData);
+      const result = await sendFCMMessageV1(token, title, body, itemId, extraData, baseUrl);
       if (result.messageId) successful++;
       else failed++;
     } catch (e) {
