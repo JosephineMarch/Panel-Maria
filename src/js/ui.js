@@ -793,7 +793,8 @@ export const ui = {
         // Recargar una sola vez si había otra tarjeta expandida
         if (hadExpanded && window.kai) window.kai.loadItems();
 
-        this.updateCardContent(card, item, true);
+        // Pasar isPinned a updateCardContent para que renderExpandedCard sepa el contexto
+        this.updateCardContent(card, item, true, isPinned);
         
         // Si es una card pinned, aplicar estilos de expansión que rompen del slider
         if (isPinned) {
@@ -812,7 +813,7 @@ export const ui = {
         }
     },
 
-    collapsePinnedCard(card, item) {
+    collapsePinnedCard(card) {
         card.classList.remove('expanded-card');
         const overlay = document.getElementById('pinned-overlay');
         if (overlay) overlay.classList.remove('active');
@@ -830,12 +831,22 @@ export const ui = {
         
         overlay.addEventListener('click', () => {
             const expandedCard = document.querySelector('.pinned-card.expanded-card');
-            if (expandedCard && window.kai) {
+            if (expandedCard) {
                 const itemId = expandedCard.dataset.id;
                 expandedCard.dataset.expanded = 'false';
-                this.collapsePinnedCard(expandedCard, null);
-                this.updateCardContent(expandedCard, window.kai.state.items.find(i => i.id === itemId), false);
-                window.kai.clearExpandedCard();
+                this.collapsePinnedCard(expandedCard);
+                // Encontrar el item desde la UI o desde kai
+                if (window.kai && window.kai.state && window.kai.state.items) {
+                    const item = window.kai.state.items.find(i => i.id === itemId);
+                    if (item) {
+                        this.updateCardContent(expandedCard, item, false, true);
+                    }
+                } else {
+                    this.updateCardContent(expandedCard, { id: itemId }, false, true);
+                }
+                if (window.kai) {
+                    window.kai.clearExpandedCard();
+                }
             }
         });
     },
@@ -852,9 +863,9 @@ export const ui = {
                 card.dataset.expanded = 'false';
                 // Si es pinned, usar el método especial de colapso
                 if (isPinned) {
-                    this.collapsePinnedCard(card, item);
+                    this.collapsePinnedCard(card);
                 }
-                this.updateCardContent(card, item, false);
+                this.updateCardContent(card, item, false, isPinned);
                 // Limpiar estado de card expandida
                 if (window.kai) {
                     window.kai.clearExpandedCard();
