@@ -87,6 +87,8 @@ export const ui = {
             container.id = 'items-container';
             document.getElementById('app')?.appendChild(container);
         }
+        // Inicializar overlay para cards pinned expandidas
+        this.initPinnedOverlay();
     },
 
     renderTags(tags) {
@@ -376,7 +378,7 @@ export const ui = {
         const isProject = tipoNorm === 'proyecto';
 
         if (expanded) {
-            this.renderExpandedCard(card, itemNorm, config);
+            this.renderExpandedCard(card, itemNorm, config, isPinned);
         } else {
             this.renderCollapsedCard(card, itemNorm, config, isProject, isPinned);
         }
@@ -586,12 +588,14 @@ export const ui = {
         }
     },
 
-    renderExpandedCard(card, item, config) {
+    renderExpandedCard(card, item, config, isPinned = false) {
         const themeClass = `theme-${config.color}`;
         const typeConfig = this.typeConfig[item.type] || this.typeConfig.note;
         const tagClass = `tag-type tag-${item.type}`;
 
-        card.className = `item-card bg-white rounded-[2rem] shadow-sticker border-2 border-gray-100 overflow-hidden mb-8 w-full transition-all duration-300 transform scale-[1.01]`;
+        // Mantener las clases de pinned card si corresponde
+        const pinnedClasses = isPinned ? 'pinned-card expanded-card' : '';
+        card.className = `item-card bg-white rounded-[2rem] shadow-sticker border-2 border-gray-100 overflow-hidden mb-8 w-full transition-all duration-300 transform scale-[1.01] ${pinnedClasses}`;
         card.dataset.expanded = 'true';
 
         const tareasHtml = (item.tareas || []).map((t, idx) => `
@@ -768,18 +772,39 @@ export const ui = {
     },
 
     expandCard(card, item) {
+        const isPinned = card.classList.contains('pinned-card');
+        
         let hadExpanded = false;
         document.querySelectorAll('[data-expanded="true"]').forEach(c => {
             if (c !== card) {
                 c.dataset.expanded = 'false';
+                // Si la card que se cierra era pinned y expandida, limpiarla
+                if (c.classList.contains('pinned-card')) {
+                    c.classList.remove('expanded-card');
+                }
                 hadExpanded = true;
             }
         });
+        
+        // Ocultar overlay de pinned si había alguno activo
+        const overlay = document.getElementById('pinned-overlay');
+        if (overlay) overlay.classList.remove('active');
+        
         // Recargar una sola vez si había otra tarjeta expandida
         if (hadExpanded && window.kai) window.kai.loadItems();
 
         this.updateCardContent(card, item, true);
-        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Si es una card pinned, aplicar estilos de expansión que rompen del slider
+        if (isPinned) {
+            card.classList.add('expanded-card');
+            // Mostrar overlay
+            if (overlay) overlay.classList.add('active');
+            // Deshabilitar scroll del body para evitar conflictos
+            document.body.style.overflow = 'hidden';
+        } else {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
         
         // Guardar estado de card expandida
         if (window.kai) {
@@ -787,8 +812,37 @@ export const ui = {
         }
     },
 
+    collapsePinnedCard(card, item) {
+        card.classList.remove('expanded-card');
+        const overlay = document.getElementById('pinned-overlay');
+        if (overlay) overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    },
+
+    initPinnedOverlay() {
+        // Crear overlay si no existe
+        let overlay = document.getElementById('pinned-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'pinned-overlay';
+            document.body.appendChild(overlay);
+        }
+        
+        overlay.addEventListener('click', () => {
+            const expandedCard = document.querySelector('.pinned-card.expanded-card');
+            if (expandedCard && window.kai) {
+                const itemId = expandedCard.dataset.id;
+                expandedCard.dataset.expanded = 'false';
+                this.collapsePinnedCard(expandedCard, null);
+                this.updateCardContent(expandedCard, window.kai.state.items.find(i => i.id === itemId), false);
+                window.kai.clearExpandedCard();
+            }
+        });
+    },
+
     bindInlineEvents(card, item) {
         const id = item.id;
+        const isPinned = card.classList.contains('pinned-card');
 
         card.querySelectorAll('.action-collapse').forEach(btn => {
 
@@ -796,6 +850,10 @@ export const ui = {
                 e.preventDefault();
                 e.stopPropagation();
                 card.dataset.expanded = 'false';
+                // Si es pinned, usar el método especial de colapso
+                if (isPinned) {
+                    this.collapsePinnedCard(card, item);
+                }
                 this.updateCardContent(card, item, false);
                 // Limpiar estado de card expandida
                 if (window.kai) {

@@ -361,6 +361,39 @@ textarea {
     font-size: 1rem;
 }
 
+/* Card pinned expandida - rompe del slider */
+.pinned-card.expanded-card {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 90vw !important;
+    max-width: 700px !important;
+    max-height: 85vh !important;
+    z-index: 1001 !important;
+    flex-shrink: unset !important;
+    scroll-snap-align: unset !important;
+    margin-bottom: 0 !important;
+    overflow-y: auto !important;
+}
+
+/* Overlay oscuro cuando se expande una card pinned */
+#pinned-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    cursor: pointer;
+    display: none;
+}
+
+#pinned-overlay.active {
+    display: block;
+}
+
 /* Responsive para cards pinned */
 @media (max-width: 640px) {
     .pinned-slider .item-card.pinned-card {
