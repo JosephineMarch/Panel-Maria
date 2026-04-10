@@ -5,7 +5,7 @@
 import './src/js/logic.js';
 import './src/js/share.js';
 import './src/js/alarmas.js';
-import { requestFCMToken, refreshFCMTokenIfNeeded, onForegroundMessage, startTokenRefreshListener } from './src/js/firebase.js';
+import { requestFCMToken, refreshFCMTokenIfNeeded, onForegroundMessage, startTokenRefreshListener, getStoredFCMToken } from './src/js/firebase.js';
 
 // Exponer alarms globalmente para los botones de snooze en HTML
 import { alarms } from './src/js/alarmas.js';
@@ -18,6 +18,42 @@ const CACHE_VERSION = 'v16';
 
 let hasReloaded = false;
 let fcmInitialized = false;
+
+/**
+ * Envía una notificación de bienvenida usando la edge function de Supabase
+ * @param {string} token - Token FCM del dispositivo
+ */
+async function sendWelcomeNotification(token) {
+    try {
+        const SUPABASE_URL = 'https://jiufptuxadjavjfbfwka.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppdWZwdHV4YWRqYXZqZmJmd2thIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwODY0NzgsImV4cCI6MjA4NTY2MjQ3OH0.LCXYWsmD-ZM45O_HNVwFHu8dJFzxns3Zd_2BHusm2CY';
+
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                'apikey': SUPABASE_ANON_KEY
+            },
+            body: JSON.stringify({
+                token: token,
+                title: '🎉 Bienvenido a KAI',
+                body: 'Tu segundo cerebro para organizar tu vida con TDAH. ¡Explora y descubre cómo KAI puede ayudarte!',
+                type: 'welcome',
+                priority: 'normal'
+            })
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+            console.log('✅ Notificación de bienvenida enviada:', result);
+        } else {
+            console.error('❌ Error enviando notificación de bienvenida:', result);
+        }
+    } catch (error) {
+        console.error('❌ Error en sendWelcomeNotification:', error);
+    }
+}
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -47,8 +83,21 @@ if ('serviceWorker' in navigator) {
             startTokenRefreshListener();
 
             // Token refresh automático: compara token actual con guardado y actualiza si cambió
-            refreshFCMTokenIfNeeded().then(token => {
-                if (token) console.log('✅ FCM token listo (existente o refrescado)');
+            refreshFCMTokenIfNeeded().then(async (token) => {
+                if (token) {
+                    console.log('✅ FCM token listo (existente o refrescado)');
+                    
+                    // Verificar si es la primera instalación
+                    const hasSeenWelcome = localStorage.getItem('kai_welcome_shown');
+                    if (!hasSeenWelcome) {
+                        console.log('🎉 Primera instalación detectada, enviando notificación de bienvenida...');
+                        await sendWelcomeNotification(token);
+                        localStorage.setItem('kai_welcome_shown', 'true');
+                        console.log('✅ Marca de bienvenida establecida');
+                    } else {
+                        console.log('ℹ️ Ya se mostró la notificación de bienvenida anteriormente');
+                    }
+                }
             });
 
             if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
