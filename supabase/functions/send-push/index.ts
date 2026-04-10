@@ -42,6 +42,97 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  // Endpoint de test - permite enviar notificación sin token desde cualquier lugar
+  const url = new URL(req.url);
+  if (url.pathname === '/test' || url.searchParams.get('test') === 'true') {
+    try {
+      const { title, body, type, priority, userId } = await req.json();
+      
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+      );
+      
+      // Si hay userId, buscar token de ese usuario, si no, el último token global
+      let query = supabase
+        .from('fcm_tokens')
+        .select('token, user_id, device_name, created_at')
+        .order('created_at', { ascending: false });
+      
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+      
+      const { data: tokens } = await query.limit(1);
+      
+      if (!tokens || tokens.length === 0) {
+        return new Response(
+          JSON.stringify({ error: 'No hay tokens en la base de datos' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const tokenData = tokens[0];
+      const result = await sendFCMMessageV1(
+        tokenData.token,
+        title || '🧪 Test de notificación',
+        body || 'Esta es una notificación de prueba',
+        'test',
+        { type: type || 'test', priority: priority || 'normal' }
+      );
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'Notificación de prueba enviada',
+          result,
+          target: {
+            tokenUsed: tokenData.token.substring(0, 30) + '...',
+            userId: tokenData.user_id,
+            device: tokenData.device_name
+          }
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } catch (error) {
+      return new Response(
+        JSON.stringify({ error: error.message }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+  }
+
+  // Endpoint para listar dispositivos disponibles
+  if (url.pathname === '/devices' || url.searchParams.get('devices') === 'true') {
+    try {
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+      );
+      
+      const { data: devices } = await supabase
+        .from('fcm_tokens')
+        .select('id, user_id, device_name, created_at')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          devices: devices || [],
+          count: devices?.length || 0,
+          usage: 'Usa POST con {"userId": "uuid-del-usuario"} para enviar a un dispositivo específico'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } catch (error) {
+      return new Response(
+        JSON.stringify({ error: error.message }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+  }
+
   try {
     const { 
       token, 

@@ -659,6 +659,43 @@ class KaiController {
 
         // Modal de Alarmas
         document.getElementById('btn-alarms')?.addEventListener('click', () => this.showAlarmsModal());
+        
+        // Botón de prueba de notificaciones
+        document.getElementById('btn-test-notif')?.addEventListener('click', async () => {
+            const token = localStorage.getItem('fcmToken');
+            if (!token) {
+                alert('🔔 No hay token FCM. Permití notificaciones primero.');
+                return;
+            }
+            
+            try {
+                const response = await fetch('https://jiufptuxadjavjfbfwka.supabase.co/functions/v1/send-push', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppdWZwdHV4YWRqYXZqZmJmd2thIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwODY0NzgsImV4cCI6MjA4NTY2MjQ3OH0.LCXYWsmD-ZM45O_HNVwFHu8dJFzxns3Zd_2BHusm2CY',
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppdWZwdHV4YWRqYXZqZmJmd2thIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwODY0NzgsImV4cCI6MjA4NTY2MjQ3OH0.LCXYWsmD-ZM45O_HNVwFHu8dJFzxns3Zd_2BHusm2CY'
+                    },
+                    body: JSON.stringify({
+                        token: token,
+                        title: '🧪 Notificación de prueba',
+                        body: 'Si ves esto, las push notifications funcionan correctamente',
+                        type: 'test',
+                        priority: 'normal'
+                    })
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    alert('✅ Notificación enviada! Revisa si te llegó (puede tomar unos segundos)');
+                } else {
+                    alert('❌ Error: ' + JSON.stringify(result));
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        });
+        
         document.querySelectorAll('.modal-alarms-close').forEach(btn => {
             btn.addEventListener('click', () => ui.toggleAlarmsModal(false));
         });
