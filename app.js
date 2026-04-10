@@ -100,6 +100,24 @@ if ('serviceWorker' in navigator) {
                 }
             });
 
+            // Botón manual para reintentar enviar notificación de bienvenida (debug)
+            window.sendWelcomeIfNeeded = async function() {
+                const token = localStorage.getItem('fcmToken');
+                if (!token) {
+                    console.log('🔔 No hay token FCM, pidiendo permiso...');
+                    const newToken = await requestFCMToken();
+                    if (newToken) {
+                        await sendWelcomeNotification(newToken);
+                        localStorage.setItem('kai_welcome_shown', 'true');
+                        console.log('✅ Notificación de bienvenida enviada manualmente');
+                    }
+                } else {
+                    await sendWelcomeNotification(token);
+                    localStorage.setItem('kai_welcome_shown', 'true');
+                    console.log('✅ Notificación de bienvenida enviada con token existente');
+                }
+            };
+
             if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
                 const requestTokenOnInteraction = () => {
                     document.removeEventListener('click', requestTokenOnInteraction);
