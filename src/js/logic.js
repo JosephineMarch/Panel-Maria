@@ -172,6 +172,24 @@ class KaiController {
     }
     
     applyViewState() {
+        // Actualizar estilos de botones de navegación
+        const btnHoy = document.getElementById('nav-hoy');
+        const btnTimeline = document.getElementById('nav-timeline');
+        
+        if (btnHoy && btnTimeline) {
+            if (this.currentView === 'hoy') {
+                btnHoy.classList.add('bg-brand', 'text-white', 'shadow-sticker');
+                btnHoy.classList.remove('text-gray-500', 'hover:bg-gray-100');
+                btnTimeline.classList.remove('bg-brand', 'text-white', 'shadow-sticker');
+                btnTimeline.classList.add('text-gray-500', 'hover:bg-gray-100');
+            } else {
+                btnTimeline.classList.add('bg-brand', 'text-white', 'shadow-sticker');
+                btnTimeline.classList.remove('text-gray-500', 'hover:bg-gray-100');
+                btnHoy.classList.remove('bg-brand', 'text-white', 'shadow-sticker');
+                btnHoy.classList.add('text-gray-500', 'hover:bg-gray-100');
+            }
+        }
+        
         // Mostrar/ocultar secciones
         const sectionHoy = document.getElementById('section-hoy');
         const timelineContent = document.getElementById('timeline-content');
@@ -1457,7 +1475,20 @@ Responde SOLO JSON con esta estructura:
     async goHome() {
         this.breadcrumbPath = [];
         this.currentParentId = null;
+        this.currentCategory = 'all';
+        this.currentTag = null;
         this.currentView = 'timeline';
+        
+        // Resetear estilos de botones de categoría
+        document.querySelectorAll('.btn-category').forEach(b => {
+            b.classList.remove('active', 'border-brand', 'bg-white', 'shadow-sticker');
+        });
+        document.querySelectorAll('.btn-tag').forEach(b => {
+            b.classList.remove('active', 'bg-lavender', 'text-purple-600', 'border-purple-200');
+        });
+        
+        this.applyViewState();
+        this.saveState();
         await this.loadItems();
     }
 
