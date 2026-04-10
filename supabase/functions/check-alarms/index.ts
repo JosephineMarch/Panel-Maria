@@ -321,8 +321,8 @@ async function sendFCMMessageV1(token: string, title: string, body: string, item
           notification: {
             title: title,
             body: body,
-            icon: './src/assets/icon-192.png',
-            badge: './src/assets/icon-192.png',
+            icon: 'https://josephinemarch.github.io/Panel-Maria/src/assets/icon-192.png',
+            badge: 'https://josephinemarch.github.io/Panel-Maria/src/assets/icon-192.png',
             tag: itemId || 'kai-alarm',
             requireInteraction: true,
             vibrate: isHighPriority ? [200, 100, 200, 100, 200] : [200, 100, 200],
