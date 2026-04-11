@@ -331,11 +331,11 @@ textarea {
     color: rgba(0,0,0,0.5);
 }
 
-/* Desktop: cards un poco más grandes */
+/* Desktop: cards pinned más anchas */
 @media (min-width: 768px) {
     .pinned-slider .item-card.pinned-card {
-        width: 160px;
-        height: 220px;
+        width: 180px;
+        height: 200px;
     }
     
     /* Pinned section ocupa todo el ancho en desktop */
@@ -345,6 +345,32 @@ textarea {
     
     .pinned-slider {
         padding: 0.5rem 2rem;
+    }
+}
+
+/* Pantallas grandes: mostrar más cards en el slider */
+@media (min-width: 1024px) {
+    .pinned-slider .item-card.pinned-card {
+        width: 200px;
+        height: 220px;
+    }
+    
+    /* Permitir scroll horizontal pero sin exceder el contenedor */
+    .pinned-slider {
+        overflow-x: auto;
+        scrollbar-width: thin;
+    }
+    
+    .pinned-slider::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+/* Mobile: mantener slider compacto */
+@media (max-width: 767px) {
+    .pinned-slider .item-card.pinned-card {
+        width: 140px !important;
+        height: 200px !important;
     }
 }
 
