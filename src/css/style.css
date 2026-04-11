@@ -340,10 +340,11 @@ textarea {
 }
 
 /* === OPTIMIZACIONES DESKTOP === */
-@media (min-width: 1024px) {
-    /* Contenedor de items más ancho */
+@media (min-width: 768px) {
+    /* Desktop: 2 columnas ocupando toda la pantalla */
     #items-container {
-        max-width: 900px !important;
+        max-width: 100% !important;
+        grid-template-columns: repeat(2, 1fr) !important;
     }
     
     /* Cards más anchas y con más espacio */
@@ -385,9 +386,10 @@ textarea {
 }
 
 @media (min-width: 1280px) {
-    /* Pantallas muy grandes - aún más espacio */
+    /* Pantallas muy grandes - mantener 2 columnas */
     #items-container {
-        max-width: 1000px !important;
+        max-width: 100% !important;
+        grid-template-columns: repeat(2, 1fr) !important;
     }
     
     /* Cards expandidas más amplias */
