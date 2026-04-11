@@ -285,42 +285,11 @@
                 </button>
             </div>
 
-            <!-- RUTINAS DE HOY -->
-            <div class="bg-white border-2 border-brand/20 p-5 rounded-[2rem] shadow-sticker">
-                <h3 class="font-bold text-lg mb-4 flex items-center justify-between">
-                    <span class="flex items-center gap-2">
-                        <i class="fa-solid fa-rotate text-brand"></i>
-                        Rutinas de hoy
-                    </span>
-                    <button id="btn-add-routine" class="text-xs text-brand font-bold hover:underline">+ agregar</button>
-                </h3>
-
-                <!-- Formulario agregar rutina (oculto por defecto) -->
-                <div id="add-routine-form" class="hidden mb-4 p-4 bg-brand/5 rounded-2xl border-2 border-brand/10">
-                    <input type="text" id="new-routine-input" placeholder="Nueva rutina..." 
-                        class="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-2 text-sm font-medium mb-3 focus:outline-none focus:border-brand">
-                    
-                    <label class="flex items-center gap-2 cursor-pointer mb-3">
-                        <input type="checkbox" id="set-as-default" class="w-5 h-5 rounded border-2 border-brand text-brand focus:ring-brand accent-brand">
-                        <span class="text-sm font-medium text-gray-600">Marcar como rutina por defecto</span>
-                    </label>
-                    
-                    <div class="flex gap-2">
-                        <button id="btn-cancel-routine" class="flex-1 bg-gray-100 text-gray-500 font-bold py-2 rounded-xl text-sm">Cancelar</button>
-                        <button id="btn-confirm-routine" class="flex-1 bg-brand text-white font-bold py-2 rounded-xl text-sm shadow-sticker">Agregar</button>
-                    </div>
-                </div>
-                
-                <div id="rutinas-list" class="space-y-3">
-                    <!-- Las rutinas se cargan dinámicamente -->
-                </div>
-            </div>
-
-            <!-- TAREAS DE HOY -->
+            <!-- QUÉ HICE HOY -->
             <div class="bg-brand/5 border-2 border-brand/20 p-6 rounded-[2.5rem] shadow-sm">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-bold text-brand flex items-center gap-2">
-                        <span class="text-2xl">⚡</span> Tareas de hoy
+                        <span class="text-2xl">⚡</span> ¿Qué hice hoy?
                     </h2>
                     <button id="btn-add-task-hoy" class="text-xs text-brand font-bold hover:underline">+ agregar</button>
                 </div>
@@ -616,9 +585,9 @@
             initNavigation();
             initFecha();
             initCheckin();
-            initRoutineForm();
+            // initRoutineForm(); // ELIMINADO: Rutinas de hoy
+            // loadRoutines(); // ELIMINADO: Rutinas de hoy
             initTaskForm();
-            loadRoutines();
             loadTasks();
         });
 
@@ -655,7 +624,7 @@
 
             // Cargar datos según la vista
             if (view === 'hoy') {
-                loadRoutines();
+                // loadRoutines(); // ELIMINADO: ya no hay rutinas
                 loadTasks();
                 loadTodayCheckin();
             } else if (view === 'timeline') {
@@ -821,7 +790,7 @@
             });
         }
 
-        // Tareas de hoy
+        // Tareas de hoy (ahora usa localStorage)
         function initTaskForm() {
             document.getElementById('btn-add-task-hoy').addEventListener('click', () => {
                 document.getElementById('add-task-form').classList.toggle('hidden');
@@ -830,7 +799,7 @@
             document.getElementById('btn-confirm-task').addEventListener('click', async () => {
                 const content = document.getElementById('new-task-input').value.trim();
                 if (content) {
-                    await hoy.addTask(content);
+                    hoy.addTask(content); // Ahora es sync (localStorage)
                     document.getElementById('new-task-input').value = '';
                     document.getElementById('add-task-form').classList.add('hidden');
                     loadTasks();
@@ -838,8 +807,8 @@
             });
         }
 
-        async function loadTasks() {
-            const tasks = await hoy.getTodayTasks();
+        function loadTasks() {
+            const tasks = hoy.getTodayTasks(); // Ahora es sync (localStorage)
             const container = document.getElementById('tareas-list');
             
             if (!tasks || tasks.length === 0) {
@@ -863,18 +832,18 @@
                 </div>
             `).join('');
 
-            // Agregar eventos
+            // Agregar eventos (ahora son sync)
             document.querySelectorAll('.task-checkbox').forEach(checkbox => {
-                checkbox.addEventListener('change', async (e) => {
-                    await hoy.toggleTaskCompletion(e.target.dataset.id, e.target.checked);
+                checkbox.addEventListener('change', (e) => {
+                    hoy.toggleTaskCompletion(e.target.dataset.id, e.target.checked);
                     loadTasks();
                 });
             });
 
             document.querySelectorAll('.delete-task-btn').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
+                btn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    await hoy.deleteTask(btn.dataset.id);
+                    hoy.deleteTask(btn.dataset.id);
                     loadTasks();
                 });
             });

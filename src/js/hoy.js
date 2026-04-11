@@ -1,14 +1,23 @@
 /**
  * Módulo de Sección HOY
  * =====================
- * Maneja: check-ins, rutinas diarias, tareas de hoy
+ * Maneja: check-ins, ¿Qué hice hoy?
+ * 
+ * Lógica nueva:
+ * - Las tareas se guardan en localStorage durante el día
+ * - A las 11:59 PM (o al detectar nuevo día) se crea una card en la tabla items
  */
 
 import { supabase } from './supabase.js';
+import { data } from './data.js';
 
 class HoyManager {
     constructor() {
         this.currentDate = new Date().toISOString().split('T')[0];
+        this.lastFinalizedDate = localStorage.getItem('hoy_finalized_date') || null;
+        
+        // Verificar si hay un nuevo día y finalizar el anterior si es necesario
+        this.checkAndFinalizeDay();
     }
 
     // Obtener referencia al controller
@@ -21,7 +30,7 @@ class HoyManager {
     async getTodayCheckin() {
         if (!this.controller?.currentUser) return null;
 
-        const { data, error } = await supabase
+        const { data: checkinData, error } = await supabase
             .from('daily_checkins')
             .select('*')
             .eq('user_id', this.controller.currentUser.id)
@@ -31,17 +40,16 @@ class HoyManager {
         if (error && error.code !== 'PGRST116') {
             console.error('Error getting checkin:', error);
         }
-        return data || null;
+        return checkinData || null;
     }
 
     async saveCheckin(emotionalState, physical, note) {
         if (!this.controller?.currentUser) {
-            // Guardar localmente si no hay sesión
             this.saveCheckinLocal(emotionalState, physical, note);
             return;
         }
 
-        const { data, error } = await supabase
+        const { data: checkinData, error } = await supabase
             .from('daily_checkins')
             .upsert({
                 user_id: this.controller.currentUser.id,
@@ -57,7 +65,7 @@ class HoyManager {
             console.error('Error saving checkin:', error);
             return false;
         }
-        return data;
+        return checkinData;
     }
 
     saveCheckinLocal(emotionalState, physical, note) {
@@ -81,180 +89,22 @@ class HoyManager {
         localStorage.setItem('daily_checkins_local', JSON.stringify(localCheckins));
     }
 
-    // ==================== RUTINAS ====================
+    // ==================== QUÉ HICE HOY (localStorage) ====================
 
-    async getRoutines() {
-        if (!this.controller?.currentUser) return this.getDefaultRoutines();
-
-        const { data, error } = await supabase
-            .from('daily_routines')
-            .select('*')
-            .eq('user_id', this.controller.currentUser.id)
-            .eq('is_active', true)
-            .order('sort_order', { ascending: true });
-
-        if (error) {
-            console.error('Error getting routines:', error);
-            return this.getDefaultRoutines();
-        }
-
-        // Si no tiene rutinas personalizadas, devolver las defaults
-        if (!data || data.length === 0) return this.getDefaultRoutines();
-        
-        return data;
-    }
-
-    getDefaultRoutines() {
-        // Rutinas por defecto cuando no hay sesión
-        return [
-            { id: 'default-1', name: 'Tomar medicación', emoji: '💊', is_default: true }
-        ];
-    }
-
-    async getRoutineCompletions(date = null) {
-        const targetDate = date || this.currentDate;
-        
-        if (!this.controller?.currentUser) {
-            return this.getLocalRoutineCompletions(targetDate);
-        }
-
-        const { data, error } = await supabase
-            .from('daily_routine_completions')
-            .select('*')
-            .eq('user_id', this.controller.currentUser.id)
-            .eq('date', targetDate);
-
-        if (error) {
-            console.error('Error getting completions:', error);
-            return [];
-        }
-
-        return data || [];
-    }
-
-    getLocalRoutineCompletions(date) {
-        const local = JSON.parse(localStorage.getItem('routine_completions_local') || '{}');
-        return local[date] || [];
-    }
-
-    async toggleRoutineCompletion(routineId, completed) {
-        if (!this.controller?.currentUser) {
-            this.toggleRoutineLocal(routineId, completed);
-            return;
-        }
-
-        if (completed) {
-            await supabase
-                .from('daily_routine_completions')
-                .upsert({
-                    routine_id: routineId,
-                    user_id: this.controller.currentUser.id,
-                    date: this.currentDate,
-                    completed: true,
-                    completed_at: new Date().toISOString()
-                }, { onConflict: 'routine_id,date' });
-        } else {
-            await supabase
-                .from('daily_routine_completions')
-                .delete()
-                .eq('routine_id', routineId)
-                .eq('user_id', this.controller.currentUser.id)
-                .eq('date', this.currentDate);
-        }
-    }
-
-    toggleRoutineLocal(routineId, completed) {
-        const local = JSON.parse(localStorage.getItem('routine_completions_local') || '{}');
-        if (!local[this.currentDate]) local[this.currentDate] = [];
-        
-        if (completed) {
-            if (!local[this.currentDate].includes(routineId)) {
-                local[this.currentDate].push(routineId);
-            }
-        } else {
-            local[this.currentDate] = local[this.currentDate].filter(id => id !== routineId);
-        }
-        
-        localStorage.setItem('routine_completions_local', JSON.stringify(local));
-    }
-
-    async addRoutine(name, emoji = '📌', isDefault = false) {
-        if (!this.controller?.currentUser) return;
-
-        // Obtener el último sort_order
-        const { data: existing } = await supabase
-            .from('daily_routines')
-            .select('sort_order')
-            .eq('user_id', this.controller.currentUser.id)
-            .order('sort_order', { ascending: false })
-            .limit(1);
-
-        const newOrder = existing && existing[0] ? existing[0].sort_order + 1 : 1;
-
-        await supabase
-            .from('daily_routines')
-            .insert({
-                user_id: this.controller.currentUser.id,
-                name: name,
-                emoji: emoji,
-                is_default: isDefault,
-                sort_order: newOrder
-            });
-    }
-
-    async deleteRoutine(routineId) {
-        if (!this.controller?.currentUser) return;
-
-        await supabase
-            .from('daily_routines')
-            .delete()
-            .eq('id', routineId)
-            .eq('user_id', this.controller.currentUser.id);
-    }
-
-    // ==================== TAREAS DE HOY ====================
-
-    async getTodayTasks() {
-        if (!this.controller?.currentUser) return [];
-
-        const { data, error } = await supabase
-            .from('daily_tasks')
-            .select('*')
-            .eq('user_id', this.controller.currentUser.id)
-            .eq('date', this.currentDate)
-            .order('created_at', { ascending: true });
-
-        if (error) {
-            console.error('Error getting tasks:', error);
-            return [];
-        }
-
-        return data || [];
-    }
-
-    getLocalTodayTasks() {
-        const all = JSON.parse(localStorage.getItem('daily_tasks_local') || '[]');
+    /**
+     * Obtiene las tareas del día desde localStorage
+     * (antes se usaba Supabase, ahora solo localStorage)
+     */
+    getTodayTasks() {
+        const all = JSON.parse(localStorage.getItem('hoy_tareas') || '[]');
         return all.filter(t => t.date === this.currentDate);
     }
 
-    async addTask(content) {
-        if (!this.controller?.currentUser) {
-            this.addTaskLocal(content);
-            return;
-        }
-
-        await supabase
-            .from('daily_tasks')
-            .insert({
-                user_id: this.controller.currentUser.id,
-                content: content,
-                date: this.currentDate,
-                completed: false
-            });
-    }
-
-    addTaskLocal(content) {
-        const all = JSON.parse(localStorage.getItem('daily_tasks_local') || '[]');
+    /**
+     * Agrega una tarea (solo localStorage)
+     */
+    addTask(content) {
+        const all = JSON.parse(localStorage.getItem('hoy_tareas') || '[]');
         all.push({
             id: 'local-' + Date.now(),
             content: content,
@@ -262,63 +112,117 @@ class HoyManager {
             completed: false,
             created_at: new Date().toISOString()
         });
-        localStorage.setItem('daily_tasks_local', JSON.stringify(all));
+        localStorage.setItem('hoy_tareas', JSON.stringify(all));
     }
 
-    async toggleTaskCompletion(taskId, completed) {
-        if (!this.controller?.currentUser) {
-            this.toggleTaskLocal(taskId, completed);
-            return;
-        }
-
-        if (completed) {
-            await supabase
-                .from('daily_tasks')
-                .update({ 
-                    completed: true, 
-                    completed_at: new Date().toISOString() 
-                })
-                .eq('id', taskId)
-                .eq('user_id', this.controller.currentUser.id);
-        } else {
-            await supabase
-                .from('daily_tasks')
-                .update({ 
-                    completed: false, 
-                    completed_at: null 
-                })
-                .eq('id', taskId)
-                .eq('user_id', this.controller.currentUser.id);
-        }
-    }
-
-    toggleTaskLocal(taskId, completed) {
-        const all = JSON.parse(localStorage.getItem('daily_tasks_local') || '[]');
+    /**
+     * Toggle de completado (solo localStorage)
+     */
+    toggleTaskCompletion(taskId, completed) {
+        const all = JSON.parse(localStorage.getItem('hoy_tareas') || '[]');
         const task = all.find(t => t.id === taskId);
         if (task) {
             task.completed = completed;
             task.completed_at = completed ? new Date().toISOString() : null;
         }
-        localStorage.setItem('daily_tasks_local', JSON.stringify(all));
+        localStorage.setItem('hoy_tareas', JSON.stringify(all));
     }
 
-    async deleteTask(taskId) {
-        if (!this.controller?.currentUser) {
-            this.deleteTaskLocal(taskId);
+    /**
+     * Elimina una tarea (solo localStorage)
+     */
+    deleteTask(taskId) {
+        const all = JSON.parse(localStorage.getItem('hoy_tareas') || '[]');
+        const filtered = all.filter(t => t.id !== taskId);
+        localStorage.setItem('hoy_tareas', JSON.stringify(filtered));
+    }
+
+    // ==================== FINALIZAR DÍA ====================
+
+    /**
+     * Verifica si hay un nuevo día y crea la card de resumen
+     * Se llama automáticamente al inicializar
+     */
+    checkAndFinalizeDay() {
+        const hoy = new Date().toISOString().split('T')[0];
+        
+        // Si el último día finalizado no es hoy Y ya pasaron las 11:59 o es un nuevo día
+        if (this.lastFinalizedDate && this.lastFinalizedDate !== hoy) {
+            // Hay un día anterior sin finalizar
+            this.finalizeDay(this.lastFinalizedDate);
+        }
+    }
+
+    /**
+     * Genera el título para la card: "Hice esto el viernes 10 de abril"
+     */
+    generateDayTitle(dateStr) {
+        const fecha = new Date(dateStr + 'T12:00:00');
+        const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        
+        return `Hice esto el ${diasSemana[fecha.getDay()]} ${fecha.getDate()} de ${meses[fecha.getMonth()]}`;
+    }
+
+    /**
+     * Crea una card de tipo "tarea" en la tabla items con las tareas completadas del día
+     */
+    async finalizeDay(dateStr) {
+        // Obtener las tareas de ese día
+        const all = JSON.parse(localStorage.getItem('hoy_tareas') || '[]');
+        const dayTasks = all.filter(t => t.date === dateStr && t.completed);
+        
+        if (dayTasks.length === 0) {
+            console.log(`No hay tareas completadas para ${dateStr}, no se crea card`);
+            this.lastFinalizedDate = dateStr;
+            localStorage.setItem('hoy_finalized_date', dateStr);
             return;
         }
 
-        await supabase
-            .from('daily_tasks')
-            .delete()
-            .eq('id', taskId)
-            .eq('user_id', this.controller.currentUser.id);
+        // Limpiar las tareas de ese día del localStorage (ya están guardadas en la card)
+        const remainingTasks = all.filter(t => t.date !== dateStr);
+        localStorage.setItem('hoy_tareas', JSON.stringify(remainingTasks));
+
+        // Crear la card en la tabla items
+        const title = this.generateDayTitle(dateStr);
+        const tareasJson = dayTasks.map(t => ({
+            content: t.content,
+            completed_at: t.completed_at
+        }));
+
+        try {
+            if (this.controller?.currentUser) {
+                await data.createItem({
+                    user_id: this.controller.currentUser.id,
+                    content: title,
+                    type: 'tarea',
+                    status: 'completed',
+                    tareas: tareasJson,
+                    tags: ['diario', 'hoy'],
+                    meta: {
+                        es_resumen_diario: true,
+                        fecha_original: dateStr
+                    }
+                });
+                
+                console.log(`Card creada para el día ${dateStr} con ${dayTasks.length} tareas`);
+            } else {
+                console.log('No hay usuario logueado, no se puede crear la card');
+            }
+        } catch (error) {
+            console.error('Error al crear card de resumen diario:', error);
+        }
+
+        // Actualizar el último día finalizado
+        this.lastFinalizedDate = dateStr;
+        localStorage.setItem('hoy_finalized_date', dateStr);
     }
 
-    deleteTaskLocal(taskId) {
-        const all = JSON.parse(localStorage.getItem('daily_tasks_local') || '[]');
-        const filtered = all.filter(t => t.id !== taskId);
-        localStorage.setItem('daily_tasks_local', JSON.stringify(filtered));
+    /**
+     * Fuerza la creación de la card (útil para testing o botón manual)
+     */
+    async forceFinalizeToday() {
+        await this.finalizeDay(this.currentDate);
     }
 }
 

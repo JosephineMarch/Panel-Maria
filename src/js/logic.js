@@ -234,7 +234,6 @@ class KaiController {
     
     async loadHoySection() {
         await this.updateHoyDate();
-        await this.loadRoutines();
         await this.loadTodayTasks();
         this.initHoyEvents();
     }
@@ -311,13 +310,8 @@ class KaiController {
         if (!container) return;
         
         try {
-            let tasks = [];
-            
-            if (this.currentUser) {
-                tasks = await hoy.getTodayTasks();
-            } else {
-                tasks = hoy.getLocalTodayTasks();
-            }
+            // Ahora siempre usa localStorage (ya no hay versión Supabase)
+            const tasks = hoy.getTodayTasks();
             
             if (tasks.length === 0) {
                 container.innerHTML = `
@@ -437,38 +431,6 @@ class KaiController {
                 document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('selected', 'border-brand', 'bg-brand/10'));
                 btn.classList.add('selected', 'border-brand', 'bg-brand/10');
             });
-        });
-        
-        // Botón agregar rutina
-        const btnAddRoutine = document.getElementById('btn-add-routine');
-        const addRoutineForm = document.getElementById('add-routine-form');
-        const newRoutineInput = document.getElementById('new-routine-input');
-        const btnConfirmRoutine = document.getElementById('btn-confirm-routine');
-        const btnCancelRoutine = document.getElementById('btn-cancel-routine');
-        
-        btnAddRoutine?.addEventListener('click', () => {
-            addRoutineForm?.classList.toggle('hidden');
-            if (!addRoutineForm?.classList.contains('hidden')) {
-                newRoutineInput?.focus();
-            }
-        });
-        
-        btnCancelRoutine?.addEventListener('click', () => {
-            addRoutineForm?.classList.add('hidden');
-            newRoutineInput.value = '';
-        });
-        
-        btnConfirmRoutine?.addEventListener('click', async () => {
-            const name = newRoutineInput?.value.trim();
-            const isDefault = document.getElementById('set-as-default')?.checked || false;
-            
-            if (name) {
-                await hoy.addRoutine(name, '📌', isDefault);
-                newRoutineInput.value = '';
-                document.getElementById('set-as-default').checked = false;
-                addRoutineForm?.classList.add('hidden');
-                await this.loadRoutines();
-            }
         });
     }
     
