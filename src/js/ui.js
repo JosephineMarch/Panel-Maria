@@ -269,11 +269,10 @@ export const ui = {
 
             Object.keys(grouped).forEach(dateLabel => {
                 const dateSeparator = document.createElement('div');
-                dateSeparator.className = 'flex items-center gap-4 my-6';
+                dateSeparator.className = 'flex items-center gap-2 px-4 py-2 mt-4';
                 dateSeparator.innerHTML = `
-                    <div class="h-px flex-1 bg-gray-200"></div>
-                    <span class="text-xs font-bold text-gray-400 uppercase tracking-widest px-2">${dateLabel}</span>
-                    <div class="h-px flex-1 bg-gray-200"></div>
+                    <i class="fa-regular fa-calendar text-gray-400 text-sm"></i>
+                    <span class="text-xs font-bold text-gray-400">${dateLabel}</span>
                 `;
                 container.appendChild(dateSeparator);
 
