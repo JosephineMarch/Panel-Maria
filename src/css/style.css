@@ -337,22 +337,39 @@ textarea {
         width: 160px;
         height: 220px;
     }
+    
+    /* Pinned section ocupa todo el ancho en desktop */
+    .pinned-section {
+        width: 100%;
+    }
+    
+    .pinned-slider {
+        padding: 0.5rem 2rem;
+    }
 }
 
 /* === OPTIMIZACIONES DESKTOP === */
 @media (min-width: 768px) {
-    /* Desktop: grid bento - 2 columnas centradas con ancho contenido */
+    /* Desktop: grid bento - 2 columnas con cards más anchas */
     #items-container {
-        max-width: 960px !important;
+        max-width: 1200px !important;
         margin: 0 auto;
         grid-template-columns: repeat(2, 1fr) !important;
     }
     
-    /* Cards con ancho máximo contenido */
+    /* Cards con ancho máximo más amplio en desktop */
     #items-container .item-card {
         width: 100%;
-        max-width: 440px !important;
+        max-width: 550px !important; /* Antes era 440px, ahora más amplio */
         padding: 1rem !important;
+    }
+    
+    /* Separadores de fecha que ocupan ambas columnas */
+    #items-container .date-separator {
+        grid-column: 1 / -1;
+        width: 100%;
+        max-width: 100% !important;
+        margin: 1.5rem 0 0.5rem 0 !important;
     }
     
     /* Más padding en el contenedor principal */
@@ -388,15 +405,15 @@ textarea {
 }
 
 @media (min-width: 1280px) {
-    /* Pantallas muy grandes - mantener grid bento */
+    /* Pantallas muy grandes - grid más amplio */
     #items-container {
-        max-width: 1000px !important;
+        max-width: 1400px !important;
         grid-template-columns: repeat(2, 1fr) !important;
     }
     
-    /* Cards un poco más grandes en pantallas grandes */
+    /* Cards aún más amplias en pantallas grandes */
     #items-container .item-card {
-        max-width: 460px !important;
+        max-width: 650px !important;
     }
     
     /* Cards expandidas más amplias */
