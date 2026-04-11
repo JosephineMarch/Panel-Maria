@@ -283,17 +283,18 @@ textarea {
 
 /* Card pinned compacta - estilo story de Instagram */
 .pinned-slider .item-card.pinned-card {
-    flex-shrink: 0;
-    scroll-snap-align: start;
-    width: 140px;
-    height: 200px;
-    border-radius: 1rem;
-    padding: 0;
-    margin: 0;
-    overflow: hidden;
+    flex-shrink: 0 !important;
+    scroll-snap-align: start !important;
+    width: 140px !important;
+    height: 200px !important;
+    max-height: 200px !important;
+    border-radius: 1rem !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
     border: 2px solid var(--brand, #FFB7C5) !important;
-    box-shadow: 0 2px 8px rgba(255, 183, 197, 0.3);
-    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(255, 183, 197, 0.3) !important;
+    cursor: pointer !important;
 }
 
 /* Contenido de la card pinned compacta */
