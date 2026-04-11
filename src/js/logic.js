@@ -626,7 +626,7 @@ class KaiController {
         document.querySelectorAll('.btn-category').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
-                this.handleCategoryClick(e.target);
+                this.handleCategoryClick(e.currentTarget);
             });
         });
 
@@ -634,7 +634,7 @@ class KaiController {
         document.querySelectorAll('.btn-tag').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
-                this.handleCategoryClick(e.target);
+                this.handleCategoryClick(e.currentTarget);
             });
         });
 
