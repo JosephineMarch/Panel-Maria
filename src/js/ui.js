@@ -461,15 +461,15 @@ export const ui = {
                             ` : ''}
                         </div>
                     </div>
-                    <div class="flex items-center gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button class="btn-pin p-2 text-white/50 hover:text-white transition-colors" data-id="${item.id}" title="${item.anclado ? 'Desanclar' : 'Anclar'}">
-                            <i class="fa-solid fa-thumbtack ${item.anclado ? 'rotate-45' : ''}"></i>
-                        </button>
-                        <i class="fa-solid fa-expand bg-white/20 p-2 rounded-full text-xs transition-transform group-hover:scale-110 cursor-pointer action-expand" data-id="${item.id}"></i>
-                        <button class="action-delete p-2 text-white/50 hover:text-red-400 transition-colors" data-id="${item.id}" title="Eliminar">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    </div>
+                </div>
+                <!-- Acciones en la parte inferior -->
+                <div class="flex items-center justify-end gap-2 px-4 pb-3 -mt-1">
+                    <button class="btn-pin p-2 text-white/40 hover:text-white transition-colors" data-id="${item.id}" title="${item.anclado ? 'Desanclar' : 'Anclar'}">
+                        <i class="fa-solid fa-thumbtack ${item.anclado ? 'rotate-45' : ''}"></i>
+                    </button>
+                    <button class="action-delete p-2 text-white/40 hover:text-red-400 transition-colors" data-id="${item.id}" title="Eliminar">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
                 </div>
 
                 <!-- Body Minimalista -->
@@ -603,14 +603,14 @@ export const ui = {
                         ${previewHtml}
                         ${tagsHtml ? `<div class="flex gap-1.5 flex-wrap mt-2">${tagsHtml}</div>` : ''}
                     </div>
-                    <div class="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button class="btn-pin p-2 text-ink/20 hover:text-brand transition-colors" data-id="${item.id}" title="${item.anclado ? 'Desanclar' : 'Anclar'}">
-                            <i class="fa-solid fa-thumbtack ${item.anclado ? 'rotate-45' : ''}"></i>
-                        </button>
-                        <button class="action-expand p-2 text-ink/20 hover:text-ink transition-colors" data-id="${item.id}" title="Expandir"><i class="fa-solid fa-expand"></i></button>
-                        <button class="action-finish p-2 text-ink/20 hover:text-success transition-colors" data-id="${item.id}" title="Terminar"><i class="fa-solid fa-check-circle"></i></button>
-                        <button class="action-delete p-2 text-ink/20 hover:text-urgent transition-colors" data-id="${item.id}" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
-                    </div>
+                </div>
+                <!-- Acciones en la parte inferior -->
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-100/50 mt-2">
+                    <button class="btn-pin p-2 text-ink/30 hover:text-brand transition-colors" data-id="${item.id}" title="${item.anclado ? 'Desanclar' : 'Anclar'}">
+                        <i class="fa-solid fa-thumbtack ${item.anclado ? 'rotate-45' : ''}"></i>
+                    </button>
+                    <button class="action-finish p-2 text-ink/30 hover:text-success transition-colors" data-id="${item.id}" title="Terminar"><i class="fa-solid fa-check-circle"></i></button>
+                    <button class="action-delete p-2 text-ink/30 hover:text-urgent transition-colors" data-id="${item.id}" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
                 </div>
             `;
         }
@@ -654,9 +654,6 @@ export const ui = {
                     <input type="text" id="inline-content-${item.id}" value="${this.escapeHtml(item.content)}" 
                            class="bg-white/20 border-none rounded-xl px-4 py-2 txt-display ${typeConfig.headerBg ? 'text-white placeholder-white/50' : 'text-ink placeholder-ink/50'} focus:ring-2 focus:ring-white/50 w-full outline-none" placeholder="Título...">
                 </div>
-                <button class="action-collapse bg-white/20 hover:bg-white/30 p-3 rounded-full transition-all ml-4">
-                    <i class="fa-solid fa-compress"></i>
-                </button>
             </div>
             
             <!-- Body: fondo blanco suave -->
