@@ -339,6 +339,68 @@ textarea {
     }
 }
 
+/* === OPTIMIZACIONES DESKTOP === */
+@media (min-width: 1024px) {
+    /* Contenedor de items más ancho */
+    #items-container {
+        max-width: 900px !important;
+    }
+    
+    /* Cards más anchas y con más espacio */
+    #items-container .item-card {
+        max-width: 100%;
+        padding: 1.25rem !important;
+    }
+    
+    /* Más padding en el contenedor principal */
+    #app {
+        padding: 2rem !important;
+    }
+    
+    /* Header más elegante en desktop */
+    header > div:first-child {
+        padding: 1rem 2rem !important;
+    }
+    
+    /* Cards collapsed con más información visible */
+    #items-container .item-card h3 {
+        font-size: 1.125rem !important;
+    }
+    
+    /* Footer más elegante */
+    #app-footer {
+        padding: 1rem 2rem !important;
+        border-radius: 1.5rem 1.5rem 0 0;
+        margin: 0 2rem;
+        max-width: 800px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    
+    /* Mejor espaciado en separadores de fecha */
+    .flex.items-center.gap-2.px-4.py-2 {
+        padding-left: 0;
+        padding-right: 0;
+    }
+}
+
+@media (min-width: 1280px) {
+    /* Pantallas muy grandes - aún más espacio */
+    #items-container {
+        max-width: 1000px !important;
+    }
+    
+    /* Cards expandidas más amplias */
+    #items-container .item-card[data-expanded="true"] {
+        border-radius: 2rem !important;
+    }
+    
+    /* Sidebar semi-permanente en desktop grande */
+    #sidebar {
+        width: 320px !important;
+    }
+}
+
 /* Card pinned compacta (para cuando se mueve fuera del slider) */
 .pinned-card {
     border: 2px solid var(--brand, #FFB7C5) !important;
