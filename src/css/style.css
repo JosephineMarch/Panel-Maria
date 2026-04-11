@@ -341,21 +341,23 @@ textarea {
 
 /* === OPTIMIZACIONES DESKTOP === */
 @media (min-width: 768px) {
-    /* Desktop: 2 columnas ocupando toda la pantalla */
+    /* Desktop: grid bento - 2 columnas centradas con ancho contenido */
     #items-container {
-        max-width: 100% !important;
+        max-width: 960px !important;
+        margin: 0 auto;
         grid-template-columns: repeat(2, 1fr) !important;
     }
     
-    /* Cards más anchas y con más espacio */
+    /* Cards con ancho máximo contenido */
     #items-container .item-card {
-        max-width: 100%;
-        padding: 1.25rem !important;
+        width: 100%;
+        max-width: 440px !important;
+        padding: 1rem !important;
     }
     
     /* Más padding en el contenedor principal */
     #app {
-        padding: 2rem !important;
+        padding: 1.5rem !important;
     }
     
     /* Header más elegante en desktop */
@@ -365,7 +367,7 @@ textarea {
     
     /* Cards collapsed con más información visible */
     #items-container .item-card h3 {
-        font-size: 1.125rem !important;
+        font-size: 1rem !important;
     }
     
     /* Footer más elegante */
@@ -386,10 +388,15 @@ textarea {
 }
 
 @media (min-width: 1280px) {
-    /* Pantallas muy grandes - mantener 2 columnas */
+    /* Pantallas muy grandes - mantener grid bento */
     #items-container {
-        max-width: 100% !important;
+        max-width: 1000px !important;
         grid-template-columns: repeat(2, 1fr) !important;
+    }
+    
+    /* Cards un poco más grandes en pantallas grandes */
+    #items-container .item-card {
+        max-width: 460px !important;
     }
     
     /* Cards expandidas más amplias */
