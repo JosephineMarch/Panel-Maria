@@ -350,17 +350,16 @@ textarea {
 
 /* === OPTIMIZACIONES DESKTOP === */
 @media (min-width: 768px) {
-    /* Desktop: grid bento - 2 columnas con cards más anchas */
+    /* Desktop: grid bento - 2 columnas, usa todo el ancho disponible */
     #items-container {
-        max-width: 1200px !important;
-        margin: 0 auto;
+        width: 100%;
         grid-template-columns: repeat(2, 1fr) !important;
     }
     
     /* Cards con ancho máximo más amplio en desktop */
     #items-container .item-card {
         width: 100%;
-        max-width: 550px !important; /* Antes era 440px, ahora más amplio */
+        max-width: 550px !important;
         padding: 1rem !important;
     }
     
