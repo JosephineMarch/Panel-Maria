@@ -800,15 +800,23 @@ export const ui = {
     },
 
     expandCard(card, item) {
-        const isPinned = card.classList.contains('pinned-card');
+        // Detectar si es pinned (en slider) o ya está fuera del slider
+        const isPinnedInSlider = card.classList.contains('pinned-card');
+        const isPinnedOutOfSlider = card.dataset.originalParent === 'slider';
+        const isPinned = isPinnedInSlider || isPinnedOutOfSlider;
         
         let hadExpanded = false;
         document.querySelectorAll('[data-expanded="true"]').forEach(c => {
             if (c !== card) {
                 c.dataset.expanded = 'false';
-                // Si la card que se cierra era pinned y expandida, restaurarla al slider
-                if (c.classList.contains('pinned-card')) {
-                    this.restorePinnedCardToSlider(c);
+                // Si la card que se cierra era pinned, restaurarla al slider
+                if (c.dataset.originalParent === 'slider' || c.classList.contains('pinned-card')) {
+                    // Necesitamos encontrar el item para recrear la card compacta
+                    const itemId = c.dataset.id;
+                    const itemData = window.kai?.state?.items?.find(i => i.id === itemId);
+                    if (itemData) {
+                        this.restorePinnedCardToSlider(c, itemData);
+                    }
                 }
                 hadExpanded = true;
             }
@@ -817,12 +825,12 @@ export const ui = {
         // Recargar una sola vez si había otra tarjeta expandida
         if (hadExpanded && window.kai) window.kai.loadItems();
 
-        // Si es una card pinned, moverla fuera del slider para que se expanda normalmente
-        if (isPinned) {
+        // Si es una card pinned que está en el slider, moverla fuera
+        if (isPinnedInSlider) {
             this.movePinnedCardOutOfSlider(card);
         }
         
-        // Pasar isPinned a updateCardContent (false porque ya NO está en el slider)
+        // Expandir la card (sin clases pinned porque ya no está en el slider)
         this.updateCardContent(card, item, true, false);
         
         if (!isPinned) {
@@ -861,93 +869,36 @@ export const ui = {
     },
 
     // Restaurar card pinned a su lugar en el slider
-    restorePinnedCardToSlider(card) {
+    restorePinnedCardToSlider(card, item) {
         const container = document.getElementById('items-container');
         const slider = container?.querySelector('.pinned-slider');
-        const sliderWrapper = container?.querySelector('.pinned-slider-wrapper');
         
         if (!slider) return;
         
-        // Mostrar el slider de nuevo
-        if (sliderWrapper) sliderWrapper.style.display = '';
-        
-        // Quitar las clases de expansión
-        card.classList.remove('expanded-card');
-        
-        // Agregar la clase pinned de vuelta
-        card.classList.add('pinned-card');
-        
-        // Remover del contenedor principal
+        // Remover la card actual del DOM
         card.remove();
         
-        // Volver a insertar en el slider
-        slider.appendChild(card);
+        // Recrear la card con el diseño compacto del slider
+        const newCard = this.createPinnedCompactCard(item);
         
-        // Limpiar dataset
-        delete card.dataset.originalParent;
+        // Insertar en el slider
+        slider.appendChild(newCard);
     },
 
     collapseCard(card, item) {
-        const isPinned = card.classList.contains('pinned-card') || card.dataset.originalParent === 'slider';
+        const isPinned = card.dataset.originalParent === 'slider';
         
         if (isPinned) {
-            this.restorePinnedCardToSlider(card);
+            this.restorePinnedCardToSlider(card, item);
+        } else {
+            this.updateCardContent(card, item, false, false);
         }
-        
-        this.updateCardContent(card, item, false, isPinned);
     },
 
     bindInlineEvents(card, item) {
         const id = item.id;
         // Detectar si es pinned (ya sea por clase o por dataset)
         const isPinned = card.classList.contains('pinned-card') || card.dataset.originalParent === 'slider';
-
-        card.querySelectorAll('.action-collapse').forEach(btn => {
-
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                card.dataset.expanded = 'false';
-                
-                // Usar collapseCard que maneja tanto pins como cards normales
-                this.collapseCard(card, item);
-                
-                // Limpiar estado de card expandida
-                if (window.kai) {
-                    window.kai.clearExpandedCard();
-                }
-            });
-        });
-        
-        // Ocultar overlay de pinned si había alguno activo
-        const overlay = document.getElementById('pinned-overlay');
-        if (overlay) overlay.classList.remove('active');
-        
-        // Recargar una sola vez si había otra tarjeta expandida
-        if (hadExpanded && window.kai) window.kai.loadItems();
-
-        // Pasar isPinned a updateCardContent para que renderExpandedCard sepa el contexto
-        this.updateCardContent(card, item, true, isPinned);
-        
-        // Si es una card pinned, aplicar estilos de expansión que rompen del slider
-        if (isPinned) {
-            card.classList.add('expanded-card');
-            // Mostrar overlay
-            if (overlay) overlay.classList.add('active');
-            // Deshabilitar scroll del body para evitar conflictos
-            document.body.style.overflow = 'hidden';
-        } else {
-            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        
-        // Guardar estado de card expandida
-        if (window.kai) {
-            window.kai.setExpandedCard(item.id);
-        }
-    },
-
-    bindInlineEvents(card, item) {
-        const id = item.id;
 
         card.querySelectorAll('.action-collapse').forEach(btn => {
 
