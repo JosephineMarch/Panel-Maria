@@ -209,8 +209,13 @@ export const ui = {
     // --- CARD RENDERERS ---
 
     render(items = [], isDemo = false) {
+        console.log(`[UI render]-items=${items.length}, isDemo=${isDemo}`);
+        
         const container = this.elements.container();
-        if (!container) return;
+        if (!container) {
+            console.log('[UI render] ERROR: No se encontró el container');
+            return;
+        }
 
         container.innerHTML = '';
 

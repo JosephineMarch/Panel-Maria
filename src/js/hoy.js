@@ -51,12 +51,7 @@ class HoyManager {
         if (horaActual >= HORA_FINALIZACION && this.lastFinalizedDate !== this.currentDate) {
             console.log('[HOY] ⏰ ES HORA DE FINALIZAR!');
             
-            // Usar window.controller si está disponible
-            const controller = window.controller;
-            if (controller) {
-                this.controller = controller;
-            }
-            
+            // Ya usamos window.controller desde el getter, no necesitamos asignar
             this.finalizeDay(this.currentDate);
         } else if (this.lastFinalizedDate === this.currentDate) {
             console.log('[HOY] Día ya finalizado, sin acción');
