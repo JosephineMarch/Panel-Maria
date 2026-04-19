@@ -1198,8 +1198,18 @@ Responde SOLO JSON con esta estructura:
                 const today = new Date().toISOString().split('T')[0];
                 
                 const filteredItems = items.filter(item => {
-                    const d = item.deadline ? item.deadline.split('T')[0] : item.created_at.split('T')[0];
-                    return d === today && item.status !== 'completed';
+                    // Para cards de resumen diario, usar meta.fecha_original (el día real de las tareas)
+                    // Para otros items, usar deadline o created_at
+                    let d;
+                    if (item.meta?.es_resumen_diario) {
+                        d = item.meta.fecha_original;
+                    } else {
+                        d = item.deadline ? item.deadline.split('T')[0] : item.created_at.split('T')[0];
+                    }
+                    // Mostrar todos los items del día de HOY (sin importar status)
+                    // Y también las cards de resumen diario (es_resumen_diario) de cualquier fecha
+                    const esResumenDiario = item.meta?.es_resumen_diario === true;
+                    return d === today || esResumenDiario;
                 });
 
                 ui.render(filteredItems);
