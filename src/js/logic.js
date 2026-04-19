@@ -600,7 +600,7 @@ class KaiController {
             });
         });
 
-        // --- Modals & Sidebar ---
+        // Modals & Sidebar ---
         document.getElementById('btn-user')?.addEventListener('click', () => ui.toggleSidebar());
         document.getElementById('btn-close-sidebar')?.addEventListener('click', () => ui.closeSidebar());
         document.getElementById('sidebar-overlay')?.addEventListener('click', () => ui.closeSidebar());
@@ -618,13 +618,29 @@ class KaiController {
             ui.toggleKaiChat();
         });
 
-        // Tag suggestions
+        // Tag suggestions (Modal Edit)
         document.querySelectorAll('.tag-suggestion').forEach(tag => {
             tag.addEventListener('click', () => {
                 const input = document.getElementById('edit-tags');
                 const current = input.value || '';
                 const newTag = tag.dataset.tag;
-                input.value = current ? current + ', ' + newTag : newTag;
+                input.value = current && !current.endsWith(' ') ? current + ', ' + newTag : current + newTag;
+            });
+        });
+
+        // Quick tags for inline addition (Footer Input)
+        document.querySelectorAll('.quick-tag').forEach(tagBtn => {
+            tagBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const input = ui.elements.inputMain();
+                if (input) {
+                    const tagValue = tagBtn.dataset.tag;
+                    const currentValue = input.value.trim();
+                    if (!currentValue.includes(tagValue)) {
+                        input.value = currentValue ? `${currentValue} ${tagValue} ` : `${tagValue} `;
+                    }
+                    input.focus();
+                }
             });
         });
 
@@ -987,6 +1003,14 @@ REGLAS:
             return;
         }
 
+        // ========== ESPECIAL: atajo "hice:" para logros ==========
+        const inputLower = content.toLowerCase().trim();
+        if (inputLower.startsWith('hice:')) {
+            await this.handleLogroInput(content);
+            return;
+        }
+        // =========================================================
+
         ui.showNotification('Kai está pensando... 🧠', 'info');
 
         try {
@@ -1073,6 +1097,67 @@ Responde SOLO JSON con esta estructura:
             ui.showNotification('KAI no pudo guardar eso. ¿Intentamos de nuevo?', 'error');
         }
     }
+
+    // ========== ESPECIAL: Atajo "hice:" para logros ==========
+    async handleLogroInput(fullContent) {
+        // Extraer el texto después de "hice:"
+        const logroText = fullContent.substring(5).trim(); // "hice: " = 5 chars
+        if (!logroText) {
+            ui.showNotification('Escribí qué lograste hoy!', 'warning');
+            return;
+        }
+
+        const today = new Date().toISOString().split('T')[0];
+        const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        const fecha = new Date(today + 'T12:00:00');
+        const titlePattern = `Hice esto el ${diasSemana[fecha.getDay()]} ${fecha.getDate()} de ${meses[fecha.getMonth()]}`;
+
+        console.log(`[LOGRO] Buscando card: "${titlePattern}"`);
+
+        try {
+            // Buscar si ya existe la card del día
+            const allItems = await data.getItems({});
+            let cardDelDia = allItems.find(item => 
+                item.content === titlePattern && 
+                item.tags && item.tags.includes('diario')
+            );
+
+            if (cardDelDia) {
+                // Ya existe, agregar como subtarea
+                console.log(`[LOGRO] Card encontrada: ${cardDelDia.id}`);
+                
+                const nuevasTareas = cardDelDia.tareas || [];
+                nuevasTareas.push({ titulo: logroText, completado: false });
+                
+                await data.updateItem(cardDelDia.id, { tareas: nuevasTareas });
+                ui.showNotification('¡Agregado a tu registro del día! 🎯', 'success');
+            } else {
+                // Crear nueva card
+                console.log(`[LOGRO] Creando nueva card para hoy`);
+                
+                await data.createItem({
+                    content: titlePattern,
+                    type: 'tarea',
+                    tareas: [{ titulo: logroText, completado: false }],
+                    tags: ['diario', 'logro'],
+                    meta: {
+                        es_resumen_diario: true,
+                        fecha_original: today
+                    }
+                });
+                ui.showNotification('¡Primer logro del día registrado! 🌟', 'success');
+            }
+
+            ui.clearMainInput();
+            await this.loadItems();
+
+        } catch (error) {
+            console.error('[LOGRO] Error:', error);
+            ui.showNotification('No pude guardar el logro. ¿Reintentamos?', 'error');
+        }
+    }
+    // =========================================================
 
     extractUrl(text) {
         const urlMatch = text.match(/(https?:\/\/[^\s]+)/);
