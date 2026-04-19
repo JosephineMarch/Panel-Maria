@@ -928,6 +928,20 @@ REGLAS:
         if (text.includes('salud') || text.includes('dolor') || text.includes('médico')) tags.push('salud');
         if (text.includes('emocion') || text.includes('triste') || text.includes('feliz')) tags.push('emocion');
 
+        // Extraer hashtags explícitos (ej. #salud, #mi-mes)
+        let cleanContent = content;
+        const hashtags = content.match(/#[\w-]+/g);
+        if (hashtags) {
+            hashtags.forEach(tag => {
+                const cleanTag = tag.substring(1).toLowerCase();
+                if (!tags.includes(cleanTag)) {
+                    tags.push(cleanTag);
+                }
+                // Remover el hashtag del texto limpio para título/descripción (opcional pero ayuda a mantener la interfaz limpia)
+                cleanContent = cleanContent.replace(tag, '').replace(/\s{2,}/g, ' ').trim();
+            });
+        }
+
         // 5. Detectar alarmas/deadlines en el texto
         let deadline = null;
         let repeat = null;
@@ -983,8 +997,8 @@ REGLAS:
 
         return {
             type,
-            content: content,
-            descripcion: content.length > 50 ? content : '',
+            content: cleanContent,
+            descripcion: cleanContent.length > 50 ? cleanContent : '',
             tags,
             items: [],
             hasDeadline: !!deadline,
