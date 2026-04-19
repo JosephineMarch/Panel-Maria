@@ -1443,7 +1443,8 @@ export const ui = {
         const toast = document.createElement('div');
         const colors = { success: 'bg-success', error: 'bg-urgent', info: 'bg-action', warning: 'bg-warning' };
 
-        toast.className = `fixed top-10 left-1/2 -translate-x-1/2 ${colors[type] || 'bg-brand'} text-ink font-bold px-8 py-4 rounded-blob shadow-float z-[500] -translate-y-20 transition-all duration-300`;
+        toast.className = `fixed top-4 left-1/2 -translate-x-1/2 ${colors[type] || 'bg-brand'} text-ink font-bold px-8 py-4 rounded-blob shadow-float z-[9999] -translate-y-20 transition-all duration-300`;
+        toast.style.zIndex = '9999';
         toast.textContent = message;
 
         document.body.appendChild(toast);
