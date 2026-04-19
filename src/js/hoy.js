@@ -10,14 +10,44 @@
 
 import { supabase } from './supabase.js';
 import { data } from './data.js';
+import { ui } from './ui.js';
 
 class HoyManager {
     constructor() {
         this.currentDate = new Date().toISOString().split('T')[0];
         this.lastFinalizedDate = localStorage.getItem('hoy_finalized_date') || null;
+        this.schedulerInterval = null;
         
-        // Verificar si hay un nuevo día y finalizar el anterior si es necesario
-        this.checkAndFinalizeDay();
+        // Iniciar scheduler para 11:58 PM
+        this.startScheduler();
+    }
+
+    // ==================== SCHEDULER DE 11:58 PM ====================
+    
+    startScheduler() {
+        // Revisar cada minuto si es hora de crear la card
+        this.schedulerInterval = setInterval(() => {
+            this.checkSchedule();
+        }, 60000); // Cada 60 segundos
+        
+        // También revisar inmediatamente al iniciar
+        setTimeout(() => this.checkSchedule(), 2000);
+    }
+
+    checkSchedule() {
+        const now = new Date();
+        const hora = now.getHours();
+        const minutos = now.getMinutes();
+        const horaActual = hora * 60 + minutos; // Minutos desde medianoche
+        
+        // 11:58 PM = 23:58 = 23*60 + 58 = 1438 minutos
+        const HORA_FINALIZACION = 23 * 60 + 58; // 1438
+        
+        // Si ya pasaron las 11:58 PM Y ese día no se ha finalizado
+        if (horaActual >= HORA_FINALIZACION && this.lastFinalizedDate !== this.currentDate) {
+            console.log('[HOY] Es hora de finalizar el día ⏰');
+            this.finalizeDay(this.currentDate);
+        }
     }
 
     // Obtener referencia al controller
@@ -190,15 +220,18 @@ class HoyManager {
             completed_at: t.completed_at
         }));
 
+        let nuevaCard = null;
+        
         try {
             if (this.controller?.currentUser) {
-                await data.createItem({
+                nuevaCard = await data.createItem({
                     user_id: this.controller.currentUser.id,
                     content: title,
                     type: 'tarea',
-                    status: 'completed',
+                    // No usamos status: 'completed' para evitar filtros
+                    // Usamos tags: 'diario' + 'logro' para identificarlas
                     tareas: tareasJson,
-                    tags: ['diario', 'hoy'],
+                    tags: ['diario', 'logro'],
                     meta: {
                         es_resumen_diario: true,
                         fecha_original: dateStr
@@ -216,6 +249,15 @@ class HoyManager {
         // Actualizar el último día finalizado
         this.lastFinalizedDate = dateStr;
         localStorage.setItem('hoy_finalized_date', dateStr);
+        
+        // Si tenemos controller y se creó la card, recargar el timeline para mostrar la nueva card
+        if (this.controller && nuevaCard && typeof this.controller.loadItems === 'function') {
+            // Pequeño delay para que Supabase procese
+            setTimeout(() => {
+                this.controller.loadItems();
+                ui.showNotification('🎉 ¡Resumen del día creado!', 'success');
+            }, 500);
+        }
     }
 
     /**

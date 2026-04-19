@@ -1507,7 +1507,8 @@ Responde SOLO JSON con esta estructura:
                     i.type === 'proyecto' || 
                     (i.type === 'tarea' && i.status !== 'completed')
                 ),
-                hecho: filteredItems.filter(i => i.status === 'completed')
+                // Incluir tanto status 'completed' como tag 'logro' (para tarjetas de "¿Qué hice hoy?")
+                hecho: filteredItems.filter(i => i.status === 'completed' || (i.tags && i.tags.includes('logro')))
             };
 
             // Cálculo de estadísticas
