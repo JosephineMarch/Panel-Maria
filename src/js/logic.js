@@ -1184,12 +1184,17 @@ Responde SOLO JSON con esta estructura:
     }
 
     async loadItems(silent = false) {
+        console.log(`[loadItems] silent=${silent}, view=${this.currentView}, category=${this.currentCategory}, tag=${this.currentTag}`);
+        
         // Si estamos en el dashboard y no es un refresco silencioso, no hacemos nada
-        // o podríamos refrescar el dashboard. Por ahora, permitimos que las categorías/tags rompan el modo dashboard.
-        if (this.currentView === 'dashboard' && !silent) return;
+        if (this.currentView === 'dashboard' && !silent) {
+            console.log('[loadItems] Skip: estamos en dashboard');
+            return;
+        }
 
         if (!silent) ui.renderLoading();
         try {
+            console.log('[loadItems] Obteniendo datos de Supabase...');
             const filters = { parent_id: this.currentParentId };
             
             // Si la categoría es 'hoy', ignoramos el filtro de tipo y buscamos todo para filtrar por fecha localmente
@@ -1223,6 +1228,7 @@ Responde SOLO JSON con esta estructura:
                     filteredItems = items.filter(item => item.tags && item.tags.includes(this.currentTag));
                 }
 
+                console.log(`[loadItems] Obtenidos ${items.length} items, filtrados ${filteredItems.length}`);
                 ui.render(filteredItems);
             }
             

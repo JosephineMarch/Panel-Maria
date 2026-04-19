@@ -30,23 +30,36 @@ class HoyManager {
             this.checkSchedule();
         }, 60000); // Cada 60 segundos
         
-        // También revisar inmediatamente al iniciar
-        setTimeout(() => this.checkSchedule(), 2000);
+        // También revisar inmediatamente al iniciar (con delay para que cargue todo)
+        setTimeout(() => this.checkSchedule(), 3000);
+        
+        console.log('[HOY] Scheduler iniciado');
     }
 
     checkSchedule() {
         const now = new Date();
         const hora = now.getHours();
         const minutos = now.getMinutes();
-        const horaActual = hora * 60 + minutos; // Minutos desde medianoche
+        const horaActual = hora * 60 + minutos;
         
-        // 11:58 PM = 23:58 = 23*60 + 58 = 1438 minutos
-        const HORA_FINALIZACION = 23 * 60 + 58; // 1438
+        // 11:58 PM = 23:58 = 1438 minutos
+        const HORA_FINALIZACION = 23 * 60 + 58;
+        
+        console.log(`[HOY] checkSchedule: ${hora}:${minutos} (${horaActual}), lastFinalized: ${this.lastFinalizedDate}, hoy: ${this.currentDate}`);
         
         // Si ya pasaron las 11:58 PM Y ese día no se ha finalizado
         if (horaActual >= HORA_FINALIZACION && this.lastFinalizedDate !== this.currentDate) {
-            console.log('[HOY] Es hora de finalizar el día ⏰');
+            console.log('[HOY] ⏰ ES HORA DE FINALIZAR!');
+            
+            // Usar window.controller si está disponible
+            const controller = window.controller;
+            if (controller) {
+                this.controller = controller;
+            }
+            
             this.finalizeDay(this.currentDate);
+        } else if (this.lastFinalizedDate === this.currentDate) {
+            console.log('[HOY] Día ya finalizado, sin acción');
         }
     }
 
@@ -250,14 +263,42 @@ class HoyManager {
         this.lastFinalizedDate = dateStr;
         localStorage.setItem('hoy_finalized_date', dateStr);
         
-        // Si tenemos controller y se creó la card, recargar el timeline para mostrar la nueva card
-        if (this.controller && nuevaCard && typeof this.controller.loadItems === 'function') {
-            // Pequeño delay para que Supabase procese
-            setTimeout(() => {
-                this.controller.loadItems();
-                ui.showNotification('🎉 ¡Resumen del día creado!', 'success');
-            }, 500);
+        // Recargar el timeline para mostrar la nueva card
+        this.refreshTimeline();
+    }
+
+    // Recarga el timeline desde cualquier contexto
+    refreshTimeline() {
+        console.log('[HOY] Refresh timeline llamado');
+        
+        // Intentar desde window.controller (más seguro para scheduler)
+        const controller = this.controller || window.controller;
+        
+        if (!controller) {
+            console.log('[HOY] No hay controller disponible');
+            // Fallback: recargar la página
+            window.location.reload();
+            return;
         }
+        
+        // Guardar estado actual para restaurar
+        const vistaAnterior = controller.currentView;
+        const categoriaAnterior = controller.currentCategory;
+        
+        // Forzar modo timeline
+        controller.currentView = 'timeline';
+        controller.currentCategory = 'all';
+        controller.currentTag = null;
+        
+        // Forzar recarga SIN loading
+        try {
+            controller.loadItems();
+        } catch (e) {
+            console.error('[HOY] Error loadItems:', e);
+        }
+        
+        ui.showNotification('🎉 ¡Resumen del día creado!', 'success');
+        console.log('[HOY] Timeline recargado');
     }
 
     /**
