@@ -84,8 +84,8 @@ export const ui = {
     renderTags(tags) {
         if (!tags || tags.length === 0) return '';
         return tags.map(tag => {
-            // Un estilo único para todos los tags
-            return `<span class="bg-brand/10 text-brand border border-brand/30 px-2 py-0.5 rounded-full text-[10px] font-semibold">${tag}</span>`;
+            // Tags clicables como filtro
+            return `<button class="tag-filter bg-brand/10 text-brand border border-brand/30 px-2 py-0.5 rounded-full text-[10px] font-semibold hover:bg-brand/20 transition" data-tag="${tag}">${tag}</button>`;
         }).join('');
     },
 

@@ -603,6 +603,22 @@ class KaiController {
             });
         });
 
+        // --- Tags en cards (clicables como filtro) ---
+        document.addEventListener('click', (e) => {
+            const tagBtn = e.target.closest('.tag-filter');
+            if (tagBtn) {
+                e.preventDefault();
+                const tag = tagBtn.dataset.tag;
+                if (tag) {
+                    this.currentTag = tag;
+                    this.currentCategory = null;
+                    this.applyViewState();
+                    this.saveState();
+                    this.loadItems();
+                }
+            }
+        });
+
         // Modals & Sidebar ---
         document.getElementById('btn-user')?.addEventListener('click', () => ui.toggleSidebar());
         document.getElementById('btn-close-sidebar')?.addEventListener('click', () => ui.closeSidebar());
