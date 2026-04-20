@@ -1863,4 +1863,108 @@ export const ui = {
         document.getElementById('checkin-close-btn').onclick = () => overlay.remove();
         overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
     },
+
+    // ========== NOTIFICACIONES ==========
+
+    /**
+     * Actualiza el badge de la campanita
+     */
+    updateBellBadge(count) {
+        const badge = document.getElementById('notification-badge');
+        if (!badge) return;
+
+        if (count > 0) {
+            badge.textContent = count > 99 ? '99+' : count;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    },
+
+    /**
+     * Renderiza la lista de notificaciones en el drawer
+     */
+    renderNotificationDrawer(notifications = []) {
+        const container = document.getElementById('notifications-list');
+        if (!container) return;
+
+        if (notifications.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <span class="text-4xl">🔔</span>
+                    <p class="text-gray-400 text-sm mt-2">No hay notificaciones</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = notifications.map(notif => {
+            const date = new Date(notif.created_at);
+            const timeAgo = this.getTimeAgo(date);
+            const typeIcon = notif.type === 'alarm' ? '🔔' : '💡';
+            const readClass = notif.is_read ? 'opacity-50' : '';
+
+            return `
+                <div class="notification-item bg-white border border-gray-100 p-3 rounded-xl cursor-pointer hover:bg-gray-50 transition ${readClass}" 
+                     data-id="${notif.id}" data-related="${notif.related_item_id || ''}">
+                    <div class="flex items-start gap-3">
+                        <span class="text-xl shrink-0">${typeIcon}</span>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-bold text-sm text-ink">${this.escapeHtml(notif.title)}</p>
+                            ${notif.message ? `<p class="text-xs text-gray-500 mt-1 line-clamp-2">${this.escapeHtml(notif.message)}</p>` : ''}
+                            <p class="text-[10px] text-gray-400 mt-2">${timeAgo}</p>
+                        </div>
+                        ${!notif.is_read ? '<span class="w-2 h-2 bg-brand rounded-full shrink-0 mt-1"></span>' : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    },
+
+    /**
+     * Abre el drawer de notificaciones
+     */
+    toggleNotificationDrawer(show = null) {
+        const drawer = document.getElementById('notification-drawer');
+        const overlay = document.getElementById('notification-overlay');
+        if (!drawer || !overlay) return;
+
+        const isHidden = drawer.classList.contains('translate-x-full');
+        const shouldShow = show !== null ? show : isHidden;
+
+        if (shouldShow) {
+            drawer.classList.remove('translate-x-full');
+            overlay.classList.remove('hidden');
+        } else {
+            drawer.classList.add('translate-x-full');
+            overlay.classList.add('hidden');
+        }
+    },
+
+    /**
+     * Helper: obtiene tiempo relativo
+     */
+    getTimeAgo(date) {
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'Ahora';
+        if (diffMins < 60) return `${diffMins}m`;
+        if (diffHours < 24) return `${diffHours}h`;
+        if (diffDays < 7) return `${diffDays}d`;
+        return date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
+    },
+
+    /**
+     * Escapa HTML para prevenir XSS
+     */
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
 };

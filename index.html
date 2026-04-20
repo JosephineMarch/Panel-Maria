@@ -203,11 +203,20 @@
                     class="w-full h-full rounded-full">
             </div>
             <h1 class="font-bold text-xl text-ink" role="heading" aria-level="1">KAI</h1>
-            <!-- Botón Home (antes Timeline) -->
-            <button id="btn-home" title="Inicio / Timeline"
-                class="w-10 h-10 rounded-full bg-brand/10 hover:bg-brand/20 flex items-center justify-center transition text-xl">
-                🏠
-            </button>
+            <!-- Botones: Bell + Home -->
+            <div class="flex items-center gap-2">
+                <!-- Campanita de notificaciones -->
+                <button id="btn-notifications" title="Notificaciones"
+                    class="w-10 h-10 rounded-full bg-brand/10 hover:bg-brand/20 flex items-center justify-center transition text-brand relative">
+                    <i class="fa-regular fa-bell text-lg"></i>
+                    <span id="notification-badge" class="hidden absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">0</span>
+                </button>
+                <!-- Botón Home (antes Timeline) -->
+                <button id="btn-home" title="Inicio / Timeline"
+                    class="w-10 h-10 rounded-full bg-brand/10 hover:bg-brand/20 flex items-center justify-center transition text-xl">
+                    🏠
+                </button>
+            </div>
         </div>
 
         <!-- Filtros de Categoría -->
@@ -899,6 +908,35 @@
     </script>
 
     <script type="module" src="app.js"></script>
+
+    <!-- DRAWER DE NOTIFICACIONES -->
+    <div id="notification-drawer"
+        class="fixed top-0 right-0 w-full max-w-sm h-full bg-white shadow-float z-[90] transform translate-x-full transition-transform duration-300 overflow-hidden"
+        role="dialog" aria-label="Notificaciones">
+        <div class="p-4 border-b border-gray-100 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-ink">🔔 Notificaciones</h2>
+            <button id="btn-close-notifications"
+                class="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition"
+                aria-label="Cerrar notificaciones">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+        
+        <!-- Botón marcar todo como leído -->
+        <div class="p-3 border-b border-gray-50">
+            <button id="btn-mark-all-read" class="text-sm text-brand font-bold hover:underline">
+                <i class="fa-solid fa-check-double"></i> Marcar todo como leído
+            </button>
+        </div>
+
+        <!-- Lista de notificaciones -->
+        <div id="notifications-list" class="p-3 space-y-2 overflow-y-auto h-[calc(100vh-140px)]">
+            <p class="text-center text-gray-400 py-8">No hay notificaciones</p>
+        </div>
+    </div>
+
+    <!-- Overlay del drawer -->
+    <div id="notification-overlay" class="fixed inset-0 bg-black/20 z-[85] hidden transition-opacity" role="presentation"></div>
 </body>
 
 </html>

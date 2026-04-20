@@ -502,6 +502,9 @@ class KaiController {
         // --- Navegación ---
         document.getElementById('btn-home')?.addEventListener('click', () => this.goHome());
         
+        // --- Notificaciones ---
+        this.initNotifications();
+
         // Hoy desde sidebar
         document.getElementById('btn-hoy')?.addEventListener('click', () => {
             this.switchView('hoy');
@@ -1567,6 +1570,82 @@ Responde SOLO JSON con esta estructura:
         this.applyViewState();
         this.saveState();
         await this.loadItems();
+    }
+
+    // ========== NOTIFICACIONES ==========
+
+    async initNotifications() {
+        // Botón campanita
+        document.getElementById('btn-notifications')?.addEventListener('click', () => {
+            ui.toggleNotificationDrawer(true);
+            this.loadNotifications();
+        });
+
+        // Cerrar drawer
+        document.getElementById('btn-close-notifications')?.addEventListener('click', () => {
+            ui.toggleNotificationDrawer(false);
+        });
+
+        // Overlay cerrar
+        document.getElementById('notification-overlay')?.addEventListener('click', () => {
+            ui.toggleNotificationDrawer(false);
+        });
+
+        // Marcar todo como leído
+        document.getElementById('btn-mark-all-read')?.addEventListener('click', async () => {
+            await data.markAllRead();
+            this.loadNotifications();
+        });
+
+        // Click en notificaciones (marcar como leído + navegar)
+        document.getElementById('notifications-list')?.addEventListener('click', async (e) => {
+            const item = e.target.closest('.notification-item');
+            if (!item) return;
+
+            const notifId = item.dataset.id;
+            const relatedId = item.dataset.related;
+
+            // Marcar como leído
+            await data.markNotificationRead(notifId);
+            
+            // Si tiene related_item_id, navegar a esa card
+            if (relatedId) {
+                ui.toggleNotificationDrawer(false);
+                // Buscar y expandir la card relacionada
+                await this.navigateToItem(relatedId);
+            } else {
+                // Solo marcar, recargar lista
+                this.loadNotifications();
+            }
+        });
+
+        // Cargar badge al inicio
+        await this.updateNotificationBadge();
+    },
+
+    async loadNotifications() {
+        const notifications = await data.getNotifications();
+        ui.renderNotificationDrawer(notifications);
+    },
+
+    async updateNotificationBadge() {
+        const count = await data.getUnreadCount();
+        ui.updateBellBadge(count);
+    },
+
+    async navigateToItem(itemId) {
+        // Buscar el item y navegar a su vista
+        const items = await data.getItems({ id: itemId });
+        if (items && items.length > 0) {
+            const item = items[0];
+            // Si tiene padre, navegar al padre primero
+            if (item.parent_id) {
+                this.navigateTo(item.parent_id);
+            }
+            // Luego cargar y expandir
+            await this.loadItems();
+            // La card se expansará automáticamente si está visible
+        }
     }
 
     async handleCategoryClick(button) {
