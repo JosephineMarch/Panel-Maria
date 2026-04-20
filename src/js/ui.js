@@ -32,6 +32,7 @@ export const ui = {
         salud: { bg: 'bg-transparent', text: 'text-brand', border: 'border-brand' },
         emocion: { bg: 'bg-transparent', text: 'text-brand', border: 'border-brand' },
         alarma: { bg: 'bg-transparent', text: 'text-brand', border: 'border-brand' },
+        'mi-mes': { bg: 'bg-transparent', text: 'text-purple-600', border: 'border-purple-400' },
     },
 
     // Configuración de tipos (para las cards)
@@ -93,7 +94,10 @@ export const ui = {
         if (!tags || tags.length === 0) return '';
         return tags.map(tag => {
             const config = this.tagConfig[tag];
-            if (!config) return '';
+            // Si no está en config, usar estilo por defecto (tags dinámicos)
+            if (!config) {
+                return `<span class="bg-gray-100 text-gray-600 border border-gray-300 px-2 py-0.5 rounded-full text-[10px] font-semibold">${tag}</span>`;
+            }
             return `<span class="${config.bg} ${config.text} ${config.border} border px-2 py-0.5 rounded-full text-[10px] font-semibold">${tag}</span>`;
         }).join('');
     },

@@ -1082,7 +1082,10 @@ Responde SOLO JSON con esta estructura:
                     if (aiData.tareas && aiData.tareas.length > 0) {
                         finalItems = aiData.tareas.map(t => ({ titulo: t, completado: false }));
                     }
-                    finalTags = [...new Set([...finalTags, ...(aiData.tags || [])])];
+                    // PRIORIDAD: tags offline primero (hashtags explícitos) > tags IA
+                    // Esto evita que la IA borre tags manuales como #mi-mes
+                    const aiTags = aiData.tags || [];
+                    finalTags = [...new Set([...finalTags, ...aiTags])];
                 }
             } catch (aiError) {
                 console.warn('IA falló en handleSubmit, usando offline:', aiError);
