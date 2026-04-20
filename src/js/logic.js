@@ -1624,17 +1624,17 @@ Responde SOLO JSON con esta estructura:
 
         // Cargar badge al inicio
         await this.updateNotificationBadge();
-    },
+    }
 
     async loadNotifications() {
         const notifications = await data.getNotifications();
         ui.renderNotificationDrawer(notifications);
-    },
+    }
 
     async updateNotificationBadge() {
         const count = await data.getUnreadCount();
         ui.updateBellBadge(count);
-    },
+    }
 
     async navigateToItem(itemId) {
         // Buscar el item y navegar a su vista
