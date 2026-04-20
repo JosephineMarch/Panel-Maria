@@ -930,6 +930,7 @@ REGLAS:
         if (text.includes('logro') || text.includes('logré') || text.includes('terminé')) tags.push('logro');
         if (text.includes('salud') || text.includes('dolor') || text.includes('médico')) tags.push('salud');
         if (text.includes('emocion') || text.includes('triste') || text.includes('feliz')) tags.push('emocion');
+        if (text.includes('alarma') || text.includes('recordatorio') || text.includes('recordar') || text.includes('recordación')) tags.push('recordatorio');
 
         // Extraer hashtags explícitos (ej. #salud, #mi-mes)
         let cleanContent = content;
@@ -1006,7 +1007,8 @@ REGLAS:
             items: [],
             hasDeadline: !!deadline,
             deadline: deadline ? deadline.toISOString() : null,
-            repeat
+            repeat,
+            hasRecordatorio: !!deadline // Para detectar si es recordatorio automático
         };
     }
 
@@ -1041,6 +1043,11 @@ REGLAS:
             let finalTags = offline.tags || [];
             let finalDeadline = offline.deadline;
             let finalRepeat = offline.repeat;
+
+            // AGREGAR TAG AUTOMÁTICO: Si hay deadline pero no tiene "recordatorio", agregarlo
+            if (finalDeadline && !finalTags.includes('recordatorio')) {
+                finalTags.push('recordatorio');
+            }
 
             // 2. Mejora con IA
             try {

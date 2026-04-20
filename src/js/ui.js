@@ -26,15 +26,6 @@ export const ui = {
         kaiChatClose: () => document.getElementById('kai-chat-back'),
     },
 
-    // Configuración de etiquetas (tags: solo texto brand, tipos: bg brand)
-    tagConfig: {
-        logro: { bg: 'bg-transparent', text: 'text-brand', border: 'border-brand' },
-        salud: { bg: 'bg-transparent', text: 'text-brand', border: 'border-brand' },
-        emocion: { bg: 'bg-transparent', text: 'text-brand', border: 'border-brand' },
-        alarma: { bg: 'bg-transparent', text: 'text-brand', border: 'border-brand' },
-        'mi-mes': { bg: 'bg-transparent', text: 'text-purple-600', border: 'border-purple-400' },
-    },
-
     // Configuración de tipos (para las cards)
     // Solo el header tiene color cuando está desplegado (proyectos)
     typeConfig: {
@@ -93,12 +84,8 @@ export const ui = {
     renderTags(tags) {
         if (!tags || tags.length === 0) return '';
         return tags.map(tag => {
-            const config = this.tagConfig[tag];
-            // Si no está en config, usar estilo por defecto (tags dinámicos)
-            if (!config) {
-                return `<span class="bg-gray-100 text-gray-600 border border-gray-300 px-2 py-0.5 rounded-full text-[10px] font-semibold">${tag}</span>`;
-            }
-            return `<span class="${config.bg} ${config.text} ${config.border} border px-2 py-0.5 rounded-full text-[10px] font-semibold">${tag}</span>`;
+            // Un estilo único para todos los tags
+            return `<span class="bg-brand/10 text-brand border border-brand/30 px-2 py-0.5 rounded-full text-[10px] font-semibold">${tag}</span>`;
         }).join('');
     },
 
