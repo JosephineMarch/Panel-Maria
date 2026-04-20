@@ -1447,114 +1447,114 @@ export const ui = {
         }, 3000);
     },
 
-    renderDashboard(grouped, stats, periodo = 'total') {
+    renderDashboard(grouped, stats, periodo = 'total', emociones = []) {
         const container = this.elements.container();
         if (!container) return;
 
+        // Procesar emociones para mostrar
+        const emojiMap = { 'genial': '🤩', 'feliz': '😊', 'bien': '🙂', 'normal': '😐', 'mal': '😔' };
+        const emocionEmojis = emociones.slice(-7).map(e => emojiMap[e.emocion] || '😐');
+        const masFrecuente = emociones.length > 0 
+            ? emosiiones.sort((a, b) => b.count - a.count)[0]?.emocion 
+            : null;
+        const emocionDisplay = masFrecuente ? (emojiMap[masFrecuente] || '😐') : 'sin datos';
+        
+        // Tags para mostrar
+        const tagsHtml = stats.topTags && stats.topTags.length > 0 
+            ? stats.topTags.map(t => `<span class="bg-brand/10 text-brand border border-brand/30 px-2 py-1 rounded-full text-xs font-semibold">#${t}</span>`).join(' ')
+            : '<span class="text-gray-400 text-sm">Sin tags aún</span>';
+
+        // Barra de progreso
+        const progreso = stats.totalTareas > 0 ? Math.round((stats.tareasCompletas / stats.totalTareas) * 100) : 0;
+        const barraWidth = Math.min(progreso, 100);
+
+        // Lista de tareas completadas del período
+        const tareasListHtml = stats.tareasLista && stats.tareasLista.length > 0
+            ? stats.tareasLista.slice(0, 10).map(t => `<li class="py-2 border-b border-gray-100 last:border-0">✓ ${this.escapeHtml(t.contenido)}</li>`).join('')
+            : '<li class="py-2 text-gray-400">No hay tareas completadas aún</li>';
+
+        // Pendientes
+        const pendientes = stats.pendientes || [];
+        const pendientesHtml = pendientes.length > 0 
+            ? pendientes.slice(0, 5).map(p => `<li class="py-2 border-b border-gray-100 last:border-0 flex items-center gap-2"><span class="text-gray-300">○</span> ${this.escapeHtml(p.content)}</li>`).join('')
+            : '<li class="py-2 text-gray-400">¡Todo al día! ✨</li>';
+
+        // Logros
+        const logrosHtml = stats.logros && stats.logros.length > 0
+            ? stats.logros.slice(0, 5).map(l => `<li class="py-2 border-b border-gray-100 last:border-0">🏆 ${this.escapeHtml(l.content)}</li>`).join('')
+            : '<li class="py-2 text-gray-400">Los logros aparecen aquí</li>';
+
         container.innerHTML = `
-            <div class="animate-fadeIn space-y-10 pb-20 max-w-4xl mx-auto px-4">
-                <!-- Header del Dashboard -->
-                <div class="text-center pt-8 pb-4">
-                    <h2 class="text-4xl font-bold text-ink mb-2">Mi Progreso ✨</h2>
-                    <p class="text-ink/60 font-hand text-2xl">¡Mira todo lo que has logrado, Maria!</p>
+            <div class="animate-fadeIn space-y-8 pb-24 max-w-2xl mx-auto px-4">
+                <!-- HEADER -->
+                <div class="text-center pt-8">
+                    <h2 class="text-3xl font-bold text-ink mb-1">¡Hola Maria! 💜</h2>
+                    <p class="text-gray-500">
+                        ${stats.racha > 0 
+                            ? `¡Llevas ${stats.racha} día${stats.racha > 1 ? 's' : ''} seguidos! 🔥` 
+                            : '¡Empezá hoy tu racha!'}
+                    </p>
                 </div>
 
-                <!-- SELECTOR DE PERIODO -->
-                <div class="flex justify-center gap-2 mb-8">
-                    ${['semana', 'mes', 'total'].map(p => `
-                        <button onclick="window.kai.showDashboard('${p}')" 
-                                class="px-6 py-2 rounded-full font-bold transition-all shadow-sm ${periodo === p ? 'bg-brand text-white' : 'bg-white text-ink/60 hover:bg-gray-50 border border-gray-100'}">
-                            ${p.charAt(0).toUpperCase() + p.slice(1)}
-                        </button>
-                    `).join('')}
+                <!-- CÓMO TE SENTÍS -->
+                <div class="bg-gradient-to-r from-peach/20 to-brand/10 border-2 border-brand/20 p-6 rounded-3xl">
+                    <h3 class="text-lg font-bold text-ink mb-3">¿Cómo te sentís?</h3>
+                    <div class="text-4xl mb-3 tracking-widest">${emocionEmojis.join(' ')}</div>
+                    <p class="text-sm text-gray-500">Estado más frecuente: <span class="font-bold text-brand">${emocionDisplay === 'sin datos' ? 'Sin datos' : emocionDisplay}</span></p>
                 </div>
 
-                <!-- WIDGETS DE ESTADÍSTICAS -->
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
-                    <!-- Widget: Racha -->
-                    <div class="bg-peach/10 border-2 border-peach/30 p-6 rounded-blob text-center transition-transform hover:scale-105">
-                        <div class="text-3xl mb-1">🔥</div>
-                        <div class="text-4xl font-black text-ink">${stats.racha}</div>
-                        <div class="text-sm font-bold text-ink/60 uppercase tracking-wider">Días de Racha</div>
-                    </div>
+                <!-- ESTA SEMANA -->
+                <div class="bg-white border-2 border-gray-100 p-6 rounded-3xl shadow-sm">
+                    <h3 class="text-lg font-bold text-ink mb-4">Esta ${periodo === 'semana' ? 'semana' : periodo === 'mes' ? 'mes' : ''}</h3>
                     
-                    <!-- Widget: Logros -->
-                    <div class="bg-success/10 border-2 border-success/30 p-6 rounded-blob text-center transition-transform hover:scale-105">
-                        <div class="text-3xl mb-1">🏆</div>
-                        <div class="text-4xl font-black text-ink">${stats.totalLogros}</div>
-                        <div class="text-sm font-bold text-ink/60 uppercase tracking-wider">Logros Guardados</div>
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="flex-1">
+                            <div class="text-sm text-gray-500 mb-1">Completadas</div>
+                            <div class="text-2xl font-bold text-brand">✓ ${stats.tareasCompletas}</div>
+                        </div>
+                        <div class="flex-1">
+                            <div class="text-sm text-gray-500 mb-1">Pendientes</div>
+                            <div class="text-2xl text-gray-400">○ ${pendientes.length}</div>
+                        </div>
                     </div>
 
-                    <!-- Widget: Progreso Tareas (Gráfico Circular CSS) -->
-                    <div class="bg-action/10 border-2 border-action/30 p-6 rounded-blob text-center transition-transform hover:scale-105">
-                        <div class="relative w-20 h-20 mx-auto mb-2 flex items-center justify-center rounded-full" 
-                             style="background: conic-gradient(var(--color-brand) ${stats.progresoTareas * 3.6}deg, rgba(255,255,255,0.5) 0deg)">
-                            <div class="absolute inset-2 bg-white rounded-full flex items-center justify-center">
-                                <span class="text-xl font-black text-ink">${stats.progresoTareas}%</span>
-                            </div>
+                    <!-- Barra -->
+                    <div class="mb-6">
+                        <div class="h-4 bg-gray-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-brand transition-all" style="width: ${barraWidth}%"></div>
                         </div>
-                        <div class="text-sm font-bold text-ink/60 uppercase tracking-wider">Tareas Listas</div>
+                        <div class="text-right text-sm text-gray-500 mt-1">${progreso}%</div>
+                    </div>
+
+                    <!-- Lista -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <h4 class="text-xs font-bold text-gray-400 uppercase mb-2">Completadas</h4>
+                            <ul class="text-sm text-ink">${tareasListHtml}</ul>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-bold text-gray-400 uppercase mb-2">Pendientes</h4>
+                            <ul class="text-sm text-ink">${pendientesHtml}</ul>
+                        </div>
                     </div>
                 </div>
 
-                <!-- SECCIÓN SALUD Y BIENESTAR (REDISEÑADA) -->
-                <section class="space-y-6">
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="flex items-center gap-3">
-                            <span class="text-2xl p-2 bg-peach rounded-xl shadow-sm">🌈</span>
-                            <h3 class="text-2xl font-bold text-ink">Bienestar y Energía</h3>
-                        </div>
-                    </div>
+                <!-- LOGROS -->
+                <div class="bg-success/10 border-2 border-success/20 p-6 rounded-3xl">
+                    <h3 class="text-lg font-bold text-ink mb-4">Tus Logros 🏆</h3>
+                    <ul class="text-sm text-ink">${logrosHtml}</ul>
+                </div>
 
-                    <!-- Contenedor para el Informe de Kai -->
-                    <div id="wellbeing-report-container" class="mb-8 hidden">
-                        <!-- Aquí se inyectará el reporte de Kai -->
-                    </div>
+                <!-- TAGS -->
+                <div class="bg-gray-50 border-2 border-gray-100 p-6 rounded-3xl">
+                    <h3 class="text-sm font-bold text-gray-400 uppercase mb-3">Tags más usados</h3>
+                    <div class="flex flex-wrap gap-2">${tagsHtml}</div>
+                </div>
 
-                    <!-- Contenedor para el Gráfico de Energía -->
-                    <div id="energy-chart-container" class="bg-white/40 border-2 border-brand/10 p-6 rounded-blob shadow-sm overflow-hidden mb-8">
-                        <h4 class="text-brand font-bold uppercase tracking-widest text-xs mb-6 flex items-center gap-2">
-                            Mi Energía - Tendencia ${periodo === 'semana' ? 'Semanal' : periodo === 'mes' ? 'Mensual' : 'Total'}
-                            <span class="h-px bg-brand/20 flex-1"></span>
-                        </h4>
-                        <div id="energy-chart-bars" class="flex items-end justify-around gap-2 h-40 pt-4">
-                            <!-- JS inyectará las barras aquí -->
-                        </div>
-                    </div>
-                </section>
-
-                <!-- SECCIÓN PRODUCTIVIDAD -->
-                <section class="space-y-6">
-                    <div class="flex items-center gap-3">
-                        <span class="text-2xl p-2 bg-action rounded-xl shadow-sm">🚀</span>
-                        <h3 class="text-2xl font-bold text-ink">En Marcha</h3>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        ${grouped.productividad.length > 0 ?
-                grouped.productividad.map(item => this.renderDashboardCard(item, 'bg-action/10 border-action/30')).join('') :
-                '<div class="col-span-full bg-white/40 border-2 border-dashed border-gray-200 py-12 rounded-blob text-center text-ink/40 italic font-hand text-xl">Todo tranquilo por aquí. ¿Alguna meta nueva en mente? 💡</div>'
-            }
-                    </div>
-                </section>
-
-                <!-- SECCIÓN LOGROS (HECHO) -->
-                <section class="space-y-6">
-                    <div class="flex items-center gap-3">
-                        <span class="text-2xl p-2 bg-success rounded-xl shadow-sm">🏆</span>
-                        <h3 class="text-2xl font-bold text-ink">Mis Victorias</h3>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        ${grouped.hecho.length > 0 ?
-                grouped.hecho.map(item => this.renderDashboardCard(item, 'bg-success/10 border-success/30')).join('') :
-                '<div class="col-span-full bg-white/40 border-2 border-dashed border-gray-200 py-12 rounded-blob text-center text-ink/40 italic font-hand text-xl">¡Tus éxitos aparecerán aquí cuando termines tus tareas! 🏁</div>'
-            }
-                    </div>
-                </section>
-
-                <!-- Botón para volver -->
-                <div class="pt-12 text-center">
-                    <button onclick="window.kai.goHome()" class="bg-ink text-white font-bold px-10 py-4 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all text-lg">
-                        Volver al Panel Principal 🏠
+                <!-- BACK -->
+                <div class="text-center pt-4">
+                    <button onclick="window.kai.goHome()" class="bg-ink text-white font-bold px-8 py-3 rounded-full shadow-lg hover:scale-105 transition-all">
+                        🏠 Volver
                     </button>
                 </div>
             </div>

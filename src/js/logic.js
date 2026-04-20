@@ -1724,18 +1724,21 @@ Responde SOLO JSON con esta estructura:
             // Cálculo de estadísticas
             const stats = this.calculateStats(filteredItems, allItems);
 
-            // Cambiar vista en UI inicialmente con lo cuantitativo
-            ui.renderDashboard(grouped, stats, periodo);
-            
-            // Tendencia de Energía (Para el gráfico) - ahora incluye check-ins
+            // Get check-ins for emotions
             const checkins = await this.getCheckinHistory(periodo === 'mes' ? 30 : 7);
-            const energyTrend = this.calculateEnergyTrend(grouped.salud, periodo, checkins);
-            ui.renderEnergyChart(energyTrend);
+            
+            // Procesar emociones
+            const emocionesCount = {};
+            checkins.forEach(c => {
+                const emo = c.meta?.emocion;
+                if (emo) {
+                    emocionesCount[emo] = (emocionesCount[emo] || 0) + 1;
+                }
+            });
+            const emociones = Object.entries(emocionesCount).map(([emocion, count]) => ({ emocion, count }));
 
-            // Manejo de Informes de Bienestar (Auto para semana/mes, manual para diario/total)
-            if (grouped.salud.length > 0 || checkins.length > 0) {
-                this.handleWellbeingReporting(grouped.salud, periodo);
-            }
+            // Cambiar vista en UI
+            ui.renderDashboard(grouped, stats, periodo, emociones);
 
             // Actualizar estado interno
             this.currentView = 'dashboard';
@@ -1746,29 +1749,58 @@ Responde SOLO JSON con esta estructura:
     }
 
     calculateStats(items, allItems) {
-        // Tareas totales vs completadas en el periodo
+        // tareas con checklist
         let totalTareas = 0;
         let tareasCompletas = 0;
+        const tareasLista = [];
         
         items.forEach(item => {
             if (item.tareas && item.tareas.length > 0) {
-                totalTareas += item.tareas.length;
-                tareasCompletas += item.tareas.filter(t => t.completado).length;
+                item.tareas.forEach(t => {
+                    totalTareas++;
+                    if (t.completado) {
+                        tareasCompletas++;
+                        tareasLista.push({ contenido: t.titulo, itemId: item.id, itemContent: item.content });
+                    }
+                });
+            }
+            // También contar items completos como "tareas completadas"
+            if (item.status === 'completed') {
+                tareasCompletas++;
             }
         });
 
-        const progresoTareas = totalTareas > 0 ? Math.round((tareasCompletas / totalTareas) * 100) : 0;
+        // Items pendientes (no completados)
+        const pendientes = items.filter(i => i.status !== 'completed' && i.type === 'tarea');
 
-        // Logros (items completados)
-        const totalLogros = items.filter(i => i.status === 'completed' || (i.tags && i.tags.includes('logro'))).length;
+        // Logros del periodo
+        const logros = items.filter(i => i.status === 'completed' || (i.tags && i.tags.includes('logro')));
 
-        // Racha (basada en todos los items para consistencia)
+        // Racha
         const racha = this.calculateStreak(allItems);
 
+        // Tags más usados
+        const tagCount = {};
+        items.forEach(item => {
+            if (item.tags && Array.isArray(item.tags)) {
+                item.tags.forEach(tag => {
+                    tagCount[tag] = (tagCount[tag] || 0) + 1;
+                });
+            }
+        });
+        const topTags = Object.entries(tagCount)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(t => t[0]);
+
         return {
-            progresoTareas,
-            totalLogros,
+            tareasCompletas,
+            totalTareas,
+            tareasLista,
+            pendientes,
+            logros,
             racha,
+            topTags,
             totalItems: items.length
         };
     }
