@@ -1564,6 +1564,14 @@ export const ui = {
                     </p>
                 </div>
 
+                <!-- Selector de Período -->
+                <div class="flex justify-center gap-2">
+                    <button class="stat-period-btn px-4 py-2 rounded-full text-sm font-bold transition-all ${periodo === 'semana' ? 'bg-brand text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" data-period="semana">Semana</button>
+                    <button class="stat-period-btn px-4 py-2 rounded-full text-sm font-bold transition-all ${periodo === 'mes' ? 'bg-brand text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" data-period="mes">Mes</button>
+                    <button class="stat-period-btn px-4 py-2 rounded-full text-sm font-bold transition-all ${periodo === 'anio' ? 'bg-brand text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" data-period="anio">Año</button>
+                    <button class="stat-period-btn px-4 py-2 rounded-full text-sm font-bold transition-all ${periodo === 'total' ? 'bg-brand text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" data-period="total">Todo</button>
+                </div>
+
                 <!-- CÓMO TE SENTÍS -->
                 <div class="bg-gradient-to-r from-peach/20 to-brand/10 border-2 border-brand/20 p-6 rounded-3xl">
                     <h3 class="text-lg font-bold text-ink mb-3">¿Cómo te sentís?</h3>
@@ -1571,9 +1579,11 @@ export const ui = {
                     <p class="text-sm text-gray-500">Estado más frecuente: <span class="font-bold text-brand">${emocionDisplay === 'sin datos' ? 'Sin datos' : emocionDisplay}</span></p>
                 </div>
 
-                <!-- ESTA SEMANA -->
+                <!-- ESTADÍSTICAS DEL PERIODO -->
                 <div class="bg-white border-2 border-gray-100 p-6 rounded-3xl shadow-sm">
-                    <h3 class="text-lg font-bold text-ink mb-4">Esta ${periodo === 'semana' ? 'semana' : periodo === 'mes' ? 'mes' : ''}</h3>
+                    <h3 class="text-lg font-bold text-ink mb-4">
+                        ${periodo === 'semana' ? '📅 Esta Semana' : periodo === 'mes' ? '📆 Este Mes' : periodo === 'anio' ? '📈 Este Año' : '📊 Total'}
+                    </h3>
                     
                     <div class="flex items-center gap-4 mb-4">
                         <div class="flex-1">
@@ -1627,6 +1637,14 @@ export const ui = {
                 </div>
             </div>
         `;
+        
+        // Agregar eventos a los botones de período
+        container.querySelectorAll('.stat-period-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const newPeriod = btn.dataset.period;
+                window.dispatchEvent(new CustomEvent('changeStatsPeriod', { detail: { periodo: newPeriod } }));
+            });
+        });
     },
 
     renderWellbeingReportLoading() {

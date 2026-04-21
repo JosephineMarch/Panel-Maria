@@ -631,6 +631,12 @@ class KaiController {
             this.showDashboard('total');
         });
         
+        // Cambio de período en dashboard de estadísticas
+        window.addEventListener('changeStatsPeriod', async (e) => {
+            const periodo = e.detail?.periodo || 'total';
+            await this.showDashboard(periodo);
+        });
+        
         // Cambio de período en dashboard de logros
         window.addEventListener('changeAchievementsPeriod', async (e) => {
             const periodo = e.detail?.periodo || 'total';
