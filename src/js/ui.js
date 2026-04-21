@@ -161,8 +161,55 @@ export const ui = {
         }
     },
 
-    renderAchievementsDashboard(items) {
-        const achievements = items.filter(item => item.type === 'logro' || (item.tags && item.tags.includes('logro')));
+    renderAchievementsDashboard(items, periodo = 'total') {
+        // Filtrar por período - Períodos calendario reales (no "últimos X días")
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
+        const currentDate = now.getDate();
+        
+        // Hallar inicio de semana actual (lunes)
+        const dayOfWeek = now.getDay(); // 0=domingo, 1=lunes, ...
+        const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Si es domingo,-ir a lunes pasado
+        const weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+        weekStart.setHours(0, 0, 0, 0);
+        
+        // Inicio de mes actual
+        const monthStart = new Date(currentYear, currentMonth, 1);
+        
+        // Inicio de año actual
+        const yearStart = new Date(currentYear, 0, 1);
+        
+        // Determinar rango según período
+        let startDate = null;
+        let endDate = new Date(now);
+        
+        if (periodo === 'semana') {
+            startDate = weekStart;
+        } else if (periodo === 'mes') {
+            startDate = monthStart;
+        } else if (periodo === 'anio') {
+            startDate = yearStart;
+        }
+        
+        const achievements = items.filter(item => {
+            const isLogro = item.type === 'logro' || (item.tags && item.tags.includes('logro'));
+            if (!isLogro) return false;
+            if (!startDate) return true;
+            const itemDate = new Date(item.created_at);
+            return itemDate >= startDate && itemDate <= endDate;
+        });
+
+        // Calcular estadísticas por período
+        let totalEnPeriodo = achievements.length;
+        let statsText = '';
+        
+        if (periodo === 'semana') statsText = `esta semana`;
+        else if (periodo === 'mes') statsText = `este mes`;
+        else if (periodo === 'anio') statsText = `este año`;
+        else statsText = `en total`;
+
         const container = this.elements.container();
 
         container.innerHTML = `
@@ -172,7 +219,15 @@ export const ui = {
                         <span class="text-5xl">🏆</span>
                     </div>
                     <h1 class="text-2xl font-black text-ink">Mis Logros</h1>
-                    <p class="text-base text-ink/50 mt-2 font-medium">Llevas ${achievements.length} hitos alcanzados. ¡Sigue así!</p>
+                    <p class="text-base text-ink/50 mt-2 font-medium">Llevas ${achievements.length} hitos ${statsText}. ¡Sigue así!</p>
+                </div>
+
+                <!-- Selector de Período -->
+                <div class="flex justify-center gap-2">
+                    <button class="period-btn px-4 py-2 rounded-full text-sm font-bold transition-all ${periodo === 'semana' ? 'bg-success text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" data-period="semana">Semana</button>
+                    <button class="period-btn px-4 py-2 rounded-full text-sm font-bold transition-all ${periodo === 'mes' ? 'bg-success text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" data-period="mes">Mes</button>
+                    <button class="period-btn px-4 py-2 rounded-full text-sm font-bold transition-all ${periodo === 'anio' ? 'bg-success text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" data-period="anio">Año</button>
+                    <button class="period-btn px-4 py-2 rounded-full text-sm font-bold transition-all ${periodo === 'total' ? 'bg-success text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" data-period="total">Todo</button>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -193,12 +248,21 @@ export const ui = {
                         </div>
                     `).join('') : `
                         <div class="col-span-full py-20 text-center opacity-30">
-                            <p class="text-xl font-bold italic text-ink">Aún no hay logros aquí... ¡Pero pronto los habrá! 😉</p>
+                            <p class="text-xl font-bold italic text-ink">Aún no hay logros ${periodo === 'total' ? '' : periodo === 'semana' ? 'esta semana' : periodo === 'mes' ? 'este mes' : periodo === 'anio' ? 'este año' : ''}... ¡Pero pronto los habrá! 😉</p>
                         </div>
                     `}
                 </div>
             </div>
         `;
+        
+        // Agregar eventos a los botones de período
+        container.querySelectorAll('.period-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const newPeriod = btn.dataset.period;
+                // Dispatch evento para que logic.js capture y recargue
+                window.dispatchEvent(new CustomEvent('changeAchievementsPeriod', { detail: { periodo: newPeriod } }));
+            });
+        });
     },
 
     // --- CARD RENDERERS ---
@@ -218,7 +282,7 @@ export const ui = {
 
         // Dashboard de Logros (Si el filtro es logros)
         if (currentFilter === 'logro' || currentFilter === 'logros') {
-            this.renderAchievementsDashboard(items);
+            this.renderAchievementsDashboard(items, 'total');
             return;
         }
 

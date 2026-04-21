@@ -628,7 +628,52 @@ class KaiController {
         document.getElementById('btn-add-task')?.addEventListener('click', () => ui.addTaskToModal());
         document.getElementById('btn-dashboard')?.addEventListener('click', () => {
             ui.closeSidebar();
-            this.showDashboard();
+            this.showDashboard('total');
+        });
+        
+        // Cambio de período en dashboard de logros
+        window.addEventListener('changeAchievementsPeriod', async (e) => {
+            const periodo = e.detail?.periodo || 'total';
+            const allItems = await data.getItems({});
+            
+            // Períodos calendario reales
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth();
+            
+            // Hallar inicio de semana actual (lunes)
+            const dayOfWeek = now.getDay();
+            const weekStart = new Date(now);
+            weekStart.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+            weekStart.setHours(0, 0, 0, 0);
+            
+            // Inicio de mes actual
+            const monthStart = new Date(currentYear, currentMonth, 1);
+            
+            // Inicio de año actual
+            const yearStart = new Date(currentYear, 0, 1);
+            
+            let startDate = null;
+            const endDate = new Date(now);
+            
+            if (periodo === 'semana') {
+                startDate = weekStart;
+            } else if (periodo === 'mes') {
+                startDate = monthStart;
+            } else if (periodo === 'anio') {
+                startDate = yearStart;
+            }
+            
+            const filteredAchievements = allItems.filter(item => {
+                const isLogro = item.type === 'logro' || (item.tags && item.tags.includes('logro'));
+                if (!isLogro) return false;
+                if (!startDate) return true;
+                const itemDate = new Date(item.created_at);
+                return itemDate >= startDate && itemDate <= endDate;
+            });
+            
+            // Renderizar con el período seleccionado
+            ui.renderAchievementsDashboard(filteredAchievements, periodo);
         });
 
         // Kai Sidebar Button
@@ -1698,15 +1743,36 @@ Responde SOLO JSON con esta estructura:
             // Cargar todos los items para procesarlos
             const allItems = await data.getItems({});
             
-            // Aplicar filtro de periodo si no es 'total'
+            // Aplicar filtro de periodo si no es 'total' - Períodos calendario reales
             let filteredItems = allItems;
             if (periodo !== 'total') {
                 const now = new Date();
-                const limitDate = new Date();
-                if (periodo === 'semana') limitDate.setDate(now.getDate() - 7);
-                if (periodo === 'mes') limitDate.setMonth(now.getMonth() - 1);
+                const currentYear = now.getFullYear();
+                const currentMonth = now.getMonth();
+                const dayOfWeek = now.getDay();
                 
-                filteredItems = allItems.filter(i => new Date(i.created_at) >= limitDate);
+                // Inicio de semana actual (lunes)
+                const weekStart = new Date(now);
+                weekStart.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+                weekStart.setHours(0, 0, 0, 0);
+                
+                // Inicio de mes actual
+                const monthStart = new Date(currentYear, currentMonth, 1);
+                
+                // Inicio de año actual
+                const yearStart = new Date(currentYear, 0, 1);
+                
+                let startDate = null;
+                if (periodo === 'semana') startDate = weekStart;
+                if (periodo === 'mes') startDate = monthStart;
+                if (periodo === 'anio') startDate = yearStart;
+                
+                if (startDate) {
+                    filteredItems = allItems.filter(i => {
+                        const itemDate = new Date(i.created_at);
+                        return itemDate >= startDate && itemDate <= now;
+                    });
+                }
             }
 
             // Agrupamiento inteligente
