@@ -98,11 +98,15 @@ export const ui = {
         if (validUrls.length === 0) return '';
         
         const linksHtml = validUrls.slice(0, maxVisible).map(u => {
-            const urlLabel = u.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
+            // Extraer dominio y	path truncados para mostrar
+            const urlObj = new URL(u.startsWith('http') ? u : `https://${u}`);
+            const urlLabel = urlObj.hostname + (urlObj.pathname !== '/' ? urlObj.pathname : '');
+            // Acortar URLs largas mostrando máximo 30 caracteres del path
+            const displayUrl = urlLabel.length > 35 ? urlLabel.substring(0, 32) + '...' : urlLabel;
             return `<a href="${encodeURI(u)}" target="_blank" rel="noopener noreferrer" 
-                        class="flex items-center gap-1.5 text-sm text-action hover:text-action/70 hover:underline underline-offset-2 transition-colors">
+                        class="flex items-center gap-1.5 text-sm text-action hover:text-action/70 hover:underline underline-offset-2 transition-colors max-w-full overflow-hidden">
                         <i class="fa-solid fa-link text-[9px] shrink-0"></i>
-                        <span class="truncate">${urlLabel}</span>
+                        <span class="truncate min-w-0">${displayUrl}</span>
                     </a>`;
         }).join('');
         
@@ -418,7 +422,7 @@ export const ui = {
             }
 
             const pinnedClass = isPinned ? 'pinned-card' : '';
-            card.className = `group item-card bg-white rounded-[2rem] shadow-sticker border-2 border-gray-100 overflow-hidden mb-8 transition-all duration-300 ${pinnedClass}`;
+            card.className = `group item-card bg-white rounded-[2rem] shadow-sticker border-2 border-gray-100 overflow-hidden mb-8 transition-all duration-300 max-w-full ${pinnedClass}`;
             card.dataset.expanded = 'false';
 
             const typeConfig = this.typeConfig[item.type] || this.typeConfig['nota'];
@@ -576,7 +580,7 @@ export const ui = {
             }
 
             const pinnedClass = isPinned ? 'pinned-card' : '';
-            card.className = `item-card bg-white rounded-2xl p-4 shadow-sticker border-2 border-gray-100 group relative hover:z-10 transition-all mb-4 w-full cursor-pointer ${pinnedClass}`;
+            card.className = `item-card bg-white rounded-2xl p-4 shadow-sticker border-2 border-gray-100 group relative hover:z-10 transition-all mb-4 w-full max-w-full overflow-hidden cursor-pointer ${pinnedClass}`;
             card.dataset.expanded = 'false';
 
             // Renderizar etiquetas (tags)
@@ -618,7 +622,7 @@ export const ui = {
 
         // Mantener las clases de pinned card si corresponde
         const pinnedClasses = isPinned ? 'pinned-card expanded-card' : '';
-        card.className = `item-card bg-white rounded-[2rem] shadow-sticker border-2 border-gray-100 overflow-hidden mb-8 w-full transition-all duration-300 transform scale-[1.01] ${pinnedClasses}`;
+        card.className = `item-card bg-white rounded-[2rem] shadow-sticker border-2 border-gray-100 overflow-hidden mb-8 w-full max-w-full transition-all duration-300 transform scale-[1.01] ${pinnedClasses}`;
         card.dataset.expanded = 'true';
 
         const tareasHtml = (item.tareas || []).map((t, idx) => `

@@ -257,8 +257,32 @@ textarea.task-item-input:focus {
 textarea {
     field-sizing: content;
 }
-/* ?? Ajustes Mobile (Skill: mobile-design) */
-@media (max-width: 768px) { #kai-widget { bottom: 100px !important; } }
+/* Ajustes Mobile - EVITAR ESPACIO HORIZONTAL */
+@media (max-width: 768px) { 
+    #kai-widget { bottom: 100px !important; }
+    
+    /* Contenedor principal sin overflow horizontal */
+    body, html {
+        overflow-x: hidden;
+        max-width: 100vw;
+    }
+    
+    /* Grid de items ocupa todo el ancho disponible */
+    #items-container {
+        width: 100%;
+        max-width: 100vw;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+        box-sizing: border-box;
+    }
+    
+    /* Cards ocupan el 100% del contenedor */
+    #items-container .item-card {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+}
 
 /* === Pinned Cards Slider - Estilo Redes Sociales === */
 .pinned-section {
