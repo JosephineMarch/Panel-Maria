@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KAI - Tu Segundo Cerebro</title>
+    <meta name="description" content="PWA ADHD-Friendly para organizar tu vida">
+    <meta name="theme-color" content="#FFB7C5">
+
+    <!-- iOS support -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="KAI">
+    <link rel="apple-touch-icon" href="./src/assets/icon-192.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="./src/assets/icon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="./src/assets/icon-512.png">
+    <link rel="apple-touch-startup-image" href="./src/assets/icon-512.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+
+    <link rel="stylesheet" href="./src/css/style.css">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/png" href="./src/assets/icon-192.png">
+
+    <!-- Google Fonts: Poppins & Patrick Hand (Handwritten) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Patrick+Hand&display=swap"
+        rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                        hand: ['Patrick Hand', 'cursive'],
+                    },
+                    colors: {
+                        'cream': '#FFFDF5',
+                        'sugar-pink': '#FFB7C5',
+                        'hot-pink': '#FF69B4',
+                        'soft-blue': '#AEC6CF',
+                        'mint': '#B9FBC0',
+                        'lavender': '#E6E6FA',
+                        'lemon': '#FDFD96',
+                        'peach': '#FFDAC1',
+                        'ink': '#4A4A4A',
+                        'brand': '#FFB7C5',
+                        'brand-dark': '#FF9EAA',
+                        'action': '#AEC6CF',
+                        'success': '#B9FBC0',
+                        'warning': '#FDFD96',
+                        'urgent': '#FFDAC1',
+                        'accent': '#E6E6FA',
+                        'card-bg': '#FFFFFF',
+                        'input-bg': '#F3F4F6',
+                    },
+                    borderRadius: {
+                        'blob': '2rem',
+                    },
+                    boxShadow: {
+                        'bubble': '0 4px 0px 0px rgba(0,0,0,0.05)',
+                        'sticker': '0 6px 0px 0px rgba(0,0,0,0.08)',
+                        'sticker-hover': '0 8px 0px 0px rgba(0,0,0,0.08)',
+                        'pressed': 'inset 0 4px 6px rgba(0,0,0,0.1)',
+                        'float': '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                    },
+                    animation: {
+                        'float': 'float 3s ease-in-out infinite',
+                        'bounce-slow': 'bounce 3s infinite',
+                        'wiggle': 'wiggle 1s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-5px)' },
+                        },
+                        wiggle: {
+                            '0%, 100%': { transform: 'rotate(-3deg)' },
+                            '50%': { transform: 'rotate(3deg)' },
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-white font-sans text-ink min-h-screen flex flex-col selection:bg-sugar-pink selection:text-white">
+
+    <!-- Left Sidebar (Like WhatsApp/Telegram) -->
+    <aside id="sidebar" class="fixed top-0 left-0 w-80 max-w-[85vw] h-full bg-white shadow-float z-[70] transform -translate-x-full transition-transform duration-300 overflow-hidden" role="navigation" aria-label="Menú de navegación">
+        <div class="p-4 border-b border-gray-100 flex justify-between items-center absolute top-0 left-0 right-0">
+            <h2 class="text-lg font-bold">Menú</h2>
+            <button id="btn-close-sidebar" class="w-12 h-12 rounded-full hover:bg-gray-100 flex items-center justify-center transition focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer" aria-label="Cerrar menú">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+        </div>
+
+        <!-- User Section -->
+        <div class="p-4 border-b border-gray-100">
+            <div id="auth-form" class="text-center py-4">
+                <p class="mb-4 font-bold text-gray-600 text-sm">¡Conecta tu cerebro!</p>
+                <button type="button" id="btn-google" class="w-full bg-white border-2 border-brand text-brand font-bold py-3 px-4 rounded-2xl shadow-sticker hover:bg-brand hover:text-white transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer">
+                    <span aria-hidden="true">🌐</span> Google Login
+                </button>
+            </div>
+            <div id="user-info" class="hidden flex items-center gap-3">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=ffdfbf" alt="Avatar del usuario" class="w-12 h-12 rounded-full bg-peach/20 border-2 border-brand">
+                <div class="flex-1 min-w-0">
+                    <p class="font-bold text-sm truncate text-gray-700" id="user-email">Usuario</p>
+                    <p class="text-xs text-green-600">● En línea</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="p-4 space-y-2" role="navigation" aria-label="Opciones del menú">
+            <button id="btn-kai-sidebar" class="w-full text-left px-4 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white flex items-center gap-3 transition focus:outline-none focus:ring-2 focus:ring-purple-400 cursor-pointer">
+                <img src="./src/assets/icon-192.png" class="w-6 h-6 rounded-full" alt="Kai">
+                <span class="font-bold text-base">KAI Asistente</span>
+            </button>
+
+            <button id="btn-logout" class="hidden w-full text-left px-4 py-3 rounded-xl hover:bg-red-50 text-red-500 flex items-center gap-3 transition focus:outline-none focus:ring-2 focus:ring-red-400 cursor-pointer">
+                <i class="fa-solid fa-sign-out-alt"></i>
+                <span class="font-bold text-base">Cerrar sesión</span>
+            </button>
+
+            <div class="pt-4 border-t border-gray-100 space-y-2">
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 mb-2">Mi Progreso</p>
+                <button id="btn-dashboard" class="w-full text-left px-4 py-3 rounded-xl bg-sugar-pink/10 text-brand flex items-center gap-3 transition focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer">
+                    <i class="fa-solid fa-trophy"></i>
+                    <span class="font-bold text-base">Dashboard de Logros</span>
+                </button>
+            </div>
+
+            <div class="pt-4 border-t border-gray-100 space-y-2">
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 mb-2">Datos y Seguridad</p>
+                <button id="btn-export" class="w-full text-left px-4 py-3 rounded-xl hover:bg-brand/5 text-ink flex items-center gap-3 transition focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer">
+                    <i class="fa-solid fa-file-export text-brand"></i>
+                    <span class="font-bold text-base">Exportar JSON</span>
+                </button>
+                <button id="btn-import" class="w-full text-left px-4 py-3 rounded-xl hover:bg-brand/5 text-ink flex items-center gap-3 transition focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer">
+                    <i class="fa-solid fa-file-import text-brand"></i>
+                    <span class="font-bold text-base">Importar JSON</span>
+                </button>
+                <input type="file" id="import-file" class="hidden" accept=".json">
+            </div>
+        </nav>
+    </aside>
+
+    <!-- Sidebar Overlay -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/20 z-[65] hidden transition-opacity" role="presentation" aria-hidden="true"></div>
+
+    <!-- ==================== HEADER ==================== -->
+    <header class="bg-white z-[60] border-b border-gray-100 sticky top-0" role="banner">
+        <div class="flex items-center justify-between px-4 py-3">
+            <button id="btn-menu" class="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition" aria-label="Abrir menú">
+                <i class="fa-solid fa-bars text-xl text-brand"></i>
+            </button>
+            <h1 class="font-bold text-lg text-ink" role="heading" aria-level="1">Panel de María</h1>
+            <div class="flex items-center gap-2">
+                <button id="btn-heart" title="Salud" class="w-10 h-10 rounded-full bg-brand/10 hover:bg-brand/20 flex items-center justify-center transition text-xl">❤</button>
+                <button id="btn-home-header" title="Inicio" class="w-10 h-10 rounded-full bg-brand/10 hover:bg-brand/20 flex items-center justify-center transition text-xl">🏠</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ==================== MAIN CONTENT ==================== -->
+    <main class="flex-1 max-w-7xl mx-auto w-full px-3 py-4 space-y-6 pb-24 no-scrollbar" role="main">
+
+        <!-- ==================== SECCIÓN INICIO ==================== -->
+        <section id="section-inicio" class="space-y-4">
+            <!-- Saludo dinámico -->
+            <div class="text-center py-2">
+                <h2 id="saludo" class="text-xl font-bold text-brand">¡Buenos días, María! ✨</h2>
+            </div>
+
+            <!-- Cards de filtro rápido -->
+            <div class="flex gap-3">
+                <button id="card-pendientes" class="flex-1 py-4 rounded-2xl bg-brand/10 border-2 border-brand/30 flex flex-col items-center cursor-pointer hover:scale-[1.02] transition">
+                    <span class="text-2xl mb-1">📋</span>
+                    <span class="text-xs font-bold text-brand">Pendientes</span>
+                    <span id="count-pendientes" class="text-lg font-bold text-brand">0</span>
+                </button>
+                <button id="card-logradas" class="flex-1 py-4 rounded-2xl bg-success/20 border-2 border-success/30 flex flex-col items-center cursor-pointer hover:scale-[1.02] transition">
+                    <span class="text-2xl mb-1">✅</span>
+                    <span class="text-xs font-bold text-green-600">Logradas</span>
+                    <span id="count-logradas" class="text-lg font-bold text-green-600">0</span>
+                </button>
+            </div>
+
+            <!-- Filtro por Tags -->
+            <div id="tags-filter" class="flex gap-2 overflow-x-auto no-scrollbar">
+                <button class="tag-filter px-3 py-1 bg-brand/10 text-brand rounded-full text-xs font-bold border border-brand/20 hover:border-brand hover:bg-brand/20 transition-colors whitespace-nowrap cursor-pointer" data-tag="">Todos</button>
+                <button class="tag-filter px-3 py-1 bg-brand/10 text-brand rounded-full text-xs font-bold border border-brand/20 hover:border-brand hover:bg-brand/20 transition-colors whitespace-nowrap cursor-pointer" data-tag="logro">#logro</button>
+                <button class="tag-filter px-3 py-1 bg-brand/10 text-brand rounded-full text-xs font-bold border border-brand/20 hover:border-brand hover:bg-brand/20 transition-colors whitespace-nowrap cursor-pointer" data-tag="salud">#salud</button>
+                <button class="tag-filter px-3 py-1 bg-brand/10 text-brand rounded-full text-xs font-bold border border-brand/20 hover:border-brand hover:bg-brand/20 transition-colors whitespace-nowrap cursor-pointer" data-tag="mi-mes">#mi-mes</button>
+                <button class="tag-filter px-3 py-1 bg-brand/10 text-brand rounded-full text-xs font-bold border border-brand/20 hover:border-brand hover:bg-brand/20 transition-colors whitespace-nowrap cursor-pointer" data-tag="emocion">#emocion</button>
+            </div>
+
+            <!-- Lista de tareas (scroll infinito) -->
+            <div id="inicio-tasks" class="space-y-3">
+                <p class="text-center text-gray-400 py-8">No hay tareas</p>
+            </div>
+
+            <!-- Botón Pomodoro flotante -->
+            <button id="btn-pomodoro" class="fixed bottom-24 right-4 w-14 h-14 rounded-full bg-hot-pink text-white shadow-float flex items-center justify-center hover:scale-110 transition z-30" title="Iniciar Pomodoro">
+                <span class="text-2xl">⏱</span>
+            </button>
+        </section>
+
+        <!-- ==================== SECCIÓN SALUD ==================== -->
+        <section id="section-salud" class="hidden space-y-6">
+            <!-- Fecha actual -->
+            <div class="bg-brand/5 border-2 border-brand/20 p-4 rounded-[2.5rem] shadow-sm">
+                <div class="text-center">
+                    <h2 id="salud-fecha" class="text-2xl font-bold text-brand">Lunes 13 de Marzo</h2>
+                    <p id="salud-hora" class="text-gray-500 text-sm">Buenos días</p>
+                </div>
+            </div>
+
+            <!-- CHECK-IN: ¿CÓMO ESTÁS? -->
+            <div class="bg-brand/5 border-2 border-brand/20 p-6 rounded-[2.5rem] shadow-sticker">
+                <h3 class="font-bold text-xl mb-4 flex items-center gap-2">
+                    <span class="text-2xl">🤠</span> ¿Cómo estás?
+                </h3>
+                
+                <!-- Estado emocional -->
+                <div class="mb-5">
+                    <label class="text-sm font-semibold text-gray-600 mb-3 block">Elegí cómo te sentís</label>
+                    <div class="flex gap-2 justify-between">
+                        <button class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-gray-100 text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm" data-emoji="feliz">😊</button>
+                        <button class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-gray-100 text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm" data-emoji="bien">🙂</button>
+                        <button class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-gray-100 text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm" data-emoji="normal">😐</button>
+                        <button class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-gray-100 text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm" data-emoji="mal">😔</button>
+                        <button class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-gray-100 text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm" data-emoji="genial">🤩</button>
+                    </div>
+                </div>
+
+                <!-- Físicamente -->
+                <div class="mb-5">
+                    <label class="text-sm font-semibold text-gray-600 mb-2 block">Físicamente</label>
+                    <input type="text" id="checkin-physical" placeholder="Ej: Con sueño, con energía..." class="w-full bg-white border-2 border-gray-100 rounded-blob px-4 py-3 text-sm font-medium focus:outline-none focus:border-brand shadow-sm">
+                </div>
+
+                <!-- Nota rápida -->
+                <div class="mb-4">
+                    <label class="text-sm font-semibold text-gray-600 mb-2 block">Nota (opcional)</label>
+                    <textarea id="checkin-note" placeholder="¿Algo que quieras recordar de hoy?" rows="2" class="w-full bg-white border-2 border-gray-100 rounded-blob px-4 py-3 text-sm font-medium focus:outline-none focus:border-brand shadow-sm resize-none"></textarea>
+                </div>
+
+                <button id="btn-save-checkin" class="w-full bg-brand text-white font-bold py-3 rounded-2xl shadow-sticker hover:bg-brand-dark hover:scale-[1.02] active:scale-[0.98] transition-all">
+                    Guardar check-in
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== SECCIÓN HISTORIAL ==================== -->
+        <section id="section-historial" class="hidden space-y-4">
+            <div class="text-center py-8">
+                <div class="text-6xl mb-4">📅</div>
+                <h2 class="text-2xl font-bold text-gray-400">Historial</h2>
+                <p class="text-gray-400 px-8"> Aquí van todas tus tareas, notas y enlaces guardados.</p>
+            </div>
+        </section>
+
+        <!-- ==================== SECCIÓN BAÚL ==================== -->
+        <section id="section-baul" class="hidden space-y-6">
+            <div class="text-center py-8">
+                <div class="text-6xl mb-4">🏗️</div>
+                <h2 class="text-2xl font-bold text-gray-400 mb-2">En Construcción</h2>
+                <p class="text-gray-400 px-8">Estamos preparando este espacio para vos. ¡Muy pronto estará listo!</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==================== BOTTOM NAVIGATION ==================== -->
+    <nav id="bottom-nav" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-40 pb-[env(safe-area-inset-bottom)]">
+        <div class="flex items-center justify-around px-2 py-2 relative">
+            <button class="nav-tab flex flex-col items-center py-1 px-3 text-gray-400" data-section="inicio">
+                <span class="text-xl">🏠</span>
+                <span class="text-[10px] font-bold">Inicio</span>
+            </button>
+            <button class="nav-tab flex flex-col items-center py-1 px-3 text-gray-400" data-section="salud">
+                <span class="text-xl">❤</span>
+                <span class="text-[10px] font-bold">Salud</span>
+            </button>
+            <button class="nav-tab flex flex-col items-center py-1 px-3 text-gray-400" data-section="historial">
+                <span class="text-xl">📅</span>
+                <span class="text-[10px] font-bold">Historial</span>
+            </button>
+            <button class="nav-tab flex flex-col items-center py-1 px-3 text-gray-400" data-section="baul">
+                <span class="text-xl">📦</span>
+                <span class="text-[10px] font-bold">Baúl</span>
+            </button>
+            
+            <!-- Botón crear (flotante centrado) -->
+            <button id="btn-crear" class="absolute -top-6 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full bg-brand text-white shadow-float flex items-center justify-center hover:scale-110 transition z-50">
+                <i class="fa-solid fa-plus text-2xl"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ==================== OMNI-EDITOR MODAL ==================== -->
+    <div id="modal-omni" class="fixed inset-0 bg-ink/20 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-4" role="dialog" aria-modal="true">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 relative">
+            <button id="btn-close-omni" class="absolute top-4 right-4 w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition" aria-label="Cerrar">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            
+            <h3 class="text-xl font-bold mb-4 text-brand">Nueva Tarea</h3>
+            
+            <!-- Switch rápido de tipo -->
+            <div class="flex gap-2 mb-4">
+                <button class="omni-type-btn flex-1 py-2 rounded-xl bg-brand text-white font-bold text-sm" data-type="tarea">Tarea</button>
+                <button class="omni-type-btn flex-1 py-2 rounded-xl bg-gray-100 text-gray-500 font-bold text-sm" data-type="nota">Nota</button>
+                <button class="omni-type-btn flex-1 py-2 rounded-xl bg-gray-100 text-gray-500 font-bold text-sm" data-type="enlace">Enlace</button>
+            </div>
+            
+            <!-- Input principal -->
+            <input type="text" id="omni-content" placeholder="¿Qué tienes en mente?" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-brand mb-4">
+            
+            <!-- Tags -->
+            <div class="mb-4">
+                <label class="text-xs font-bold text-gray-400 mb-2 block">Tags</label>
+                <div class="flex gap-2 flex-wrap">
+                    <button class="omni-tag px-2 py-1 rounded-lg text-xs font-semibold bg-brand/10 text-brand border border-brand/30 cursor-pointer" data-tag="logro">#logro</button>
+                    <button class="omni-tag px-2 py-1 rounded-lg text-xs font-semibold bg-brand/10 text-brand border border-brand/30 cursor-pointer" data-tag="salud">#salud</button>
+                    <button class="omni-tag px-2 py-1 rounded-lg text-xs font-semibold bg-brand/10 text-brand border border-brand/30 cursor-pointer" data-tag="mi-mes">#mi-mes</button>
+                    <button class="omni-tag px-2 py-1 rounded-lg text-xs font-semibold bg-brand/10 text-brand border border-brand/30 cursor-pointer" data-tag="emocion">#emocion</button>
+                </div>
+            </div>
+            
+            <button id="btn-save-omni" class="w-full bg-brand text-white font-bold py-3 rounded-xl shadow-sticker hover:bg-brand-dark transition-all">
+                Guardar
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== JAVASCRIPT ==================== -->
+    <script>
+    let currentSection = 'inicio';
+    let selectedTag = '';
+    let filterStatus = 'all';
+
+    // Inicializar
+    document.addEventListener('DOMContentLoaded', () => {
+        initNav();
+        initSaludo();
+        initFilterCards();
+        initTags();
+        initOmniEditor();
+        initStyles();
+        loadInicioTasks();
+        
+        // Por defecto mostrar Inicio
+        switchSection('inicio');
+    });
+
+    // Bottom Navigation
+    function initNav() {
+        // Botones del header
+        document.getElementById('btn-menu')?.addEventListener('click', () => {
+            document.getElementById('sidebar')?.classList.remove('-translate-x-full');
+            document.getElementById('sidebar-overlay')?.classList.remove('hidden');
+        });
+
+        document.getElementById('btn-close-sidebar')?.addEventListener('click', () => {
+            document.getElementById('sidebar')?.classList.add('-translate-x-full');
+            document.getElementById('sidebar-overlay')?.classList.add('hidden');
+        });
+
+        document.getElementById('sidebar-overlay')?.addEventListener('click', () => {
+            document.getElementById('sidebar')?.classList.add('-translate-x-full');
+            document.getElementById('sidebar-overlay')?.classList.add('hidden');
+        });
+
+        document.getElementById('btn-heart')?.addEventListener('click', () => {
+            switchSection('salud');
+        });
+
+        document.getElementById('btn-home-header')?.addEventListener('click', () => {
+            switchSection('inicio');
+        });
+
+        // Bottom nav tabs
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const section = tab.dataset.section;
+                switchSection(section);
+            });
+        });
+
+        // Botón crear
+        document.getElementById('btn-crear')?.addEventListener('click', () => {
+            document.getElementById('modal-omni').classList.remove('hidden');
+        });
+
+        // Botón Pomodoro
+        document.getElementById('btn-pomodoro')?.addEventListener('click', () => {
+            alert('🎯 ¡Iniciando Pomodoro! 25 minutos de focus');
+        });
+    }
+
+    function switchSection(section) {
+        currentSection = section;
+        
+        // Ocultar todas las secciones
+        document.getElementById('section-inicio').classList.add('hidden');
+        document.getElementById('section-salud').classList.add('hidden');
+        document.getElementById('section-historial').classList.add('hidden');
+        document.getElementById('section-baul').classList.add('hidden');
+        
+        // Mostrar sección seleccionada
+        document.getElementById(`section-${section}`).classList.remove('hidden');
+        
+        // Actualizar tabs
+        document.querySelectorAll('.nav-tab').forEach(t => {
+            if (t.dataset.section === section) {
+                t.classList.add('text-brand');
+                t.classList.remove('text-gray-400');
+            } else {
+                t.classList.remove('text-brand');
+                t.classList.add('text-gray-400');
+            }
+        });
+    }
+
+    // Saludo dinámico
+    function initSaludo() {
+        const fecha = new Date();
+        const hora = fecha.getHours();
+        let saludo = '¡Buenos días';
+        let emoji = '☀️';
+        
+        if (hora >= 12 && hora < 18) {
+            saludo = '¡Buenas tardes';
+            emoji = '🌤️';
+        } else if (hora >= 18 && hora < 22) {
+            saludo = '¡Buenas noches';
+            emoji = '🌙';
+        } else if (hora >= 22 || hora < 6) {
+            saludo = '¡Aún estás despierta';
+            emoji = '🌙';
+        }
+        
+        const nombre = 'María';
+        document.getElementById('saludo').textContent = `${saludo}, ${nombre}! ${emoji}`;
+        
+        // Fecha en sección salud
+        const opcionesFecha = { weekday: 'long', day: 'numeric', month: 'long' };
+        const fechaStr = fecha.toLocaleDateString('es-ES', opcionesFecha);
+        document.getElementById('salud-fecha').textContent = fechaStr.charAt(0).toUpperCase() + fechaStr.slice(1);
+        
+        let horaSaludo = 'Buenos días';
+        if (hora >= 12 && hora < 18) horaSaludo = 'Buenas tardes';
+        if (hora >= 18) horaSaludo = 'Buenas noches';
+        document.getElementById('salud-hora').textContent = horaSaludo;
+    }
+
+    // Filter cards (Pendientes/Logradas)
+    function initFilterCards() {
+        document.getElementById('card-pendientes')?.addEventListener('click', () => {
+            filterStatus = 'pending';
+            loadInicioTasks();
+        });
+        
+        document.getElementById('card-logradas')?.addEventListener('click', () => {
+            filterStatus = 'completed';
+            loadInicioTasks();
+        });
+    }
+
+    // Filter por tags
+    function initTags() {
+        document.querySelectorAll('.tag-filter').forEach(btn => {
+            btn.addEventListener('click', () => {
+                selectedTag = btn.dataset.tag;
+                
+                // Update visual
+                document.querySelectorAll('.tag-filter').forEach(b => {
+                    b.classList.remove('bg-brand', 'text-white');
+                    b.classList.add('bg-brand/10', 'text-brand');
+                });
+                btn.classList.remove('bg-brand/10', 'text-brand');
+                btn.classList.add('bg-brand', 'text-white');
+                
+                loadInicioTasks();
+            });
+        });
+    }
+
+    // Cargar tareas en Inicio
+    function loadInicioTasks() {
+        const container = document.getElementById('inicio-tasks');
+        
+        // Get from localStorage
+        let tasks = JSON.parse(localStorage.getItem('hoy_tasks') || '[]');
+        
+        // Filter por estado
+        if (filterStatus === 'pending') {
+            tasks = tasks.filter(t => !t.completed);
+        } else if (filterStatus === 'completed') {
+            tasks = tasks.filter(t => t.completed);
+        }
+        
+        // Filter por tag
+        if (selectedTag) {
+            tasks = tasks.filter(t => t.tags && t.tags.includes(selectedTag));
+        }
+        
+        // Sort por fecha (más reciente primero)
+        tasks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        
+        // Render
+        if (tasks.length === 0) {
+            container.innerHTML = '<p class="text-center text-gray-400 py-8">No hay tareas</p>';
+        } else {
+            container.innerHTML = tasks.map(t => `
+                <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3">
+                    <input type="checkbox" class="task-checkbox" data-id="${t.id}" ${t.completed ? 'checked' : ''}>
+                    <div class="flex-1">
+                        <p class="font-bold ${t.completed ? 'text-gray-400 line-through' : 'text-ink'}">${t.content}</p>
+                        <p class="text-xs text-gray-400">${t.points ? t.points + ' pts' : ''}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            // Add event listeners
+            document.querySelectorAll('.task-checkbox').forEach(cb => {
+                cb.addEventListener('change', (e) => {
+                    toggleTask(cb.dataset.id, e.target.checked);
+                    loadInicioTasks();
+                });
+            });
+        }
+        
+        // Update counts
+        const allTasks = JSON.parse(localStorage.getItem('hoy_tasks') || '[]');
+        const pending = allTasks.filter(t => !t.completed).length;
+        const completed = allTasks.filter(t => t.completed).length;
+        
+        document.getElementById('count-pendientes').textContent = pending;
+        document.getElementById('count-logradas').textContent = completed;
+    }
+
+    function toggleTask(id, completed) {
+        let tasks = JSON.parse(localStorage.getItem('hoy_tasks') || '[]');
+        const idx = tasks.findIndex(t => t.id === id);
+        if (idx !== -1) {
+            tasks[idx].completed =Completed;
+            tasks[idx].updatedAt = new Date().toISOString();
+            localStorage.setItem('hoy_tasks', JSON.stringify(tasks));
+        }
+    }
+
+    // Omni-Editor
+    function initOmniEditor() {
+        // Cerrar modal
+        document.getElementById('btn-close-omni')?.addEventListener('click', () => {
+            document.getElementById('modal-omni').classList.add('hidden');
+        });
+        
+        // Switch tipo
+        document.querySelectorAll('.omni-type-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.omni-type-btn').forEach(b => {
+                    b.classList.remove('bg-brand', 'text-white');
+                    b.classList.add('bg-gray-100', 'text-gray-500');
+                });
+                btn.classList.remove('bg-gray-100', 'text-gray-500');
+                btn.classList.add('bg-brand', 'text-white');
+            });
+        });
+        
+        // Guardar
+        document.getElementById('btn-save-omni')?.addEventListener('click', () => {
+            const content = document.getElementById('omni-content').value.trim();
+            if (!content) return;
+            
+            // Create task in localStorage
+            let tasks = JSON.parse(localStorage.getItem('hoy_tasks') || '[]');
+            tasks.push({
+                id: Date.now().toString(),
+                content: content,
+                type: 'tarea',
+                completed: false,
+                tags: [],
+                points: 0,
+                createdAt: new Date().toISOString()
+            });
+            localStorage.setItem('hoy_tasks', JSON.stringify(tasks));
+            
+            // Close modal and clean
+            document.getElementById('modal-omni').classList.add('hidden');
+            document.getElementById('omni-content').value = '';
+            
+            // Reload
+            loadInicioTasks();
+        });
+    }
+
+    // Estilos para checkboxes
+    function initStyles() {
+        const style = document.createElement('style');
+        style.textContent = `
+            .task-checkbox {
+                appearance: none;
+                width: 24px;
+                height: 24px;
+                border: 2px solid #AEC6CF;
+                border-radius: 8px;
+                background: white;
+                cursor: pointer;
+                position: relative;
+                transition: all 0.2s;
+                flex-shrink: 0;
+            }
+            .task-checkbox:checked {
+                background: #B9FBC0;
+                border-color: #B9FBC0;
+            }
+            .task-checkbox:checked::after {
+                content: '✓';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: #4A4A4A;
+                font-size: 14px;
+                font-weight: bold;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Exponer
+    window.switchSection = switchSection;
+    </script>
+</body>
+</html>
