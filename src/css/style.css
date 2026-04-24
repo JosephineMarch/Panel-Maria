@@ -1,31 +1,30 @@
-/* 🎨 KAI - ADHD-Friendly Design System */
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Patrick+Hand&display=swap');
+/* KAI - ADHD-Friendly Design System */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
 :root {
-    --brand: #FFB7C5;
-    --brand-dark: #FF9EAA;
+    --primary: #ff9ba7;
+    --primary-dark: #fe6d7f;
+    --secondary: #19c9cc;
+    --accent: #ffde8d;
     --cream: #FFFDF5;
-    --ink: #1E293B;
-    --ink-light: #64748B;
-    --app-bg: #FFFFFF;
+    --ink: #4A4A4A;
+    --ink-light: #9ca3af;
+    --app-bg: var(--cream);
+    --card-bg: #FFFFFF;
+    --border-soft: #f3e8e8;
 
-    --color-proyecto: #37d9e0;
-    --color-proyecto-dark: #2fc8d5;
-    --color-note: #a1e4f5;
-    --color-note-dark: #59a8cf;
-    --color-link: #CFFAFE;
-    --color-link-dark: #06B6D4;
+    --color-proyecto: #FFDAC1;
+    --color-note: var(--primary);
+    --color-link: var(--secondary);
     --color-alarm: #FFE4E6;
-    --color-alarm-dark: #F43F5E;
-    --color-logro: #DCFCE7;
-    --color-logro-dark: #22C55E;
+    --color-logro: #B9FBC0;
 
-    --text-xs: 0.75rem;     /* 12px */
-    --text-sm: 0.875rem;    /* 14px */
-    --text-base: 1rem;      /* 16px */
-    --text-lg: 1.125rem;    /* 18px */
-    --text-xl: 1.25rem;     /* 20px */
-    --text-2xl: 1.5rem;     /* 24px */
+    --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
+    --text-base: 1rem;
+    --text-lg: 1.125rem;
+    --text-xl: 1.25rem;
+    --text-2xl: 1.5rem;
 
     --z-dropdown: 10;
     --z-sticky: 20;
@@ -37,10 +36,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-
-    *,
-    *::before,
-    *::after {
+    *, *::before, *::after {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
@@ -48,16 +44,14 @@
 }
 
 *:focus-visible {
-    outline: 2px solid var(--brand);
+    outline: 2px solid var(--primary);
     outline-offset: 2px;
 }
 
 body {
-    background-color: var(--app-bg);
-    background-image: radial-gradient(#E2E8F0 1px, transparent 1px);
-    background-size: 20px 20px;
+    background-color: var(--cream);
     color: var(--ink);
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: 'Poppins', sans-serif;
     font-size: 16px;
     margin: 0;
     min-height: 100vh;
@@ -146,7 +140,7 @@ body {
     cursor: pointer;
     position: relative;
     transition: all 0.2s;
-    background: var(--brand);
+    background: var(--primary);
     opacity: 0.4;
 }
 
@@ -165,7 +159,7 @@ body {
 }
 
 .font-hand {
-    font-family: 'Patrick Hand', cursive;
+    font-family: 'Poppins', sans-serif;
 }
 
 i {
@@ -199,7 +193,7 @@ i {
 }
 
 .wish-item:hover {
-    background-color: var(--brand);
+    background-color: var(--primary);
     color: white !important;
     transform: scale(1.05);
 }
@@ -316,7 +310,7 @@ textarea {
     padding: 0 !important;
     margin: 0 !important;
     overflow: hidden !important;
-    border: 2px solid var(--brand, #FFB7C5) !important;
+    border: 2px solid var(--primary, #FFB7C5) !important;
     box-shadow: 0 2px 8px rgba(255, 183, 197, 0.3) !important;
     cursor: pointer !important;
 }
@@ -478,6 +472,6 @@ textarea {
 
 /* Card pinned compacta (para cuando se mueve fuera del slider) */
 .pinned-card {
-    border: 2px solid var(--brand, #FFB7C5) !important;
+    border: 2px solid var(--primary, #FFB7C5) !important;
     box-shadow: 0 4px 12px rgba(255, 183, 197, 0.2);
 }

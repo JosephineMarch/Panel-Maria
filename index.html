@@ -23,11 +23,11 @@
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" type="image/png" href="./src/assets/icon-192.png">
 
-    <!-- Google Fonts: Poppins & Patrick Hand (Handwritten) -->
+    <!-- Google Fonts: Poppins Only -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Patrick+Hand&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
 
     <!-- Font Awesome -->
@@ -44,27 +44,29 @@
                 extend: {
                     fontFamily: {
                         sans: ['Poppins', 'sans-serif'],
-                        hand: ['Patrick Hand', 'cursive'],
                     },
                     colors: {
                         'cream': '#FFFDF5',
-                        'sugar-pink': '#FFB7C5',
-                        'hot-pink': '#FF69B4',
+                        'primary': '#ff9ba7',
+                        'primary-dark': '#fe6d7f',
+                        'secondary': '#19c9cc',
+                        'accent': '#ffde8d',
                         'soft-blue': '#AEC6CF',
                         'mint': '#B9FBC0',
                         'lavender': '#E6E6FA',
                         'lemon': '#FDFD96',
                         'peach': '#FFDAC1',
                         'ink': '#4A4A4A',
-                        'brand': '#FFB7C5',
-                        'brand-dark': '#FF9EAA',
-                        'action': '#AEC6CF',
+                        'brand': '#ff9ba7',
+                        'brand-dark': '#fe6d7f',
+                        'action': '#19c9cc',
                         'success': '#B9FBC0',
-                        'warning': '#FDFD96',
+                        'warning': '#ffde8d',
                         'urgent': '#FFDAC1',
-                        'accent': '#E6E6FA',
                         'card-bg': '#FFFFFF',
                         'input-bg': '#F3F4F6',
+                        'text-muted': '#9ca3af',
+                        'border-soft': '#f3e8e8',
                     },
                     borderRadius: {
                         'blob': '2rem',
@@ -97,13 +99,13 @@
     </script>
 </head>
 
-<body class="bg-white font-sans text-ink min-h-screen flex flex-col selection:bg-sugar-pink selection:text-white">
+<body class="bg-cream font-sans text-ink min-h-screen flex flex-col selection:bg-primary selection:text-white">
 
     <!-- Left Sidebar (Like WhatsApp/Telegram) -->
     <aside id="sidebar"
         class="fixed top-0 left-0 w-80 max-w-[85vw] h-full bg-white shadow-float z-[70] transform -translate-x-full transition-transform duration-300 overflow-hidden pt-20"
         role="navigation" aria-label="Menú de navegación">
-        <div class="p-4 border-b border-gray-100 flex justify-between items-center absolute top-0 left-0 right-0">
+        <div class="p-4 border-b border-border-soft flex justify-between items-center absolute top-0 left-0 right-0">
             <h2 class="text-lg font-bold">Menú</h2>
             <button id="btn-close-sidebar"
                 class="w-12 h-12 rounded-full hover:bg-gray-100 flex items-center justify-center transition focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer"
@@ -113,7 +115,7 @@
         </div>
 
         <!-- User Section -->
-        <div class="p-4 border-b border-gray-100">
+        <div class="p-4 border-b border-border-soft">
             <div id="auth-form" class="text-center py-4">
                 <p class="mb-4 font-bold text-gray-600 text-sm">¡Conecta tu cerebro!</p>
                 <button type="button" id="btn-google"
@@ -136,7 +138,7 @@
             <!-- Kai Assistant in Sidebar -->
             <div class="space-y-2">
                 <button id="btn-kai-sidebar"
-                    class="w-full text-left px-4 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white flex items-center gap-3 transition focus:outline-none focus:ring-2 focus:ring-purple-400 cursor-pointer">
+                    class="w-full text-left px-4 py-3 rounded-xl bg-primary text-white flex items-center gap-3 transition focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer">
                     <img src="./src/assets/icon-192.png" class="w-6 h-6 rounded-full" alt="Kai">
                     <span class="font-bold text-base">KAI Asistente</span>
                 </button>
@@ -155,16 +157,16 @@
                 <span class="font-bold text-base">Cerrar sesión</span>
             </button>
 
-            <div class="pt-4 border-t border-gray-100 space-y-2">
+            <div class="pt-4 border-t border-border-soft space-y-2">
                 <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 mb-2">Mi Progreso</p>
                 <button id="btn-dashboard"
-                    class="w-full text-left px-4 py-3 rounded-xl bg-sugar-pink/10 text-brand flex items-center gap-3 transition focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer">
+                    class="w-full text-left px-4 py-3 rounded-xl bg-primary/10 text-brand flex items-center gap-3 transition focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer">
                     <i class="fa-solid fa-trophy" aria-hidden="true"></i>
                     <span class="font-bold text-base">Dashboard de Logros</span>
                 </button>
             </div>
 
-            <div class="pt-4 border-t border-gray-100 space-y-2">
+            <div class="pt-4 border-t border-border-soft space-y-2">
                 <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 mb-2">Datos y Seguridad</p>
                 <button id="btn-export"
                     class="w-full text-left px-4 py-3 rounded-xl hover:bg-brand/5 text-ink flex items-center gap-3 transition focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer">
@@ -179,7 +181,7 @@
                 <input type="file" id="import-file" class="hidden" accept=".json">
             </div>
 
-            <div id="demo-controls" class="hidden pt-4 border-t border-gray-100">
+            <div id="demo-controls" class="hidden pt-4 border-t border-border-soft">
                 <button type="button" id="btn-regenerate-demo"
                     class="w-full bg-lemon text-ink font-bold py-3 px-4 rounded-2xl shadow-sticker hover:brightness-95 transition-all flex items-center justify-center gap-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer">
                     <span aria-hidden="true">🔄</span> Regenerar Demo
@@ -193,7 +195,7 @@
         aria-hidden="true"></div>
 
     <!-- HEADER -->
-    <header class="bg-white z-[60] border-b border-gray-100 sticky top-0" role="banner">
+    <header class="bg-white z-[60] border-b border-border-soft sticky top-0" role="banner">
         <!-- Top: User + Title + Home -->
         <div class="flex items-center justify-between px-4 py-3">
             <div id="btn-user"
@@ -267,11 +269,11 @@
                 <div class="mb-5">
                     <label class="text-sm font-semibold text-gray-600 mb-3 block">Elegí cómo te sentís</label>
                     <div class="flex gap-2 justify-between">
-                        <button class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-gray-100 text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm" data-emoji="feliz" title="Feliz">😊</button>
-                        <button class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-gray-100 text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm" data-emoji="bien" title="Bien">🙂</button>
-                        <button class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-gray-100 text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm" data-emoji="normal" title="Normal">😐</button>
-                        <button class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-gray-100 text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm" data-emoji="mal" title="Mal">😔</button>
-                        <button class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-gray-100 text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm" data-emoji="genial" title="Genial">🤩</button>
+                        <button class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-border-soft text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm" data-emoji="feliz" title="Feliz">😊</button>
+                        <button class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-border-soft text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm" data-emoji="bien" title="Bien">🙂</button>
+                        <button class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-border-soft text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm" data-emoji="normal" title="Normal">😐</button>
+                        <button class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-border-soft text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm" data-emoji="mal" title="Mal">😔</button>
+                        <button class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-border-soft text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm" data-emoji="genial" title="Genial">🤩</button>
                     </div>
                 </div>
 
@@ -279,14 +281,14 @@
                 <div class="mb-5">
                     <label class="text-sm font-semibold text-gray-600 mb-2 block">Físicamente</label>
                     <input type="text" id="checkin-physical" placeholder="Ej: Con sueño, con energía, dolor de cabeza..." 
-                        class="w-full bg-white border-2 border-gray-100 rounded-blob px-4 py-3 text-sm font-medium focus:outline-none focus:border-brand shadow-sm">
+                        class="w-full bg-white border-2 border-border-soft rounded-blob px-4 py-3 text-sm font-medium focus:outline-none focus:border-brand shadow-sm">
                 </div>
 
                 <!-- Nota rápida -->
                 <div class="mb-4">
                     <label class="text-sm font-semibold text-gray-600 mb-2 block">Nota (opcional)</label>
                     <textarea id="checkin-note" placeholder="¿Algo que quieras recordar de hoy?" rows="2"
-                        class="w-full bg-white border-2 border-gray-100 rounded-blob px-4 py-3 text-sm font-medium focus:outline-none focus:border-brand shadow-sm resize-none"></textarea>
+                        class="w-full bg-white border-2 border-border-soft rounded-blob px-4 py-3 text-sm font-medium focus:outline-none focus:border-brand shadow-sm resize-none"></textarea>
                 </div>
 
                 <button id="btn-save-checkin" class="w-full bg-brand text-white font-bold py-3 rounded-2xl shadow-sticker hover:bg-brand-dark hover:scale-[1.02] active:scale-[0.98] transition-all">
@@ -306,7 +308,7 @@
                 <!-- Formulario agregar tarea -->
                 <div id="add-task-form" class="hidden mb-4 flex gap-2">
                     <input type="text" id="new-task-input" placeholder="Nueva tarea..." 
-                        class="flex-1 bg-white border-2 border-gray-100 rounded-xl px-4 py-2 text-sm font-medium focus:outline-none focus:border-brand">
+                        class="flex-1 bg-white border-2 border-border-soft rounded-xl px-4 py-2 text-sm font-medium focus:outline-none focus:border-brand">
                     <button id="btn-confirm-task" class="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shadow-md">
                         <i class="fa-solid fa-plus"></i>
                     </button>
@@ -325,7 +327,7 @@
                 <div class="relative">
                     <input type="text" id="search-input" 
                         placeholder="🔍 Buscar en tu panel..."
-                        class="w-full bg-white border-2 border-gray-200 rounded-2xl py-3 px-4 pl-11 text-sm font-medium focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition-all shadow-sm"
+                        class="w-full bg-white border-2 border-border-soft rounded-2xl py-3 px-4 pl-11 text-sm font-medium focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition-all shadow-sm"
                         aria-label="Buscar en el panel">
                     <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true"></i>
                     <button id="btn-clear-search" 
@@ -346,7 +348,7 @@
     </main>
 
     <!-- FOOTER / BARRA DE CAPTURA PRO -->
-    <footer id="app-footer" class="fixed bottom-0 left-0 right-0 px-3 py-3 bg-white border-t border-gray-100 z-40 pb-[env(safe-area-inset-bottom)]">
+    <footer id="app-footer" class="fixed bottom-0 left-0 right-0 px-3 py-3 bg-white border-t border-border-soft z-40 pb-[env(safe-area-inset-bottom)]">
         <div class="flex flex-col gap-2 max-w-full mx-auto">
             
             <!-- Quick Tags -->
@@ -357,7 +359,7 @@
                 <button class="quick-tag px-3 py-1 bg-brand/10 text-brand rounded-full text-[11px] font-bold border border-brand/20 hover:border-brand hover:bg-brand/20 transition-colors whitespace-nowrap cursor-pointer shadow-sm" data-tag="#emocion">#emocion</button>
             </div>
 
-            <div class="bg-white border-2 border-gray-100 px-3 py-2 rounded-[2rem] shadow-lg flex items-center gap-2 flex-1">
+            <div class="bg-white border-2 border-border-soft px-3 py-2 rounded-[2rem] shadow-lg flex items-center gap-2 flex-1">
                 <input type="text" id="item-input" placeholder="¿Qué tienes en mente?"
                     class="bg-gray-50 text-sm py-2 px-3 w-full focus:outline-none focus:ring-2 focus:ring-brand rounded-lg placeholder-gray-400 min-w-0"
                     aria-label="Escribe tu nota o tarea">
@@ -382,7 +384,7 @@
         class="fixed inset-0 bg-ink/20 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-4"
         role="dialog" aria-modal="true">
         <div class="bg-white w-full max-w-lg rounded-blob shadow-2xl max-h-[80vh] overflow-y-auto">
-            <div class="p-6 border-b border-gray-100 flex items-center justify-between">
+            <div class="p-6 border-b border-border-soft flex items-center justify-between">
                 <h3 class="text-xl font-bold text-rose-500">🔔 Mis Alarmas</h3>
                 <button class="modal-alarms-close w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition">
                     <i class="fa-solid fa-xmark text-xl"></i>
@@ -425,7 +427,7 @@
         </div>
 
         <!-- Chat Input -->
-        <div class="p-3 bg-white border-t border-gray-100 shrink-0">
+        <div class="p-3 bg-white border-t border-border-soft shrink-0">
             <div class="flex gap-2 items-center">
                 <input type="text" id="kai-chat-input" placeholder="Escribe..."
                     class="flex-1 bg-gray-100 border-none rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-brand outline-none">
@@ -703,9 +705,9 @@
                     selectedEmoji = btn.dataset.emoji;
                     document.querySelectorAll('.emoji-btn').forEach(b => {
                         b.classList.remove('border-brand', 'bg-brand/10', 'shadow-sticker');
-                        b.classList.add('border-gray-100', 'bg-white');
+                        b.classList.add('border-border-soft', 'bg-white');
                     });
-                    btn.classList.remove('border-gray-100', 'bg-white');
+                    btn.classList.remove('border-border-soft', 'bg-white');
                     btn.classList.add('border-brand', 'bg-brand/10', 'shadow-sticker');
                 });
             });
@@ -727,7 +729,7 @@
                     selectedEmoji = null;
                     document.querySelectorAll('.emoji-btn').forEach(b => {
                         b.classList.remove('border-brand', 'bg-brand/10', 'shadow-sticker');
-                        b.classList.add('border-gray-100', 'bg-white');
+                        b.classList.add('border-border-soft', 'bg-white');
                     });
                     document.getElementById('checkin-physical').value = '';
                     document.getElementById('checkin-note').value = '';
@@ -745,7 +747,7 @@
                 // Seleccionar el emoji
                 document.querySelectorAll('.emoji-btn').forEach(b => {
                     if (b.dataset.emoji === selectedEmoji) {
-                        b.classList.remove('border-gray-100', 'bg-white');
+                        b.classList.remove('border-border-soft', 'bg-white');
                         b.classList.add('border-brand', 'bg-brand/10', 'shadow-sticker');
                     }
                 });
@@ -791,7 +793,7 @@
             }
 
             container.innerHTML = routines.map(r => `
-                <div class="flex items-center gap-3 p-3 rounded-2xl ${completedIds.includes(r.id) ? 'bg-brand/5 border border-brand/10' : 'bg-gray-50 border border-gray-100'} group cursor-pointer hover:bg-white transition-all shadow-sm">
+                <div class="flex items-center gap-3 p-3 rounded-2xl ${completedIds.includes(r.id) ? 'bg-brand/5 border border-brand/10' : 'bg-gray-50 border border-border-soft'} group cursor-pointer hover:bg-white transition-all shadow-sm">
                     <input type="checkbox" class="routine-checkbox kawaii-checkbox" 
                         data-id="${r.id}" ${completedIds.includes(r.id) ? 'checked' : ''}>
                     <span class="flex-1 font-medium ${completedIds.includes(r.id) ? 'font-bold text-ink' : 'text-gray-500'}">${r.name}</span>
@@ -913,7 +915,7 @@
     <div id="notification-drawer"
         class="fixed top-0 right-0 w-full max-w-sm h-full bg-white shadow-float z-[90] transform translate-x-full transition-transform duration-300 overflow-hidden"
         role="dialog" aria-label="Notificaciones">
-        <div class="p-4 border-b border-gray-100 flex items-center justify-between">
+        <div class="p-4 border-b border-border-soft flex items-center justify-between">
             <h2 class="text-lg font-bold text-ink">🔔 Notificaciones</h2>
             <button id="btn-close-notifications"
                 class="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition"
