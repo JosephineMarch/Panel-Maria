@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KAI - Tu Segundo Cerebro</title>
+    <meta name="description" content="PWA ADHD-Friendly para organizar tu vida">
+    <meta name="theme-color" content="#FFB7C5">
+
+    <!-- iOS support -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="KAI">
+    <link rel="apple-touch-icon" href="./src/assets/icon-192.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="./src/assets/icon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="./src/assets/icon-512.png">
+    <link rel="apple-touch-startup-image" href="./src/assets/icon-512.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/png" href="./src/assets/icon-192.png">
+
+    <!-- Google Fonts: Poppins & Patrick Hand -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                        hand: ['Patrick Hand', 'cursive'],
+                    },
+                    colors: {
+                        cream: '#FFFDF5',
+                        'app-bg': '#FFFFFF',
+                        brand: '#ff9ba7',
+                        'brand-dark': '#fe6d7f',
+                        secondary: '#19c9cc',
+                        'secondary-dark': '#0fb3b6',
+                        ink: '#1E293B',
+                        'ink-light': '#64748B',
+                        warning: '#ffde8d',
+                        'warning-dark': '#ffb005',
+                    },
+                    borderRadius: {
+                        blob: '2rem',
+                    },
+                    boxShadow: {
+                        sticker: '0 4px 0px 0px rgba(0, 0, 0, 0.08)',
+                        'sticker-hover': '0 6px 0px 0px rgba(0, 0, 0, 0.1)',
+                        soft: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                        float: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* === DESIGN TOKENS === */
+        :root {
+            --cream: #FFFDF5;
+            --app-bg: #FFFFFF;
+            --brand: #ff9ba7;
+            --brand-dark: #fe6d7f;
+            --secondary: #19c9cc;
+            --secondary-dark: #0fb3b6;
+            --ink: #1E293B;
+            --ink-light: #64748B;
+            --warning: #ffde8d;
+            --warning-dark: #ffb005;
+            
+            --font-sans: 'Poppins', sans-serif;
+            --font-hand: 'Patrick Hand', cursive;
+            
+            --radius-sm: 0.5rem;
+            --radius-md: 1rem;
+            --radius-lg: 1.5rem;
+            --radius-xl: 2rem;
+            
+            --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-sticker: 0 4px 0px 0px rgba(0, 0, 0, 0.08);
+            --shadow-float: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--app-bg);
+            color: var(--ink);
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        /* === COMPONENT STYLES === */
+        
+        /* Buttons */
+        .btn-primary {
+            background: var(--brand);
+            color: white;
+            font-family: var(--font-sans);
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            height: 3.5rem;
+            border-radius: 9999px;
+            border: none;
+            cursor: pointer;
+            box-shadow: var(--shadow-sticker);
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary:hover {
+            background: var(--brand-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0px 0px rgba(0, 0, 0, 0.08);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--brand);
+            font-family: var(--font-sans);
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            height: 3.5rem;
+            border-radius: 9999px;
+            border: 2px solid var(--brand);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-secondary:hover {
+            background: var(--brand);
+            color: white;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--ink);
+            border: none;
+            cursor: pointer;
+            padding: 0.75rem;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-ghost:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .btn-full { width: 100%; }
+
+        /* Cards */
+        .card-base {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid #E5E7EB;
+        }
+
+        .card-soft {
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            border: none;
+        }
+
+        .card-flat {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            border: none;
+        }
+
+        /* Inputs */
+        .input-base {
+            font-family: var(--font-sans);
+            padding: 0.875rem 1rem;
+            border-radius: var(--radius-md);
+            border: 2px solid #E5E7EB;
+            background: white;
+            color: var(--ink);
+            font-size: 1rem;
+            height: 3.5rem;
+            transition: all 0.2s ease;
+            width: 100%;
+            display: block;
+        }
+
+        .input-base:focus {
+            outline: none;
+            border-color: var(--brand);
+            box-shadow: 0 0 0 3px rgba(255, 183, 197, 0.2);
+        }
+
+        .textarea-base {
+            font-family: var(--font-sans);
+            padding: 0.875rem 1rem;
+            border-radius: var(--radius-md);
+            border: 2px solid #E5E7EB;
+            background: white;
+            color: var(--ink);
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            width: 100%;
+            resize: vertical;
+            min-height: 100px;
+            display: block;
+        }
+
+        .textarea-base:focus {
+            outline: none;
+            border-color: var(--brand);
+            box-shadow: 0 0 0 3px rgba(255, 183, 197, 0.2);
+        }
+
+        /* Checkbox */
+        .kawaii-checkbox {
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            background: var(--brand);
+            opacity: 0.4;
+            border: none;
+            transition: all 0.2s ease;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .kawaii-checkbox:checked {
+            opacity: 1;
+        }
+
+        .kawaii-checkbox:checked::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-weight: 800;
+            left: 5px;
+            top: 2px;
+            font-size: 14px;
+        }
+
+        /* Tags */
+        .tag-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.375rem 0.875rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            background: white;
+            border: 2px solid var(--brand);
+            color: var(--brand);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tag-chip:hover, .tag-chip.active {
+            background: var(--brand);
+            color: white;
+        }
+
+        /* Emoji Button */
+        .emoji-btn {
+            padding: 0.75rem;
+            border-radius: var(--radius-lg);
+            background: white;
+            border: 2px solid #E5E7EB;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .emoji-btn:hover {
+            border-color: var(--brand);
+            background: rgba(255, 183, 197, 0.1);
+        }
+
+        .emoji-btn.active {
+            border-color: var(--brand);
+            background: rgba(255, 183, 197, 0.2);
+            box-shadow: var(--shadow-sticker);
+        }
+
+        /* Metric Card */
+        .metric-card {
+            background: var(--secondary);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            min-width: 140px;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1;
+            color: white;
+        }
+
+        .metric-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(30, 41, 59, 0.2);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: var(--radius-xl);
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        /* Bottom Nav */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #E5E7EB;
+            padding: 0.5rem 1rem;
+            padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+            z-index: 40;
+        }
+
+        .nav-tab {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.5rem;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--ink-light);
+            background: transparent;
+            border: none;
+        }
+
+        .nav-tab:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-tab.active {
+            color: var(--brand);
+        }
+
+        .nav-tab span:first-child {
+            font-size: 1.25rem;
+        }
+
+        .nav-tab span:last-child {
+            font-size: 0.625rem;
+            font-weight: 600;
+        }
+
+        /* Floating Create Button */
+        .btn-crear {
+            position: fixed;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4rem;
+            height: 4rem;
+            border-radius: 50%;
+            background: var(--brand);
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: var(--shadow-float);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.2s ease;
+            z-index: 50;
+        }
+
+        .btn-crear:hover {
+            transform: translateX(-50%) scale(1.1);
+            background: var(--brand-dark);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 85vw;
+            max-width: 320px;
+            height: 100vh;
+            background: white;
+            box-shadow: var(--shadow-float);
+            padding: 1.5rem;
+            z-index: 70;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.2);
+            z-index: 65;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Section visibility */
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* Project Card */
+        .project-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid #E5E7EB;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .project-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .project-card-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--ink);
+            margin: 0;
+            line-height: 1.3;
+        }
+
+        .project-card-description {
+            font-size: 0.875rem;
+            color: var(--ink-light);
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .project-card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 0.75rem;
+            border-top: 1px solid #F3F4F6;
+        }
+
+        .project-card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .project-card-task {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            padding: 0.375rem 0;
+        }
+
+        .project-card-task-label {
+            font-size: 0.875rem;
+            color: var(--ink);
+            cursor: pointer;
+        }
+
+        .project-card-task.completed .project-card-task-label {
+            text-decoration: line-through;
+            color: var(--ink-light);
+            opacity: 0.6;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Scrollbar hide */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Focus states */
+        .focus-outline:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 183, 197, 0.4);
+        }
+    </style>
+</head>
+
+<body class="bg-app-bg min-h-screen">
+
+    <!-- ==================== SIDEBAR ==================== -->
+    <aside id="sidebar" class="sidebar" role="navigation" aria-label="Menú de navegación">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-lg font-bold">Menú</h2>
+            <button id="btn-close-sidebar" class="btn-ghost" aria-label="Cerrar menú">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+
+        <!-- User Section -->
+        <div class="border-b border-gray-100 pb-4 mb-4">
+            <div id="auth-form" class="text-center py-4">
+                <p class="mb-4 font-bold text-gray-600 text-sm">¡Conecta tu cerebro!</p>
+                <button type="button" id="btn-google" class="btn-secondary w-full">
+                    <span>🌐</span> Google Login
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="space-y-2" role="navigation">
+            <button id="btn-kai-sidebar" class="w-full text-left px-4 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white flex items-center gap-3">
+                <img src="./src/assets/icon-192.png" class="w-6 h-6 rounded-full" alt="Kai">
+                <span class="font-bold">KAI Asistente</span>
+            </button>
+
+            <button id="btn-logout" class="hidden w-full text-left px-4 py-3 rounded-xl hover:bg-red-50 text-red-500 flex items-center gap-3">
+                <i class="fa-solid fa-sign-out-alt"></i>
+                <span class="font-bold">Cerrar sesión</span>
+            </button>
+
+            <div class="pt-4 border-t border-gray-100 space-y-2">
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 mb-2">Mi Progreso</p>
+                <button class="w-full text-left px-4 py-3 rounded-xl hover:bg-brand/5 text-ink flex items-center gap-3">
+                    <i class="fa-solid fa-trophy text-brand"></i>
+                    <span class="font-bold">Dashboard de Logros</span>
+                </button>
+            </div>
+
+            <div class="pt-4 border-t border-gray-100 space-y-2">
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 mb-2">Datos</p>
+                <button class="w-full text-left px-4 py-3 rounded-xl hover:bg-brand/5 text-ink flex items-center gap-3">
+                    <i class="fa-solid fa-file-export text-brand"></i>
+                    <span class="font-bold">Exportar JSON</span>
+                </button>
+                <button class="w-full text-left px-4 py-3 rounded-xl hover:bg-brand/5 text-ink flex items-center gap-3">
+                    <i class="fa-solid fa-file-import text-brand"></i>
+                    <span class="font-bold">Importar JSON</span>
+                </button>
+                <input type="file" id="import-file" class="hidden" accept=".json">
+            </div>
+        </nav>
+    </aside>
+
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+    <!-- ==================== HEADER ==================== -->
+    <header class="bg-white z-[60] border-b border-gray-100 sticky top-0" role="banner">
+        <div class="flex items-center justify-between px-4 py-3">
+            <button id="btn-menu" class="btn-ghost" aria-label="Abrir menú">
+                <i class="fa-solid fa-bars text-xl text-brand"></i>
+            </button>
+            <h1 class="font-bold text-lg text-ink" id="page-title" role="heading" aria-level="1">Inicio</h1>
+            <div class="flex items-center gap-2">
+                <button id="btn-heart" class="btn-ghost" title="Salud">❤</button>
+                <button id="btn-home-header" class="btn-ghost" title="Inicio">🏠</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ==================== MAIN CONTENT ==================== -->
+    <main class="container-app pb-28">
+
+        <!-- ==================== SECTION: INICIO ==================== -->
+        <section id="section-inicio" class="section active space-y-6 pt-4">
+            <!-- Saludo -->
+            <div class="text-center py-2">
+                <h2 id="saludo" class="text-xl font-bold text-brand">¡Buenos días, María! ✨</h2>
+            </div>
+
+            <!-- Metric Cards: Pendientes / Logradas -->
+            <div class="grid grid-cols-2 gap-4">
+                <button id="card-pendientes" class="metric-card cursor-pointer hover:scale-[1.02] transition">
+                    <span class="text-2xl">📋</span>
+                    <span class="text-xs font-bold text-white/80">Pendientes</span>
+                    <span id="count-pendientes" class="metric-value">0</span>
+                </button>
+                <button id="card-logradas" class="metric-card bg-[var(--brand)] cursor-pointer hover:scale-[1.02] transition">
+                    <span class="text-2xl">✅</span>
+                    <span class="text-xs font-bold text-white/80">Logradas</span>
+                    <span id="count-logradas" class="metric-value">0</span>
+                </button>
+            </div>
+
+            <!-- Filter Tags -->
+            <div id="tags-filter" class="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                <button class="tag-chip active" data-tag="">Todos</button>
+                <button class="tag-chip" data-tag="logro">#logro</button>
+                <button class="tag-chip" data-tag="salud">#salud</button>
+                <button class="tag-chip" data-tag="mi-mes">#mi-mes</button>
+                <button class="tag-chip" data-tag="emocion">#emocion</button>
+            </div>
+
+            <!-- Tasks List -->
+            <div id="inicio-tasks" class="space-y-3">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📝</div>
+                    <h3 class="text-lg font-bold text-gray-400">No hay tareas</h3>
+                    <p class="text-gray-400 text-sm mt-2">Tocá el botón + para crear una</p>
+                </div>
+            </div>
+
+            <!-- Pomodoro Button -->
+            <button id="btn-pomodoro" class="fixed bottom-24 right-4 w-14 h-14 rounded-full bg-[var(--secondary)] text-white shadow-float flex items-center justify-center hover:scale-110 transition z-30" title="Iniciar Pomodoro">
+                <span class="text-2xl">⏱</span>
+            </button>
+        </section>
+
+        <!-- ==================== SECTION: SALUD ==================== -->
+        <section id="section-salud" class="section space-y-6 pt-4">
+            <!-- Fecha -->
+            <div class="card-base text-center">
+                <h2 id="salud-fecha" class="text-2xl font-bold text-brand">Lunes 13 de Marzo</h2>
+                <p id="salud-hora" class="text-gray-500 text-sm">Buenos días</p>
+            </div>
+
+            <!-- CHECK-IN -->
+            <div class="card-base space-y-5">
+                <h3 class="font-bold text-xl flex items-center gap-2">
+                    <span class="text-2xl">🤠</span> ¿Cómo estás?
+                </h3>
+                
+                <!-- Estado emocional -->
+                <div>
+                    <label class="text-sm font-semibold text-gray-600 mb-3 block">Elegí cómo te sentís</label>
+                    <div class="flex gap-2 justify-between">
+                        <button class="emoji-btn flex-1" data-emoji="feliz">😊</button>
+                        <button class="emoji-btn flex-1" data-emoji="bien">🙂</button>
+                        <button class="emoji-btn flex-1" data-emoji="normal">😐</button>
+                        <button class="emoji-btn flex-1" data-emoji="mal">😔</button>
+                        <button class="emoji-btn flex-1" data-emoji="genial">🤩</button>
+                    </div>
+                </div>
+
+                <!-- Físicamente -->
+                <div>
+                    <label class="text-sm font-semibold text-gray-600 mb-2 block">Físicamente</label>
+                    <input type="text" id="checkin-physical" placeholder="Ej: Con sueño, con energía..." class="input-base">
+                </div>
+
+                <!-- Nota -->
+                <div>
+                    <label class="text-sm font-semibold text-gray-600 mb-2 block">Nota (opcional)</label>
+                    <textarea id="checkin-note" placeholder="¿Algo que quieras recordar de hoy?" rows="3" class="textarea-base"></textarea>
+                </div>
+
+                <button id="btn-save-checkin" class="btn-primary w-full">
+                    Guardar check-in
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== SECTION: HISTORIAL (Placeholder) ==================== -->
+        <section id="section-historial" class="section space-y-6 pt-4">
+            <div class="empty-state">
+                <div class="empty-state-icon">📅</div>
+                <h3 class="text-2xl font-bold text-gray-400">Historial</h3>
+                <p class="text-gray-400 px-8 mt-2">Aquí van todas tus tareas, notas y enlaces guardados.</p>
+                <p class="text-brand text-sm mt-4 font-semibold">¡Muy pronto!</p>
+            </div>
+        </section>
+
+        <!-- ==================== SECTION: BAÚL ==================== -->
+        <section id="section-baul" class="section space-y-6 pt-4">
+            <!-- Header -->
+            <div class="text-center">
+                <div class="text-6xl mb-2">📦</div>
+                <h2 class="text-2xl font-bold">El Baúl</h2>
+                <p class="text-gray-400 text-sm">Tus recursos y configuración</p>
+            </div>
+
+            <!-- Sección: Lista de Deseos (Premios) -->
+            <div class="card-base space-y-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-lg flex items-center gap-2">
+                        <span>🎁</span> Lista de Deseos
+                    </h3>
+                    <button class="tag-chip text-xs">+ Agregar</button>
+                </div>
+                <p class="text-gray-400 text-sm">Premios que querés canjear con tus puntos</p>
+                
+                <!-- Ejemplo de deseo -->
+                <div class="project-card">
+                    <div class="project-card-header">
+                        <div>
+                            <span class="project-card-title">Masajes</span>
+                            <span class="block text-sm text-gray-400 mt-1">50 puntos</span>
+                        </div>
+                        <button class="btn-ghost text-brand">
+                            <i class="fa-solid fa-gift"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección: Configuración -->
+            <div class="card-base space-y-4">
+                <h3 class="font-bold text-lg flex items-center gap-2">
+                    <span>⚙️</span> Configuración
+                </h3>
+                
+                <button class="w-full text-left px-4 py-3 rounded-xl hover:bg-gray-50 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-bell text-brand"></i>
+                        <span class="font-medium">Notificaciones</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-gray-300"></i>
+                </button>
+
+                <button class="w-full text-left px-4 py-3 rounded-xl hover:bg-gray-50 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-moon text-brand"></i>
+                        <span class="font-medium">Apariencia</span>
+                    </div>
+                    <span class="text-xs bg-gray-100 px-2 py-1 rounded-full">Claro</span>
+                </button>
+
+                <button class="w-full text-left px-4 py-3 rounded-xl hover:bg-gray-50 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-shield-halved text-brand"></i>
+                        <span class="font-medium">Privacidad</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-gray-300"></i>
+                </button>
+            </div>
+
+            <!-- Sección: Recursos -->
+            <div class="card-base space-y-4">
+                <h3 class="font-bold text-lg flex items-center gap-2">
+                    <span>🔗</span> Biblioteca de Enlaces
+                </h3>
+                <p class="text-gray-400 text-sm">Tus enlaces guardados</p>
+                
+                <div class="empty-state py-4">
+                    <p class="text-gray-400 text-sm">No hay enlaces guardados</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==================== OMNI-EDITOR MODAL ==================== -->
+    <div id="modal-omni" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="omni-title">
+        <div class="modal-content">
+            <button id="btn-close-omni" class="absolute top-4 right-4 btn-ghost" aria-label="Cerrar">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            
+            <h3 id="omni-title" class="text-xl font-bold mb-4 text-brand">Nueva Tarea</h3>
+            
+            <!-- Switch Tipo -->
+            <div class="flex gap-2 mb-4">
+                <button class="omni-type-btn flex-1 py-2 rounded-xl bg-brand text-white font-bold text-sm" data-type="tarea">Tarea</button>
+                <button class="omni-type-btn flex-1 py-2 rounded-xl bg-gray-100 text-gray-500 font-bold text-sm" data-type="nota">Nota</button>
+                <button class="omni-type-btn flex-1 py-2 rounded-xl bg-gray-100 text-gray-500 font-bold text-sm" data-type="enlace">Enlace</button>
+            </div>
+            
+            <!-- Input -->
+            <input type="text" id="omni-content" placeholder="¿Qué tienes en mente?" class="input-base mb-4">
+            
+            <!-- Tags -->
+            <div class="mb-4">
+                <label class="text-xs font-bold text-gray-400 mb-2 block">Tags</label>
+                <div class="flex gap-2 flex-wrap">
+                    <button class="omni-tag tag-chip" data-tag="logro">#logro</button>
+                    <button class="omni-tag tag-chip" data-tag="salud">#salud</button>
+                    <button class="omni-tag tag-chip" data-tag="mi-mes">#mi-mes</button>
+                    <button class="omni-tag tag-chip" data-tag="emocion">#emocion</button>
+                </div>
+            </div>
+            
+            <button id="btn-save-omni" class="btn-primary w-full">
+                Guardar
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== BOTTOM NAVIGATION ==================== -->
+    <nav class="bottom-nav">
+        <div class="flex items-center justify-around relative">
+            <button class="nav-tab" data-section="inicio">
+                <span>🏠</span>
+                <span>Inicio</span>
+            </button>
+            <button class="nav-tab" data-section="salud">
+                <span>❤</span>
+                <span>Salud</span>
+            </button>
+            <button class="nav-tab" data-section="historial">
+                <span>📅</span>
+                <span>Historial</span>
+            </button>
+            <button class="nav-tab" data-section="baul">
+                <span>📦</span>
+                <span>Baúl</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ==================== JAVASCRIPT ==================== -->
+    <script>
+    let currentSection = 'inicio';
+    let selectedTag = '';
+    let filterStatus = 'all';
+
+    // Data store
+    let appData = {
+        registros: []
+    };
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+        loadData();
+        initNav();
+        initSaludo();
+        initFilterCards();
+        initTags();
+        initOmniEditor();
+        loadInicioTasks();
+        switchSection('inicio');
+    });
+
+    // Load from localStorage
+    function loadData() {
+        const saved = localStorage.getItem('kai_data');
+        if (saved) {
+            appData = JSON.parse(saved);
+        } else {
+            // Demo data
+            appData = {
+                registros: [
+                    { id: '1', tipo: 'tarea', contenido: 'Hacer ejercicio', estado: 'pendiente', tags: ['logro'], puntos: 10, created_at: new Date().toISOString() },
+                    { id: '2', tipo: 'tarea', contenido: 'Leer 30 minutos', estado: 'pendiente', tags: ['mi-mes'], puntos: 5, created_at: new Date().toISOString() },
+                    { id: '3', tipo: 'tarea', contenido: 'Meditar', estado: 'logrado', tags: ['salud', 'emocion'], puntos: 5, created_at: new Date().toISOString() },
+                ]
+            };
+            saveData();
+        }
+    }
+
+    // Save to localStorage
+    function saveData() {
+        localStorage.setItem('kai_data', JSON.stringify(appData));
+    }
+
+    // Navigation
+    function initNav() {
+        // Sidebar
+        document.getElementById('btn-menu').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.add('open');
+            document.getElementById('sidebar-overlay').classList.add('visible');
+        });
+
+        document.getElementById('btn-close-sidebar').addEventListener('click', closeSidebar);
+        document.getElementById('sidebar-overlay').addEventListener('click', closeSidebar);
+
+        // Header buttons
+        document.getElementById('btn-heart').addEventListener('click', () => switchSection('salud'));
+        document.getElementById('btn-home-header').addEventListener('click', () => switchSection('inicio'));
+
+        // Bottom nav tabs
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const section = tab.dataset.section;
+                switchSection(section);
+            });
+        });
+
+        // Create button
+        document.getElementById('btn-crear')?.addEventListener('click', openOmniModal);
+        
+        // Create floating button (mobile)
+        const btnCrear = document.createElement('button');
+        btnCrear.id = 'btn-crear';
+        btnCrear.innerHTML = '<i class="fa-solid fa-plus"></i>';
+        btnCrear.className = 'btn-crear';
+        btnCrear.addEventListener('click', openOmniModal);
+        document.body.appendChild(btnCrear);
+
+        // Pomodoro
+        document.getElementById('btn-pomodoro')?.addEventListener('click', () => {
+            alert('🎯 ¡Iniciando Pomodoro! 25 minutos de focus');
+        });
+    }
+
+    function closeSidebar() {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebar-overlay').classList.remove('visible');
+    }
+
+    function switchSection(section) {
+        currentSection = section;
+        closeSidebar();
+        
+        // Update title
+        const titles = {
+            inicio: 'Inicio',
+            salud: 'Salud',
+            historial: 'Historial',
+            baul: 'El Baúl'
+        };
+        document.getElementById('page-title').textContent = titles[section] || 'KAI';
+        
+        // Show section
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById(`section-${section}`).classList.add('active');
+        
+        // Update nav tabs
+        document.querySelectorAll('.nav-tab').forEach(t => {
+            if (t.dataset.section === section) {
+                t.classList.add('active');
+            } else {
+                t.classList.remove('active');
+            }
+        });
+
+        // Reload tasks if going to inicio
+        if (section === 'inicio') {
+            loadInicioTasks();
+        }
+    }
+
+    // Saludo dinámico
+    function initSaludo() {
+        const fecha = new Date();
+        const hora = fecha.getHours();
+        let saludo = '¡Buenos días';
+        let emoji = '☀️';
+        
+        if (hora >= 12 && hora < 18) {
+            saludo = '¡Buenas tardes';
+            emoji = '🌤️';
+        } else if (hora >= 18 && hora < 22) {
+            saludo = '¡Buenas noches';
+            emoji = '🌙';
+        } else if (hora >= 22 || hora < 6) {
+            saludo = '¡Aún estás despierta';
+            emoji = '🌙';
+        }
+        
+        document.getElementById('saludo').textContent = `${saludo}, María! ${emoji}`;
+        
+        // Fecha en sección salud
+        const opcionesFecha = { weekday: 'long', day: 'numeric', month: 'long' };
+        const fechaStr = fecha.toLocaleDateString('es-ES', opcionesFecha);
+        document.getElementById('salud-fecha').textContent = fechaStr.charAt(0).toUpperCase() + fechaStr.slice(1);
+        
+        let horaSaludo = 'Buenos días';
+        if (hora >= 12 && hora < 18) horaSaludo = 'Buenas tardes';
+        if (hora >= 18) horaSaludo = 'Buenas noches';
+        document.getElementById('salud-hora').textContent = horaSaludo;
+    }
+
+    // Filter cards
+    function initFilterCards() {
+        document.getElementById('card-pendientes').addEventListener('click', () => {
+            filterStatus = 'pending';
+            loadInicioTasks();
+        });
+        
+        document.getElementById('card-logradas').addEventListener('click', () => {
+            filterStatus = 'completed';
+            loadInicioTasks();
+        });
+    }
+
+    // Tags filter
+    function initTags() {
+        document.querySelectorAll('.tag-chip[data-tag]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                selectedTag = btn.dataset.tag;
+                
+                document.querySelectorAll('.tag-chip[data-tag]').forEach(b => {
+                    b.classList.remove('active');
+                });
+                btn.classList.add('active');
+                
+                loadInicioTasks();
+            });
+        });
+    }
+
+    // Load tasks
+    function loadInicioTasks() {
+        const container = document.getElementById('inicio-tasks');
+        
+        let tasks = appData.registros.filter(r => r.tipo === 'tarea');
+        
+        // Filter por estado
+        if (filterStatus === 'pending') {
+            tasks = tasks.filter(t => t.estado === 'pendiente');
+        } else if (filterStatus === 'completed') {
+            tasks = tasks.filter(t => t.estado === 'logrado');
+        }
+        
+        // Filter por tag
+        if (selectedTag) {
+            tasks = tasks.filter(t => t.tags && t.tags.includes(selectedTag));
+        }
+        
+        // Sort
+        tasks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        
+        // Render
+        if (tasks.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📝</div>
+                    <h3 class="text-lg font-bold text-gray-400">No hay tareas</h3>
+                    <p class="text-gray-400 text-sm mt-2">Tocá el botón + para crear una</p>
+                </div>
+            `;
+        } else {
+            container.innerHTML = tasks.map(t => `
+                <div class="project-card">
+                    <div class="project-card-header">
+                        <input type="checkbox" class="kawaii-checkbox" data-id="${t.id}" ${t.estado === 'logrado' ? 'checked' : ''}>
+                        <div class="flex-1 ml-3">
+                            <p class="project-card-title ${t.estado === 'logrado' ? 'line-through text-gray-400' : ''}">${t.contenido}</p>
+                            ${t.puntos ? `<span class="text-xs text-[var(--brand)] font-semibold">+${t.puntos} pts</span>` : ''}
+                        </div>
+                    </div>
+                    ${t.tags && t.tags.length > 0 ? `
+                        <div class="project-card-tags">
+                            ${t.tags.map(tag => `<span class="tag-chip text-xs">#${tag}</span>`).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+
+            // Event listeners
+            document.querySelectorAll('.kawaii-checkbox').forEach(cb => {
+                cb.addEventListener('change', (e) => {
+                    toggleTask(cb.dataset.id, e.target.checked);
+                    loadInicioTasks();
+                });
+            });
+        }
+        
+        // Update counts
+        const allTasks = appData.registros.filter(r => r.tipo === 'tarea');
+        const pending = allTasks.filter(t => t.estado === 'pendiente').length;
+        const completed = allTasks.filter(t => t.estado === 'logrado').length;
+        
+        document.getElementById('count-pendientes').textContent = pending;
+        document.getElementById('count-logradas').textContent = completed;
+    }
+
+    function toggleTask(id, completed) {
+        const idx = appData.registros.findIndex(r => r.id === id);
+        if (idx !== -1) {
+            appData.registros[idx].estado = completed ? 'logrado' : 'pendiente';
+            saveData();
+        }
+    }
+
+    // Omni Editor
+    function initOmniEditor() {
+        // Close modal
+        document.getElementById('btn-close-omni').addEventListener('click', closeOmniModal);
+        
+        // Type switch
+        document.querySelectorAll('.omni-type-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.omni-type-btn').forEach(b => {
+                    b.classList.remove('bg-brand', 'text-white');
+                    b.classList.add('bg-gray-100', 'text-gray-500');
+                });
+                btn.classList.remove('bg-gray-100', 'text-gray-500');
+                btn.classList.add('bg-brand', 'text-white');
+            });
+        });
+
+        // Tag selection
+        let selectedOmniTag = '';
+        document.querySelectorAll('.omni-tag').forEach(btn => {
+            btn.addEventListener('click', () => {
+                selectedOmniTag = selectedOmniTag === btn.dataset.tag ? '' : btn.dataset.tag;
+                document.querySelectorAll('.omni-tag').forEach(b => {
+                    b.classList.remove('active');
+                });
+                if (selectedOmniTag) btn.classList.add('active');
+            });
+        });
+
+        // Save
+        document.getElementById('btn-save-omni').addEventListener('click', () => {
+            const content = document.getElementById('omni-content').value.trim();
+            if (!content) return;
+            
+            const tipo = document.querySelector('.omni-type-btn.bg-brand')?.dataset.type || 'tarea';
+            
+            appData.registros.push({
+                id: Date.now().toString(),
+                tipo: tipo,
+                contenido: content,
+                estado: 'pendiente',
+                tags: selectedOmniTag ? [selectedOmniTag] : [],
+                puntos: tipo === 'tarea' ? 5 : 0,
+                created_at: new Date().toISOString()
+            });
+            saveData();
+            
+            closeOmniModal();
+            document.getElementById('omni-content').value = '';
+            selectedOmniTag = '';
+            document.querySelectorAll('.omni-tag').forEach(b => b.classList.remove('active'));
+            
+            loadInicioTasks();
+        });
+    }
+
+    function openOmniModal() {
+        document.getElementById('modal-omni').classList.remove('hidden');
+        document.getElementById('omni-content').focus();
+    }
+
+    function closeOmniModal() {
+        document.getElementById('modal-omni').classList.add('hidden');
+    }
+
+    // Expose functions
+    window.switchSection = switchSection;
+    </script>
+</body>
+
+</html>
