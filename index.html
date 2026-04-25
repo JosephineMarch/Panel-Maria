@@ -26,8 +26,7 @@
     <!-- Google Fonts: Poppins Only -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
 
     <!-- Font Awesome -->
@@ -47,25 +46,26 @@
                     },
                     colors: {
                         'cream': '#FFFDF5',
-                        'primary': '#ff9ba7',
-                        'primary-dark': '#fe6d7f',
+                        'app-bg': '#FFFFFF',
+                        'brand': '#FFB7C5',
+                        'brand-dark': '#FF9EAA',
                         'secondary': '#19c9cc',
-                        'accent': '#ffde8d',
+                        'secondary-dark': '#0fb3b6',
+                        'ink': '#1E293B',
+                        'ink-light': '#64748B',
+                        'warning': '#ffcf7d',
+                        'warning-dark': '#e6b800',
                         'soft-blue': '#AEC6CF',
                         'mint': '#B9FBC0',
                         'lavender': '#E6E6FA',
                         'lemon': '#FDFD96',
                         'peach': '#FFDAC1',
-                        'ink': '#4A4A4A',
-                        'brand': '#ff9ba7',
-                        'brand-dark': '#fe6d7f',
                         'action': '#19c9cc',
                         'success': '#B9FBC0',
-                        'warning': '#ffde8d',
                         'urgent': '#FFDAC1',
                         'card-bg': '#FFFFFF',
                         'input-bg': '#F3F4F6',
-                        'text-muted': '#9ca3af',
+                        'text-muted': '#64748B',
                         'border-soft': '#f3e8e8',
                     },
                     borderRadius: {
@@ -82,6 +82,7 @@
                         'float': 'float 3s ease-in-out infinite',
                         'bounce-slow': 'bounce 3s infinite',
                         'wiggle': 'wiggle 1s ease-in-out infinite',
+                        'slide-up': 'slideUp 0.3s ease-out forwards',
                     },
                     keyframes: {
                         float: {
@@ -91,6 +92,10 @@
                         wiggle: {
                             '0%, 100%': { transform: 'rotate(-3deg)' },
                             '50%': { transform: 'rotate(3deg)' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(100%)' },
+                            '100%': { transform: 'translateY(0)' },
                         }
                     }
                 }
@@ -149,6 +154,13 @@
                 class="w-full text-left px-4 py-3 rounded-xl hover:bg-brand/5 text-ink flex items-center gap-3 transition focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer">
                 <i class="fa-solid fa-calendar-day text-brand text-lg" aria-hidden="true"></i>
                 <span class="font-bold text-base">📓 Hoy</span>
+            </button>
+
+            <!-- HISTORIAL - Nueva sección -->
+            <button id="btn-historial" data-view="historial"
+                class="btn-nav w-full text-left px-4 py-3 rounded-xl hover:bg-brand/5 text-ink flex items-center gap-3 transition focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer">
+                <i class="fa-solid fa-clock-rotate-left text-brand text-lg" aria-hidden="true"></i>
+                <span class="font-bold text-base">🕐 Historial</span>
             </button>
 
             <button id="btn-logout"
@@ -211,7 +223,8 @@
                 <button id="btn-notifications" title="Notificaciones"
                     class="w-10 h-10 rounded-full bg-brand/10 hover:bg-brand/20 flex items-center justify-center transition text-brand relative">
                     <i class="fa-regular fa-bell text-lg"></i>
-                    <span id="notification-badge" class="hidden absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">0</span>
+                    <span id="notification-badge"
+                        class="hidden absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">0</span>
                 </button>
                 <!-- Botón Home (antes Timeline) -->
                 <button id="btn-home" title="Inicio / Timeline"
@@ -220,35 +233,11 @@
                 </button>
             </div>
         </div>
-
-        <!-- Filtros de Categoría -->
-        <nav class="flex px-3 pb-3 gap-2" role="navigation" aria-label="Filtrar por tipo">
-            <button
-                class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
-                data-category="tarea" aria-label="Filtrar tareas">
-                <i class="fa-regular fa-circle-check" aria-hidden="true"></i>
-            </button>
-            <button
-                class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
-                data-category="proyecto" aria-label="Filtrar proyectos">
-                <i class="fa-regular fa-folder" aria-hidden="true"></i>
-            </button>
-            <button
-                class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
-                data-category="nota" aria-label="Filtrar notas">
-                <i class="fa-regular fa-note-sticky" aria-hidden="true"></i>
-            </button>
-            <button
-                class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
-                data-category="directorio" aria-label="Filtrar enlaces">
-                <i class="fa-solid fa-link" aria-hidden="true"></i>
-            </button>
-        </nav>
     </header>
 
     <main id="app" class="flex-1 max-w-7xl mx-auto w-full px-3 py-4 md:px-8 space-y-6 pb-24 md:pb-32 no-scrollbar"
         role="main" style="max-width: 100vw; overflow-x: hidden;">
-        
+
         <!-- ==================== SECCIÓN HOY ==================== -->
         <section id="section-hoy" class="space-y-6 hidden">
             <!-- Fecha actual -->
@@ -264,23 +253,34 @@
                 <h3 class="font-bold text-xl mb-4 flex items-center gap-2">
                     <span class="text-2xl">🤠</span> ¿Cómo estás?
                 </h3>
-                
+
                 <!-- Estado emocional -->
                 <div class="mb-5">
                     <label class="text-sm font-semibold text-gray-600 mb-3 block">Elegí cómo te sentís</label>
                     <div class="flex gap-2 justify-between">
-                        <button class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-border-soft text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm" data-emoji="feliz" title="Feliz">😊</button>
-                        <button class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-border-soft text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm" data-emoji="bien" title="Bien">🙂</button>
-                        <button class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-border-soft text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm" data-emoji="normal" title="Normal">😐</button>
-                        <button class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-border-soft text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm" data-emoji="mal" title="Mal">😔</button>
-                        <button class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-border-soft text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm" data-emoji="genial" title="Genial">🤩</button>
+                        <button
+                            class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-border-soft text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm"
+                            data-emoji="feliz" title="Feliz">😊</button>
+                        <button
+                            class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-border-soft text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm"
+                            data-emoji="bien" title="Bien">🙂</button>
+                        <button
+                            class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-border-soft text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm"
+                            data-emoji="normal" title="Normal">😐</button>
+                        <button
+                            class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-border-soft text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm"
+                            data-emoji="mal" title="Mal">😔</button>
+                        <button
+                            class="emoji-btn flex-1 py-3 rounded-2xl bg-white border-2 border-border-soft text-3xl hover:border-brand hover:bg-brand/5 transition shadow-sm"
+                            data-emoji="genial" title="Genial">🤩</button>
                     </div>
                 </div>
 
                 <!-- Físicamente -->
                 <div class="mb-5">
                     <label class="text-sm font-semibold text-gray-600 mb-2 block">Físicamente</label>
-                    <input type="text" id="checkin-physical" placeholder="Ej: Con sueño, con energía, dolor de cabeza..." 
+                    <input type="text" id="checkin-physical"
+                        placeholder="Ej: Con sueño, con energía, dolor de cabeza..."
                         class="w-full bg-white border-2 border-border-soft rounded-blob px-4 py-3 text-sm font-medium focus:outline-none focus:border-brand shadow-sm">
                 </div>
 
@@ -291,7 +291,8 @@
                         class="w-full bg-white border-2 border-border-soft rounded-blob px-4 py-3 text-sm font-medium focus:outline-none focus:border-brand shadow-sm resize-none"></textarea>
                 </div>
 
-                <button id="btn-save-checkin" class="w-full bg-brand text-white font-bold py-3 rounded-2xl shadow-sticker hover:bg-brand-dark hover:scale-[1.02] active:scale-[0.98] transition-all">
+                <button id="btn-save-checkin"
+                    class="w-full bg-brand text-white font-bold py-3 rounded-2xl shadow-sticker hover:bg-brand-dark hover:scale-[1.02] active:scale-[0.98] transition-all">
                     Guardar check-in
                 </button>
             </div>
@@ -302,14 +303,16 @@
                     <h2 class="text-lg font-bold text-brand flex items-center gap-2">
                         <span class="text-2xl">⚡</span> ¿Qué hice hoy?
                     </h2>
-                    <button id="btn-add-task-hoy" class="text-xs text-brand font-bold hover:underline">+ agregar</button>
+                    <button id="btn-add-task-hoy" class="text-xs text-brand font-bold hover:underline">+
+                        agregar</button>
                 </div>
 
                 <!-- Formulario agregar tarea -->
                 <div id="add-task-form" class="hidden mb-4 flex gap-2">
-                    <input type="text" id="new-task-input" placeholder="Nueva tarea..." 
+                    <input type="text" id="new-task-input" placeholder="Nueva tarea..."
                         class="flex-1 bg-white border-2 border-border-soft rounded-xl px-4 py-2 text-sm font-medium focus:outline-none focus:border-brand">
-                    <button id="btn-confirm-task" class="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shadow-md">
+                    <button id="btn-confirm-task"
+                        class="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shadow-md">
                         <i class="fa-solid fa-plus"></i>
                     </button>
                 </div>
@@ -320,17 +323,119 @@
             </div>
         </section>
 
+        <!-- ==================== SECCIÓN INICIO (Nueva) ==================== -->
+        <section id="section-inicio" class="space-y-6 hidden">
+            <!-- Saludo dinámico -->
+            <div class="text-center py-3 px-4 bg-gradient-to-r from-brand/10 via-secondary/10 to-brand/10 rounded-[2rem]">
+                <h2 id="inicio-saludo" class="text-xl font-bold text-brand">¡Buenos días! ✨</h2>
+                <p class="text-sm text-gray-500">¿Qué tienes en mente hoy?</p>
+            </div>
+
+            <!-- Cards de filtro rápido -->
+            <div class="flex gap-3">
+                <button id="card-pendientes" class="flex-1 py-4 px-2 rounded-2xl bg-white border-2 border-brand/20 flex flex-col items-center cursor-pointer hover:border-brand hover:shadow-md transition-all">
+                    <span class="text-3xl mb-1">📋</span>
+                    <span class="text-xs font-bold text-brand">Pendientes</span>
+                    <span id="count-pendientes" class="text-2xl font-bold text-brand">0</span>
+                </button>
+                <button id="card-logradas" class="flex-1 py-4 px-2 rounded-2xl bg-white border-2 border-success/30 flex flex-col items-center cursor-pointer hover:border-success hover:shadow-md transition-all">
+                    <span class="text-3xl mb-1">✨</span>
+                    <span class="text-xs font-bold text-green-600">Logradas</span>
+                    <span id="count-logradas" class="text-2xl font-bold text-green-600">0</span>
+                </button>
+            </div>
+
+            <!-- Filtro por Tags -->
+            <div id="tags-filter" class="flex gap-2 overflow-x-auto no-scrollbar pb-2 -mx-3 px-3">
+                <button class="inicio-tag-filter px-4 py-2 bg-brand text-white rounded-full text-xs font-bold shadow-sm hover:shadow-md transition-all cursor-pointer" data-tag="">Todos</button>
+                <button class="inicio-tag-filter px-4 py-2 bg-brand/10 text-brand rounded-full text-xs font-bold border border-brand/20 hover:bg-brand hover:text-white transition-all cursor-pointer" data-tag="logro">#logro</button>
+                <button class="inicio-tag-filter px-4 py-2 bg-brand/10 text-brand rounded-full text-xs font-bold border border-brand/20 hover:bg-brand hover:text-white transition-all cursor-pointer" data-tag="salud">#salud</button>
+                <button class="inicio-tag-filter px-4 py-2 bg-brand/10 text-brand rounded-full text-xs font-bold border border-brand/20 hover:bg-brand hover:text-white transition-all cursor-pointer" data-tag="mi-mes">#mi-mes</button>
+                <button class="inicio-tag-filter px-4 py-2 bg-brand/10 text-brand rounded-full text-xs font-bold border border-brand/20 hover:bg-brand hover:text-white transition-all cursor-pointer" data-tag="emocion">#emocion</button>
+            </div>
+
+            <!-- Lista de tareas del Inicio -->
+            <div id="inicio-tasks" class="space-y-3">
+                <p class="text-center text-gray-400 py-8">No hay tareas todavía</p>
+            </div>
+
+            <!-- Botón Pomodoro flotante -->
+            <button id="btn-pomodoro" class="fixed bottom-28 right-4 w-14 h-14 rounded-full bg-brand-dark text-white shadow-float flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-30" title="Iniciar Pomodoro">
+                <span class="text-2xl">⏱</span>
+            </button>
+        </section>
+
+        <!-- ==================== SECCIÓN SALUD ==================== -->
+        <section id="section-salud" class="space-y-6 hidden">
+            <!-- Header de Salud -->
+            <div class="bg-gradient-to-r from-mint via-brand/10 to-mint p-5 rounded-[2rem] shadow-sm">
+                <div class="text-center">
+                    <h2 class="text-2xl font-bold text-green-600 flex items-center justify-center gap-2">
+                        <span class="text-3xl">💚</span> Tu Salud
+                    </h2>
+                    <p class="text-gray-500 text-sm mt-1">Check-ins y bienestar</p>
+                </div>
+            </div>
+
+            <!-- Acciones de salud -->
+            <div class="grid grid-cols-2 gap-4">
+                <button id="btn-checkin-salud" class="bg-white border-2 border-brand/30 p-5 rounded-2xl flex flex-col items-center gap-3 hover:border-brand hover:shadow-lg transition-all cursor-pointer">
+                    <div class="w-14 h-14 rounded-full bg-brand/10 flex items-center justify-center">
+                        <i class="fa-solid fa-heart-pulse text-2xl text-brand"></i>
+                    </div>
+                    <span class="font-bold text-sm text-brand">Check-in</span>
+                </button>
+                <button id="btn-ver-checkins" class="bg-white border-2 border-secondary/30 p-5 rounded-2xl flex flex-col items-center gap-3 hover:border-secondary hover:shadow-lg transition-all cursor-pointer">
+                    <div class="w-14 h-14 rounded-full bg-secondary/10 flex items-center justify-center">
+                        <i class="fa-solid fa-chart-line text-2xl text-secondary"></i>
+                    </div>
+                    <span class="font-bold text-sm text-secondary">Historial</span>
+                </button>
+            </div>
+
+            <!-- Check-ins recientes -->
+            <div id="salud-checkins-list" class="space-y-3">
+                <p class="text-center text-gray-400 py-6">Aún no hay check-ins</p>
+            </div>
+        </section>
+
+        <!-- ==================== SECCIÓN BAÚL ==================== -->
+        <section id="section-baul" class="space-y-6 hidden">
+            <!-- Header del Baúl -->
+            <div class="bg-gradient-to-r from-accent/30 via-warning/20 to-accent/30 p-5 rounded-[2rem] shadow-sm">
+                <div class="text-center">
+                    <h2 class="text-2xl font-bold text-yellow-600 flex items-center justify-center gap-2">
+                        <span class="text-3xl">📦</span> Tu Baúl
+                    </h2>
+                    <p class="text-gray-500 text-sm mt-1">Cosas guardadas para después</p>
+                </div>
+            </div>
+
+            <!-- Filtros -->
+            <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2 -mx-3 px-3">
+                <button class="baul-filter px-4 py-2 bg-brand text-white rounded-full text-sm font-bold shadow-sm hover:shadow-md transition-all cursor-pointer" data-tipo="todos">Todos</button>
+                <button class="baul-filter px-4 py-2 bg-white border border-brand/30 text-brand rounded-full text-sm font-bold hover:bg-brand hover:text-white transition-all cursor-pointer" data-tipo="nota">Notas</button>
+                <button class="baul-filter px-4 py-2 bg-white border border-brand/30 text-brand rounded-full text-sm font-bold hover:bg-brand hover:text-white transition-all cursor-pointer" data-tipo="tarea">Tareas</button>
+                <button class="baul-filter px-4 py-2 bg-white border border-brand/30 text-brand rounded-full text-sm font-bold hover:bg-brand hover:text-white transition-all cursor-pointer" data-tipo="proyecto">Proyectos</button>
+            </div>
+
+            <!-- Lista del baúl -->
+            <div id="baul-list" class="space-y-3">
+                <p class="text-center text-gray-400 py-6">Tu baúl está vacío</p>
+            </div>
+        </section>
+
         <!-- ==================== TIMELINE (Sections below are hidden when HOY is active) ==================== -->
         <div id="timeline-content">
             <!-- Barra de Búsqueda -->
             <div class="max-w-2xl mx-auto px-3 mb-4">
                 <div class="relative">
-                    <input type="text" id="search-input" 
-                        placeholder="🔍 Buscar en tu panel..."
+                    <input type="text" id="search-input" placeholder="🔍 Buscar en tu panel..."
                         class="w-full bg-white border-2 border-border-soft rounded-2xl py-3 px-4 pl-11 text-sm font-medium focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition-all shadow-sm"
                         aria-label="Buscar en el panel">
-                    <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true"></i>
-                    <button id="btn-clear-search" 
+                    <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                        aria-hidden="true"></i>
+                    <button id="btn-clear-search"
                         class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center hidden transition"
                         aria-label="Limpiar búsqueda">
                         <i class="fa-solid fa-xmark text-xs text-gray-500"></i>
@@ -338,46 +443,176 @@
                 </div>
             </div>
 
+            <!-- Filtros de Categoría -->
+            <nav class="flex px-3 pb-4 gap-2" role="navigation" aria-label="Filtrar por tipo">
+                <button
+                    class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
+                    data-category="tarea" aria-label="Filtrar tareas">
+                    <i class="fa-regular fa-circle-check" aria-hidden="true"></i>
+                </button>
+                <button
+                    class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
+                    data-category="proyecto" aria-label="Filtrar proyectos">
+                    <i class="fa-regular fa-folder" aria-hidden="true"></i>
+                </button>
+                <button
+                    class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
+                    data-category="nota" aria-label="Filtrar notas">
+                    <i class="fa-regular fa-note-sticky" aria-hidden="true"></i>
+                </button>
+                <button
+                    class="btn-category flex-1 min-h-[48px] py-3 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
+                    data-category="directorio" aria-label="Filtrar enlaces">
+                    <i class="fa-solid fa-link" aria-hidden="true"></i>
+                </button>
+            </nav>
+
 
             <!-- Layout de Feed Único (Enesima Style) -->
             <!-- Desktop: grid bento de 2 columnas, Mobile: 1 columna -->
-            <section id="items-container" class="w-full px-2 md:px-4 pb-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 md:gap-6 justify-items-center">
+            <section id="items-container"
+                class="w-full px-2 md:px-4 pb-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 md:gap-6 justify-items-center">
                 <!-- Los items se inyectarán aquí -->
             </section>
         </div>
-    </main>
 
-    <!-- FOOTER / BARRA DE CAPTURA PRO -->
-    <footer id="app-footer" class="fixed bottom-0 left-0 right-0 px-3 py-3 bg-white border-t border-border-soft z-40 pb-[env(safe-area-inset-bottom)]">
-        <div class="flex flex-col gap-2 max-w-full mx-auto">
-            
-            <!-- Quick Tags -->
-            <div id="quick-tags-container" class="flex gap-2 overflow-x-auto no-scrollbar pb-1 px-1">
-                <button class="quick-tag px-3 py-1 bg-brand/10 text-brand rounded-full text-[11px] font-bold border border-brand/20 hover:border-brand hover:bg-brand/20 transition-colors whitespace-nowrap cursor-pointer shadow-sm" data-tag="#logro">#logro</button>
-                <button class="quick-tag px-3 py-1 bg-brand/10 text-brand rounded-full text-[11px] font-bold border border-brand/20 hover:border-brand hover:bg-brand/20 transition-colors whitespace-nowrap cursor-pointer shadow-sm" data-tag="#salud">#salud</button>
-                <button class="quick-tag px-3 py-1 bg-brand/10 text-brand rounded-full text-[11px] font-bold border border-brand/20 hover:border-brand hover:bg-brand/20 transition-colors whitespace-nowrap cursor-pointer shadow-sm" data-tag="#mi-mes">#mi-mes</button>
-                <button class="quick-tag px-3 py-1 bg-brand/10 text-brand rounded-full text-[11px] font-bold border border-brand/20 hover:border-brand hover:bg-brand/20 transition-colors whitespace-nowrap cursor-pointer shadow-sm" data-tag="#emocion">#emocion</button>
+        <!-- ==================== SECCIÓN HISTORIAL (Nueva - Cronológico) ==================== -->
+        <section id="section-historial" class="space-y-6 hidden">
+            <!-- Header del Historial -->
+            <div class="bg-brand/5 border-2 border-brand/20 p-4 rounded-[2.5rem] shadow-sm">
+                <div class="text-center">
+                    <h2 class="text-2xl font-bold text-brand flex items-center justify-center gap-2">
+                        <span class="text-2xl">📜</span> Tu Historial
+                    </h2>
+                    <p class="text-gray-500 text-sm">Todo lo que hiciste, en orden cronológico</p>
+                </div>
             </div>
 
-            <div class="bg-white border-2 border-border-soft px-3 py-2 rounded-[2rem] shadow-lg flex items-center gap-2 flex-1">
-                <input type="text" id="item-input" placeholder="¿Qué tienes en mente?"
-                    class="bg-gray-50 text-sm py-2 px-3 w-full focus:outline-none focus:ring-2 focus:ring-brand rounded-lg placeholder-gray-400 min-w-0"
+            <!-- Filtros por tipo -->
+            <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2" role="navigation" aria-label="Filtrar historial">
+                <button class="historial-filter px-4 py-2 rounded-full bg-brand text-white font-bold text-sm"
+                    data-tipo="todos">Todos</button>
+                <button class="historial-filter px-4 py-2 rounded-full bg-gray-100 text-gray-600 font-bold text-sm"
+                    data-tipo="tarea">Tareas</button>
+                <button class="historial-filter px-4 py-2 rounded-full bg-gray-100 text-gray-600 font-bold text-sm"
+                    data-tipo="nota">Notas</button>
+                <button class="historial-filter px-4 py-2 rounded-full bg-gray-100 text-gray-600 font-bold text-sm"
+                    data-tipo="proyecto">Proyectos</button>
+                <button class="historial-filter px-4 py-2 rounded-full bg-gray-100 text-gray-600 font-bold text-sm"
+                    data-tipo="directorio">Enlaces</button>
+            </div>
+
+            <!-- Lista cronológica -->
+            <div id="historial-list" class="space-y-3">
+                <!-- Se carga dinámicamente -->
+                <div class="text-center py-8">
+                    <p class="text-gray-400">Cargando tu historial...</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- FOOTER NAV (Navegación principal) -->
+    <nav id="footer-nav"
+        class="fixed bottom-[calc(env(safe-area-inset-bottom)+60px)] left-0 right-0 bg-white/95 backdrop-blur-md border-t border-border-soft z-40 px-1 py-1 flex justify-around items-center shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+        <button class="footer-nav-btn flex flex-col items-center gap-1 p-3 rounded-xl text-brand" data-nav="timeline">
+            <i class="fa-solid fa-house text-xl"></i>
+            <span class="text-[10px] font-bold">Inicio</span>
+        </button>
+        <button
+            class="footer-nav-btn flex flex-col items-center gap-1 p-3 rounded-xl text-gray-400 hover:text-brand transition"
+            data-nav="salud">
+            <i class="fa-solid fa-heart-pulse text-xl"></i>
+            <span class="text-[10px] font-bold">Salud</span>
+        </button>
+
+        <!-- Botón central (+) para agregar -->
+        <button id="btn-add-new"
+            class="w-16 h-16 -mt-8 rounded-full bg-gradient-to-br from-brand to-brand-dark text-white flex items-center justify-center shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all border-4 border-white">
+            <i class="fa-solid fa-plus text-3xl"></i>
+        </button>
+
+        <button
+            class="footer-nav-btn flex flex-col items-center gap-1 p-3 rounded-xl text-gray-400 hover:text-brand transition"
+            data-nav="historial">
+            <i class="fa-solid fa-clock-rotate-left text-xl"></i>
+            <span class="text-[10px] font-bold">Historial</span>
+        </button>
+        <button
+            class="footer-nav-btn flex flex-col items-center gap-1 p-3 rounded-xl text-gray-400 hover:text-brand transition"
+            data-nav="baul">
+            <i class="fa-solid fa-box-open text-xl"></i>
+            <span class="text-[10px] font-bold">Baúl</span>
+        </button>
+    </nav>
+
+    <!-- MODAL DE NUEVA NOTA/TAREA (oculto por defecto) -->
+    <div id="modal-add-new"
+        class="fixed inset-0 bg-ink/30 backdrop-blur-sm z-[100] flex items-end justify-center hidden" role="dialog"
+        aria-modal="true">
+        <div
+            class="bg-white w-full max-w-2xl rounded-t-3xl shadow-2xl p-5 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] animate-slide-up">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg text-brand">¿Qué tienes en mente?</h3>
+                <button id="btn-close-modal-add"
+                    class="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Selector de tipo -->
+            <div class="flex gap-2 overflow-x-auto no-scrollbar pb-3 mb-3">
+                <button class="add-type-btn flex-1 py-3 px-3 rounded-xl bg-brand text-white font-bold text-sm flex items-center justify-center gap-2" data-type="tarea">
+                    <span>✅</span> Tarea
+                </button>
+                <button class="add-type-btn flex-1 py-3 px-3 rounded-xl bg-gray-100 text-gray-600 font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-200 transition" data-type="nota">
+                    <span>📝</span> Nota
+                </button>
+                <button class="add-type-btn flex-1 py-3 px-3 rounded-xl bg-gray-100 text-gray-600 font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-200 transition" data-type="proyecto">
+                    <span>📁</span> Proyecto
+                </button>
+                <button class="add-type-btn flex-1 py-3 px-3 rounded-xl bg-gray-100 text-gray-600 font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-200 transition" data-type="directorio">
+                    <span>🔗</span> Enlace
+                </button>
+            </div>
+
+            <!-- Input principal -->
+            <div class="bg-gray-50 border-2 border-border-soft px-4 py-3 rounded-2xl flex items-center gap-3">
+                <input type="text" id="quick-input" placeholder="Escribe aquí tu nota, tarea o enlace..."
+                    class="bg-transparent text-base py-2 px-1 w-full focus:outline-none placeholder-gray-400 min-w-0"
                     aria-label="Escribe tu nota o tarea">
 
-                <div class="flex items-center gap-1">
-                    <button id="btn-submit" aria-label="Guardar elemento"
-                        class="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shrink-0 shadow-md active:scale-95 transition-all focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1 cursor-pointer">
-                        <i class="fa-solid fa-plus text-sm" aria-hidden="true"></i>
+                <div class="flex items-center gap-2 shrink-0">
+                    <button id="btn-voice-quick" aria-label="Grabar nota de voz"
+                        class="w-11 h-11 rounded-full bg-brand/10 text-brand flex items-center justify-center hover:bg-brand/20 transition">
+                        <i class="fa-solid fa-microphone text-lg"></i>
                     </button>
-
-                    <button id="btn-voice-footer" aria-label="Grabar nota de voz"
-                        class="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shrink-0 shadow-md hover:scale-105 active:scale-95 transition border-2 border-white focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer">
-                        <i class="fa-solid fa-microphone text-sm" aria-hidden="true"></i>
+                    <button id="btn-submit-quick" aria-label="Guardar elemento"
+                        class="w-11 h-11 rounded-full bg-brand text-white flex items-center justify-center shadow-md active:scale-95 transition-all hover:bg-brand-dark">
+                        <i class="fa-solid fa-plus text-lg"></i>
                     </button>
                 </div>
             </div>
+
+            <!-- Tags -->
+            <div class="flex gap-2 overflow-x-auto no-scrollbar mt-3 pt-2 border-t border-border-soft">
+                <button
+                    class="quick-tag px-3 py-1 bg-brand/10 text-brand rounded-full text-[11px] font-bold border border-brand/20 hover:border-brand hover:bg-brand/20 transition-colors whitespace-nowrap cursor-pointer shadow-sm"
+                    data-tag="#logro">#logro</button>
+                <button
+                    class="quick-tag px-3 py-1 bg-brand/10 text-brand rounded-full text-[11px] font-bold border border-brand/20 hover:border-brand hover:bg-brand/20 transition-colors whitespace-nowrap cursor-pointer shadow-sm"
+                    data-tag="#salud">#salud</button>
+                <button
+                    class="quick-tag px-3 py-1 bg-brand/10 text-brand rounded-full text-[11px] font-bold border border-brand/20 hover:border-brand hover:bg-brand/20 transition-colors whitespace-nowrap cursor-pointer shadow-sm"
+                    data-tag="#mi-mes">#mi-mes</button>
+                <button
+                    class="quick-tag px-3 py-1 bg-brand/10 text-brand rounded-full text-[11px] font-bold border border-brand/20 hover:border-brand hover:bg-brand/20 transition-colors whitespace-nowrap cursor-pointer shadow-sm"
+                    data-tag="#emocion">#emocion</button>
+            </div>
         </div>
-    </footer>
+    </div>
+
+
 
     <!-- MODAL DE ALARMAS -->
     <div id="modal-alarms"
@@ -386,7 +621,8 @@
         <div class="bg-white w-full max-w-lg rounded-blob shadow-2xl max-h-[80vh] overflow-y-auto">
             <div class="p-6 border-b border-border-soft flex items-center justify-between">
                 <h3 class="text-xl font-bold text-rose-500">🔔 Mis Alarmas</h3>
-                <button class="modal-alarms-close w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition">
+                <button
+                    class="modal-alarms-close w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition">
                     <i class="fa-solid fa-xmark text-xl"></i>
                 </button>
             </div>
@@ -605,17 +841,105 @@
             initNavigation();
             initFecha();
             initCheckin();
+            initAddNewModal();
             // initRoutineForm(); // ELIMINADO: Rutinas de hoy
             // loadRoutines(); // ELIMINADO: Rutinas de hoy
             initTaskForm();
             loadTasks();
         });
 
+        // Modal de nueva nota/tarea
+        function initAddNewModal() {
+            const modal = document.getElementById('modal-add-new');
+            const btnAdd = document.getElementById('btn-add-new');
+            const btnClose = document.getElementById('btn-close-modal-add');
+            const btnSubmit = document.getElementById('btn-submit-quick');
+
+            // Abrir modal
+            if (btnAdd) {
+                btnAdd.addEventListener('click', () => {
+                    modal.classList.remove('hidden');
+                    document.getElementById('quick-input').focus();
+                });
+            }
+
+            // Cerrar modal
+            if (btnClose) {
+                btnClose.addEventListener('click', () => {
+                    modal.classList.add('hidden');
+                });
+            }
+
+            // Cerrar al hacer click fuera
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                }
+            });
+
+            // Cambio de tipo
+            document.querySelectorAll('.add-type-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.add-type-btn').forEach(b => {
+                        b.classList.remove('bg-brand', 'text-white');
+                        b.classList.add('bg-gray-100', 'text-gray-600');
+                    });
+                    btn.classList.remove('bg-gray-100', 'text-gray-600');
+                    btn.classList.add('bg-brand', 'text-white');
+                });
+            });
+
+            // Submit
+            if (btnSubmit) {
+                btnSubmit.addEventListener('click', submitQuickItem);
+            }
+        }
+
+        // Submit de item rápido
+        async function submitQuickItem() {
+            const input = document.getElementById('quick-input');
+            const content = input.value.trim();
+
+            if (!content) return;
+
+            // Obtener tipo seleccionado
+            let tipo = 'nota';
+            document.querySelectorAll('.add-type-btn').forEach(btn => {
+                if (btn.classList.contains('bg-brand')) {
+                    tipo = btn.dataset.type;
+                }
+            });
+
+            // Guardar usando el controller
+            if (window.controller) {
+                await window.controller.addItem({
+                    tipo: tipo,
+                    contenido: content,
+                    tags: window.controller.currentTag ? [window.controller.currentTag] : []
+                });
+
+                input.value = '';
+                document.getElementById('modal-add-new').classList.add('hidden');
+
+                // Volver a timeline y recargar
+                switchView('timeline');
+            }
+        }
+
         // Navegación HOY / TIMELINE
         function initNavigation() {
+            // Sidebar buttons
             document.querySelectorAll('.btn-nav').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const view = btn.dataset.view;
+                    switchView(view);
+                });
+            });
+
+            // Footer nav buttons
+            document.querySelectorAll('.footer-nav-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const view = btn.dataset.nav;
                     switchView(view);
                 });
             });
@@ -623,8 +947,8 @@
 
         function switchView(view) {
             currentView = view;
-            
-            // Actualizar botones de navegación
+
+            // Actualizar botones de navegación del sidebar
             document.querySelectorAll('.btn-nav').forEach(b => {
                 if (b.dataset.view === view) {
                     b.classList.add('bg-brand', 'text-white', 'shadow-sticker');
@@ -635,9 +959,26 @@
                 }
             });
 
+            // Actualizar footer nav
+            document.querySelectorAll('.footer-nav-btn').forEach(b => {
+                if (b.dataset.nav === view) {
+                    b.classList.remove('text-gray-400');
+                    b.classList.add('text-brand');
+                } else {
+                    b.classList.remove('text-brand');
+                    b.classList.add('text-gray-400');
+                }
+            });
+
             // Mostrar/ocultar secciones
             document.getElementById('section-hoy').classList.toggle('hidden', view !== 'hoy');
-            document.getElementById('timeline-content').classList.toggle('hidden', view !== 'timeline');
+            document.getElementById('section-inicio').classList.toggle('hidden', view !== 'timeline');
+            document.getElementById('section-salud').classList.toggle('hidden', view !== 'salud');
+            document.getElementById('section-baul').classList.toggle('hidden', view !== 'baul');
+            document.getElementById('section-historial').classList.toggle('hidden', view !== 'historial');
+            
+            // timeline-content visible solo en historial (no en inicio)
+            document.getElementById('timeline-content').classList.toggle('hidden', view !== 'historial');
 
             // Footer: mostrar solo en Timeline
             document.getElementById('app-footer').classList.toggle('hidden', view !== 'timeline');
@@ -648,12 +989,22 @@
                 loadTasks();
                 loadTodayCheckin();
             } else if (view === 'timeline') {
-                // Cargar timeline desde el controller
+                // Cargar nueva sección Inicio
+                loadInicio();
+            } else if (view === 'historial') {
+                // Cargar timeline y historial
                 if (window.controller) {
                     window.controller.currentCategory = 'all';
                     window.controller.currentTag = null;
                     window.controller.loadItems();
                 }
+                loadHistorial();
+            } else if (view === 'salud') {
+                // Cargar check-ins de salud
+                loadSaludCheckins();
+            } else if (view === 'baul') {
+                // Cargar baúl
+                loadBaul();
             }
         }
 
@@ -695,6 +1046,187 @@
             document.getElementById('hoy-saludo').textContent = saludo;
         }
 
+        // ==================== HISTORIAL ====================
+        let historialFilter = 'todos';
+        let inicioFilter = 'todos';
+
+        // Saludo dinámico
+        function updateSaludo() {
+            const now = new Date();
+            const hora = now.getHours();
+            let saludo = 'Buenos días';
+            if (hora >= 12 && hora < 18) saludo = 'Buenas tardes';
+            if (hora >= 18) saludo = 'Buenas noches';
+            
+            const nombre = 'María'; // TODO: obtener del usuario
+            document.getElementById('inicio-saludo').textContent = `¡${saludo}, ${nombre}! ✨`;
+        }
+
+        // Cargar sección Inicio
+        function loadInicio() {
+            updateSaludo();
+            
+            const container = document.getElementById('inicio-tasks');
+            
+            // Obtener items del controller
+            let items = [];
+            if (window.controller && window.controller.items) {
+                items = [...window.controller.items];
+            }
+            
+            // Filtrar por tag
+            if (inicioFilter !== 'todos') {
+                items = items.filter(item => item.tags && item.tags.includes(inicioFilter));
+            }
+            
+            // Filtrar por pendientes (no logrados)
+            const pendientes = items.filter(item => item.estado !== 'logrado');
+            const logradas = items.filter(item => item.estado === 'logrado');
+            
+            // Actualizar contadores
+            document.getElementById('count-pendientes').textContent = pendientes.length;
+            document.getElementById('count-logradas').textContent = logradas.length;
+            
+            // Renderizar lista (mezclado)
+            const allItems = [...pendientes, ...logradas].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            
+            if (allItems.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400 py-8">No hay tareas</p>';
+                return;
+            }
+            
+            container.innerHTML = allItems.slice(0, 20).map(item => {
+                const icon = { tarea: '📋', nota: '📝', proyecto: '📁', directorio: '🔗' }[item.tipo] || '📄';
+                const estado = item.estado === 'logrado' ? 'line-through opacity-50' : '';
+                
+                return `
+                    <div class="bg-white border border-border-soft rounded-2xl p-4 shadow-sm flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition">
+                        <span class="text-2xl">${icon}</span>
+                        <div class="flex-1">
+                            <p class="font-medium text-ink ${estado}">${item.contenido}</p>
+                            <p class="text-xs text-gray-400">${new Date(item.created_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</p>
+                        </div>
+                        ${item.estado === 'logrado' ? '<span class="text-green-500">✅</span>' : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Inicializar filtros del Inicio
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.inicio-tag-filter').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    inicioFilter = btn.dataset.tag;
+                    document.querySelectorAll('.inicio-tag-filter').forEach(b => {
+                        b.classList.remove('bg-brand', 'text-white');
+                        b.classList.add('bg-brand/10', 'text-brand');
+                    });
+                    btn.classList.remove('bg-brand/10', 'text-brand');
+                    btn.classList.add('bg-brand', 'text-white');
+                    loadInicio();
+                });
+            });
+        });
+
+        // Cargar historial
+        function loadHistorial() {
+            const container = document.getElementById('historial-list');
+
+            // Obtener items del controller
+            let items = [];
+            if (window.controller && window.controller.items) {
+                items = [...window.controller.items];
+            }
+
+            // Filtrar por tipo
+            if (historialFilter !== 'todos') {
+                items = items.filter(item => item.tipo === historialFilter);
+            }
+
+            // Ordenar por fecha (más reciente primero)
+            items.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            // Render
+            if (items.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="text-6xl mb-4">📭</div>
+                        <p class="text-gray-400">No hay registros todavía</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = items.map(item => {
+                const fecha = new Date(item.created_at).toLocaleDateString('es-ES', {
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                const icon = {
+                    tarea: '📋',
+                    nota: '📝',
+                    proyecto: '📁',
+                    directorio: '🔗'
+                }[item.tipo] || '📄';
+
+                const estadoBadge = item.estado === 'logrado'
+                    ? '<span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ Logrado</span>'
+                    : '';
+
+                return `
+                    <div class="bg-white border border-border-soft rounded-2xl p-4 shadow-sm">
+                        <div class="flex items-start gap-3">
+                            <span class="text-2xl">${icon}</span>
+                            <div class="flex-1">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-sm text-gray-400">${fecha}</span>
+                                    ${estadoBadge}
+                                </div>
+                                <p class="font-medium text-ink">${item.contenido}</p>
+                                ${item.tags && item.tags.length > 0 ? `
+                                    <div class="flex gap-1 mt-2 flex-wrap">
+                                        ${item.tags.map(tag => `<span class="text-xs text-brand">#${tag}</span>`).join('')}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Inicializar filtros del historial
+        document.addEventListener('DOMContentLoaded', () => {
+            // Filtros del historial
+            document.querySelectorAll('.historial-filter').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    historialFilter = btn.dataset.tipo;
+                    document.querySelectorAll('.historial-filter').forEach(b => {
+                        b.classList.remove('bg-brand', 'text-white');
+                        b.classList.add('bg-gray-100', 'text-gray-600');
+                    });
+                    btn.classList.remove('bg-gray-100', 'text-gray-600');
+                    btn.classList.add('bg-brand', 'text-white');
+                    loadHistorial();
+                });
+            });
+
+            // Botón del sidebar para abrir historial
+            const btnHistorialSidebar = document.getElementById('btn-historial');
+            if (btnHistorialSidebar) {
+                btnHistorialSidebar.addEventListener('click', () => {
+                    // Cerrar sidebar
+                    document.getElementById('sidebar').classList.add('-translate-x-full');
+                    document.getElementById('sidebar-overlay').classList.add('hidden');
+                    // Cambiar a vista historial
+                    switchView('historial');
+                });
+            }
+        });
+
         // Check-in
         let selectedEmoji = null;
 
@@ -716,7 +1248,7 @@
             document.getElementById('btn-save-checkin').addEventListener('click', async () => {
                 const physical = document.getElementById('checkin-physical').value;
                 const note = document.getElementById('checkin-note').value;
-                
+
                 if (!selectedEmoji) {
                     alert('Elegí cómo te sentís 😄');
                     return;
@@ -743,7 +1275,7 @@
                 selectedEmoji = checkin.emotional_state;
                 document.getElementById('checkin-physical').value = checkin.physical || '';
                 document.getElementById('checkin-note').value = checkin.note || '';
-                
+
                 // Seleccionar el emoji
                 document.querySelectorAll('.emoji-btn').forEach(b => {
                     if (b.dataset.emoji === selectedEmoji) {
@@ -769,7 +1301,7 @@
             document.getElementById('btn-confirm-routine').addEventListener('click', async () => {
                 const name = document.getElementById('new-routine-input').value.trim();
                 const isDefault = document.getElementById('set-as-default').checked;
-                
+
                 if (name) {
                     await hoy.addRoutine(name, '📌', isDefault);
                     document.getElementById('new-routine-input').value = '';
@@ -786,7 +1318,7 @@
             const completedIds = completions.map(c => c.routine_id);
 
             const container = document.getElementById('rutinas-list');
-            
+
             if (!routines || routines.length === 0) {
                 container.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">No hay rutinas</p>';
                 return;
@@ -830,7 +1362,7 @@
         function loadTasks() {
             const tasks = hoy.getTodayTasks(); // Ahora es sync (localStorage)
             const container = document.getElementById('tareas-list');
-            
+
             if (!tasks || tasks.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-4">
@@ -894,7 +1426,7 @@
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                color: #4A4A4A;
+                color: #1E293B;
                 font-size: 14px;
                 font-weight: bold;
             }
@@ -923,7 +1455,7 @@
                 <i class="fa-solid fa-xmark text-xl"></i>
             </button>
         </div>
-        
+
         <!-- Botón marcar todo como leído -->
         <div class="p-3 border-b border-gray-50">
             <button id="btn-mark-all-read" class="text-sm text-brand font-bold hover:underline">
@@ -938,7 +1470,8 @@
     </div>
 
     <!-- Overlay del drawer -->
-    <div id="notification-overlay" class="fixed inset-0 bg-black/20 z-[85] hidden transition-opacity" role="presentation"></div>
+    <div id="notification-overlay" class="fixed inset-0 bg-black/20 z-[85] hidden transition-opacity"
+        role="presentation"></div>
 </body>
 
 </html>
