@@ -162,8 +162,8 @@ export const utils = {
 
     getRandomColor() {
         const colors = [
-            '#fef3c7', '#d1fae5', '#e0e7ff', '#fee2e2',
-            '#dbeafe', '#fce7f3', '#f3e8ff', '#ffedd5'
+            '#ffcf7d', '#DCFCE7', '#CFFAFE', '#FFE4E6',
+            '#CFFAFE', '#FFE4E6', '#CFFAFE', '#ffcf7d'
         ];
         return colors[Math.floor(Math.random() * colors.length)];
     },

@@ -42,6 +42,7 @@ import { auth } from './auth.js';
 import { ai } from './ai.js';
 import { cerebras } from './cerebras.js';
 import { hoy } from './hoy.js';
+import { utils } from './utils.js';
 
 function formatDeadlineForDB(deadline) {
     if (!deadline) return null;
@@ -69,8 +70,9 @@ class KaiController {
     constructor() {
         this.currentUser = null;
         this.currentParentId = null;
-        this.currentCategory = 'all';
+        this.currentCategory = 'tarea';
         this.currentTag = null;
+        this.currentExcludeTag = null;
         this.breadcrumbPath = [];
         this.currentView = 'timeline'; // Default: Timeline
         this.expandedCardId = null; // ID de la card expandida (para persistencia)
@@ -90,7 +92,7 @@ class KaiController {
                 // Restaurar estado persistido DESPUÉS de tener usuario
                 this.restoreState();
                 // Cargar según la vista actual
-                if (this.currentView === 'hoy') {
+                if (this.currentView === 'hoy' || this.currentView === 'salud') {
                     await this.loadHoySection();
                 } else {
                     await this.loadItems();
@@ -115,7 +117,8 @@ class KaiController {
             currentView: this.currentView,
             expandedCardId: this.expandedCardId,
             currentCategory: this.currentCategory,
-            currentTag: this.currentTag
+            currentTag: this.currentTag,
+            currentExcludeTag: this.currentExcludeTag
         };
         localStorage.setItem('kai_state', JSON.stringify(state));
     }
@@ -127,8 +130,9 @@ class KaiController {
                 const state = JSON.parse(saved);
                 this.currentView = state.currentView || 'timeline';
                 this.expandedCardId = state.expandedCardId || null;
-                this.currentCategory = state.currentCategory || 'all';
+                this.currentCategory = state.currentCategory || 'tarea';
                 this.currentTag = state.currentTag || null;
+                this.currentExcludeTag = state.currentExcludeTag || null;
                 
                 // Aplicar la vista guardada (sin cargar datos - eso se hace en init())
                 this.applyViewStateOnly();
@@ -140,76 +144,43 @@ class KaiController {
     
     // Versión de applyViewState que NO carga datos (para restoreState)
     applyViewStateOnly() {
-        const btnHoy = document.getElementById('nav-hoy');
-        const btnTimeline = document.getElementById('nav-timeline');
-        
-        if (btnHoy && btnTimeline) {
-            if (this.currentView === 'hoy') {
-                btnHoy.classList.add('bg-brand', 'text-white', 'shadow-sticker');
-                btnHoy.classList.remove('text-gray-500', 'hover:bg-gray-100');
-                btnTimeline.classList.remove('bg-brand', 'text-white', 'shadow-sticker');
-                btnTimeline.classList.add('text-gray-500', 'hover:bg-gray-100');
-            } else {
-                btnTimeline.classList.add('bg-brand', 'text-white', 'shadow-sticker');
-                btnTimeline.classList.remove('text-gray-500', 'hover:bg-gray-100');
-                btnHoy.classList.remove('bg-brand', 'text-white', 'shadow-sticker');
-                btnHoy.classList.add('text-gray-500', 'hover:bg-gray-100');
-            }
-        }
-        
+        // La navegación ahora la maneja switchView() en index.html.
+        // applyViewStateOnly solo se ocupa de la UI en init(), sin cargar datos.
+        // Delegamos al switchView unificado para vistas que no sean timeline.
         const sectionHoy = document.getElementById('section-hoy');
+        const sectionInicio = document.getElementById('section-inicio');
+        const sectionSalud = document.getElementById('section-salud');
+        const sectionBaul = document.getElementById('section-baul');
+        const sectionHistorial = document.getElementById('section-historial');
         const timelineContent = document.getElementById('timeline-content');
         
-        if (sectionHoy && timelineContent) {
-            if (this.currentView === 'hoy') {
-                sectionHoy.classList.remove('hidden');
-                timelineContent.classList.add('hidden');
-            } else {
-                sectionHoy.classList.add('hidden');
-                timelineContent.classList.remove('hidden');
-            }
+        // Ocultar todo primero
+        [sectionHoy, sectionInicio, sectionSalud, sectionBaul, sectionHistorial].forEach(s => {
+            if (s) s.classList.add('hidden');
+        });
+        if (timelineContent) timelineContent.classList.add('hidden');
+        const itemsContainer = document.getElementById('items-container');
+        if (itemsContainer) itemsContainer.classList.add('hidden');
+        
+        // Mostrar según la vista
+        if (this.currentView === 'timeline') {
+            if (sectionInicio) sectionInicio.classList.remove('hidden');
+            if (timelineContent) timelineContent.classList.remove('hidden');
+            if (itemsContainer) itemsContainer.classList.remove('hidden');
+        } else if (this.currentView === 'salud') {
+            if (sectionHoy) sectionHoy.classList.remove('hidden');
+        } else if (this.currentView === 'historial') {
+            if (sectionHistorial) sectionHistorial.classList.remove('hidden');
+        } else if (this.currentView === 'baul') {
+            if (sectionBaul) sectionBaul.classList.remove('hidden');
+        } else if (this.currentView === 'dashboard') {
+            if (itemsContainer) itemsContainer.classList.remove('hidden');
         }
     }
     
     applyViewState() {
-        // Actualizar estilos de botones de navegación
-        const btnHoy = document.getElementById('nav-hoy');
-        const btnTimeline = document.getElementById('nav-timeline');
-        
-        if (btnHoy && btnTimeline) {
-            if (this.currentView === 'hoy') {
-                btnHoy.classList.add('bg-brand', 'text-white', 'shadow-sticker');
-                btnHoy.classList.remove('text-gray-500', 'hover:bg-gray-100');
-                btnTimeline.classList.remove('bg-brand', 'text-white', 'shadow-sticker');
-                btnTimeline.classList.add('text-gray-500', 'hover:bg-gray-100');
-            } else {
-                btnTimeline.classList.add('bg-brand', 'text-white', 'shadow-sticker');
-                btnTimeline.classList.remove('text-gray-500', 'hover:bg-gray-100');
-                btnHoy.classList.remove('bg-brand', 'text-white', 'shadow-sticker');
-                btnHoy.classList.add('text-gray-500', 'hover:bg-gray-100');
-            }
-        }
-        
-        // Mostrar/ocultar secciones
-        const sectionHoy = document.getElementById('section-hoy');
-        const timelineContent = document.getElementById('timeline-content');
-        const footer = document.getElementById('app-footer');
-        
-        if (sectionHoy && timelineContent) {
-            if (this.currentView === 'hoy') {
-                sectionHoy.classList.remove('hidden');
-                timelineContent.classList.add('hidden');
-                if (footer) footer.classList.add('hidden');
-                // Cargar datos de HOY si hay usuario
-                if (this.currentUser) {
-                    this.loadHoySection();
-                }
-            } else {
-                sectionHoy.classList.add('hidden');
-                timelineContent.classList.remove('hidden');
-                if (footer) footer.classList.remove('hidden');
-            }
-        }
+        // Igual que applyViewStateOnly - solo UI, delegar carga de datos al inline switchView
+        this.applyViewStateOnly();
     }
     
     switchView(view) {
@@ -225,213 +196,262 @@ class KaiController {
         }
         
         // Si es HOY, cargar datos de HOY
-        if (view === 'hoy') {
+        if (view === 'hoy' || view === 'salud') {
             this.loadHoySection();
         }
     }
     
-    // ==================== SECCIÓN HOY ====================
-    
+    // ==================== SECCIÓN SALUD (Bitácora de Bienestar) ====================
+
     async loadHoySection() {
-        await this.updateHoyDate();
-        await this.loadTodayTasks();
-        this.initHoyEvents();
+        this.updateSaludDate();
+        this.renderSaludOptions();
+        await this.loadTodayWellness();
+        this.bindSaludEvents();
+        await this.loadWellnessHistory();
     }
-    
-    updateHoyDate() {
+
+    updateSaludDate() {
         const fechaEl = document.getElementById('hoy-fecha');
         const saludoEl = document.getElementById('hoy-saludo');
-        if (!fechaEl || !saludoEl) return;
-        
+        if (!fechaEl) return;
+
         const hoy = new Date();
         const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
         const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-        
+
         fechaEl.textContent = `${diasSemana[hoy.getDay()]} ${hoy.getDate()} de ${meses[hoy.getMonth()]}`;
-        
-        const hora = hoy.getHours();
-        if (hora < 12) {
-            saludoEl.textContent = 'Buenos días ☀️';
-        } else if (hora < 18) {
-            saludoEl.textContent = 'Buenas tardes 🌤️';
+
+        if (saludoEl) {
+            const hora = hoy.getHours();
+            if (hora < 12) saludoEl.textContent = '🌅 Buenos días';
+            else if (hora < 18) saludoEl.textContent = '🌤️ Buenas tardes';
+            else saludoEl.textContent = '🌙 Buenas noches';
+        }
+    }
+
+    getSaludOptions() {
+        return {
+            animo: [
+                { valor: 'feliz', label: 'Feliz', icono: '😊' },
+                { valor: 'bien', label: 'Bien', icono: '🙂' },
+                { valor: 'neutral', label: 'Neutral', icono: '😐' },
+                { valor: 'triste', label: 'Triste', icono: '😢' },
+                { valor: 'ansiosa', label: 'Ansiosa', icono: '😰' },
+                { valor: 'abrumada', label: 'Abrumada', icono: '😵' }
+            ],
+            energia: [
+                { valor: 10, label: 'A tope', icono: '🔥' },
+                { valor: 8, label: 'Activa', icono: '💪' },
+                { valor: 6, label: 'Normal', icono: '🙂' },
+                { valor: 4, label: 'Cansada', icono: '😌' },
+                { valor: 2, label: 'Agotada', icono: '😴' },
+                { valor: 0, label: 'Sin energía', icono: '💀' }
+            ],
+            sueno: [
+                { valor: '0-3', label: '0-3h', icono: '😫' },
+                { valor: '4-5', label: '4-5h', icono: '😴' },
+                { valor: '6', label: '6h', icono: '😊' },
+                { valor: '7-8', label: '7-8h', icono: '🌟' },
+                { valor: '9-10', label: '9-10h', icono: '✨' },
+                { valor: '10+', label: '10h+', icono: '😵' }
+            ],
+            ciclo: [
+                { valor: 'menstruacion', label: 'Menstruación', icono: '🌸' },
+                { valor: 'folicular', label: 'Folicular', icono: '🌱' },
+                { valor: 'ovulacion', label: 'Ovulación', icono: '🌕' },
+                { valor: 'lutea', label: 'Lútea', icono: '🌙' }
+            ]
+        };
+    }
+
+    renderSaludOptions() {
+        const options = this.getSaludOptions();
+
+        for (const [group, items] of Object.entries(options)) {
+            const container = document.getElementById(`${group}-group`);
+            if (!container) continue;
+
+            container.innerHTML = items.map(item => `
+                <button type="button"
+                        class="salud-radio flex flex-col items-center gap-2 p-4 rounded-2xl bg-white border-2 border-border-soft text-center hover:border-brand hover:bg-brand/5 transition-all cursor-pointer active:scale-95"
+                        data-group="${group}"
+                        data-value="${item.valor}"
+                        aria-pressed="false">
+                    <span class="text-3xl">${item.icono}</span>
+                    <span class="text-xs font-bold text-gray-600">${item.label}</span>
+                </button>
+            `).join('');
+        }
+    }
+
+    async saveWellness(data) {
+        const fecha = new Date().toISOString().split('T')[0];
+
+        if (!this.currentUser) {
+            const local = JSON.parse(localStorage.getItem('wellness_local') || '[]');
+            const idx = local.findIndex(w => w.fecha === fecha);
+            const entry = { ...data, fecha, updatedAt: new Date().toISOString() };
+            if (idx >= 0) local[idx] = entry;
+            else local.push(entry);
+            localStorage.setItem('wellness_local', JSON.stringify(local));
+            ui.showNotification('Registro guardado 💚', 'success');
+            return;
+        }
+
+        const existing = await this.getTodayWellness();
+
+        try {
+            if (existing) {
+                await data.updateItem(existing.id, {
+                    meta: { ...existing.meta, ...data, fecha }
+                });
+            } else {
+                await data.createItem({
+                    content: `Bitácora - ${fecha}`,
+                    type: 'checkin',
+                    tags: ['salud', 'bienestar'],
+                    meta: { ...data, fecha }
+                });
+            }
+            ui.showNotification('Registro guardado 💚', 'success');
+        } catch (error) {
+            console.error('Error saving wellness:', error);
+            ui.showNotification('Error al guardar', 'error');
+        }
+    }
+
+    async getTodayWellness() {
+        const fecha = new Date().toISOString().split('T')[0];
+
+        if (!this.currentUser) {
+            const local = JSON.parse(localStorage.getItem('wellness_local') || '[]');
+            return local.find(w => w.fecha === fecha) || null;
+        }
+
+        try {
+            const items = await data.getItems({ type: 'checkin' });
+            return items.find(item =>
+                item.meta?.fecha === fecha &&
+                item.tags?.includes('bienestar')
+            ) || null;
+        } catch (error) {
+            console.error('Error getTodayWellness:', error);
+            return null;
+        }
+    }
+
+    async loadWellnessHistory(days = 7) {
+        const container = document.getElementById('wellness-history');
+        if (!container) return;
+
+        let records = [];
+        if (!this.currentUser) {
+            records = JSON.parse(localStorage.getItem('wellness_local') || '[]');
         } else {
-            saludoEl.textContent = 'Buenas noches 🌙';
+            try {
+                const items = await data.getItems({ type: 'checkin' });
+                records = items.filter(item => item.tags?.includes('bienestar'));
+            } catch (error) {
+                console.error('Error loading wellness history:', error);
+            }
         }
-    }
-    
-    async loadRoutines() {
-        const container = document.getElementById('rutinas-list');
-        if (!container) return;
-        
-        try {
-            const routines = await hoy.getRoutines();
-            const completions = await hoy.getRoutineCompletions();
-            const completedIds = completions.map(c => c.routine_id || c.id);
-            
-            container.innerHTML = routines.map(r => `
-                <div class="flex items-center gap-3 p-3 rounded-xl bg-brand/5 border border-brand/10 group hover:bg-brand/10 transition">
-                    <input type="checkbox" 
-                           class="routine-checkbox w-6 h-6 rounded border-2 border-brand text-brand focus:ring-brand accent-brand cursor-pointer"
-                           data-routine-id="${r.id}"
-                           ${completedIds.includes(r.id) ? 'checked' : ''}>
-                    <span class="text-2xl">${r.emoji || '📌'}</span>
-                    <span class="flex-1 font-medium text-ink ${completedIds.includes(r.id) ? 'line-through opacity-50' : ''}">${r.name}</span>
-                    ${r.is_default ? '<span class="text-[10px] text-brand font-bold">DEFAULT</span>' : ''}
+
+        if (records.length === 0) {
+            container.innerHTML = '<p class="text-center text-gray-400 py-4">Aún no hay registros</p>';
+            return;
+        }
+
+        records.sort((a, b) => new Date(b.fecha || b.created_at) - new Date(a.fecha || a.created_at));
+
+        const animoIconos = { feliz: '😊', bien: '🙂', neutral: '😐', triste: '😢', ansiosa: '😰', abrumada: '😵' };
+        const energiaIconos = { 10: '🔥', 8: '💪', 6: '🙂', 4: '😌', 2: '😴', 0: '💀' };
+
+        container.innerHTML = records.slice(0, 7).map(r => {
+            const meta = r.meta || r;
+            const date = new Date(meta.fecha || r.created_at);
+            const dateStr = date.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+
+            return `
+                <div class="flex items-center gap-2 p-3 rounded-xl bg-white border border-border-soft">
+                    <span class="text-xs text-gray-400 w-16">${dateStr}</span>
+                    <span title="Ánimo">${animoIconos[meta.animo] || '❓'}</span>
+                    <span title="Energía">${energiaIconos[meta.energia] || '❓'}</span>
+                    <span title="Sueño: ${meta.sueno}" class="text-sm">😴 ${meta.sueno}</span>
+                    <span title="Ciclo" class="ml-auto text-sm">${meta.ciclo ? '🌸' : ''}</span>
                 </div>
-            `).join('');
-            
-            // Bind eventos de checkboxes
-            container.querySelectorAll('.routine-checkbox').forEach(cb => {
-                cb.addEventListener('change', async (e) => {
-                    const routineId = e.target.dataset.routineId;
-                    const completed = e.target.checked;
-                    await hoy.toggleRoutineCompletion(routineId, completed);
-                    
-                    // Actualizar UI
-                    const row = e.target.closest('.flex');
-                    const text = row.querySelector('span:nth-child(3)');
-                    if (text) {
-                        if (completed) {
-                            text.classList.add('line-through', 'opacity-50');
-                        } else {
-                            text.classList.remove('line-through', 'opacity-50');
-                        }
-                    }
-                });
-            });
-        } catch (error) {
-            console.error('Error loading routines:', error);
-            container.innerHTML = '<p class="text-center text-gray-400 py-4">Error al cargar rutinas</p>';
+            `;
+        }).join('');
+    }
+
+    async loadTodayWellness() {
+        const today = await this.getTodayWellness();
+        if (!today) return;
+
+        const meta = today.meta || today;
+
+        if (meta.animo) {
+            const btn = document.querySelector(`.salud-radio[data-group="animo"][data-value="${meta.animo}"]`);
+            if (btn) btn.click();
+        }
+        if (meta.energia !== undefined && meta.energia !== null) {
+            const btn = document.querySelector(`.salud-radio[data-group="energia"][data-value="${meta.energia}"]`);
+            if (btn) btn.click();
+        }
+        if (meta.sueno) {
+            const btn = document.querySelector(`.salud-radio[data-group="sueno"][data-value="${meta.sueno}"]`);
+            if (btn) btn.click();
+        }
+        if (meta.ciclo) {
+            const btn = document.querySelector(`.salud-radio[data-group="ciclo"][data-value="${meta.ciclo}"]`);
+            if (btn) btn.click();
         }
     }
-    
-    async loadTodayTasks() {
-        const container = document.getElementById('tareas-list');
-        if (!container) return;
-        
-        try {
-            // Ahora siempre usa localStorage (ya no hay versión Supabase)
-            const tasks = hoy.getTodayTasks();
-            
-            if (tasks.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-6 text-gray-400">
-                        <span class="text-4xl">📋</span>
-                        <p class="mt-2 text-sm">No hay tareas para hoy. ¡Agrega una!</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            container.innerHTML = tasks.map(t => `
-                <div class="flex items-center gap-3 p-3 rounded-xl bg-white border border-gray-100 hover:border-brand/20 transition group" data-task-id="${t.id}">
-                    <input type="checkbox"
-                           class="hoy-task-checkbox w-5 h-5 rounded border-2 border-gray-200 text-brand focus:ring-brand accent-brand cursor-pointer"
-                           data-task-id="${t.id}"
-                           ${t.completed ? 'checked' : ''}>
-                    <span class="flex-1 text-ink ${t.completed ? 'line-through opacity-50' : 'font-medium'}">${t.content}</span>
-                    <button class="hoy-task-delete opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition p-1" data-task-id="${t.id}">
-                        <i class="fa-solid fa-xmark text-sm"></i>
-                    </button>
-                </div>
-            `).join('');
-            
-            // Bind eventos de checkboxes
-            container.querySelectorAll('.hoy-task-checkbox').forEach(cb => {
-                cb.addEventListener('change', async (e) => {
-                    const taskId = e.target.dataset.taskId;
-                    const completed = e.target.checked;
-                    await hoy.toggleTaskCompletion(taskId, completed);
-                    
-                    // Actualizar UI
-                    const row = e.target.closest('.flex');
-                    const text = row.querySelector('span:nth-child(2)');
-                    if (text) {
-                        if (completed) {
-                            text.classList.add('line-through', 'opacity-50');
-                        } else {
-                            text.classList.remove('line-through', 'opacity-50');
-                        }
-                    }
-                });
-            });
-            
-            // Bind eventos de eliminar
-            container.querySelectorAll('.hoy-task-delete').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    const taskId = btn.dataset.taskId;
-                    if (confirm('¿Eliminar esta tarea?')) {
-                        await hoy.deleteTask(taskId);
-                        await this.loadTodayTasks();
-                    }
-                });
-            });
-        } catch (error) {
-            console.error('Error loading tasks:', error);
-            container.innerHTML = '<p class="text-center text-gray-400 py-4">Error al cargar tareas</p>';
-        }
-    }
-    
-    initHoyEvents() {
-        // Botón agregar tarea
-        const btnAddTask = document.getElementById('btn-add-task-hoy');
-        const addTaskForm = document.getElementById('add-task-form');
-        const newTaskInput = document.getElementById('new-task-input');
-        const btnConfirmTask = document.getElementById('btn-confirm-task');
-        
-        btnAddTask?.addEventListener('click', () => {
-            addTaskForm?.classList.toggle('hidden');
-            if (!addTaskForm?.classList.contains('hidden')) {
-                newTaskInput?.focus();
-            }
-        });
-        
-        btnConfirmTask?.addEventListener('click', async () => {
-            const content = newTaskInput?.value.trim();
-            if (content) {
-                await hoy.addTask(content);
-                newTaskInput.value = '';
-                addTaskForm?.classList.add('hidden');
-                await this.loadTodayTasks();
-            }
-        });
-        
-        newTaskInput?.addEventListener('keypress', async (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                btnConfirmTask?.click();
-            }
-        });
-        
-        // Botón cancelar en formulario de tarea
-        newTaskInput?.closest('.flex')?.querySelector('button:first-child')?.addEventListener('click', () => {
-            addTaskForm?.classList.add('hidden');
-            newTaskInput.value = '';
-        });
-        
-        // Botón guardar check-in
-        document.getElementById('btn-save-checkin')?.addEventListener('click', async () => {
-            const emotionalState = document.querySelector('.emoji-btn.selected')?.dataset.emoji || null;
-            const physical = document.getElementById('checkin-physical')?.value.trim() || '';
-            const note = document.getElementById('checkin-note')?.value.trim() || '';
-            
-            if (!emotionalState) {
-                ui.showNotification('Selecciona cómo te sientes 😊', 'warning');
-                return;
-            }
-            
-            await hoy.saveCheckin(emotionalState, physical, note);
-            ui.showNotification('¡Check-in guardado! 💚', 'success');
-        });
-        
-        // Selector de emoji (para marcar selección)
-        document.querySelectorAll('.emoji-btn').forEach(btn => {
+
+    bindSaludEvents() {
+        document.querySelectorAll('.salud-radio').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('selected', 'border-brand', 'bg-brand/10'));
-                btn.classList.add('selected', 'border-brand', 'bg-brand/10');
+                const group = btn.dataset.group;
+                document.querySelectorAll(`.salud-radio[data-group="${group}"]`).forEach(b => {
+                    b.classList.remove('border-brand', 'bg-brand/10');
+                    b.classList.add('border-border-soft');
+                    b.setAttribute('aria-pressed', 'false');
+                });
+                btn.classList.remove('border-border-soft');
+                btn.classList.add('border-brand', 'bg-brand/10');
+                btn.setAttribute('aria-pressed', 'true');
             });
         });
+
+        const saveBtn = document.getElementById('btn-save-wellness');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', async () => {
+                const animo = document.querySelector('.salud-radio[data-group="animo"][aria-pressed="true"]');
+                const energia = document.querySelector('.salud-radio[data-group="energia"][aria-pressed="true"]');
+                const sueno = document.querySelector('.salud-radio[data-group="sueno"][aria-pressed="true"]');
+                const ciclo = document.querySelector('.salud-radio[data-group="ciclo"][aria-pressed="true"]');
+
+                if (!animo || !energia || !sueno) {
+                    ui.showNotification('Seleccioná ánimo, energía y sueño al menos', 'warning');
+                    return;
+                }
+
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Guardando...';
+
+                await this.saveWellness({
+                    animo: animo.dataset.value,
+                    energia: parseInt(energia.dataset.value),
+                    sueno: sueno.dataset.value,
+                    ciclo: ciclo ? ciclo.dataset.value : null
+                });
+
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '💾 Guardar registro de hoy';
+
+                await this.loadWellnessHistory();
+            });
+        }
     }
     
     setExpandedCard(cardId) {
@@ -505,11 +525,6 @@ class KaiController {
         // --- Notificaciones ---
         this.initNotifications();
 
-        // Hoy desde sidebar
-        document.getElementById('btn-hoy')?.addEventListener('click', () => {
-            this.switchView('hoy');
-            ui.closeSidebar();
-        });
         
         // --- Datos (Import/Export) ---
         document.getElementById('btn-export')?.addEventListener('click', () => this.handleExport());
@@ -628,7 +643,28 @@ class KaiController {
         document.getElementById('btn-add-task')?.addEventListener('click', () => ui.addTaskToModal());
         document.getElementById('btn-dashboard')?.addEventListener('click', () => {
             ui.closeSidebar();
+            document.getElementById('section-inicio')?.classList.add('hidden');
+            document.getElementById('timeline-content')?.classList.add('hidden');
+            document.getElementById('items-container')?.classList.remove('hidden');
             this.showDashboard('total');
+        });
+        
+        // Cards de filtro rápido en Inicio
+        document.getElementById('card-pendientes')?.addEventListener('click', () => {
+            this.currentTag = null;
+            this.currentExcludeTag = 'logro';
+            this.currentView = 'timeline';
+            document.getElementById('card-pendientes')?.classList.add('ring-2', 'ring-brand');
+            document.getElementById('card-logradas')?.classList.remove('ring-2', 'ring-brand', 'ring-success');
+            this.loadItems();
+            this.saveState();
+        });
+        document.getElementById('card-logradas')?.addEventListener('click', async () => {
+            document.getElementById('section-inicio')?.classList.add('hidden');
+            document.getElementById('timeline-content')?.classList.add('hidden');
+            document.getElementById('items-container')?.classList.remove('hidden');
+            await this.showDashboard('total');
+            this.saveState();
         });
         
         // Cambio de período en dashboard de estadísticas
@@ -1079,6 +1115,22 @@ REGLAS:
         };
     }
 
+    async addItem(input) {
+        try {
+            await data.createItem({
+                content: utils.sanitizeInput(input.contenido || ''),
+                type: input.tipo || 'nota',
+                tags: input.tags || [],
+                parent_id: this.currentParentId
+            });
+            ui.showNotification('¡Anotado! ✨', 'success');
+            await this.loadItems();
+        } catch (error) {
+            console.error('Error addItem:', error);
+            ui.showNotification('No pude guardar. ¿Intentamos de nuevo?', 'error');
+        }
+    }
+
     async handleSubmit() {
         const { content, type } = ui.getMainInputData();
         if (!content) return;
@@ -1396,6 +1448,7 @@ Responde SOLO JSON con esta estructura:
                     return d === today || esResumenDiario;
                 });
 
+                this.items = filteredItems;
                 ui.render(filteredItems);
             } else {
                 if (this.currentCategory !== 'all') filters.type = this.currentCategory;
@@ -1407,7 +1460,13 @@ Responde SOLO JSON con esta estructura:
                     filteredItems = items.filter(item => item.tags && item.tags.includes(this.currentTag));
                 }
 
+                // Filtrar por exclusión de tag (ej: pendientes = sin tag 'logro')
+                if (this.currentExcludeTag) {
+                    filteredItems = filteredItems.filter(item => !item.tags || !item.tags.includes(this.currentExcludeTag));
+                }
+
                 console.log(`[loadItems] Obtenidos ${items.length} items, filtrados ${filteredItems.length}`);
+                this.items = filteredItems;
                 ui.render(filteredItems);
             }
             
@@ -1632,9 +1691,9 @@ Responde SOLO JSON con esta estructura:
     async goHome() {
         this.breadcrumbPath = [];
         this.currentParentId = null;
-        this.currentCategory = 'all';
+        this.currentCategory = 'tarea';
         this.currentTag = null;
-        this.currentView = 'timeline';
+        this.currentExcludeTag = null;
         
         // Resetear estilos de botones de categoría
         document.querySelectorAll('.btn-category').forEach(b => {
@@ -1644,9 +1703,14 @@ Responde SOLO JSON con esta estructura:
             b.classList.remove('active', 'bg-lavender', 'text-purple-600', 'border-purple-200');
         });
         
-        this.applyViewState();
-        this.saveState();
-        await this.loadItems();
+        // Delegar al sistema de navegación unificado
+        if (window.switchView) {
+            window.switchView('timeline');
+        } else {
+            this.applyViewState();
+            this.saveState();
+            await this.loadItems();
+        }
     }
 
     // ========== NOTIFICACIONES ==========
@@ -1746,6 +1810,17 @@ Responde SOLO JSON con esta estructura:
 
     async showDashboard(periodo = 'total') {
         try {
+            // Mostrar loading inmediato para feedback visual
+            const container = ui.elements.container();
+            if (container) {
+                container.innerHTML = `
+                    <div class="text-center py-16">
+                        <div class="text-6xl animate-bounce mb-4">📊</div>
+                        <p class="text-gray-400 text-lg">Cargando tu dashboard...</p>
+                    </div>
+                `;
+            }
+            
             // Cargar todos los items para procesarlos
             const allItems = await data.getItems({});
             

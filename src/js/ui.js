@@ -85,7 +85,7 @@ export const ui = {
         if (!tags || tags.length === 0) return '';
         return tags.map(tag => {
             // Tags clicables como filtro
-            return `<button class="tag-filter bg-brand/10 text-brand border border-brand/30 px-2 py-0.5 rounded-full text-[10px] font-semibold hover:bg-brand/20 transition" data-tag="${tag}">${tag}</button>`;
+            return `<button class="tag tag-s tag-primary tag-filter" data-tag="${tag}">#${tag}</button>`;
         }).join('');
     },
 
@@ -93,10 +93,10 @@ export const ui = {
     renderUrlPreviews(item, maxVisible = 2) {
         const urls = Array.isArray(item.urls) ? item.urls : (item.url ? [item.url] : []);
         if (urls.length === 0) return '';
-        
+
         const validUrls = urls.filter(u => u);
         if (validUrls.length === 0) return '';
-        
+
         const linksHtml = validUrls.slice(0, maxVisible).map(u => {
             // Extraer dominio y	path truncados para mostrar
             const urlObj = new URL(u.startsWith('http') ? u : `https://${u}`);
@@ -104,15 +104,15 @@ export const ui = {
             // Acortar URLs largas mostrando máximo 30 caracteres del path
             const displayUrl = urlLabel.length > 35 ? urlLabel.substring(0, 32) + '...' : urlLabel;
             return `<a href="${encodeURI(u)}" target="_blank" rel="noopener noreferrer" 
-                        class="flex items-center gap-1.5 text-sm text-action hover:text-action/70 hover:underline underline-offset-2 transition-colors max-w-full overflow-hidden">
+                        class="flex items-center gap-1.5 text-base text-action hover:text-action/70 hover:underline underline-offset-2 transition-colors max-w-full overflow-hidden">
                         <i class="fa-solid fa-link text-[9px] shrink-0"></i>
                         <span class="truncate min-w-0">${displayUrl}</span>
                     </a>`;
         }).join('');
-        
+
         const hiddenCount = validUrls.length - maxVisible;
         const moreText = hiddenCount > 0 ? `<p class="text-[10px] font-bold text-brand">+ ${hiddenCount} enlace${hiddenCount > 1 ? 's' : ''}...</p>` : '';
-        
+
         return `<div class="mt-2 space-y-1">${linksHtml}${moreText}</div>`;
     },
 
@@ -152,8 +152,8 @@ export const ui = {
         if (show) {
             const thinking = document.createElement('div');
             thinking.id = 'kai-thinking';
-            thinking.className = 'bg-gray-100 px-4 py-2 rounded-full text-xs text-gray-500 flex items-center gap-2';
-            thinking.innerHTML = '<span class="text-sm">...</span>';
+            thinking.className = 'bg-gray-100 px-4 py-2 rounded-full text-sm text-gray-500 flex items-center gap-2';
+            thinking.innerHTML = '<span class="text-base">...</span>';
             container.appendChild(thinking);
             container.scrollTop = container.scrollHeight;
         } else {
@@ -167,24 +167,24 @@ export const ui = {
         const currentYear = now.getFullYear();
         const currentMonth = now.getMonth();
         const currentDate = now.getDate();
-        
+
         // Hallar inicio de semana actual (lunes)
         const dayOfWeek = now.getDay(); // 0=domingo, 1=lunes, ...
         const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Si es domingo,-ir a lunes pasado
         const weekStart = new Date(now);
         weekStart.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
         weekStart.setHours(0, 0, 0, 0);
-        
+
         // Inicio de mes actual
         const monthStart = new Date(currentYear, currentMonth, 1);
-        
+
         // Inicio de año actual
         const yearStart = new Date(currentYear, 0, 1);
-        
+
         // Determinar rango según período
         let startDate = null;
         let endDate = new Date(now);
-        
+
         if (periodo === 'semana') {
             startDate = weekStart;
         } else if (periodo === 'mes') {
@@ -192,7 +192,7 @@ export const ui = {
         } else if (periodo === 'anio') {
             startDate = yearStart;
         }
-        
+
         const achievements = items.filter(item => {
             const isLogro = item.type === 'logro' || (item.tags && item.tags.includes('logro'));
             if (!isLogro) return false;
@@ -204,7 +204,7 @@ export const ui = {
         // Calcular estadísticas por período
         let totalEnPeriodo = achievements.length;
         let statsText = '';
-        
+
         if (periodo === 'semana') statsText = `esta semana`;
         else if (periodo === 'mes') statsText = `este mes`;
         else if (periodo === 'anio') statsText = `este año`;
@@ -224,10 +224,10 @@ export const ui = {
 
                 <!-- Selector de Período -->
                 <div class="flex justify-center gap-2">
-                    <button class="period-btn px-4 py-2 rounded-full text-sm font-bold transition-all ${periodo === 'semana' ? 'bg-success text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" data-period="semana">Semana</button>
-                    <button class="period-btn px-4 py-2 rounded-full text-sm font-bold transition-all ${periodo === 'mes' ? 'bg-success text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" data-period="mes">Mes</button>
-                    <button class="period-btn px-4 py-2 rounded-full text-sm font-bold transition-all ${periodo === 'anio' ? 'bg-success text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" data-period="anio">Año</button>
-                    <button class="period-btn px-4 py-2 rounded-full text-sm font-bold transition-all ${periodo === 'total' ? 'bg-success text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" data-period="total">Todo</button>
+                    <button class="period-btn px-4 py-2 rounded-full text-base font-bold transition-all ${periodo === 'semana' ? 'bg-success text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" data-period="semana">Semana</button>
+                    <button class="period-btn px-4 py-2 rounded-full text-base font-bold transition-all ${periodo === 'mes' ? 'bg-success text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" data-period="mes">Mes</button>
+                    <button class="period-btn px-4 py-2 rounded-full text-base font-bold transition-all ${periodo === 'anio' ? 'bg-success text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" data-period="anio">Año</button>
+                    <button class="period-btn px-4 py-2 rounded-full text-base font-bold transition-all ${periodo === 'total' ? 'bg-success text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" data-period="total">Todo</button>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -238,7 +238,7 @@ export const ui = {
                                 <span class="text-3xl bg-success/10 p-3 rounded-2xl">✨</span>
                                 <div class="flex-1 min-w-0">
                                     <h3 class="text-base font-bold text-ink leading-tight">${this.escapeHtml(item.content)}</h3>
-                                    <p class="text-sm text-ink/60 mt-1">${item.descripcion ? this.escapeHtml(this.truncate(item.descripcion, 60)) : 'Sin descripción'}</p>
+                                    <p class="text-base text-ink/60 mt-1">${item.descripcion ? this.escapeHtml(this.truncate(item.descripcion, 60)) : 'Sin descripción'}</p>
                                     <div class="mt-3 text-[10px] font-bold text-success flex items-center gap-1 uppercase tracking-wider">
                                         <i class="fa-solid fa-calendar"></i>
                                         ${new Date(item.created_at).toLocaleDateString()}
@@ -254,7 +254,7 @@ export const ui = {
                 </div>
             </div>
         `;
-        
+
         // Agregar eventos a los botones de período
         container.querySelectorAll('.period-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -269,7 +269,7 @@ export const ui = {
 
     render(items = [], isDemo = false) {
         console.log(`[UI render]-items=${items.length}, isDemo=${isDemo}`);
-        
+
         const container = this.elements.container();
         if (!container) {
             console.log('[UI render] ERROR: No se encontró el container');
@@ -308,8 +308,8 @@ export const ui = {
 
             const headerHtml = `
                 <div class="flex items-center gap-2 px-4 py-2">
-                    <i class="fa-solid fa-thumbtack text-brand text-sm"></i>
-                    <span class="text-xs font-bold text-brand">Fijados</span>
+                    <i class="fa-solid fa-thumbtack text-brand text-base"></i>
+                    <span class="text-sm font-bold text-brand">Fijados</span>
                 </div>
             `;
 
@@ -335,8 +335,8 @@ export const ui = {
                 const dateSeparator = document.createElement('div');
                 dateSeparator.className = 'flex items-center gap-2 px-4 py-2 mt-4 date-separator';
                 dateSeparator.innerHTML = `
-                    <i class="fa-regular fa-calendar text-gray-400 text-sm"></i>
-                    <span class="text-xs font-bold text-gray-400">${dateLabel}</span>
+                    <i class="fa-regular fa-calendar text-gray-400 text-base"></i>
+                    <span class="text-sm font-bold text-gray-400">${dateLabel}</span>
                 `;
                 container.appendChild(dateSeparator);
 
@@ -410,8 +410,8 @@ export const ui = {
         card.dataset.expanded = 'false';
 
         const config = this.typeConfig[item.type] || this.typeConfig['nota'];
-        
-        // Obtener fecha relativa
+
+        // Tiempo relativo
         let timeAgo = '';
         if (item.created_at) {
             const date = new Date(item.created_at);
@@ -420,20 +420,26 @@ export const ui = {
             const diffMins = Math.floor(diffMs / 60000);
             const diffHours = Math.floor(diffMs / 3600000);
             const diffDays = Math.floor(diffMs / 86400000);
-            
+
             if (diffMins < 60) timeAgo = `${diffMins}m`;
             else if (diffHours < 24) timeAgo = `${diffHours}h`;
             else if (diffDays < 7) timeAgo = `${diffDays}d`;
             else timeAgo = date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
         }
 
+        // Color según tipo
+        const typeColor = item.type === 'tarea' || item.type === 'directorio' ? 'secondary' :
+            item.type === 'logro' ? 'success' : 'brand';
+
         card.innerHTML = `
-            <div class="pinned-content">
-                <div class="pinned-icon ${config.bg}" style="background: ${this.getTypeColor(item.type)}20;">
+            <div class="pinned-content p-4 flex flex-col gap-3 h-full">
+                <div class="card-icon-badge card-icon-badge-sm ${typeColor === 'brand' ? 'bg-brand/15' : typeColor === 'secondary' ? 'bg-secondary/15' : 'bg-success/15'}">
                     <span class="text-lg">${config.icon}</span>
                 </div>
-                <h3 class="text-ink font-bold">${this.escapeHtml(this.truncate(item.content, 50))}</h3>
-                ${timeAgo ? `<span class="pinned-meta">${timeAgo}</span>` : ''}
+                <div class="flex-1 min-w-0">
+                    <h3 class="text-base text-ink font-bold line-clamp-3 leading-snug">${this.escapeHtml(this.truncate(item.content, 50))}</h3>
+                </div>
+                ${timeAgo ? `<span class="text-sm text-ink/40 font-medium">${timeAgo}</span>` : ''}
             </div>
         `;
 
@@ -451,13 +457,13 @@ export const ui = {
     // Obtener color del tipo para el fondo del icono
     getTypeColor(type) {
         const colors = {
-            nota: '#a1e4f5',
-            tarea: '#86efac',
-            proyecto: '#37d9e0',
+            nota: '#CFFAFE',
+            tarea: '#DCFCE7',
+            proyecto: '#19c9cc',
             directorio: '#CFFAFE',
-            logro: '#86efac'
+            logro: '#DCFCE7'
         };
-        return colors[type] || '#f0f0f0';
+        return colors[type] || '#E2E8F0';
     },
 
     updateCardContent(card, item, expanded = false, isPinned = false) {
@@ -476,226 +482,120 @@ export const ui = {
     },
 
     renderCollapsedCard(card, item, config, isProject, isPinned = false) {
-        const themeClass = `theme-${config.color}`;
+        const typeConfig = this.typeConfig[item.type] || this.typeConfig['nota'];
+        const pinnedClass = isPinned || item.anclado ? 'pinned-card' : '';
+        const typeBadgeClass = `card-type-badge-${item.type === 'note' || item.type === 'nota' ? 'nota' : item.type === 'tarea' || item.type === 'task' ? 'tarea' : item.type}`;
+        
+        card.className = `card-white mb-4 w-full cursor-pointer hover:shadow-md transition-all ${pinnedClass}`;
+        card.dataset.expanded = 'false';
 
-        if (isProject) {
-            let progressWidth = '0%';
-            if (item.tareas && item.tareas.length > 0) {
-                const completed = item.tareas.filter(t => t.completado).length;
-                progressWidth = `${Math.round((completed / item.tareas.length) * 100)}%`;
+        // Preview de contenido
+        let previewHtml = '';
+        if (item.descripcion) {
+            const descTruncada = item.descripcion.length > 100 ? item.descripcion.substring(0, 100) + '...' : item.descripcion;
+            previewHtml += `<p class="text-sm text-ink/60 mt-2 whitespace-pre-wrap">${this.escapeHtml(descTruncada)}</p>`;
+        }
+
+        // Preview de tareas
+        if (item.tareas && item.tareas.length > 0) {
+            const maxPreview = 2;
+            const tasksPreview = item.tareas.slice(0, maxPreview).map((t, idx) => `
+                <div class="flex items-center gap-2 py-1">
+                    <input type="checkbox" class="checkbox" ${t.completado ? 'checked' : ''} data-id="${item.id}" data-index="${idx}">
+                    <span class="text-sm text-ink ${t.completado ? 'line-through opacity-50' : ''}">${this.escapeHtml(t.titulo)}</span>
+                </div>
+            `).join('');
+            previewHtml += `<div class="mt-2 space-y-0.5">${tasksPreview}</div>`;
+            if (item.tareas.length > maxPreview) {
+                previewHtml += `<p class="text-xs font-bold text-brand ml-5">+ ${item.tareas.length - maxPreview} más</p>`;
             }
+        }
 
-            const pinnedClass = isPinned ? 'pinned-card' : '';
-            card.className = `group item-card bg-white rounded-[2rem] shadow-sticker border-2 border-gray-100 overflow-hidden mb-8 transition-all duration-300 max-w-full ${pinnedClass}`;
-            card.dataset.expanded = 'false';
+        // Preview de URLs
+        previewHtml += this.renderUrlPreviews(item, 1);
 
-            const typeConfig = this.typeConfig[item.type] || this.typeConfig['nota'];
-            const tagClass = `tag-type tag-${item.type}`;
+        // Tags
+        const tagsHtml = this.renderTags(item.tags);
 
-            let deadlineHtml = '';
-            if (item.deadline) {
-                const date = new Date(item.deadline);
-                deadlineHtml = `
-                    <p class="txt-label text-peach mt-1 flex items-center gap-1">
-                        <i class="fa-solid fa-clock"></i> ${date.toLocaleDateString()}
-                    </p>
-                `;
-            }
-
-            card.innerHTML = `
-                <!-- Header Sólido para Proyectos -->
-                <div class="${typeConfig.headerBg || typeConfig.bg} p-4 flex justify-between items-center">
-                    <div class="flex items-center gap-3 min-w-0 flex-1">
-                        <span class="text-xl bg-white/20 p-2 rounded-xl backdrop-blur-sm">${typeConfig.icon}</span>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2 mb-0.5">
-                                <span class="${typeConfig.bg} ${typeConfig.text} text-[9px] px-2 py-0.5 rounded-full font-semibold">${typeConfig.label}</span>
-                                ${deadlineHtml ? `<span class="opacity-60">${deadlineHtml}</span>` : ''}
-                            </div>
-                            <h3 class="txt-title text-white">${this.escapeHtml(item.content)}</h3>
-                            <!-- Barra de Progreso en Header -->
-                            ${item.tareas && item.tareas.length > 0 ? `
-                                <div class="mt-2 flex items-center gap-2 bg-white/20 p-1 px-2 rounded-full">
-                                    <div class="flex-1 bg-white/40 h-1 rounded-full overflow-hidden">
-                                        <div class="bg-white h-full" style="width: ${progressWidth}"></div>
-                                    </div>
-                                    <span class="text-[9px] font-bold text-white/80">${item.tareas.filter(t => t.completado).length}/${item.tareas.length}</span>
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                </div>
-                <!-- Acciones en la parte inferior -->
-                <div class="flex items-center justify-end gap-2 px-4 pb-3 -mt-1">
-                    <button class="btn-pin p-2 text-white/40 hover:text-white transition-colors" data-id="${item.id}" title="${item.anclado ? 'Desanclar' : 'Anclar'}">
-                        <i class="fa-solid fa-thumbtack ${item.anclado ? 'rotate-45' : ''}"></i>
-                    </button>
-                    <button class="action-delete p-2 text-white/40 hover:text-red-400 transition-colors" data-id="${item.id}" title="Eliminar">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </div>
-
-                <!-- Body Minimalista -->
-                <div class="card-body-soft p-4 bg-brand/5 border-2 border-brand/20">
-                    <!-- Previsualización de Descripción -->
-                    ${item.descripcion ? (() => {
-                    const descTruncada = item.descripcion.length > 200 ? item.descripcion.substring(0, 200) + '...' : item.descripcion;
-                    return `<p class="text-base text-ink/70 mb-3 whitespace-pre-wrap leading-relaxed">${this.escapeHtml(descTruncada)}</p>`;
-                })() : ''}
-
-                    <!-- Previsualización de Tareas (Interactiva) -->
-                    ${item.tareas && item.tareas.length > 0 ? `
-                        <div class="space-y-1 mb-2">
-                            ${item.tareas.slice(0, 3).map((t, idx) => `
-                                <div class="flex items-center gap-3 py-1.5">
-                                    <input type="checkbox" class="kawaii-checkbox timeline-task-checkbox" 
-                                           ${t.completado ? 'checked' : ''} 
-                                           data-id="${item.id}" data-index="${idx}">
-                                    <span class="text-base text-ink ${t.completado ? 'line-through opacity-50' : 'font-medium'}">${this.escapeHtml(t.titulo)}</span>
-                                </div>
-                            `).join('')}
-                            ${item.tareas.length > 3 ? `<p class="text-[10px] font-bold text-brand ml-7">+ ${item.tareas.length - 3} más...</p>` : ''}
-                        </div>
-                    ` : ''}
-
-                    <!-- Previsualización de Enlaces (clicables) -->
-                    ${this.renderUrlPreviews(item, 2)}
-
-                    ${this.renderTags(item.tags) ? `<div class="flex gap-1.5 flex-wrap mt-3">${this.renderTags(item.tags)}</div>` : ''}
-                </div>
+        // Deadline
+        let deadlineHtml = '';
+        if (item.deadline) {
+            const date = new Date(item.deadline);
+            deadlineHtml = `
+                <span class="text-xs flex items-center gap-1 text-ink/40">
+                    <i class="fa-solid fa-clock"></i> ${date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })}
+                </span>
             `;
-        } else {
-            let deadlineHtml = '';
-            if (item.deadline) {
-                const date = new Date(item.deadline);
-                deadlineHtml = `
-                    <span class="txt-label text-ink/30 flex items-center gap-1">
-                        <i class="fa-solid fa-clock"></i> ${date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })}
-                    </span>
-                `;
-            }
+        }
 
-            // Para notas y otros tipos, mostrar fecha de creación
-            let fechaHtml = '';
-            if ((item.type === 'nota' || item.type === 'idea' || item.type === 'note') && item.created_at) {
-                const fecha = new Date(item.created_at);
-                const hoy = new Date();
-                const esHoy = fecha.toDateString() === hoy.toDateString();
-
-                const fechaStr = esHoy
-                    ? `Hoy ${fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
-                    : fecha.toLocaleDateString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-
-                fechaHtml = `
-                    <span class="txt-label text-gray-400 flex items-center gap-1">
-                        <i class="fa-regular fa-clock"></i> ${fechaStr}
-                    </span>
-                `;
-            }
-
-            const typeConfig = this.typeConfig[item.type] || this.typeConfig.nota;
-            const tagClass = `tag-type tag-${item.type}`;
-
-            // Previsualización Rica de Contenido
-            let previewHtml = '';
-
-            // 1. Previsualización de Descripción (para Ideas, Notas, Proyectos)
-            if (item.descripcion) {
-                const descTruncada = item.descripcion.length > 150 ? item.descripcion.substring(0, 150) + '...' : item.descripcion;
-                previewHtml += `<p class="text-base text-ink/70 mt-2 whitespace-pre-wrap leading-relaxed">${this.escapeHtml(descTruncada)}</p>`;
-            }
-
-            // 2. Previsualización de Tareas (Checklist)
-            if (item.tareas && item.tareas.length > 0) {
-                const maxPreviewTasks = 3;
-                const tasksPreview = item.tareas.slice(0, maxPreviewTasks).map((t, idx) => `
-                    <div class="flex items-center gap-3 py-1.5">
-                        <input type="checkbox" class="kawaii-checkbox timeline-task-checkbox" 
-                               ${t.completado ? 'checked' : ''} 
-                               data-id="${item.id}" data-index="${idx}">
-                        <span class="text-base text-ink ${t.completado ? 'line-through opacity-50' : 'font-medium'}">${this.escapeHtml(t.titulo)}</span>
+        // Progreso
+        let progressHtml = '';
+        if (item.tareas && item.tareas.length > 0) {
+            const completed = item.tareas.filter(t => t.completado).length;
+            const progressWidth = `${Math.round((completed / item.tareas.length) * 100)}%`;
+            progressHtml = `
+                <div class="mt-2 flex items-center gap-2">
+                    <div class="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div class="h-full bg-brand rounded-full" style="width: ${progressWidth}"></div>
                     </div>
-                `).join('');
-
-                previewHtml += `
-                    <div class="mt-2 space-y-0.5">
-                        ${tasksPreview}
-                        ${item.tareas.length > maxPreviewTasks ? `<p class="text-[10px] font-bold text-brand ml-6">+ ${item.tareas.length - maxPreviewTasks} más...</p>` : ''}
-                    </div>
-                `;
-            }
-
-            // 3. Previsualización de Enlaces Múltiples (clicables)
-            previewHtml += this.renderUrlPreviews(item, 2);
-
-            // 4. Barra de Progreso (Solo si hay tareas)
-            let progressHtml = '';
-            if (item.tareas && item.tareas.length > 0) {
-                const completed = item.tareas.filter(t => t.completado).length;
-                const progressWidth = `${Math.round((completed / item.tareas.length) * 100)}%`;
-                progressHtml = `
-                    <div class="mt-3 flex items-center gap-2">
-                        <div class="flex-1 bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                            <div class="${typeConfig.bg} h-full transition-all" style="width: ${progressWidth}"></div>
-                        </div>
-                        <span class="text-[10px] font-bold text-ink/60">${completed}/${item.tareas.length}</span>
-                    </div>
-                `;
-            }
-
-            const pinnedClass = isPinned ? 'pinned-card' : '';
-            card.className = `item-card bg-white rounded-2xl p-4 shadow-sticker border-2 border-gray-100 group relative hover:z-10 transition-all mb-4 w-full max-w-full overflow-hidden cursor-pointer ${pinnedClass}`;
-            card.dataset.expanded = 'false';
-
-            // Renderizar etiquetas (tags)
-            const tagsHtml = this.renderTags(item.tags);
-
-            card.innerHTML = `
-                <div class="flex gap-4 items-start">
-                    <div class="w-12 h-12 bg-gray-100 text-ink rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-gray-200">
-                        <span class="text-2xl">${typeConfig.icon}</span>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2 mb-1 flex-wrap">
-                            <span class="${typeConfig.bg} ${typeConfig.text} text-[9px] px-2 py-0.5 rounded-full font-semibold">${typeConfig.label}</span>
-                            ${deadlineHtml}
-                            ${fechaHtml}
-                        </div>
-                        <h3 class="text-base text-ink font-bold leading-snug">${this.escapeHtml(this.truncate(item.content, 80))}</h3>
-                        ${progressHtml}
-                        ${previewHtml}
-                        ${tagsHtml ? `<div class="flex gap-1.5 flex-wrap mt-2">${tagsHtml}</div>` : ''}
-                    </div>
-                </div>
-                <!-- Acciones en la parte inferior -->
-                <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-100/50 mt-2">
-                    <button class="btn-pin p-2 text-ink/30 hover:text-brand transition-colors" data-id="${item.id}" title="${item.anclado ? 'Desanclar' : 'Anclar'}">
-                        <i class="fa-solid fa-thumbtack ${item.anclado ? 'rotate-45' : ''}"></i>
-                    </button>
-                    <button class="action-finish p-2 text-ink/30 hover:text-success transition-colors" data-id="${item.id}" title="Terminar"><i class="fa-solid fa-check-circle"></i></button>
-                    <button class="action-delete p-2 text-ink/30 hover:text-urgent transition-colors" data-id="${item.id}" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                    <span class="text-xs text-ink/40">${completed}/${item.tareas.length}</span>
                 </div>
             `;
         }
+
+        card.innerHTML = `
+            <!-- Header: Tipo | Acciones -->
+            <div class="card-header-simple">
+                <div class="flex items-center gap-2">
+                    <span class="card-type-badge ${typeBadgeClass}">${typeConfig.icon}</span>
+                    <span class="text-sm font-medium text-ink">${typeConfig.label}</span>
+                    ${deadlineHtml}
+                </div>
+                <div class="flex items-center gap-1">
+                    <button class="btn-pin w-7 h-7 rounded-full bg-gray-100 hover:bg-brand hover:text-white flex items-center justify-center transition text-xs" data-id="${item.id}" title="${item.anclado ? 'Desanclar' : 'Anclar'}">
+                        <i class="fa-solid fa-thumbtack ${item.anclado ? 'rotate-45' : ''}"></i>
+                    </button>
+                    <button class="action-delete w-7 h-7 rounded-full bg-gray-100 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition text-xs" data-id="${item.id}" title="Eliminar">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Body -->
+            <div class="card-body-simple py-4">
+                <!-- Título -->
+                <h3 class="text-base font-bold text-ink leading-snug line-clamp-2">${this.escapeHtml(this.truncate(item.content, 60))}</h3>
+                
+                <!-- Progreso -->
+                ${progressHtml}
+                
+                <!-- Preview -->
+                ${previewHtml}
+
+                <!-- Tags -->
+                ${tagsHtml ? `<div class="flex gap-1.5 flex-wrap mt-3">${tagsHtml}</div>` : ''}
+            </div>
+        `;
     },
 
     renderExpandedCard(card, item, config, isPinned = false) {
-        const themeClass = `theme-${config.color}`;
-        const typeConfig = this.typeConfig[item.type] || this.typeConfig.note;
-        const tagClass = `tag-type tag-${item.type}`;
+        const typeConfig = this.typeConfig[item.type] || this.typeConfig['nota'];
+        const isProject = item.type === 'proyecto';
+        const typeBadgeClass = `card-type-badge-${item.type === 'note' || item.type === 'nota' ? 'nota' : item.type === 'tarea' || item.type === 'task' ? 'tarea' : item.type}`;
 
-        // Mantener las clases de pinned card si corresponde
-        const pinnedClasses = isPinned ? 'pinned-card expanded-card' : '';
-        card.className = `item-card bg-white rounded-[2rem] shadow-sticker border-2 border-gray-100 overflow-hidden mb-8 w-full max-w-full transition-all duration-300 transform scale-[1.01] ${pinnedClasses}`;
+        card.className = `card-white mb-6 w-full max-w-full ${isPinned ? 'pinned-card' : ''}`;
         card.dataset.expanded = 'true';
 
+        // Tareas HTML
         const tareasHtml = (item.tareas || []).map((t, idx) => `
-            <div class="flex items-start gap-3 p-2 rounded-xl group/task border-b border-gray-100/50">
-                <input type="checkbox" class="kawaii-checkbox mt-1" ${t.completado ? 'checked' : ''} data-index="${idx}">
+            <div class="flex items-start gap-3 p-3 rounded-lg border-b border-gray-100/50 last:border-0">
+                <input type="checkbox" class="checkbox mt-0.5" ${t.completado ? 'checked' : ''} data-index="${idx}">
                 <textarea rows="1" 
-                        class="flex-1 bg-transparent border-none font-medium text-base text-ink outline-none focus:ring-0 inline-task-input resize-none" 
+                        class="flex-1 bg-transparent border-none font-medium text-base text-ink outline-none focus:ring-0 inline-task-input resize-none field-sizing-content" 
                         placeholder="¿Qué sigue?" data-index="${idx}">${this.escapeHtml(t.titulo)}</textarea>
-                <button class="btn-remove-inline text-ink/20 hover:text-ink px-2 transition-colors mt-1" data-index="${idx}"><i class="fa-solid fa-xmark"></i></button>
+                <button class="btn-remove-inline text-ink/30 hover:text-red-400 px-2 transition-colors mt-0.5" data-index="${idx}">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
         `).join('');
 
@@ -704,155 +604,98 @@ export const ui = {
         const urls = Array.isArray(item.urls) ? item.urls : (item.url ? [item.url] : []);
         const hasUrl = urls.some(u => u);
         const hasAlarm = !!item.deadline;
-
-        // Tags del item
         const tagsHtml = this.renderTags(item.tags);
         const hasTags = tagsHtml && tagsHtml.length > 0;
 
         card.innerHTML = `
-            <!-- Header: color sólido solo para proyectos -->
-            <div class="${typeConfig.headerBg || typeConfig.bg} p-6 ${typeConfig.headerBg ? 'text-white' : 'text-ink'} flex justify-between items-center rounded-t-3xl">
-                <div class="flex items-center gap-4 flex-1">
-                    <span class="text-3xl ${typeConfig.headerBg ? 'bg-white/20' : 'bg-white/40'} p-3 rounded-2xl backdrop-blur-sm">${typeConfig.icon}</span>
-                    <input type="text" id="inline-content-${item.id}" value="${this.escapeHtml(item.content)}" 
-                           class="bg-white/20 border-none rounded-xl px-4 py-2 txt-display ${typeConfig.headerBg ? 'text-white placeholder-white/50' : 'text-ink placeholder-ink/50'} focus:ring-2 focus:ring-white/50 w-full outline-none" placeholder="Título...">
+            <!-- Header: Tipo badge | Acciones -->
+            <div class="card-header-simple">
+                <span class="card-type-badge ${typeBadgeClass}">
+                    ${typeConfig.icon} ${typeConfig.label}
+                </span>
+                <div class="flex items-center gap-2">
+                    <button class="btn-pin w-8 h-8 rounded-full bg-gray-100 hover:bg-brand hover:text-white flex items-center justify-center transition text-sm" data-id="${item.id}" title="${item.anclado ? 'Desanclar' : 'Anclar'}">
+                        <i class="fa-solid fa-thumbtack ${item.anclado ? 'rotate-45' : ''}"></i>
+                    </button>
+                    <button class="action-delete w-8 h-8 rounded-full bg-gray-100 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition text-sm" data-id="${item.id}" title="Eliminar">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
                 </div>
             </div>
-            
-            <!-- Body: fondo blanco suave -->
-            <div class="p-6 space-y-6 rounded-b-3xl bg-white">
-                <!-- Secciones de Contenido (Dinámicas) -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            <!-- Body -->
+            <div class="card-body-simple">
+                <!-- Título -->
+                <div>
+                    <input type="text" id="inline-content-${item.id}" value="${this.escapeHtml(item.content)}" 
+                           class="w-full border-none text-xl font-bold text-ink outline-none focus:ring-2 focus:ring-brand/30 rounded-lg px-3 py-2" placeholder="Título...">
+                </div>
+
+                <!-- Tags -->
+                ${hasTags ? `<div class="flex gap-2 flex-wrap">${tagsHtml}</div>` : ''}
+
+                <!-- Descripción -->
+                ${hasDesc ? `
                     <div class="space-y-2">
-                        <label class="txt-label ml-1">Tipo</label>
-                        <select id="inline-type-${item.id}" class="w-full bg-white/40 border-none rounded-2xl px-4 py-3 text-base text-ink focus:ring-2 focus:ring-white/50 outline-none font-bold">
-                            <option value="nota" ${item.type === 'nota' || item.type === 'idea' || item.type === 'note' ? 'selected' : ''}>📝 Nota</option>
-                            <option value="tarea" ${item.type === 'tarea' || item.type === 'task' ? 'selected' : ''}>✅ Tarea (Checklist)</option>
-                            <option value="proyecto" ${item.type === 'proyecto' || item.type === 'project' ? 'selected' : ''}>📁 Proyecto</option>
-                            <option value="directorio" ${item.type === 'directorio' || item.type === 'link' ? 'selected' : ''}>🔗 Enlace</option>
-                        </select>
+                        <label class="card-section-title">Descripción</label>
+                        <textarea id="inline-desc-${item.id}" 
+                                  class="w-full bg-gray-50 border-2 border-gray-100 rounded-lg px-3 py-2 min-h-[60px] text-base text-ink focus:border-brand focus:ring-2 focus:ring-brand/20 resize-none outline-none">${item.descripcion || ''}</textarea>
                     </div>
-                    
-                    ${hasTags ? `<div class="space-y-2"><label class="txt-label ml-1">Etiquetas</label><div class="flex gap-2 flex-wrap">${tagsHtml}</div></div>` : ''}
-                    
-                    ${(() => {
-                // Selector de Energía (Solo si es Salud/Bienestar)
-                return `
-                    <!-- Selector de Energía (Solo si es Salud/Bienestar) -->
-                    <div class="space-y-2 ${item.tags?.includes('salud') || item.tags?.includes('bienestar') || item.tags?.includes('emocion') ? '' : 'hidden'}" id="section-energy-${item.id}">
-                        <label class="txt-label ml-1 flex justify-between">
-                            ¿Cómo está tu energía? 
-                            <span class="font-black text-brand" id="energy-val-${item.id}">${item.meta?.energia || 5}/10</span>
-                        </label>
-                        <input type="range" id="inline-energy-${item.id}" min="1" max="10" step="1" 
-                               value="${item.meta?.energia || 5}" 
-                               class="w-full accent-brand cursor-pointer h-2 bg-gray-100 rounded-lg appearance-none"
-                               oninput="document.getElementById('energy-val-${item.id}').textContent = this.value + '/10'">
-                    </div>`;
-            })()}
-                </div>
+                ` : ''}
 
-                <div id="section-desc-${item.id}" class="space-y-2 ${hasDesc ? '' : 'hidden'}">
-                    <label class="txt-label ml-1">Descripción</label>
-                    <textarea id="inline-desc-${item.id}" class="w-full bg-white/40 border-none rounded-2xl px-5 py-4 min-h-[60px] txt-body text-ink focus:ring-2 focus:ring-white/50 resize-none outline-none field-sizing-content" 
-                              placeholder="Añade detalles, links o pensamientos adicionales...">${item.descripcion || ''}</textarea>
-                </div>
+                <!-- Tareas -->
+                ${hasTasks ? `
+                    <div class="space-y-2">
+                        <label class="card-section-title">Tareas</label>
+                        <div class="bg-gray-50 rounded-lg p-2 space-y-1">
+                            ${tareasHtml}
+                        </div>
+                    </div>
+                ` : ''}
 
-                <div id="section-tasks-${item.id}" class="space-y-3 ${hasTasks ? '' : 'hidden'}">
-                    <div class="flex justify-between items-center px-1">
-                        <label class="txt-label">Tareas</label>
-                    </div>
-                    <div id="inline-tasks-list-${item.id}" class="space-y-2">
-                        ${tareasHtml}
-                    </div>
-                    <div class="flex justify-center pt-2">
-                        <button class="btn-add-inline-task group flex items-center gap-2 px-6 py-3 bg-gray-50 hover:bg-gray-100 rounded-2xl text-base font-bold text-gray-400 hover:text-brand transition-all border-2 border-dashed border-gray-200 hover:border-brand/30">
-                            <i class="fa-solid fa-plus-circle text-lg"></i>
-                            Añadir tarea
-                        </button>
-                    </div>
-                </div>
-
-                <div id="section-url-${item.id}" class="space-y-2 ${hasUrl ? '' : 'hidden'}">
-                    <label class="txt-label ml-1">Enlaces</label>
-                    <div id="inline-urls-list-${item.id}" class="space-y-2">
-                        ${(() => {
-                            const urls = Array.isArray(item.urls) ? item.urls : (item.url ? [item.url] : []);
-                            return urls.map((u, idx) => `
-                                <div class="relative flex gap-2 animate-fadeIn">
-                                    <i class="fa-solid fa-link absolute left-4 top-1/2 -translate-y-1/2 text-ink/30"></i>
-                                    <input type="url" data-url-index="${idx}" value="${u || ''}" 
-                                           class="w-full bg-white/40 border-none rounded-2xl pl-10 pr-5 py-3 text-base text-ink placeholder-ink/30 focus:ring-2 focus:ring-white/50 outline-none font-medium" 
-                                           placeholder="https://...">
-                                    <button type="button" class="btn-remove-url px-3 text-ink/30 hover:text-urgent transition-colors" data-index="${idx}">
+                <!-- Enlaces -->
+                ${hasUrl ? `
+                    <div class="space-y-2">
+                        <label class="card-section-title">Enlaces</label>
+                        <div class="space-y-1">
+                            ${urls.filter(u => u).map((u, idx) => `
+                                <div class="flex gap-2">
+                                    <input type="url" data-url-index="${idx}" value="${u}" 
+                                           class="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-ink focus:border-brand outline-none">
+                                    <button type="button" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition text-sm" data-index="${idx}">
                                         <i class="fa-solid fa-xmark"></i>
                                     </button>
                                 </div>
-                            `).join('');
-                        })()}
-                    </div>
-                    <button type="button" class="btn-add-inline-url w-full flex items-center justify-center gap-2 py-2 text-brand hover:text-brand-dark transition-all text-sm font-bold">
-                        <i class="fa-solid fa-plus-circle"></i> Añadir otro enlace
-                    </button>
-                </div>
-
-                <div id="section-alarm-${item.id}" class="space-y-4 ${hasAlarm ? '' : 'hidden'}">
-                    <div class="flex justify-between items-center px-1">
-                        <label class="txt-label flex items-center gap-2"><i class="fa-solid fa-bell text-brand"></i> Alarma / Deadline</label>
-                        <button type="button" class="btn-remove-alarm text-ink/30 hover:text-urgent transition-colors text-sm" data-item-id="${item.id}">
-                            <i class="fa-solid fa-trash"></i> Quitar
-                        </button>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="space-y-1">
-                            <label class="txt-label ml-1">Fecha</label>
-                            <input type="date" id="inline-alarm-date-${item.id}" value="${(() => {
-                                if (!item.deadline) return '';
-                                const d = new Date(item.deadline);
-                                return d.toISOString().split('T')[0];
-                            })()}" 
-                                   class="w-full bg-white/40 border-none rounded-2xl px-4 py-3 text-base text-ink focus:ring-2 focus:ring-white/50 outline-none font-medium">
-                        </div>
-                        <div class="space-y-1">
-                            <label class="txt-label ml-1">Hora</label>
-                            <input type="time" id="inline-alarm-time-${item.id}" value="${(() => {
-                                if (!item.deadline) return '';
-                                const d = new Date(item.deadline);
-                                return d.toTimeString().slice(0, 5);
-                            })()}" 
-                                   class="w-full bg-white/40 border-none rounded-2xl px-4 py-3 text-base text-ink focus:ring-2 focus:ring-white/50 outline-none font-medium">
+                            `).join('')}
                         </div>
                     </div>
-                    <div class="space-y-1">
-                        <label class="txt-label ml-1">Repetición</label>
-                        <select id="inline-alarm-repeat-${item.id}" class="w-full bg-white/40 border-none rounded-2xl px-4 py-3 text-base text-ink focus:ring-2 focus:ring-white/50 outline-none font-bold">
-                            <option value="" ${!item.repeat ? 'selected' : ''}>Sin repetición</option>
-                            <option value="daily" ${item.repeat === 'daily' ? 'selected' : ''}>📅 Diario</option>
-                            <option value="weekly" ${item.repeat === 'weekly' ? 'selected' : ''}>📆 Semanal</option>
-                            <option value="monthly" ${item.repeat === 'monthly' ? 'selected' : ''}>🗓️ Mensual</option>
-                        </select>
-                    </div>
-                </div>
+                ` : ''}
+            </div>
 
-                <!-- Barra de Deseos (Wishbar) -->
-                <div class="flex flex-wrap justify-center gap-2 py-4 border-t border-gray-50">
-                    ${!hasTasks ? `<button data-reveal="tasks" class="wish-item px-4 py-2 rounded-full text-gray-400 hover:text-brand transition-all text-[10px] font-bold uppercase tracking-wider flex items-center gap-2"><i class="fa-solid fa-check-double"></i> + Tareas</button>` : ''}
-                    ${!hasDesc ? `<button data-reveal="desc" class="wish-item px-4 py-2 rounded-full text-gray-400 hover:text-brand transition-all text-[10px] font-bold uppercase tracking-wider flex items-center gap-2"><i class="fa-solid fa-align-left"></i> + Descripción</button>` : ''}
-                    ${!hasUrl ? `<button data-reveal="url" class="wish-item px-4 py-2 rounded-full text-gray-400 hover:text-brand transition-all text-[10px] font-bold uppercase tracking-wider flex items-center gap-2"><i class="fa-solid fa-link"></i> + Link</button>` : ''}
-                    ${!hasAlarm ? `<button data-reveal="alarm" class="wish-item px-4 py-2 rounded-full text-gray-400 hover:text-brand transition-all text-[10px] font-bold uppercase tracking-wider flex items-center gap-2"><i class="fa-solid fa-bell"></i> + Alarma</button>` : ''}
-                </div>
+            <!-- Botones agregar (solo icono) -->
+            <div class="px-6 py-2 flex gap-2 border-t border-gray-100">
+                <button data-reveal="desc" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-brand hover:text-white flex items-center justify-center transition text-sm" title="+ Descripción">
+                    <i class="fa-solid fa-align-left"></i>
+                </button>
+                <button data-reveal="tasks" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-brand hover:text-white flex items-center justify-center transition text-sm" title="+ Tarea">
+                    <i class="fa-solid fa-check-double"></i>
+                </button>
+                <button data-reveal="url" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-brand hover:text-white flex items-center justify-center transition text-sm" title="+ Enlace">
+                    <i class="fa-solid fa-link"></i>
+                </button>
+            </div>
 
-                <div class="flex gap-4 pt-6 border-t border-gray-100">
-                    <button class="action-save-inline flex-[2] bg-brand text-white txt-button py-2 rounded-2xl shadow-sticker hover:bg-brand-dark transform active:scale-[0.98] transition-all">
-                        Guardar
-                    </button>
-                    <button class="action-collapse flex-1 bg-gray-50 text-gray-400 txt-button py-2 rounded-2xl hover:bg-gray-100 transition-all">
-                        Cerrar
-                    </button>
-                    <button class="action-delete-inline flex-none bg-red-50 text-red-300 hover:text-red-500 p-4 rounded-2xl transition-all" title="Eliminar definitivamente">
-                        <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                </div>
+            <!-- Acciones (full width) -->
+            <div class="card-actions">
+                <button class="action-save-inline btn bg-brand text-white">
+                    Guardar
+                </button>
+                <button class="action-collapse btn bg-gray-100 text-ink">
+                    Cancelar
+                </button>
+                <button class="action-delete-inline btn text-red-400 hover:bg-red-50" title="Eliminar">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
             </div>
         `;
 
@@ -864,7 +707,7 @@ export const ui = {
         const isPinnedInSlider = card.classList.contains('pinned-card');
         const isPinnedOutOfSlider = card.dataset.originalParent === 'slider';
         const isPinned = isPinnedInSlider || isPinnedOutOfSlider;
-        
+
         let hadExpanded = false;
         document.querySelectorAll('[data-expanded="true"]').forEach(c => {
             if (c !== card) {
@@ -881,7 +724,7 @@ export const ui = {
                 hadExpanded = true;
             }
         });
-        
+
         // Recargar una sola vez si había otra tarjeta expandida
         if (hadExpanded && window.kai) window.kai.loadItems();
 
@@ -889,14 +732,14 @@ export const ui = {
         if (isPinnedInSlider) {
             this.movePinnedCardOutOfSlider(card);
         }
-        
+
         // Expandir la card (sin clases pinned porque ya no está en el slider)
         this.updateCardContent(card, item, true, false);
-        
+
         if (!isPinned) {
             card.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-        
+
         // Guardar estado de card expandida
         if (window.kai) {
             window.kai.setExpandedCard(item.id);
@@ -908,21 +751,21 @@ export const ui = {
         const container = document.getElementById('items-container');
         const pinnedSection = container?.querySelector('.pinned-section');
         const slider = container?.querySelector('.pinned-slider');
-        
+
         if (!pinnedSection || !slider) return;
-        
+
         // Guardar referencia original para restaurar después
         card.dataset.originalParent = 'slider';
-        
+
         // Remover del slider
         card.remove();
-        
+
         // Insertar la card expandida justo después del pinned-section (como las otras cards)
         pinnedSection.insertAdjacentElement('afterend', card);
-        
+
         // Quitar las clases de slider
         card.classList.remove('pinned-card');
-        
+
         // Ocultar el slider mientras una card pinned está expandida
         const sliderWrapper = container.querySelector('.pinned-slider-wrapper');
         if (sliderWrapper) sliderWrapper.style.display = 'none';
@@ -932,22 +775,22 @@ export const ui = {
     restorePinnedCardToSlider(card, item) {
         const container = document.getElementById('items-container');
         const slider = container?.querySelector('.pinned-slider');
-        
+
         if (!slider) return;
-        
+
         // Remover la card actual del DOM
         card.remove();
-        
+
         // Recrear la card con el diseño compacto del slider
         const newCard = this.createPinnedCompactCard(item);
-        
+
         // Insertar en el slider
         slider.appendChild(newCard);
     },
 
     collapseCard(card, item) {
         const isPinned = card.dataset.originalParent === 'slider';
-        
+
         if (isPinned) {
             this.restorePinnedCardToSlider(card, item);
         } else {
@@ -966,10 +809,10 @@ export const ui = {
                 e.preventDefault();
                 e.stopPropagation();
                 card.dataset.expanded = 'false';
-                
+
                 // Usar collapseCard que maneja tanto pins como cards normales
                 this.collapseCard(card, item);
-                
+
                 // Limpiar estado de card expandida
                 if (window.kai) {
                     window.kai.clearExpandedCard();
@@ -1115,7 +958,7 @@ export const ui = {
         const div = document.createElement('div');
         div.className = 'flex items-start gap-3 p-2 rounded-xl group/task animate-fadeIn border-b border-gray-100/50';
         div.innerHTML = `
-            <input type="checkbox" class="kawaii-checkbox mt-1">
+            <input type="checkbox" class="checkbox mt-1">
             <textarea rows="1" class="flex-1 bg-transparent border-none font-medium text-base text-ink outline-none focus:ring-0 inline-task-input resize-none" placeholder="¿Qué sigue?"></textarea>
             <button class="btn-remove-inline text-ink/20 hover:text-ink px-2 transition-colors mt-1"><i class="fa-solid fa-xmark"></i></button>
         `;
@@ -1156,7 +999,7 @@ export const ui = {
             if (titulo) {
                 tareas.push({
                     titulo,
-                    completado: row.querySelector('.kawaii-checkbox').checked
+                    completado: row.querySelector('.checkbox').checked
                 });
             }
         });
@@ -1335,7 +1178,7 @@ export const ui = {
         const div = document.createElement('div');
         div.className = 'flex items-start gap-3 bg-gray-50 p-3 rounded-xl border-2 border-transparent hover:border-brand/20 transition-all';
         div.innerHTML = `
-            <input type="checkbox" class="kawaii-checkbox mt-1" ${task.completado ? 'checked' : ''} onchange="this.parentElement.querySelector('.task-item-input').dataset.completado = this.checked">
+            <input type="checkbox" class="checkbox mt-1" ${task.completado ? 'checked' : ''} onchange="this.parentElement.querySelector('.task-item-input').dataset.completado = this.checked">
             <textarea rows="1" class="task-item-input flex-1 bg-transparent border-none font-medium text-base text-ink outline-none resize-none" 
                    data-completado="${task.completado}" placeholder="¿Cuál es el siguiente paso?">${this.escapeHtml(task.titulo)}</textarea>
             <button type="button" class="btn-remove-task text-ink/30 hover:text-urgent transition-colors mt-1"><i class="fa-solid fa-xmark"></i></button>
@@ -1390,7 +1233,7 @@ export const ui = {
                 <div class="text-center py-8">
                     <span class="text-4xl">🔔</span>
                     <p class="text-gray-400 mt-4">No tienes alarmas activas</p>
-                    <p class="text-sm text-gray-300 mt-2">Crea una desde el input o editando una card</p>
+                    <p class="text-base text-gray-300 mt-2">Crea una desde el input o editando una card</p>
                 </div>
             `;
         } else {
@@ -1407,23 +1250,23 @@ export const ui = {
                 else if (hours > 0) timeText = `${hours}h ${minutes}min`;
                 else timeText = `${minutes}min`;
 
-                const repeatText = item.repeat === 'daily' ? '📅 Diario' : 
-                                  item.repeat === 'weekly' ? '📅 Semanal' : 
-                                  item.repeat === 'monthly' ? '📅 Mensual' : '';
+                const repeatText = item.repeat === 'daily' ? '📅 Diario' :
+                    item.repeat === 'weekly' ? '📅 Semanal' :
+                        item.repeat === 'monthly' ? '📅 Mensual' : '';
 
                 return `
                     <div class="bg-rose-50 rounded-xl p-4 border border-rose-200 flex items-center justify-between">
                         <div class="flex-1">
                             <p class="font-bold text-ink">${this.escapeHtml(item.content || 'Sin título')}</p>
-                            <p class="text-sm text-rose-500">⏰ ${timeText} • ${deadline.toLocaleDateString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
-                            ${repeatText ? `<p class="text-xs text-orange-500 mt-1">${repeatText}</p>` : ''}
+                            <p class="text-base text-rose-500">⏰ ${timeText} • ${deadline.toLocaleDateString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                            ${repeatText ? `<p class="text-sm text-orange-500 mt-1">${repeatText}</p>` : ''}
                         </div>
                         <div class="flex gap-2">
                             <button onclick="window.controller?.openEditModal('${item.id}')" class="w-8 h-8 rounded-full bg-white hover:bg-rose-100 flex items-center justify-center transition" title="Editar">
-                                <i class="fa-solid fa-pen text-xs text-rose-500"></i>
+                                <i class="fa-solid fa-pen text-sm text-rose-500"></i>
                             </button>
                             <button onclick="window.controller?.cancelAlarm('${item.id}')" class="w-8 h-8 rounded-full bg-white hover:bg-rose-100 flex items-center justify-center transition" title="Cancelar">
-                                <i class="fa-solid fa-trash text-xs text-rose-500"></i>
+                                <i class="fa-solid fa-trash text-sm text-rose-500"></i>
                             </button>
                         </div>
                     </div>
@@ -1522,15 +1365,15 @@ export const ui = {
         // Procesar emociones para mostrar
         const emojiMap = { 'genial': '🤩', 'feliz': '😊', 'bien': '🙂', 'normal': '😐', 'mal': '😔' };
         const emocionEmojis = emociones.slice(-7).map(e => emojiMap[e.emocion] || '😐');
-        const masFrecuente = emociones.length > 0 
-            ? emosiiones.sort((a, b) => b.count - a.count)[0]?.emocion 
+        const masFrecuente = emociones.length > 0
+            ? emociones.sort((a, b) => b.count - a.count)[0]?.emocion
             : null;
         const emocionDisplay = masFrecuente ? (emojiMap[masFrecuente] || '😐') : 'sin datos';
-        
+
         // Tags para mostrar
-        const tagsHtml = stats.topTags && stats.topTags.length > 0 
-            ? stats.topTags.map(t => `<span class="bg-brand/10 text-brand border border-brand/30 px-2 py-1 rounded-full text-xs font-semibold">#${t}</span>`).join(' ')
-            : '<span class="text-gray-400 text-sm">Sin tags aún</span>';
+        const tagsHtml = stats.topTags && stats.topTags.length > 0
+            ? stats.topTags.map(t => `<span class="bg-brand/10 text-brand border border-brand/30 px-2 py-1 rounded-full text-sm font-semibold">#${t}</span>`).join(' ')
+            : '<span class="text-gray-400 text-base">Sin tags aún</span>';
 
         // Barra de progreso
         const progreso = stats.totalTareas > 0 ? Math.round((stats.tareasCompletas / stats.totalTareas) * 100) : 0;
@@ -1543,7 +1386,7 @@ export const ui = {
 
         // Pendientes
         const pendientes = stats.pendientes || [];
-        const pendientesHtml = pendientes.length > 0 
+        const pendientesHtml = pendientes.length > 0
             ? pendientes.slice(0, 5).map(p => `<li class="py-2 border-b border-gray-100 last:border-0 flex items-center gap-2"><span class="text-gray-300">○</span> ${this.escapeHtml(p.content)}</li>`).join('')
             : '<li class="py-2 text-gray-400">¡Todo al día! ✨</li>';
 
@@ -1558,25 +1401,25 @@ export const ui = {
                 <div class="text-center pt-8">
                     <h2 class="text-3xl font-bold text-ink mb-1">¡Hola Maria! 💜</h2>
                     <p class="text-gray-500">
-                        ${stats.racha > 0 
-                            ? `¡Llevas ${stats.racha} día${stats.racha > 1 ? 's' : ''} seguidos! 🔥` 
-                            : '¡Empezá hoy tu racha!'}
+                        ${stats.racha > 0
+                ? `¡Llevas ${stats.racha} día${stats.racha > 1 ? 's' : ''} seguidos! 🔥`
+                : '¡Empezá hoy tu racha!'}
                     </p>
                 </div>
 
                 <!-- Selector de Período -->
                 <div class="flex justify-center gap-2">
-                    <button class="stat-period-btn px-4 py-2 rounded-full text-sm font-bold transition-all ${periodo === 'semana' ? 'bg-brand text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" data-period="semana">Semana</button>
-                    <button class="stat-period-btn px-4 py-2 rounded-full text-sm font-bold transition-all ${periodo === 'mes' ? 'bg-brand text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" data-period="mes">Mes</button>
-                    <button class="stat-period-btn px-4 py-2 rounded-full text-sm font-bold transition-all ${periodo === 'anio' ? 'bg-brand text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" data-period="anio">Año</button>
-                    <button class="stat-period-btn px-4 py-2 rounded-full text-sm font-bold transition-all ${periodo === 'total' ? 'bg-brand text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" data-period="total">Todo</button>
+                    <button class="stat-period-btn px-4 py-2 rounded-full text-base font-bold transition-all ${periodo === 'semana' ? 'bg-brand text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" data-period="semana">Semana</button>
+                    <button class="stat-period-btn px-4 py-2 rounded-full text-base font-bold transition-all ${periodo === 'mes' ? 'bg-brand text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" data-period="mes">Mes</button>
+                    <button class="stat-period-btn px-4 py-2 rounded-full text-base font-bold transition-all ${periodo === 'anio' ? 'bg-brand text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" data-period="anio">Año</button>
+                    <button class="stat-period-btn px-4 py-2 rounded-full text-base font-bold transition-all ${periodo === 'total' ? 'bg-brand text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}" data-period="total">Todo</button>
                 </div>
 
                 <!-- CÓMO TE SENTÍS -->
                 <div class="bg-gradient-to-r from-peach/20 to-brand/10 border-2 border-brand/20 p-6 rounded-3xl">
                     <h3 class="text-lg font-bold text-ink mb-3">¿Cómo te sentís?</h3>
                     <div class="text-4xl mb-3 tracking-widest">${emocionEmojis.join(' ')}</div>
-                    <p class="text-sm text-gray-500">Estado más frecuente: <span class="font-bold text-brand">${emocionDisplay === 'sin datos' ? 'Sin datos' : emocionDisplay}</span></p>
+                    <p class="text-base text-gray-500">Estado más frecuente: <span class="font-bold text-brand">${emocionDisplay === 'sin datos' ? 'Sin datos' : emocionDisplay}</span></p>
                 </div>
 
                 <!-- ESTADÍSTICAS DEL PERIODO -->
@@ -1587,11 +1430,11 @@ export const ui = {
                     
                     <div class="flex items-center gap-4 mb-4">
                         <div class="flex-1">
-                            <div class="text-sm text-gray-500 mb-1">Completadas</div>
+                            <div class="text-base text-gray-500 mb-1">Completadas</div>
                             <div class="text-2xl font-bold text-brand">✓ ${stats.tareasCompletas}</div>
                         </div>
                         <div class="flex-1">
-                            <div class="text-sm text-gray-500 mb-1">Pendientes</div>
+                            <div class="text-base text-gray-500 mb-1">Pendientes</div>
                             <div class="text-2xl text-gray-400">○ ${pendientes.length}</div>
                         </div>
                     </div>
@@ -1601,18 +1444,18 @@ export const ui = {
                         <div class="h-4 bg-gray-100 rounded-full overflow-hidden">
                             <div class="h-full bg-brand transition-all" style="width: ${barraWidth}%"></div>
                         </div>
-                        <div class="text-right text-sm text-gray-500 mt-1">${progreso}%</div>
+                        <div class="text-right text-base text-gray-500 mt-1">${progreso}%</div>
                     </div>
 
                     <!-- Lista -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <h4 class="text-xs font-bold text-gray-400 uppercase mb-2">Completadas</h4>
-                            <ul class="text-sm text-ink">${tareasListHtml}</ul>
+                            <h4 class="text-sm font-bold text-gray-400 uppercase mb-2">Completadas</h4>
+                            <ul class="text-base text-ink">${tareasListHtml}</ul>
                         </div>
                         <div>
-                            <h4 class="text-xs font-bold text-gray-400 uppercase mb-2">Pendientes</h4>
-                            <ul class="text-sm text-ink">${pendientesHtml}</ul>
+                            <h4 class="text-sm font-bold text-gray-400 uppercase mb-2">Pendientes</h4>
+                            <ul class="text-base text-ink">${pendientesHtml}</ul>
                         </div>
                     </div>
                 </div>
@@ -1620,12 +1463,12 @@ export const ui = {
                 <!-- LOGROS -->
                 <div class="bg-success/10 border-2 border-success/20 p-6 rounded-3xl">
                     <h3 class="text-lg font-bold text-ink mb-4">Tus Logros 🏆</h3>
-                    <ul class="text-sm text-ink">${logrosHtml}</ul>
+                    <ul class="text-base text-ink">${logrosHtml}</ul>
                 </div>
 
                 <!-- TAGS -->
                 <div class="bg-gray-50 border-2 border-gray-100 p-6 rounded-3xl">
-                    <h3 class="text-sm font-bold text-gray-400 uppercase mb-3">Tags más usados</h3>
+                    <h3 class="text-base font-bold text-gray-400 uppercase mb-3">Tags más usados</h3>
                     <div class="flex flex-wrap gap-2">${tagsHtml}</div>
                 </div>
 
@@ -1637,7 +1480,7 @@ export const ui = {
                 </div>
             </div>
         `;
-        
+
         // Agregar eventos a los botones de período
         container.querySelectorAll('.stat-period-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1694,7 +1537,7 @@ export const ui = {
                         🤖
                     </div>
                     <div class="flex-1 min-w-0">
-                        <h4 class="text-brand font-bold uppercase tracking-widest text-xs mb-3 flex items-center gap-2">
+                        <h4 class="text-brand font-bold uppercase tracking-widest text-sm mb-3 flex items-center gap-2">
                             Reporte de Bienestar por Kai
                             <span class="h-px bg-brand/20 flex-1"></span>
                         </h4>
@@ -1712,7 +1555,7 @@ export const ui = {
         if (!chartBars) return;
 
         if (!data || data.length === 0) {
-            chartBars.innerHTML = '<p class="text-ink/30 italic text-sm self-center">No hay suficientes datos de energía para mostrar tendencia.</p>';
+            chartBars.innerHTML = '<p class="text-ink/30 italic text-base self-center">No hay suficientes datos de energía para mostrar tendencia.</p>';
             return;
         }
 
@@ -1750,7 +1593,7 @@ export const ui = {
                             <h4 class="font-bold text-ink truncate text-lg">${this.escapeHtml(item.content)}</h4>
                             <span class="text-[10px] font-bold text-ink/40 bg-white/50 px-2 py-0.5 rounded-full uppercase shrink-0">${fecha}</span>
                         </div>
-                        <p class="text-sm text-ink/70 mt-1 line-clamp-2 italic">${this.escapeHtml(item.descripcion || '')}</p>
+                        <p class="text-base text-ink/70 mt-1 line-clamp-2 italic">${this.escapeHtml(item.descripcion || '')}</p>
                         ${item.tareas && item.tareas.length > 0 ? `
                             <div class="mt-4 flex items-center gap-3">
                                 <div class="flex-1 bg-white/60 h-2 rounded-full overflow-hidden shadow-inner">
@@ -1805,7 +1648,7 @@ export const ui = {
         btn.innerHTML = `
             <div class="flex flex-col items-center gap-1">
                 <span class="text-2xl">${momentoConfig?.icono || '💭'}</span>
-                <span class="text-xs font-bold">Check-in</span>
+                <span class="text-sm font-bold">Check-in</span>
             </div>
         `;
         btn.onclick = () => kai?.showCheckinModal();
@@ -1839,12 +1682,12 @@ export const ui = {
                 <div class="text-center mb-6">
                     <span class="text-4xl">${data.momento.icono}</span>
                     <h2 class="text-xl font-bold text-ink mt-2">${data.momento.pregunta}</h2>
-                    <p class="text-sm text-ink/50">${new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                    <p class="text-base text-ink/50">${new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
                 </div>
                 
                 ${esManana || esNoche ? `
                 <div class="mb-6 p-4 bg-purple-50 rounded-2xl">
-                    <label class="block text-sm font-bold text-purple-700 mb-3">
+                    <label class="block text-base font-bold text-purple-700 mb-3">
                         ${esManana ? '⏰ ¿A qué hora despertaste?' : '🌙 ¿A qué hora te dormiste?'}
                     </label>
                     <input type="time" id="checkin-hora-sueno" 
@@ -1854,7 +1697,7 @@ export const ui = {
                 ` : ''}
                 
                 <div class="mb-6">
-                    <label class="block text-sm font-bold text-ink/70 mb-3">ENERGÍA</label>
+                    <label class="block text-base font-bold text-ink/70 mb-3">ENERGÍA</label>
                     <div class="grid grid-cols-6 gap-2" id="checkin-energia-grid">
                         ${data.energia.map(e => `
                             <button class="checkin-energia-btn flex flex-col items-center p-2 rounded-xl border-2 border-gray-100 hover:border-brand hover:bg-brand/5 transition-all"
@@ -1867,7 +1710,7 @@ export const ui = {
                 </div>
                 
                 <div class="mb-6">
-                    <label class="block text-sm font-bold text-ink/70 mb-3">EMOCIÓN</label>
+                    <label class="block text-base font-bold text-ink/70 mb-3">EMOCIÓN</label>
                     <div class="grid grid-cols-5 gap-2" id="checkin-emocion-grid">
                         ${data.emocion.map(e => `
                             <button class="checkin-emocion-btn flex flex-col items-center p-2 rounded-xl border-2 border-gray-100 hover:border-purple-400 hover:bg-purple-50 transition-all"
@@ -1969,7 +1812,7 @@ export const ui = {
             container.innerHTML = `
                 <div class="text-center py-8">
                     <span class="text-4xl">🔔</span>
-                    <p class="text-gray-400 text-sm mt-2">No hay notificaciones</p>
+                    <p class="text-gray-400 text-base mt-2">No hay notificaciones</p>
                 </div>
             `;
             return;
@@ -1987,8 +1830,8 @@ export const ui = {
                     <div class="flex items-start gap-3">
                         <span class="text-xl shrink-0">${typeIcon}</span>
                         <div class="flex-1 min-w-0">
-                            <p class="font-bold text-sm text-ink">${this.escapeHtml(notif.title)}</p>
-                            ${notif.message ? `<p class="text-xs text-gray-500 mt-1 line-clamp-2">${this.escapeHtml(notif.message)}</p>` : ''}
+                            <p class="font-bold text-base text-ink">${this.escapeHtml(notif.title)}</p>
+                            ${notif.message ? `<p class="text-sm text-gray-500 mt-1 line-clamp-2">${this.escapeHtml(notif.message)}</p>` : ''}
                             <p class="text-[10px] text-gray-400 mt-2">${timeAgo}</p>
                         </div>
                         ${!notif.is_read ? '<span class="w-2 h-2 bg-brand rounded-full shrink-0 mt-1"></span>' : ''}

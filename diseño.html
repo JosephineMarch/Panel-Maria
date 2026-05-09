@@ -1016,33 +1016,7 @@
 
         /* Card - see CARD SIZES section above */
 
-        /* Checkbox */
-        .kawaii-checkbox {
-            appearance: none;
-            width: 24px;
-            height: 24px;
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            background: var(--brand);
-            opacity: 0.4;
-            border: none;
-            transition: all 0.2s ease;
-            position: relative;
-        }
-
-        .kawaii-checkbox:checked {
-            opacity: 1;
-        }
-
-        .kawaii-checkbox:checked::after {
-            content: '✓';
-            position: absolute;
-            color: white;
-            font-weight: 800;
-            left: 5px;
-            top: 2px;
-            font-size: 14px;
-        }
+        /* Checkbox - usar .checkbox del sistema de diseño */
 
         /* === TAG / CHIP SIZES === */
         /* Tag / Chip - M por defecto */
@@ -1423,28 +1397,11 @@
         }
 
         /* === DASHBOARD LAYOUT === */
+        /* Mobile First: 1 columna en todas las pantallas */
         .dashboard-grid {
-            display: grid;
-            grid-template-columns: 1fr;
+            display: flex;
+            flex-direction: column;
             gap: 1.5rem;
-        }
-
-        @media (min-width: 640px) {
-            .dashboard-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (min-width: 1024px) {
-            .dashboard-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
-
-        @media (min-width: 1280px) {
-            .dashboard-grid {
-                grid-template-columns: repeat(4, 1fr);
-            }
         }
 
         .dashboard-filters {
@@ -2473,7 +2430,7 @@
             <h2 class="component-title"><i class="fa-regular fa-square"></i> Checkbox</h2>
             <div class="component-variants">
                 <div class="flex items-center gap-4">
-                    <input type="checkbox" class="kawaii-checkbox">
+                    <input type="checkbox" class="checkbox">
                     <span>Unchecked</span>
                 </div>
                 <div class="flex items-center gap-4">

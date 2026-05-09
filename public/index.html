@@ -453,7 +453,7 @@
 
     <!-- FOOTER NAV (Navegación principal) -->
     <nav id="footer-nav"
-        class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-border-soft z-40 px-1 pb-[max(env(safe-area-inset-bottom),4px)] pt-1 flex justify-around items-center shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+        class="fixed bottom-[calc(env(safe-area-inset-bottom)+60px)] left-0 right-0 bg-white/95 backdrop-blur-md border-t border-border-soft z-40 px-1 py-1 flex justify-around items-center shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
         <button class="footer-nav-btn flex flex-col items-center gap-1 p-3 rounded-xl text-brand" data-nav="timeline">
             <i class="fa-solid fa-house text-xl"></i>
             <span class="text-[10px] font-bold">Inicio</span>
@@ -1006,7 +1006,6 @@
         }
 
         // ==================== HISTORIAL ====================
-
         // Cargar historial
         function loadHistorial() {
             const container = document.getElementById('historial-list');
