@@ -222,7 +222,7 @@
     </header>
 
     <main id="app" class="flex-1 max-w-7xl mx-auto w-full px-3 py-4 md:px-8 space-y-6 pb-24 md:pb-32 no-scrollbar"
-        role="main" style="max-width: 100vw; overflow-x: hidden;">
+        role="main">
 
         <!-- ==================== SECCIÓN SALUD (Bitácora de Bienestar) ==================== -->
         <section id="section-hoy" class="space-y-6 hidden">
@@ -298,25 +298,25 @@
             </div>
 
             <!-- Quick-add bar -->
-            <div id="inicio-quick-bar" class="flex items-center gap-2 bg-white rounded-2xl border-2 border-border-soft px-4 py-3 shadow-sm">
+            <div id="inicio-quick-bar" class="flex flex-wrap items-center gap-2 bg-white rounded-2xl border-2 border-border-soft px-3 py-2 md:px-4 md:py-3 shadow-sm">
                 <input type="text" id="inicio-quick-input"
-                    placeholder="✏️ Nueva tarea... (Enter para crear)"
-                    class="flex-1 bg-transparent text-base font-medium outline-none placeholder-gray-400"
+                    placeholder="✏️ Nueva tarea..."
+                    class="flex-1 min-w-[150px] bg-transparent text-base font-medium outline-none placeholder-gray-400"
                     aria-label="Nueva tarea rápida">
-                <div id="inicio-points-selector" class="flex gap-1 shrink-0">
+                <div id="inicio-points-selector" class="flex gap-1 overflow-x-auto no-scrollbar py-1">
                     <button class="points-btn active" data-points="10" aria-pressed="true">10⭐</button>
                     <button class="points-btn" data-points="20" aria-pressed="false">20⭐⭐</button>
                     <button class="points-btn" data-points="50" aria-pressed="false">50⭐⭐⭐</button>
                     <button class="points-btn" data-points="100" aria-pressed="false">100🔥</button>
                 </div>
                 <button id="btn-inicio-add"
-                    class="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shrink-0 hover:bg-brand-dark transition">
+                    class="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shrink-0 hover:bg-brand-dark transition ml-auto">
                     <i class="fa-solid fa-plus"></i>
                 </button>
             </div>
 
             <!-- Filter row -->
-            <div class="flex gap-2 px-4">
+            <div class="flex gap-2 px-4 overflow-x-auto no-scrollbar pb-1">
                 <button class="filter-chip active" data-filter="all">Todas</button>
                 <button class="filter-chip" data-filter="pending">Pendientes</button>
                 <button class="filter-chip" data-filter="done">Logradas <span id="total-points" class="text-xs ml-1">0⭐</span></button>
@@ -406,7 +406,7 @@
         </section>
 
         <!-- ==================== TIMELINE (Sections below are hidden when HOY is active) ==================== -->
-        <div id="timeline-content">
+        <div id="timeline-content" class="hidden">
             <!-- Barra de Búsqueda -->
             <div class="max-w-2xl mx-auto px-3 mb-4">
                 <div class="relative">
@@ -515,7 +515,7 @@
         class="fixed inset-0 bg-ink/30 backdrop-blur-sm z-[100] flex items-end justify-center hidden" role="dialog"
         aria-modal="true">
         <div
-            class="bg-white w-full max-w-2xl rounded-t-3xl shadow-2xl p-5 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] animate-slide-up">
+            class="bg-white w-full max-w-2xl rounded-t-3xl shadow-2xl p-4 md:p-6 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] animate-slide-up">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="font-bold text-lg text-brand">¿Qué tienes en mente?</h3>
                 <button id="btn-close-modal-add"
@@ -549,18 +549,18 @@
             </div>
 
             <!-- Input principal -->
-            <div class="bg-gray-50 border-2 border-border-soft px-6 py-4 rounded-2xl flex items-center gap-3">
+            <div class="bg-gray-50 border-2 border-border-soft px-4 py-3 md:px-6 md:py-4 rounded-2xl flex items-center gap-2 md:gap-3">
                 <input type="text" id="quick-input" placeholder="Escribe aquí tu nota, tarea o enlace..."
                     class="bg-transparent text-base py-2 px-1 w-full focus:outline-none placeholder-gray-400 min-w-0"
                     aria-label="Escribe tu nota o tarea">
 
-                <div class="flex items-center gap-2 shrink-0">
+                <div class="flex items-center gap-1.5 md:gap-2 shrink-0">
                     <button id="btn-voice-quick" aria-label="Grabar nota de voz"
-                        class="w-14 h-14 rounded-full bg-brand/10 text-brand flex items-center justify-center hover:bg-brand/20 transition">
+                        class="w-12 h-12 md:w-14 md:h-14 rounded-full bg-brand/10 text-brand flex items-center justify-center hover:bg-brand/20 transition">
                         <i class="fa-solid fa-microphone text-lg"></i>
                     </button>
                     <button id="btn-submit-quick" aria-label="Guardar elemento"
-                        class="w-14 h-14 rounded-full bg-brand text-white flex items-center justify-center shadow-md active:scale-95 transition-all hover:bg-brand-dark">
+                        class="w-12 h-12 md:w-14 md:h-14 rounded-full bg-brand text-white flex items-center justify-center shadow-md active:scale-95 transition-all hover:bg-brand-dark">
                         <i class="fa-solid fa-plus text-lg"></i>
                     </button>
                 </div>
@@ -664,9 +664,9 @@
 
     <!-- Reutilizamos el modal de edición con clases Tailwind -->
     <div id="modal-edit"
-        class="fixed inset-0 bg-ink/20 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-4"
+        class="fixed inset-0 bg-ink/20 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-2 md:p-4"
         role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        <div class="bg-white w-full max-w-lg rounded-blob shadow-2xl max-h-[90vh] overflow-y-auto p-8 relative">
+        <div class="bg-white w-full max-w-lg rounded-blob shadow-2xl max-h-[90vh] overflow-y-auto p-5 md:p-8 relative">
             <button
                 class="modal-close absolute top-6 right-6 w-12 h-12 rounded-full hover:bg-gray-100 flex items-center justify-center transition focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer"
                 aria-label="Cerrar modal">
@@ -812,6 +812,9 @@
             initNavigation();
             initFecha();
             initAddNewModal();
+            
+            // Forzar vista inicial correcta
+            switchView(currentView);
         });
 
         // Modal de nueva nota/tarea

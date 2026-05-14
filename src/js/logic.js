@@ -154,30 +154,32 @@ class KaiController {
         const sectionBaul = document.getElementById('section-baul');
         const sectionHistorial = document.getElementById('section-historial');
         const timelineContent = document.getElementById('timeline-content');
+        const itemsContainer = document.getElementById('items-container');
         
         // Ocultar todo primero
         [sectionHoy, sectionInicio, sectionSalud, sectionBaul, sectionHistorial].forEach(s => {
             if (s) s.classList.add('hidden');
         });
         if (timelineContent) timelineContent.classList.add('hidden');
-        const itemsContainer = document.getElementById('items-container');
         if (itemsContainer) itemsContainer.classList.add('hidden');
         
         // Mostrar según la vista
         if (this.currentView === 'timeline') {
             if (sectionInicio) sectionInicio.classList.remove('hidden');
-            if (timelineContent) timelineContent.classList.remove('hidden');
-            if (itemsContainer) itemsContainer.classList.remove('hidden');
+            // Inicio NO muestra timelineContent ni itemsContainer (solo la quick bar y su lista propia)
         } else if (this.currentView === 'salud') {
             if (sectionHoy) sectionHoy.classList.remove('hidden');
         } else if (this.currentView === 'historial') {
             if (sectionHistorial) sectionHistorial.classList.remove('hidden');
+            if (timelineContent) timelineContent.classList.remove('hidden');
+            if (itemsContainer) itemsContainer.classList.remove('hidden');
         } else if (this.currentView === 'baul') {
             if (sectionBaul) sectionBaul.classList.remove('hidden');
         } else if (this.currentView === 'dashboard') {
             if (itemsContainer) itemsContainer.classList.remove('hidden');
         }
     }
+
     
     applyViewState() {
         // Igual que applyViewStateOnly - solo UI, delegar carga de datos al inline switchView

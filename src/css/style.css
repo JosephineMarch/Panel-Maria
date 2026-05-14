@@ -2479,3 +2479,44 @@ i {
     color: white;
     font-weight: 600;
 }
+
+/* =====================================================
+   MOBILE OPTIMIZATIONS (Ajustes para pantallas pequeñas)
+   ===================================================== */
+@media (max-width: 480px) {
+    #inicio-quick-bar {
+        padding: 8px 12px;
+        gap: 8px;
+    }
+    
+    .points-btn {
+        padding: 4px 8px;
+        font-size: 11px;
+        min-height: 32px;
+    }
+
+    /* Evitar que el input se colapse */
+    #inicio-quick-input {
+        min-width: 100px;
+    }
+
+    /* Ajuste de contenedores con scroll horizontal */
+    #inicio-points-selector,
+    #inicio-tag-filters,
+    .overflow-x-auto {
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Modales más cómodos en móvil */
+    [role="dialog"] > div {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+    }
+    
+    #modal-edit > div {
+        border-radius: 2rem 2rem 0 0;
+        align-self: flex-end;
+        max-height: 95vh;
+    }
+}
