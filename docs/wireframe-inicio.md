@@ -1,163 +1,78 @@
-# Wireframe: Pantalla Inicio (Nueva)
+# Wireframe: Inicio — KAI v2
 
-## Estructura Visual
+**Rama**: `redesign-ui` | **Fase**: 1 — INICIO + Sistema de Tareas 🚧
+
+## Estructura
 
 ```
 ┌─────────────────────────────────────┐
-│ 🏠 Panel de María    [avatar]  ❤     │ ← Header
+│ 🏠 KAI                  [avatar]    │ ← Header
 ├─────────────────────────────────────┤
-│                                     │
-│ ¡Buenos días, María! ✨              │ ← Saludo dinámico
-│                                     │
+│ ¡Buenos días, María! ✨             │ ← Saludo dinámico
 ├─────────────────────────────────────┤
-│ ┌─────────┐  ┌─────────┐           │
-│ │📋      │  │✅       │           │
-│ │Pendientes│ │Logradas │           │ ← Cards filtro rápido
-│ │  (5)   │  │  (12)  │           │
-│ └─────────┘  └─────────┘           │
+│ [Escribe una tarea... ]  [➕] [🎤]    │ ← Quick-add bar
 ├─────────────────────────────────────┤
-│ Tags: #logro #salud #mi-mes #emocion │ ← Filtro por tags
+│ [Todas] [Pendientes] [Logradas]      │ ← Filtros base
+│ [#logro] [#salud] [#trabajo]         │ ← Tags chips
 ├─────────────────────────────────────┤
-│ ┌───────────────────────────────┐    │
-│ │ [☕] Walk with dog          │    │
-│ │ 10 pts         📅 Hoy       │    │
-│ └───────────────────────────────┘    │
-│ ┌───────────────────────────────┐    │
-│ │ [ ] Buy groceries        │    │
-│ │ 15 pts         📅 Hoy       │    │
-│ └───────────────────────────────┘    │
-│ ┌───────────────────────────────┐    │
-│ │ [x] Make dinner          │    │   ← Lista(scroll)
-│ │ 20 pts         📅 Ayer      │    │
-│ └───────────────────────────────┘    │
-│           ... más cards              │
-│         (scroll infinito)         │
+│ 📌 Ancladas                          │
+│ ☐ Tarea importante          10 pts   │
+│                                       │
+│ 🔴 Vencidas                          │
+│ ☐ Tarea vencida             20 pts   │
+│                                       │
+│ 📅 Hoy                               │
+│ ☐ Regar plantas             #jardín  │
+│ ☐ Llamar médico            #salud    │
+│                                       │
+│ 📅 Mañana / 📅 Esta semana            │
+│ ☐ Otra tarea                         │
+│                                       │
+│ 🗂️ Sin fecha                          │
+│ ☐ Tarea sin deadline                 │
 ├─────────────────────────────────────┤
-│                              ⏱    │ ← Botón Pomodoro
-├─────────────────────────────────────┤
-│ 🏠    ❤️    📅    📦            │ ← Bottom Nav
-│Inicio|Salud|Historial|ulador       │
-│           [+]                       │ ← Botón crear
+│ 🏠   ❤️   📅   📦    [➕]            │ ← Bottom nav
 └─────────────────────────────────────┘
 ```
 
-## Componentes Detailados
+## Componentes
 
-### 1. Header
-- **Izquierda**: Icono menú hamburguesa (abre sidebar actual)
-- **Centro**: "Panel de María"
-- **Derecha**: Avatar (abre perfil) + ❤ (accede a logged)
+### Header
+Logo + título + avatar (perfil). Sin campana ni extras.
 
-### 2. Saludo Dinámico
+### Saludo
+`6-12: "Buenos días" · 12-18: "Buenas tardes" · 18-22: "Buenas noches" · 22-6: "¿Despierta?"`
+Incluye emoji del último check-in emocional.
+
+### Quick-add bar
+Input tipo texto. Enter crea tarea con puntos por defecto. Botón + abre modal de tarea. Micrófono para voz.
+
+### Filtros
+- [Todas] [Pendientes] [Logradas] — filtros base
+- Tags como chips horizontales (scroll si hay muchos)
+- Selected: bg-brand text-white
+
+### Lista de tareas
 ```
-- 6am-12pm: "¡Buenos días, María! ☀️"
-- 12pm-18pm: "¡Buenas tardes, María! 🌤️"
-- 18pm-22pm: "¡Buenas noches, María! 🌙"
-- 22pm-6am: "¡Aún estás despierta? 🌙"
+┌────────────────────────────────────┐
+│ ☐ Walk with dog              10 pts│
+│        📅 Hoy  •  #logro           │
+└────────────────────────────────────┘
 ```
-- Incluye emoji según estado emocional del último check-in
+- Pendiente: ☐ checkbox vacío
+- Hover: botones editar/eliminar
+- Completada: check animado 300ms + fade out
 
-### 3. Cards de Filtro Rápido
-
-| Card | Color | Cantidad |
-|------|-------|---------|
-| 📋 Pendientes | bg-brand/10 border-brand | X tareas sin completar |
-| ✅ Logradas | bg-success/20 border-success | X tareas completadas |
-
-- Click → filtra la lista por estado
-- Muestra la cuenta en tiempo real
-
-### 4. Filtro por Tags
-```
-[ #logro ] [ #salud ] [ #mi-mes ] [ #emocion ]
-```
-- Horizontales, scroll si hay muchos
-- Al clickear → filtra lista por tag
-- Selected = bg-brand text-white
-
-### 5. Lista de Tareas (Cards)
-
-```
-┌────────────────────────────────────────┐
-│ ☐ Walk with dog              10 pts    │
-│        📅 Hoy  •  #logro              │
-└────────────────────────────────────────┘
-```
-
-**Estados:**
-- Pendiente: ☐ (checkbox vacío), texto normal
-- Lograda: ☕ (check filled), texto tachado, bg-success/10
-- Hover: mostra botones editar/eliminar
-
-**Scroll Infinito:**
-- Cargar 10 items inicial
-- Cuando scroll llega al 80% → cargar 10 más
-- Loading indicator: "Cargando..." con spinner
-
-### 6. Botón Pomodoro
-- Fijo en esquina inferior derecha
-- ⏱ icon + "Iniciar"
-- Al clickear → abre modal Pomodoro
-
-### 7. Bottom Navigation
-
-| Índice | Icono | Pestaña |
-|--------|------|--------|
+### Bottom nav
+| # | Icono | Vista |
+|---|-------|-------|
 | 0 | 🏠 | Inicio |
-| 1 | ❤ | Salud |
+| 1 | ❤️ | Salud |
 | 2 | 📅 | Historial |
 | 3 | 📦 | Baúl |
-| + | + | Crear (Omni-Editor) |
+| + | ➕ | Crear (Omni-Editor) |
 
-**Behavior:**
-- Active tab: bg-brand text-white
-- Inactive: text-gray-400
+Active tab: bg-brand text-white. + siempre visible y fijo.
 
-### 8. Omni-Editor (Botón +)
-
-Al hacer click → abre modal con:
-
-```
-┌─────────────────────────────────┐
-│ ✕                          X  │
-├─────────────────────────────────┤
-│ Tipo: [Tarea] [Nota] [Enlace]     │ ← Switch rápido
-├─────────────────────────────────┤
-│                                 │
-│ ¿Qué tienes en mente?            │ ← Input grande
-│                                 │
-├─────────────────────────────────┤
-│ Tags: [logro] [salud] [mi-mes]   │ ← Tags opcionales
-├─────────────────────────────────┤
-│              [ 💾 Guardar ]      │
-└─────────────────────────────────┘
-```
-
-## Notas Técnicas
-
-### Scroll Infinito (Implementación)
-```javascript
-// Pseudo-código
-let currentPage = 0;
-const ITEMS_PER_PAGE = 20;
-
-window.addEventListener('scroll', () => {
-  if (scrollY > (documentHeight * 0.8)) {
-    currentPage++;
-    loadMoreItems(currentPage);
-  }
-});
-
-async function loadMoreItems(page) {
-  const items = await db.query(
-    'SELECT * FROM registros ORDER BY created_at DESC LIMIT ? OFFSET ?',
-    [ITEMS_PER_PAGE, page * ITEMS_PER_PAGE]
-  );
-  renderItems(items);
-}
-```
-
-### Puntos (Futuro)
-- Campo en metadata: `{ puntos: 10 }`
-- Card muestra puntos si existen
-- Filter por puntos: rango (1-5, 6-10, 11-20, etc)
+---
+Mayo 2026

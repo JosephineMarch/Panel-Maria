@@ -76,6 +76,7 @@ class KaiController {
         this.breadcrumbPath = [];
         this.currentView = 'timeline'; // Default: Timeline
         this.expandedCardId = null; // ID de la card expandida (para persistencia)
+        this.isAnimating = false; // Guard para animación de completado
         this.init();
     }
 
@@ -863,6 +864,161 @@ class KaiController {
             if (input) input.value = e.detail.transcript;
             this.stopVoiceInput();
         });
+
+        // --- Inicio: Quick-add submit ---
+        const quickInput = document.getElementById('inicio-quick-input');
+        if (quickInput) {
+            quickInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.quickAddInicio(quickInput.value);
+                }
+            });
+        }
+
+        const btnAdd = document.getElementById('btn-inicio-add');
+        if (btnAdd) {
+            btnAdd.addEventListener('click', () => {
+                const input = document.getElementById('inicio-quick-input');
+                if (input) {
+                    this.quickAddInicio(input.value);
+                }
+            });
+        }
+
+        // --- Inicio: Points selector ---
+        document.querySelectorAll('.points-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.points-btn').forEach(b => {
+                    b.classList.remove('active');
+                    b.setAttribute('aria-pressed', 'false');
+                });
+                btn.classList.add('active');
+                btn.setAttribute('aria-pressed', 'true');
+            });
+        });
+
+        // --- Inicio: Tag chip clicks (delegated) ---
+        const tagFilterBar = document.getElementById('inicio-tag-filters');
+        if (tagFilterBar) {
+            tagFilterBar.addEventListener('click', (e) => {
+                const chip = e.target.closest('.tag-chip');
+                if (chip) {
+                    const tag = chip.dataset.tag;
+                    this.filterByTag(tag);
+                }
+            });
+        }
+
+        // --- Inicio: Task checkbox clicks & edit/delete (delegated) ---
+        const taskList = document.getElementById('inicio-task-list');
+        if (taskList) {
+            // Checkbox toggle
+            taskList.addEventListener('change', (e) => {
+                if (e.target.classList.contains('task-checkbox')) {
+                    const row = e.target.closest('.task-row');
+                    if (row) {
+                        this.toggleCompletado(row.dataset.itemId, row);
+                    }
+                }
+            });
+
+            // Inline edit on text click + delete action
+            taskList.addEventListener('click', (e) => {
+                const deleteBtn = e.target.closest('.action-delete');
+                const taskText = e.target.closest('.task-text');
+
+                if (deleteBtn) {
+                    e.stopPropagation();
+                    const id = deleteBtn.dataset.id;
+                    if (confirm('¿Eliminar esta tarea?')) {
+                        data.deleteItem(id).then(() => {
+                            this.loadItems();
+                            ui.showNotification('Tarea eliminada', 'info');
+                        }).catch(err => {
+                            console.error('Error deleting task:', err);
+                            ui.showNotification('Error al eliminar', 'error');
+                        });
+                    }
+                } else if (taskText && !taskText.isContentEditable) {
+                    e.stopPropagation();
+                    const id = taskText.dataset.id;
+                    const original = taskText.textContent;
+
+                    taskText.contentEditable = 'true';
+                    taskText.classList.add('editing');
+                    taskText.focus();
+
+                    // Seleccionar todo el texto
+                    const range = document.createRange();
+                    range.selectNodeContents(taskText);
+                    const sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+
+                    const save = () => {
+                        taskText.contentEditable = 'false';
+                        taskText.classList.remove('editing');
+                        const newText = taskText.textContent.trim();
+                        if (newText && newText !== original) {
+                            const sanitized = utils.sanitizeInput(newText);
+                            taskText.textContent = sanitized;
+                            data.updateItem(id, { content: sanitized }).catch(err => {
+                                console.error('Error saving inline edit:', err);
+                                taskText.textContent = original;
+                                ui.showNotification('Error al guardar', 'error');
+                            });
+                        } else if (!newText) {
+                            taskText.textContent = original;
+                        } else {
+                            taskText.textContent = original;
+                        }
+                    };
+
+                    const onBlur = () => save();
+                    const onKeydown = (ev) => {
+                        if (ev.key === 'Enter') {
+                            ev.preventDefault();
+                            taskText.blur();
+                        } else if (ev.key === 'Escape') {
+                            taskText.textContent = original;
+                            taskText.contentEditable = 'false';
+                            taskText.classList.remove('editing');
+                        }
+                    };
+
+                    taskText.addEventListener('blur', onBlur, { once: true });
+                    taskText.addEventListener('keydown', onKeydown);
+                    // Clean up keydown listener on blur
+                    taskText.addEventListener('blur', () => {
+                        taskText.removeEventListener('keydown', onKeydown);
+                    }, { once: true });
+                }
+            });
+        }
+
+        // --- Inicio: Filter chips ---
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                const filter = chip.dataset.filter;
+                if (filter === 'all') {
+                    this.loadInicioTasks();
+                } else if (filter === 'pending') {
+                    // Just show reload filtered — handled by loadInicioTasks
+                    this.loadInicioTasks();
+                } else if (filter === 'done') {
+                    // Show completed tasks — navigate to historial
+                    if (window.switchView) {
+                        window.switchView('historial');
+                    } else {
+                        this.currentView = 'historial';
+                        this.loadItems();
+                    }
+                }
+            });
+        });
     }
 
     async handleExport() {
@@ -1449,7 +1605,11 @@ Responde SOLO JSON con esta estructura:
                 });
 
                 this.items = filteredItems;
-                ui.render(filteredItems);
+                if (this.currentView === 'timeline') {
+                    this.loadInicioTasks();
+                } else {
+                    ui.render(filteredItems);
+                }
             } else {
                 if (this.currentCategory !== 'all') filters.type = this.currentCategory;
                 const items = await data.getItems(filters);
@@ -1467,7 +1627,11 @@ Responde SOLO JSON con esta estructura:
 
                 console.log(`[loadItems] Obtenidos ${items.length} items, filtrados ${filteredItems.length}`);
                 this.items = filteredItems;
-                ui.render(filteredItems);
+                if (this.currentView === 'timeline') {
+                    this.loadInicioTasks();
+                } else {
+                    ui.render(filteredItems);
+                }
             }
             
             this.updateBreadcrumb();
@@ -1711,6 +1875,156 @@ Responde SOLO JSON con esta estructura:
             this.saveState();
             await this.loadItems();
         }
+    }
+
+    // ========== INICIO — SISTEMA DE TAREAS ==========
+
+    /**
+     * Quick-add desde la barra de Inicio
+     * @param {string} text - Texto de la tarea
+     */
+    async quickAddInicio(text) {
+        if (!text || !text.trim()) return;
+
+        const sanitized = utils.sanitizeInput(text.trim());
+
+        // Parse inline tags (#tag)
+        const tags = [];
+        const cleaned = sanitized.replace(/#(\w+)/g, (match, tag) => {
+            if (!tags.includes(tag)) tags.push(tag);
+            return '';
+        }).trim();
+
+        // Get selected points from the points selector
+        let puntos = 10;
+        const activePointsBtn = document.querySelector('.points-btn.active');
+        if (activePointsBtn) {
+            puntos = parseInt(activePointsBtn.dataset.points, 10) || 10;
+        }
+
+        try {
+            await data.createItem({
+                content: cleaned || sanitized,
+                type: 'tarea',
+                tags: tags,
+                meta: { puntos }
+            });
+
+            const input = document.getElementById('inicio-quick-input');
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
+
+            ui.showNotification('✓ Tarea creada!', 'success');
+            await this.loadItems();
+        } catch (err) {
+            console.error('Error creating task from quick-add:', err);
+            ui.showNotification('Error al crear tarea', 'error');
+        }
+    }
+
+    /**
+     * Toggle completado de una tarea desde Inicio
+     * @param {string} itemId
+     * @param {HTMLElement} element - task-row DOM element
+     */
+    async toggleCompletado(itemId, element) {
+        const item = this.items.find(i => i.id === itemId);
+        if (!item || this.isAnimating) return;
+
+        this.isAnimating = true;
+        const isCompleted = item.status === 'completed';
+
+        try {
+            if (!isCompleted) {
+                if (element) {
+                    await ui.animateTaskComplete(element);
+                }
+
+                await data.updateItem(itemId, { status: 'completed' });
+                item.status = 'completed';
+
+                this.loadInicioTasks();
+                this.updatePointsAccumulator();
+            } else {
+                await data.updateItem(itemId, { status: 'inbox' });
+                item.status = 'inbox';
+
+                this.loadInicioTasks();
+            }
+        } catch (error) {
+            console.error('Error toggling completado:', error);
+            ui.showNotification('Error al completar tarea', 'error');
+        } finally {
+            this.isAnimating = false;
+        }
+    }
+
+    /**
+     * Carga y renderiza tareas para la vista Inicio
+     */
+    loadInicioTasks() {
+        const items = this.items || [];
+
+        // Filter: type === 'tarea', not completed
+        let filtered = items.filter(item =>
+            item.type === 'tarea' && item.status !== 'completed'
+        );
+
+        // Apply tag filter
+        if (this.currentTag) {
+            filtered = filtered.filter(item =>
+                item.tags && item.tags.includes(this.currentTag)
+            );
+        }
+
+        // Extract unique tags from all tareas
+        const allTags = [...new Set(
+            items.filter(i => i.type === 'tarea' && i.tags && i.tags.length > 0)
+                .flatMap(i => i.tags)
+        )];
+
+        // Render tag chips
+        const tagBar = document.getElementById('inicio-tag-filters');
+        if (tagBar) {
+            tagBar.innerHTML = ui.renderTagChips(allTags, this.currentTag);
+        }
+
+        // Render task list
+        ui.renderInicioTasks(filtered);
+
+        // Update points
+        this.updatePointsAccumulator();
+    }
+
+    /**
+     * Filtra tareas por tag
+     * @param {string|null} tag - Tag a filtrar (null = todas)
+     */
+    filterByTag(tag) {
+        if (this.currentTag === tag || !tag) {
+            this.currentTag = null; // toggle off
+        } else {
+            this.currentTag = tag;
+        }
+        this.loadInicioTasks();
+    }
+
+    /**
+     * Actualiza el acumulador de puntos en el header de Inicio
+     */
+    updatePointsAccumulator() {
+        const items = this.items || [];
+        const total = items
+            .filter(i => i.type === 'tarea' && i.status === 'completed')
+            .reduce((sum, i) => sum + (i.meta?.puntos || 10), 0);
+
+        const pointsEl = document.getElementById('points-total');
+        if (pointsEl) pointsEl.textContent = total;
+
+        const totalPointsEl = document.getElementById('total-points');
+        if (totalPointsEl) totalPointsEl.textContent = total + '⭐';
     }
 
     // ========== NOTIFICACIONES ==========

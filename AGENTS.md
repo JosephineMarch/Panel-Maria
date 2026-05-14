@@ -1,4 +1,6 @@
-# AGENTS.md — KAI / Panel-María
+# AGENTS.md — KAI v2 / Panel-María
+
+> **Rama activa**: `redesign-ui` | **Fase actual**: 1 — INICIO + Sistema de Tareas 🚧
 
 ## Project Overview
 

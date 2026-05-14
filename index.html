@@ -287,29 +287,52 @@
         </section>
 
         <!-- ==================== SECCIÓN INICIO (Nueva) ==================== -->
-        <section id="section-inicio" class="space-y-6 hidden">
-            <!-- Cards de filtro rápido -->
-            <div class="flex gap-2">
-                <button id="card-pendientes"
-                    class="flex-1 py-2 px-3 rounded-xl bg-white border-2 border-brand/20 flex flex-col items-center cursor-pointer hover:border-brand hover:shadow-md transition-all active:scale-95">
-                    <span class="text-xl">📋</span>
-                    <span class="text-xs font-bold text-brand">Pendientes</span>
-                    <span id="count-pendientes" class="text-lg font-bold text-brand">0</span>
-                </button>
-                <button id="card-logradas"
-                    class="flex-1 py-2 px-3 rounded-xl bg-white border-2 border-success/30 flex flex-col items-center cursor-pointer hover:border-success hover:shadow-md transition-all active:scale-95">
-                    <span class="text-xl">✨</span>
-                    <span class="text-xs font-bold text-green-600">Logradas</span>
-                    <span id="count-logradas" class="text-lg font-bold text-green-600">0</span>
+        <section id="section-inicio" class="space-y-4 hidden">
+            <!-- Points Accumulator Header -->
+            <div id="inicio-header" class="flex items-center justify-between px-4 py-3">
+                <h2 class="text-lg font-bold text-gray-800">Inicio</h2>
+                <div id="points-accumulator" class="flex items-center gap-1 text-amber-500 font-bold">
+                    <i class="fas fa-star"></i>
+                    <span id="points-total">0</span>
+                </div>
+            </div>
+
+            <!-- Quick-add bar -->
+            <div id="inicio-quick-bar" class="flex items-center gap-2 bg-white rounded-2xl border-2 border-border-soft px-4 py-3 shadow-sm">
+                <input type="text" id="inicio-quick-input"
+                    placeholder="✏️ Nueva tarea... (Enter para crear)"
+                    class="flex-1 bg-transparent text-base font-medium outline-none placeholder-gray-400"
+                    aria-label="Nueva tarea rápida">
+                <div id="inicio-points-selector" class="flex gap-1 shrink-0">
+                    <button class="points-btn active" data-points="10" aria-pressed="true">10⭐</button>
+                    <button class="points-btn" data-points="20" aria-pressed="false">20⭐⭐</button>
+                    <button class="points-btn" data-points="50" aria-pressed="false">50⭐⭐⭐</button>
+                    <button class="points-btn" data-points="100" aria-pressed="false">100🔥</button>
+                </div>
+                <button id="btn-inicio-add"
+                    class="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shrink-0 hover:bg-brand-dark transition">
+                    <i class="fa-solid fa-plus"></i>
                 </button>
             </div>
 
-            <!-- Botón Pomodoro flotante -->
-            <button id="btn-pomodoro"
-                class="fixed bottom-28 right-4 w-14 h-14 rounded-full bg-brand-dark text-white shadow-float flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-30"
-                title="Iniciar Pomodoro">
-                <span class="text-2xl">⏱</span>
-            </button>
+            <!-- Filter row -->
+            <div class="flex gap-2 px-4">
+                <button class="filter-chip active" data-filter="all">Todas</button>
+                <button class="filter-chip" data-filter="pending">Pendientes</button>
+                <button class="filter-chip" data-filter="done">Logradas <span id="total-points" class="text-xs ml-1">0⭐</span></button>
+            </div>
+
+            <!-- Tag chips -->
+            <div id="inicio-tag-filters" class="flex gap-2 overflow-x-auto no-scrollbar pb-1 px-4"></div>
+
+            <!-- Task list -->
+            <div id="inicio-task-list" class="space-y-0.5 px-4"></div>
+
+            <!-- Empty state -->
+            <div id="inicio-empty" class="inicio-empty hidden px-4 text-center py-8">
+                <i class="fas fa-check-circle text-4xl text-gray-300 mb-3"></i>
+                <p class="text-gray-500 text-sm">¡Todo listo! No hay tareas pendientes.</p>
+            </div>
         </section>
 
         <!-- ==================== SECCIÓN SALUD ==================== -->
@@ -802,6 +825,18 @@
             if (btnAdd) {
                 btnAdd.addEventListener('click', () => {
                     modal.classList.remove('hidden');
+                    // En Inicio, preseleccionar tipo tarea
+                    if (currentView === 'timeline') {
+                        document.querySelectorAll('.add-type-btn').forEach(b => {
+                            b.classList.remove('bg-brand', 'text-white');
+                            b.classList.add('bg-gray-100', 'text-gray-600');
+                        });
+                        const tareaBtn = document.querySelector('.add-type-btn[data-type="tarea"]');
+                        if (tareaBtn) {
+                            tareaBtn.classList.remove('bg-gray-100', 'text-gray-600');
+                            tareaBtn.classList.add('bg-brand', 'text-white');
+                        }
+                    }
                     document.getElementById('quick-input').focus();
                 });
             }
@@ -927,11 +962,11 @@
             document.getElementById('section-baul').classList.toggle('hidden', view !== 'baul');
             document.getElementById('section-historial').classList.toggle('hidden', view !== 'historial');
 
-            // timeline-content visible solo en timeline (Inicio)
-            document.getElementById('timeline-content').classList.toggle('hidden', view !== 'timeline');
+            // timeline-content visible solo en historial (búsqueda + filtros de categoría)
+            document.getElementById('timeline-content').classList.toggle('hidden', view !== 'historial');
 
-            // items-container visible en timeline y dashboard
-            document.getElementById('items-container')?.classList.toggle('hidden', view !== 'timeline' && view !== 'dashboard');
+            // items-container visible en dashboard e historial (NO en timeline/inicio)
+            document.getElementById('items-container')?.classList.toggle('hidden', view !== 'dashboard' && view !== 'historial');
 
             // Sincronizar con el controlador principal para evitar conflictos de estado
             if (window.controller) {
@@ -1019,10 +1054,6 @@
                 items = [...window.controller.items];
             }
 
-            // Ordenar por fecha (más reciente primero)
-            items.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-            // Render
             if (items.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-8">
@@ -1033,45 +1064,68 @@
                 return;
             }
 
-            container.innerHTML = items.map(item => {
-                const fecha = new Date(item.created_at).toLocaleDateString('es-ES', {
-                    day: 'numeric',
-                    month: 'short',
-                    hour: '2-digit',
-                    minute: '2-digit'
+            // Ordenar por fecha (más reciente primero)
+            items.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            // Agrupar por día
+            const groups = {};
+            items.forEach(item => {
+                const d = new Date(item.created_at);
+                const dateKey = d.toLocaleDateString('es-ES', {
+                    year: 'numeric', month: 'long', day: 'numeric'
                 });
+                if (!groups[dateKey]) groups[dateKey] = { label: dateKey, items: [] };
+                groups[dateKey].items.push(item);
+            });
 
-                const icon = {
-                    tarea: '📋',
-                    nota: '📝',
-                    proyecto: '📁',
-                    directorio: '🔗'
-                }[item.type] || '📄';
+            const iconMap = {
+                tarea: '\uD83D\uDCCB',
+                nota: '\uD83D\uDCDD',
+                proyecto: '\uD83D\uDCC1',
+                directorio: '\uD83D\uDD17'
+            };
 
-                const estadoBadge = item.status === 'completed'
-                    ? '<span class="text-sm bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ Completado</span>'
-                    : '';
+            let html = '';
+            Object.keys(groups).forEach(dateKey => {
+                const group = groups[dateKey];
 
-                return `
-                    <div class="bg-white border border-border-soft rounded-2xl p-4 shadow-sm">
-                        <div class="flex items-start gap-3">
-                            <span class="text-2xl">${icon}</span>
-                            <div class="flex-1">
-                                <div class="flex items-center justify-between">
-                                    <span class="font-bold text-base text-gray-400">${fecha}</span>
-                                    ${estadoBadge}
-                                </div>
-                                <p class="font-medium text-ink">${item.content}</p>
-                                ${item.tags && item.tags.length > 0 ? `
-                                    <div class="flex gap-1 mt-2 flex-wrap">
-                                        ${item.tags.map(tag => `<span class="text-sm text-brand">#${tag}</span>`).join('')}
-                                    </div>
-                                ` : ''}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+                // Date group header (mismo formato que Inicio)
+                html += '<div class="date-group-header">'
+                    + '<i class="fa-regular fa-calendar"></i>'
+                    + '<span>' + group.label.charAt(0).toUpperCase() + group.label.slice(1) + '</span>'
+                    + '</div>';
+
+                group.items.forEach(item => {
+                    const fecha = new Date(item.created_at).toLocaleTimeString('es-ES', {
+                        hour: '2-digit', minute: '2-digit'
+                    });
+
+                    const icon = iconMap[item.type] || '\uD83D\uDCC4';
+                    const estadoBadge = item.status === 'completed'
+                        ? '<span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">✓ Hecho</span>'
+                        : '';
+
+                    html += '<div class="bg-white rounded-2xl p-4 shadow-sm mb-2">'
+                        + '<div class="flex items-start gap-3">'
+                        + '<span class="text-xl">' + icon + '</span>'
+                        + '<div class="flex-1 min-w-0">'
+                        + '<div class="flex items-center justify-between gap-2">'
+                        + '<span class="text-xs font-semibold text-gray-400">' + fecha + '</span>'
+                        + estadoBadge
+                        + '</div>'
+                        + '<p class="font-medium text-ink text-sm mt-0.5">' + item.content + '</p>'
+                        + (item.tags && item.tags.length > 0
+                            ? '<div class="flex gap-1 mt-1.5 flex-wrap">'
+                                + item.tags.map(tag => '<span class="text-xs text-brand">#' + tag + '</span>').join('')
+                                + '</div>'
+                            : '')
+                        + '</div>'
+                        + '</div>'
+                        + '</div>';
+                });
+            });
+
+            container.innerHTML = html;
         }
 
         // Inicializar historial
@@ -1092,45 +1146,6 @@
         // Check-in
         let selectedEmoji = null;
 
-        function initCheckin() {
-            // Emoji buttons
-            document.querySelectorAll('.emoji-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    selectedEmoji = btn.dataset.emoji;
-                    document.querySelectorAll('.emoji-btn').forEach(b => {
-                        b.classList.remove('border-brand', 'bg-brand/10', 'shadow-sticker');
-                        b.classList.add('border-border-soft', 'bg-white');
-                    });
-                    btn.classList.remove('border-border-soft', 'bg-white');
-                    btn.classList.add('border-brand', 'bg-brand/10', 'shadow-sticker');
-                });
-            });
-
-            // Guardar check-in
-            document.getElementById('btn-save-checkin').addEventListener('click', async () => {
-                const physical = document.getElementById('checkin-physical').value;
-                const note = document.getElementById('checkin-note').value;
-
-                if (!selectedEmoji) {
-                    alert('Elegí cómo te sentís 😄');
-                    return;
-                }
-
-                const success = await hoy.saveCheckin(selectedEmoji, physical, note);
-                if (success !== false) {
-                    alert('¡Check-in guardado! 💚');
-                    // Limpiar
-                    selectedEmoji = null;
-                    document.querySelectorAll('.emoji-btn').forEach(b => {
-                        b.classList.remove('border-brand', 'bg-brand/10', 'shadow-sticker');
-                        b.classList.add('border-border-soft', 'bg-white');
-                    });
-                    document.getElementById('checkin-physical').value = '';
-                    document.getElementById('checkin-note').value = '';
-                }
-            });
-        }
-
         async function loadTodayCheckin() {
             const checkin = await hoy.getTodayCheckin();
             if (checkin) {
@@ -1146,121 +1161,6 @@
                     }
                 });
             }
-        }
-
-        // Rutinas
-        function initRoutineForm() {
-            document.getElementById('btn-add-routine').addEventListener('click', () => {
-                document.getElementById('add-routine-form').classList.toggle('hidden');
-            });
-
-            document.getElementById('btn-cancel-routine').addEventListener('click', () => {
-                document.getElementById('add-routine-form').classList.add('hidden');
-                document.getElementById('new-routine-input').value = '';
-                document.getElementById('set-as-default').checked = false;
-            });
-
-            document.getElementById('btn-confirm-routine').addEventListener('click', async () => {
-                const name = document.getElementById('new-routine-input').value.trim();
-                const isDefault = document.getElementById('set-as-default').checked;
-
-                if (name) {
-                    await hoy.addRoutine(name, '📌', isDefault);
-                    document.getElementById('new-routine-input').value = '';
-                    document.getElementById('set-as-default').checked = false;
-                    document.getElementById('add-routine-form').classList.add('hidden');
-                    loadRoutines();
-                }
-            });
-        }
-
-        async function loadRoutines() {
-            const routines = await hoy.getRoutines();
-            const completions = await hoy.getRoutineCompletions();
-            const completedIds = completions.map(c => c.routine_id);
-
-            const container = document.getElementById('rutinas-list');
-
-            if (!routines || routines.length === 0) {
-                container.innerHTML = '<p class="text-gray-400 text-base text-center py-4">No hay rutinas</p>';
-                return;
-            }
-
-            container.innerHTML = routines.map(r => `
-                <div class="card-white flex items-center gap-3 p-3 cursor-pointer hover:shadow-md transition-all">
-                    <input type="checkbox" class="checkbox routine-checkbox" 
-                        data-id="${r.id}" ${completedIds.includes(r.id) ? 'checked' : ''}>
-                    <span class="flex-1 font-medium ${completedIds.includes(r.id) ? 'font-bold text-ink' : 'text-ink/60'}">${r.name}</span>
-                    <span class="text-2xl">${r.emoji}</span>
-                </div>
-            `).join('');
-
-            // Agregar eventos a los checkboxes
-            document.querySelectorAll('.routine-checkbox').forEach(checkbox => {
-                checkbox.addEventListener('change', async (e) => {
-                    await hoy.toggleRoutineCompletion(e.target.dataset.id, e.target.checked);
-                    loadRoutines(); // Recargar para actualizar estilos
-                });
-            });
-        }
-
-        // Tareas de hoy (ahora usa localStorage)
-        function initTaskForm() {
-            document.getElementById('btn-add-task-hoy').addEventListener('click', () => {
-                document.getElementById('add-task-form').classList.toggle('hidden');
-            });
-
-            document.getElementById('btn-confirm-task').addEventListener('click', async () => {
-                const content = document.getElementById('new-task-input').value.trim();
-                if (content) {
-                    hoy.addTask(content); // Ahora es sync (localStorage)
-                    document.getElementById('new-task-input').value = '';
-                    document.getElementById('add-task-form').classList.add('hidden');
-                    loadTasks();
-                }
-            });
-        }
-
-        function loadTasks() {
-            const tasks = hoy.getTodayTasks(); // Ahora es sync (localStorage)
-            const container = document.getElementById('tareas-list');
-
-            if (!tasks || tasks.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-4">
-                        <div class="text-3xl mb-2">📋</div>
-                        <p class="text-gray-400 text-base">No hay tareas para hoy</p>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = tasks.map(t => `
-                <div class="card-white flex items-center gap-3 p-3 cursor-pointer hover:shadow-md transition-all">
-                    <input type="checkbox" class="checkbox task-checkbox" 
-                        data-id="${t.id}" ${t.completed ? 'checked' : ''}>
-                    <span class="flex-1 text-base font-bold ${t.completed ? 'text-ink/40 line-through' : 'text-ink'}">${t.content}</span>
-                    <button class="delete-task-btn text-ink/30 hover:text-red-500 transition" data-id="${t.id}">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </div>
-            `).join('');
-
-            // Agregar eventos (ahora son sync)
-            document.querySelectorAll('.task-checkbox').forEach(checkbox => {
-                checkbox.addEventListener('change', (e) => {
-                    hoy.toggleTaskCompletion(e.target.dataset.id, e.target.checked);
-                    loadTasks();
-                });
-            });
-
-            document.querySelectorAll('.delete-task-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    hoy.deleteTask(btn.dataset.id);
-                    loadTasks();
-                });
-            });
         }
 
         // ==================== SECCIÓN SALUD ====================

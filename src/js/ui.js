@@ -1917,6 +1917,190 @@ export const ui = {
         return date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
     },
 
+    // =====================================
+    // INICIO — TASK LIST RENDERING
+    // =====================================
+
+    /**
+     * Renderiza la lista plana de tareas en Inicio
+     * @param {Array} items - Items filtrados (solo tipo 'tarea', no completados)
+     */
+    renderInicioTasks(items) {
+        const container = document.getElementById('inicio-task-list');
+        const emptyState = document.getElementById('inicio-empty');
+
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        if (!items || items.length === 0) {
+            container.classList.add('hidden');
+            if (emptyState) emptyState.classList.remove('hidden');
+            return;
+        }
+
+        container.classList.remove('hidden');
+        if (emptyState) emptyState.classList.add('hidden');
+
+        const groups = this._groupTasksByDate(items);
+
+        groups.forEach((group) => {
+            const groupEl = document.createElement('div');
+            groupEl.className = 'mb-4';
+
+            const header = document.createElement('div');
+            header.className = 'date-group-header';
+            header.innerHTML = '<span>' + group.icon + '</span><span>' + group.label + '</span>';
+            groupEl.appendChild(header);
+
+            group.items.forEach(item => {
+                groupEl.appendChild(this.renderTaskRow(item));
+            });
+
+            container.appendChild(groupEl);
+        });
+    },
+
+    /**
+     * Agrupa tareas por fecha de vencimiento
+     * @param {Array} items
+     * @returns {Array<{icon: string, label: string, items: Array}>}
+     */
+    _groupTasksByDate(items) {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        // 1. Vencidas (overdue)
+        const overdue = { icon: '<i class="fa-regular fa-clock"></i>', label: 'Vencidas', items: [] };
+        // 2. Sin fecha
+        const noDate = { icon: '<i class="fa-regular fa-inbox"></i>', label: 'Sin fecha', items: [] };
+        // 3. Fechas específicas
+        const dateGroups = {}; // dateKey -> { label, items }
+
+        items.forEach(item => {
+            if (!item.deadline) {
+                noDate.items.push(item);
+                return;
+            }
+
+            const deadline = new Date(item.deadline);
+            const deadlineDate = new Date(deadline.getFullYear(), deadline.getMonth(), deadline.getDate());
+
+            if (deadlineDate < today) {
+                overdue.items.push(item);
+                return;
+            }
+
+            // Formatear fecha como en el historial: "14 de mayo de 2026"
+            const dateKey = deadlineDate.toLocaleDateString('es-ES', {
+                year: 'numeric', month: 'long', day: 'numeric'
+            });
+            // Capitalizar primera letra
+            const label = dateKey.charAt(0).toUpperCase() + dateKey.slice(1);
+
+            if (!dateGroups[dateKey]) {
+                dateGroups[dateKey] = {
+                    icon: '<i class="fa-regular fa-calendar"></i>',
+                    label: label,
+                    items: []
+                };
+            }
+            dateGroups[dateKey].items.push(item);
+        });
+
+        // Armar resultado: Vencidas → fechas ordenadas → Sin fecha
+        const sortedDates = Object.keys(dateGroups).sort((a, b) => {
+            // Ordenar por fecha real ascendente
+            return new Date(a) - new Date(b);
+        });
+
+        const result = [];
+        if (overdue.items.length > 0) result.push(overdue);
+        sortedDates.forEach(key => result.push(dateGroups[key]));
+        if (noDate.items.length > 0) result.push(noDate);
+
+        return result;
+    },
+
+    /**
+     * Renderiza una fila de tarea plana
+     * @param {Object} item
+     * @returns {HTMLElement}
+     */
+    renderTaskRow(item) {
+        const row = document.createElement('div');
+        row.className = 'task-row';
+        row.dataset.itemId = item.id;
+
+        const puntos = item.meta?.puntos || 10;
+
+        row.innerHTML = ''
+            + '<label class="task-checkbox-label">'
+            + '<input type="checkbox" class="task-checkbox"' + (item.status === 'completed' ? ' checked' : '') + '>'
+            + '<span class="checkmark"></span>'
+            + '</label>'
+            + '<div class="task-content-wrapper">'
+            + '<span class="task-text" data-id="' + item.id + '">' + this.escapeHtml(item.content) + '</span>'
+            + '<div class="task-meta">'
+            + '<div class="flex items-center gap-2 flex-wrap">'
+            + this.renderPointsBadge(puntos)
+            + (item.tags && item.tags.length > 0
+                ? item.tags.map(t =>
+                    '<span class="tag tag-s tag-primary">' + t + '</span>'
+                ).join('')
+                : '')
+            + '</div>'
+            + '<button class="task-action action-delete" data-id="' + item.id + '" title="Eliminar">'
+            + '<i class="fa-regular fa-trash-can"></i>'
+            + '</button>'
+            + '</div>'
+            + '</div>';
+
+        return row;
+    },
+
+    /**
+     * Renderiza chips de tags como filtros clicables
+     * @param {string[]} tags - Array de tags únicos
+     * @param {string|null} activeFilter - Tag actualmente activo (null = todos)
+     * @returns {string}
+     */
+    renderTagChips(tags, activeFilter) {
+        if (!tags || tags.length === 0) return '';
+
+        let html = '<button class="tag-chip' + (!activeFilter ? ' active' : '') + '" data-tag="">Mostrar todos</button>';
+        html += tags.map(tag =>
+            '<button class="tag-chip' + (activeFilter === tag ? ' active' : '') + '" data-tag="' + tag + '">#' + tag + '</button>'
+        ).join('');
+
+        return html;
+    },
+
+    /**
+     * Renderiza badge de puntos
+     * @param {number} puntos - 10, 20, 50, 100
+     * @returns {string}
+     */
+    renderPointsBadge(puntos) {
+        if (!puntos || puntos <= 0) return '';
+        return '<span class="points-badge">' + puntos + ' \u2B50</span>';
+    },
+
+    /**
+     * Anima el completado de una tarea: 300ms fade out + remove
+     * @param {HTMLElement} element - task-row element
+     * @returns {Promise} - resolves when animation complete
+     */
+    animateTaskComplete(element) {
+        return new Promise((resolve) => {
+            element.classList.add('completed-fade-out');
+            setTimeout(() => {
+                element.remove();
+                resolve();
+            }, 300);
+        });
+    },
+
     /**
      * Escapa HTML para prevenir XSS
      */

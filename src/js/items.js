@@ -127,7 +127,7 @@ class ItemManager {
      */
     async finish(id) {
         try {
-            await data.updateItem(id, { completado: true });
+            await data.updateItem(id, { status: 'completed' });
             ui.showNotification('¡Hecho! 🎉', 'success');
         } catch (error) {
             console.error('Error finishing item:', error);

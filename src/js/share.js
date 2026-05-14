@@ -211,7 +211,7 @@ const ShareUtils = {
                         </label>
                         <select id="share-existing-card" class="w-full bg-gray-50 border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm font-medium text-ink focus:ring-2 focus:ring-brand outline-none">
                             <option value="">-- Seleccionar card --</option>
-                            ${allItems.filter(item => item.id && !item.completado).map(item => {
+                            ${allItems.filter(item => item.id && item.status !== 'completed').map(item => {
                                 const typeIcon = this.getTypeIcon(item.type);
                                 const truncated = item.content?.length > 40 ? item.content.substring(0, 40) + '...' : item.content;
                                 return `<option value="${item.id}" data-type="${item.type || 'nota'}">${typeIcon} ${truncated || 'Sin título'}</option>`;

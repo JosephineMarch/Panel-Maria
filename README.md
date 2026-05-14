@@ -1,92 +1,88 @@
-# KAI - Tu Segundo Cerebro (Panel-Maria) 🧠✨
+# KAI v2 — Tu Segundo Cerebro 🧠✨
 
-**KAI** es una aplicación PWA (Progressive Web App) diseñada específicamente para ser **ADHD-Friendly**, permitiendo capturar pensamientos, tareas, proyectos y enlaces de manera instantánea y organizada mediante inteligencia artificial.
+**Rama**: `redesign-ui` | **Fase actual**: 1 — INICIO + Sistema de Tareas 🚧
 
-## 🚀 Características Principales
+PWA ADHD-Friendly para capturar pensamientos, tareas y enlaces al instante. IA conversacional (Kai), alarmas con push, check-ins de bienestar.
 
-- **Captura Omnipresente**: Barra de entrada rápida que detecta intenciones mediante Procesamiento de Lenguaje Natural (NLP).
-- **Interfaz tipo Bento**: Visualización limpia y modular de tarjetas con estados expandibles para edición inline.
-- **IA Integrada (Kai)**: Asistente personal basado en Cerebras que ayuda a clasificar, buscar y actuar sobre tu información.
-- **Sistema de Alarmas Pro**: Notificaciones push sincronizadas entre dispositivos con snooze (5min, 10min, 30min) y alarmas repetitivas (diaria, semanal, mensual).
-- **Sección "Hoy"**: Pestaña dedicada con rutinas diarias, tareas del día y check-ins de bienestar (mañana/tarde/noche).
-- **Share Target**: Recibe contenido compartido desde otras apps y permite elegir si crear una nueva card o agregar a una existente.
-- **Check-ins de Bienestar**: Sistema de seguimiento emocional y de energía con 3 momentos del día.
-- **Privacidad y Sincronización**: Respaldado por Supabase con cifrado y sincronización en tiempo real.
+## Stack
 
-## 🛠️ Stack Tecnológico
+| Capa | Tecnología |
+|------|-----------|
+| Frontend | HTML5 + Vanilla JS (ES Modules) + Tailwind CSS CDN |
+| Backend | Supabase (PostgreSQL, Auth, Realtime, Edge Functions) |
+| IA | Cerebras (gpt-oss-120b) |
+| Push | Firebase Cloud Messaging FCM V1 |
+| PWA | Service Worker (cache-first/network-first/stale-while-revalidate) |
+| Tests | Playwright |
 
-- **Frontend**: HTML5, Vanilla JavaScript (ES Modules), Tailwind CSS (CDN).
-- **Backend / Persistence**: Supabase (PostgreSQL, Auth, Realtime, Edge Functions).
-- **Inteligencia Artificial**: Cerebras API (modelo gpt-oss-120b).
-- **PWA**: Service Worker con estrategias de caché avanzadas (cache-first, network-first, stale-while-revalidate).
-- **Notificaciones Push**: Firebase Cloud Messaging (FCM V1 API) con JWT RS256 firmado vía Web Crypto.
-- **Testing**: Playwright configurado para pruebas E2E.
-
-## 📁 Estructura del Proyecto
+## Estructura
 
 ```
-Panel-Maria/
-├── index.html              # Estructura principal y componentes UI
-├── app.js                  # Punto de entrada, registro de SW y FCM
-├── manifest.json           # Manifiesto PWA (Share Target, Shortcuts)
-├── sw.js                   # Service Worker (kai-cache-v12)
-├── package.json            # Dependencias de desarrollo (Playwright)
-├── playwright.config.js    # Configuración de tests E2E
-├── src/js/                 # 14 módulos ES
-│   ├── ai.js               # Reconocimiento de voz (Web Speech API) y detección offline (alarmas, tags, bitácora)
-│   ├── alarmas.js          # Gestión de alarmas con polling local (30s), snooze, repeticiones y notificaciones inline
-│   ├── auth.js             # Autenticación Supabase (Google OAuth, Email/Password)
-│   ├── cerebras.js         # Motor de IA con contexto RAG, memoria de conversación y acciones JSON
-│   ├── checkins.js         # Sistema de check-ins emocionales y de energía (3 momentos/día)
-│   ├── data.js             # Capa de datos con Supabase, búsqueda full-text (RPC) y sanitización
-│   ├── firebase.js         # Cliente FCM: tokens, refresh automático, mensajes foreground
-│   ├── hoy.js              # Sección "Hoy": rutinas, tareas diarias, check-ins diarios
-│   ├── items.js            # CRUD de items: crear, leer, actualizar, eliminar, importar/exportar
-│   ├── logic.js            # Controlador central (KaiController): orquestación, eventos, navegación, IA
-│   ├── share.js            # Share Target: recibe contenido externo, modal de clasificación, agregar a card existente
-│   ├── supabase.js         # Cliente Supabase y configuración de tipos (nota, tarea, proyecto, directorio)
-│   ├── ui.js               # Renderizado de UI: cards Bento, chat Kai, edición inline, dashboard logros
-│   └── utils.js            # Utilidades: sanitización, formateo de fechas, debounce, storage
-├── tests/                  # Tests E2E con Playwright
-├── supabase/               # Migraciones y Edge Functions
-└── docs/                   # Documentación del proyecto
+index.html              # UI completa + Tailwind config
+app.js                  # Entry: SW register, FCM, alarmas
+sw.js                   # Service Worker (kai-cache-v12)
+manifest.json           # PWA manifest
+
+src/js/                 # 14 módulos ES
+├── logic.js            # KaiController — orquestador
+├── ui.js               # Renderizado: cards Bento, chat, edición inline
+├── data.js             # CRUD Supabase + sanitización
+├── items.js            # ItemManager: load/create/update/delete/pin
+├── supabase.js         # Cliente Supabase + CONFIG (tipos, iconos)
+├── cerebras.js         # Motor IA: RAG, chat, 10 acciones JSON
+├── auth.js             # Google OAuth + Email/Password
+├── alarmas.js          # Alarmas: polling 30s, snooze, push
+├── checkins.js         # Check-ins de bienestar
+├── hoy.js              # Rutinas diarias + tareas del día
+├── ai.js               # Voz (Web Speech API)
+├── firebase.js         # FCM tokens + foreground messages
+├── share.js            # Share Target API
+└── utils.js            # sanitize, formatDate, debounce, throttle
+
+docs/                   # Documentación del proyecto
+tests/                  # E2E con Playwright
+supabase/functions/     # Edge Functions (Deno/TS)
 ```
 
-## 📋 Estado Actual
+## Fase 1 — INICIO + Sistema de Tareas 🚧
 
-**Versión**: Beta funcional  
-**Cache del SW**: `kai-cache-v12`  
-**Modelo de IA**: gpt-oss-120b (Cerebras)  
-**Módulos**: 14 módulos ES en `src/js/`  
+En desarrollo en `redesign-ui`. Cambios:
 
-### ✅ Implementado
-- Captura de texto y voz con clasificación automática (offline + IA)
-- Cards Bento expandibles con edición inline (descripción, tareas, múltiples URLs, alarmas)
-- Chat con Kai (asistente IA con contexto de datos y acciones automáticas)
-- Alarmas con snooze (5, 10, 30 min) y repeticiones (diaria, semanal, mensual)
-- Push notifications multi-dispositivo vía FCM V1
-- Share Target con modal de previsualización y selector de card existente
-- Sección "Hoy" con rutinas, tareas diarias y check-ins
-- Sistema de check-ins emocionales (energía + emoción, 3 momentos/día)
-- Importación/exportación JSON
-- Búsqueda full-text con RPC de Supabase
-- Persistencia de estado (vista actual, card expandida)
-- Tests E2E con Playwright
+- **Nuevo Inicio**: Lista plana de tareas (sin cards Bento) con quick-add bar
+- **Agrupación**: Ancladas → Vencidas → Hoy → Mañana → Esta semana → Sin fecha
+- **Sistema de Puntos**: 10/20/30/50/100 por tarea
+- **Filtros por Tags**: Chips clicables arriba de la lista
+- **Check + Fade Out**: Animación 300ms al completar, la tarea sale del Inicio
+- **Footer `+`**: En Inicio abre modo tarea por defecto
 
-### 📋 Pendiente (ver ROADMAP)
-- Múltiples enlaces por card (parcialmente implementado, falta UI completa tipo Google Keep)
-- Pantalla de login dedicada
-- Mejora del dashboard de logros
-- Limpieza de archivos del proyecto
+> Cards Bento (notas, proyectos, enlaces) siguen funcionando en Historial. Solo cambia el Inicio.
 
-## 📋 Requisitos de Instalación
+### Ya implementado en redesign-ui
+- Paleta de colores actualizada (bg-lavender→bg-link, bg-lemon→bg-note, bg-peach→bg-urgent)
+- Edición inline de cards corregida
+- Selector de tipo en edición inline
+- Secciones ocultas con Wishbar
 
-1. Clonar el repositorio.
-2. Configurar las variables de entorno de Supabase en `src/js/supabase.js`.
-3. Configurar la API key de Cerebras en `src/js/cerebras.js`.
-4. Abrir `index.html` en un servidor local (Ej: Live Server o `python -m http.server`).
+## Fases siguientes
+
+| Fase | Qué | Estado |
+|------|-----|--------|
+| 2 | Diseño diferencial de cards | 📋 Pendiente |
+| 3 | Salud unificado | 📋 Pendiente |
+| 4 | Historial como agenda | 📋 Pendiente |
+| 5 | Pomodoro | 📋 Pendiente |
+| 6 | Baúl + gamificación | 📋 Pendiente |
+| 7 | Features extra | 📋 Pendiente |
+
+## Instalación
+
+```bash
+git clone <repo>
+git checkout redesign-ui
+# Configurar Supabase en src/js/supabase.js
+# Configurar Cerebras API key en src/js/cerebras.js
+# Servir con Live Server o http-server
+```
 
 ---
-Desarrollado con ❤️ para ayudar a mentes creativas a mantenerse enfocadas.
-
-Última actualización: Abril 2026
+Mayo 2026

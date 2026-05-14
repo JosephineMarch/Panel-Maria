@@ -1,55 +1,39 @@
-# Product
+# Producto — KAI v2
 
-## Register
+**Rama**: `redesign-ui` | **Fase**: 1 — INICIO + Sistema de Tareas 🚧
 
-product
+## Usuarios
 
-## Users
+Personas con TDAH que necesitan capturar pensamientos, tareas y enlaces rápido, sin fricción. Contexto: momentos de claridad fugaz, en la cama, durante una pausa. La motivación aparece y hay que actuar antes de que se vaya.
 
-Personas con TDAH (Trastorno por Déficit de Atención e Hiperactividad) que necesitan capturar pensamientos, tareas y enlaces de forma rápida y sin fricción. Contexto de uso: momentos de claridad fugaz,床头, durante actividades, cuando la motivación aparece y hay que actuar antes de que se vaya. El usuario quiere orden pero le abruma la complejidad.
+## Propósito
 
-## Product Purpose
+KAI es un segundo cerebro con entrada universal: escribís → Enter → listo. La IA (Kai) clasifica, organiza y ejecuta acciones. El objetivo es transformar el caos mental en items accionables, con micro-recompensas que motivan sin ser intrusivas.
 
-KAI es un "segundo cerebro" que funciona como入口 universal: una barra de entrada que detecta intenciones (tarea, nota, enlace) y clasifica automáticamente. La IA (Kai) actúa como asistente conversacional que entiende contexto y ejecuta acciones. El objetivo: transformar el caos mental en items actionables, con gamificación que recompensa el progreso sin ser intrusiva.
+En v2 (redesign-ui), el **Inicio** se vuelve el centro de productividad diaria con tareas planas y puntos. Las cards Bento (notas, proyectos, enlaces) migran al Historial.
 
-## Brand Personality
+## Personalidad de Marca
 
-**Gamificado + Juguetón + Cute**
-
-Personalidad amigable y empodernate. No es infantil ni condescendiente: es como un amigo organizado que celebra tus logros sin hacer ruido. Usa elementos visuales kawaii (emojis grandes, formas suaves, colores pastel) para reducir la ansiedad y hacer que organizar sea menyenangkan. Las interacciones tienen feedback positivo inmediato (micro-confirmaciones). La IA Kai es conversacional, cálida, nunca robótica.
-
-**Voz**: Directa pero cálida. Primera persona, tuteo. Mensajes breves con emojis contextuales. Nunca usar jerga técnica con el usuario.
-
-**Tono emocional**: Motivador sin ser annoying. Celebra logros pequeños. Nunca juzgar ("te lo dije" o "se te olvidó").
+**Gamificado + Juguetón + Cute**. No infantil, no corporativo. Como un amigo organizado que celebra sin hacer ruido. Emojis grandes, formas suaves, colores pastel para reducir ansiedad. Kai es conversacional, cálido, nunca robótico.
 
 ## Anti-references
 
-1. **Interfaces complejas** — Nada de menús de 15 opciones, dashboards con 40 métricas, o tabs de tabs.
-2. **Estilo startup genérico** — Gris corporativo, azul corporativo, gradients azul-violeta genéricos, cards sin personalidad.
-3. **Patrones anti-ADHD** — Popups constantes, animaciones distractoras, fuegos de artificio visuales, modales que interrumpen el flujo, inputs largos que piden datos que no importan.
-4. **Demasiado niño** — Estética de jardín de infantes con purpurina excesiva. El target es adulto-joven, no infantil.
+1. Interfaces complejas — nada de 15 opciones ni dashboards con 40 métricas
+2. Estilo startup genérico — gris corporativo, gradients azul-violeta
+3. Patrones anti-ADHD — popups, animaciones distractoras, modales que interrumpen
+4. Demasiado infantil — purpurina excesiva. Target: adulto-joven
 
-**En síntesis**: KAI no parece una app de productividad corporativa, tampoco una app de niños. Tiene la energía de "tu lugar favorito para pensar" — íntimo, personal, pero con estructura.
+## Principios de Diseño
 
-## Design Principles
+1. **Captura primero, organiza después** — barrera de entrada cero
+2. **Mostrá, no expliques** — si necesita manual, está mal
+3. **Micro-recompensas constantes** — check animado, puntos, Kai celebra
+4. **Estimulación positiva** — NUNCA mostrar fracasos, solo celebrar logros
+5. **Kawaii funcional** — lo cute reduce ansiedad, no es decorativo
 
-1. **Captura primero, organiza después** — La barrier de entrada es cero. Escribir -> Enter -> Listo. La organización puede esperar.
-2. **Mostrá, no expliques** — Si algo necesita una explicación de manual de usuario, está mal diseñado.
-3. **Micro-recompensas constantes** — Cada acción completada genera satisfacción visual/mecánica sutil. Las cards se marcan con check animation, los puntos suben, Kai celebra.
-4. **Estimulación positiva, no negativa** — NUNCA mostrar "tareas atrasadas" en rojo, nunca contar fracasos. Solo celebrar lo que se hizo.
-5. **Kawaii funcional** — Los elementos cute (emojis, formas redondeadas, colores pastel) NO son decorativos: reducen ansiedad y hacen que la app se sienta acogedora.
+## Accesibilidad
 
-## Accessibility & Inclusion
+WCAG AA+ con enfoque TDAH-Friendly: contraste suficiente, navegación teclado, focus states visibles, touch targets 44x44px, sin parpadeos, carga cognitiva reducida.
 
-**WCAG AA+** como estándar base, con enfoque específico en **TDAH-Friendly**:
-
-- Contraste suficiente en texto (nunca comprometer legibilidad por paleta)
-- Navegación por teclado completa
-- Focus states visibles y claros
-- Minimum touch targets de 44x44px
-- Sin elementos parpadeantes o centelleantes
-- Reducir carga cognitiva: mostrar solo lo necesario, usar progressive disclosure
-- Soporte para usuarios con problemas visuales (escalado de texto, colores seguros)
-- Soporte para usuarios con problemas motores ( áreas táctiles amplias, drag-drop opcional)
-
-**Futuro**: Agregar ilustraciones custom para reforzar la marca cute/kawaii.
+---
+Mayo 2026
