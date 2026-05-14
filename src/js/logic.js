@@ -1700,7 +1700,7 @@ Responde SOLO JSON con esta estructura:
             b.classList.remove('active', 'border-brand', 'bg-white', 'shadow-sticker');
         });
         document.querySelectorAll('.btn-tag').forEach(b => {
-            b.classList.remove('active', 'bg-lavender', 'text-purple-600', 'border-purple-200');
+            b.classList.remove('active', 'bg-link', 'text-purple-600', 'border-purple-200');
         });
         
         // Delegar al sistema de navegación unificado
@@ -1791,11 +1791,11 @@ Responde SOLO JSON con esta estructura:
 
     async handleCategoryClick(button) {
         document.querySelectorAll('.btn-category').forEach(b => b.classList.remove('active', 'border-brand', 'bg-white', 'shadow-sticker'));
-        document.querySelectorAll('.btn-tag').forEach(b => b.classList.remove('active', 'bg-lavender', 'text-purple-600', 'border-purple-200'));
+        document.querySelectorAll('.btn-tag').forEach(b => b.classList.remove('active', 'bg-link', 'text-purple-600', 'border-purple-200'));
 
         // Aplicar estilos activos según el tipo de botón
         if (button.classList.contains('btn-tag')) {
-            button.classList.add('active', 'bg-lavender', 'text-purple-600', 'border-purple-200');
+            button.classList.add('active', 'bg-link', 'text-purple-600', 'border-purple-200');
         } else {
             button.classList.add('active', 'border-brand', 'bg-white', 'shadow-sticker');
         }

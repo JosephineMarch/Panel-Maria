@@ -32,9 +32,9 @@ export const ui = {
         nota: {
             color: 'nota',
             icon: '📝',
-            bg: 'bg-lemon',
+            bg: 'bg-note',
             text: 'text-ink',
-            headerBg: null,  // Sin header de color
+            headerBg: null,
             label: 'NOTA'
         },
         tarea: {
@@ -48,15 +48,15 @@ export const ui = {
         proyecto: {
             color: 'proyecto',
             icon: '📁',
-            bg: 'bg-brand',
+            bg: 'bg-proyecto',
             text: 'text-white',
-            headerBg: 'bg-brand',  // Header sólido para proyectos
+            headerBg: 'bg-proyecto',
             label: 'PROYECTO'
         },
         directorio: {
             color: 'directorio',
             icon: '🔗',
-            bg: 'bg-lavender',
+            bg: 'bg-link',
             text: 'text-ink',
             headerBg: null,
             label: 'ENLACE'
@@ -64,8 +64,8 @@ export const ui = {
         logro: {
             color: 'logro',
             icon: '🏆',
-            bg: 'bg-success',
-            text: 'text-white',
+            bg: 'bg-logro',
+            text: 'text-ink',
             headerBg: null,
             label: 'LOGRO'
         },
@@ -586,9 +586,9 @@ export const ui = {
         card.className = `card-white mb-6 w-full max-w-full ${isPinned ? 'pinned-card' : ''}`;
         card.dataset.expanded = 'true';
 
-        // Tareas HTML
+        // Tareas HTML con clase group/task
         const tareasHtml = (item.tareas || []).map((t, idx) => `
-            <div class="flex items-start gap-3 p-3 rounded-lg border-b border-gray-100/50 last:border-0">
+            <div class="group/task flex items-start gap-3 p-3 rounded-lg border-b border-gray-100/50 last:border-0">
                 <input type="checkbox" class="checkbox mt-0.5" ${t.completado ? 'checked' : ''} data-index="${idx}">
                 <textarea rows="1" 
                         class="flex-1 bg-transparent border-none font-medium text-base text-ink outline-none focus:ring-0 inline-task-input resize-none field-sizing-content" 
@@ -607,12 +607,29 @@ export const ui = {
         const tagsHtml = this.renderTags(item.tags);
         const hasTags = tagsHtml && tagsHtml.length > 0;
 
+        // Opciones del select de tipos
+        const typeOptions = ['nota', 'tarea', 'proyecto', 'directorio'].map(t => {
+            const tc = this.typeConfig[t] || {};
+            return `<option value="${t}" ${item.type === t ? 'selected' : ''}>${tc.icon || ''} ${tc.label || t.toUpperCase()}</option>`;
+        }).join('');
+
+        // URLs HTML con clase btn-remove-url y wrapper .relative
+        const urlsHtml = urls.filter(u => u).map((u, idx) => `
+            <div class="relative flex gap-2">
+                <input type="url" data-url-index="${idx}" value="${u}" 
+                       class="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-ink focus:border-brand outline-none">
+                <button type="button" class="btn-remove-url w-8 h-8 rounded-full bg-gray-100 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition text-sm">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        `).join('');
+
         card.innerHTML = `
-            <!-- Header: Tipo badge | Acciones -->
+            <!-- Header: Type Select | Acciones -->
             <div class="card-header-simple">
-                <span class="card-type-badge ${typeBadgeClass}">
-                    ${typeConfig.icon} ${typeConfig.label}
-                </span>
+                <select id="inline-type-${item.id}" class="card-type-badge ${typeBadgeClass} border-none outline-none cursor-pointer">
+                    ${typeOptions}
+                </select>
                 <div class="flex items-center gap-2">
                     <button class="btn-pin w-8 h-8 rounded-full bg-gray-100 hover:bg-brand hover:text-white flex items-center justify-center transition text-sm" data-id="${item.id}" title="${item.anclado ? 'Desanclar' : 'Anclar'}">
                         <i class="fa-solid fa-thumbtack ${item.anclado ? 'rotate-45' : ''}"></i>
@@ -634,45 +651,64 @@ export const ui = {
                 <!-- Tags -->
                 ${hasTags ? `<div class="flex gap-2 flex-wrap">${tagsHtml}</div>` : ''}
 
-                <!-- Descripción -->
-                ${hasDesc ? `
-                    <div class="space-y-2">
-                        <label class="card-section-title">Descripción</label>
-                        <textarea id="inline-desc-${item.id}" 
-                                  class="w-full bg-gray-50 border-2 border-gray-100 rounded-lg px-3 py-2 min-h-[60px] text-base text-ink focus:border-brand focus:ring-2 focus:ring-brand/20 resize-none outline-none">${item.descripcion || ''}</textarea>
-                    </div>
-                ` : ''}
+                <!-- Section: Descripción -->
+                <div id="section-desc-${item.id}" class="space-y-2 ${hasDesc ? '' : 'hidden'}">
+                    <label class="card-section-title">Descripción</label>
+                    <textarea id="inline-desc-${item.id}" 
+                              class="w-full bg-gray-50 border-2 border-gray-100 rounded-lg px-3 py-2 min-h-[60px] text-base text-ink focus:border-brand focus:ring-2 focus:ring-brand/20 resize-none outline-none">${item.descripcion || ''}</textarea>
+                </div>
 
-                <!-- Tareas -->
-                ${hasTasks ? `
-                    <div class="space-y-2">
-                        <label class="card-section-title">Tareas</label>
-                        <div class="bg-gray-50 rounded-lg p-2 space-y-1">
-                            ${tareasHtml}
-                        </div>
+                <!-- Section: Tareas -->
+                <div id="section-tasks-${item.id}" class="space-y-2 ${hasTasks ? '' : 'hidden'}">
+                    <label class="card-section-title">Tareas</label>
+                    <div id="inline-tasks-list-${item.id}" class="bg-gray-50 rounded-lg p-2 space-y-1">
+                        ${tareasHtml}
                     </div>
-                ` : ''}
+                    <button class="btn-add-inline-task text-sm text-brand font-bold hover:underline">+ Agregar tarea</button>
+                </div>
 
-                <!-- Enlaces -->
-                ${hasUrl ? `
-                    <div class="space-y-2">
-                        <label class="card-section-title">Enlaces</label>
-                        <div class="space-y-1">
-                            ${urls.filter(u => u).map((u, idx) => `
-                                <div class="flex gap-2">
-                                    <input type="url" data-url-index="${idx}" value="${u}" 
-                                           class="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-ink focus:border-brand outline-none">
-                                    <button type="button" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition text-sm" data-index="${idx}">
-                                        <i class="fa-solid fa-xmark"></i>
-                                    </button>
-                                </div>
-                            `).join('')}
-                        </div>
+                <!-- Section: Enlaces -->
+                <div id="section-url-${item.id}" class="space-y-2 ${hasUrl ? '' : 'hidden'}">
+                    <label class="card-section-title">Enlaces</label>
+                    <div id="inline-urls-list-${item.id}" class="space-y-1">
+                        ${urlsHtml}
                     </div>
-                ` : ''}
+                    <button class="btn-add-inline-url text-sm text-brand font-bold hover:underline">+ Agregar enlace</button>
+                </div>
+
+                <!-- Section: Alarma -->
+                <div id="section-alarm-${item.id}" class="space-y-2 ${hasAlarm ? '' : 'hidden'}">
+                    <label class="card-section-title">Alarma</label>
+                    <div class="flex gap-2 items-center">
+                        <input type="date" id="inline-alarm-date-${item.id}" 
+                               value="${item.deadline ? new Date(item.deadline).toLocaleDateString('en-CA') : ''}"
+                               class="flex-1 bg-gray-50 border-2 border-gray-100 rounded-lg px-3 py-2 text-base text-ink focus:border-brand outline-none">
+                        <input type="time" id="inline-alarm-time-${item.id}" 
+                               value="${item.deadline ? new Date(item.deadline).toTimeString().substring(0, 5) : ''}"
+                               class="flex-1 bg-gray-50 border-2 border-gray-100 rounded-lg px-3 py-2 text-base text-ink focus:border-brand outline-none">
+                        <select id="inline-alarm-repeat-${item.id}" class="bg-gray-50 border-2 border-gray-100 rounded-lg px-3 py-2 text-base text-ink focus:border-brand outline-none">
+                            <option value="">No repetir</option>
+                            <option value="daily" ${item.repeat === 'daily' ? 'selected' : ''}>Diario</option>
+                            <option value="weekly" ${item.repeat === 'weekly' ? 'selected' : ''}>Semanal</option>
+                            <option value="monthly" ${item.repeat === 'monthly' ? 'selected' : ''}>Mensual</option>
+                        </select>
+                        <button class="btn-remove-alarm w-8 h-8 rounded-full bg-gray-100 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition text-sm" title="Quitar alarma">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Energía (siempre visible) -->
+                <div class="space-y-2">
+                    <label class="card-section-title">Energía</label>
+                    <input type="number" id="inline-energy-${item.id}" min="1" max="10" 
+                           value="${item.meta?.energia || ''}" 
+                           class="w-24 bg-gray-50 border-2 border-gray-100 rounded-lg px-3 py-2 text-base text-ink focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none"
+                           placeholder="1-10">
+                </div>
             </div>
 
-            <!-- Botones agregar (solo icono) -->
+            <!-- Botones wishbar -->
             <div class="px-6 py-2 flex gap-2 border-t border-gray-100">
                 <button data-reveal="desc" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-brand hover:text-white flex items-center justify-center transition text-sm" title="+ Descripción">
                     <i class="fa-solid fa-align-left"></i>
@@ -682,6 +718,9 @@ export const ui = {
                 </button>
                 <button data-reveal="url" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-brand hover:text-white flex items-center justify-center transition text-sm" title="+ Enlace">
                     <i class="fa-solid fa-link"></i>
+                </button>
+                <button data-reveal="alarm" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-brand hover:text-white flex items-center justify-center transition text-sm ${hasAlarm ? 'hidden' : ''}" title="+ Alarma">
+                    <i class="fa-solid fa-bell"></i>
                 </button>
             </div>
 
@@ -821,7 +860,7 @@ export const ui = {
         });
 
         // Barra de Deseos (Revelar secciones)
-        card.querySelectorAll('.wish-item').forEach(btn => {
+        card.querySelectorAll('[data-reveal]').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -847,10 +886,10 @@ export const ui = {
             });
         });
 
-        card.querySelector('.action-save-inline')?.addEventListener('click', (e) => {
+        card.querySelector('.action-save-inline')?.addEventListener('click', async (e) => {
             e.preventDefault();
             e.stopPropagation();
-            this.handleInlineSave(card, item);
+            await this.handleInlineSave(card, item);
         });
 
         card.querySelector('.action-delete-inline')?.addEventListener('click', (e) => {
@@ -924,7 +963,7 @@ export const ui = {
                 // 1. Mostrar/Ocultar secciones según el tipo
                 if (newType === 'tarea') {
                     sections.tasks?.classList.remove('hidden');
-                    if (sections.tasks && sections.tasks.querySelector('.inline-tasks-list')?.children.length === 0) {
+                    if (sections.tasks && sections.tasks.querySelector('#inline-tasks-list-' + id)?.children.length === 0) {
                         this.addInlineTask(id);
                     }
                 } else if (newType === 'proyecto') {
@@ -1527,7 +1566,7 @@ export const ui = {
 
         reportContainer.classList.remove('hidden');
         reportContainer.innerHTML = `
-            <div class="bg-lavender/30 border-2 border-brand/20 p-8 rounded-blob shadow-md relative overflow-hidden group">
+            <div class="bg-link/30 border-2 border-brand/20 p-8 rounded-blob shadow-md relative overflow-hidden group">
                 <!-- Decoración -->
                 <div class="absolute -top-4 -right-4 text-4xl opacity-10 group-hover:rotate-12 transition-transform">🌸</div>
                 <div class="absolute -bottom-4 -left-4 text-4xl opacity-10 group-hover:-rotate-12 transition-transform">✨</div>

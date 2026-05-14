@@ -188,4 +188,117 @@ Gestión de sesiones con Supabase Auth.
 - Análisis offline de input (`parseInputOffline`) sin necesidad de IA
 
 ---
-Última actualización: Abril 2026
+
+## 🎯 Fase 1 — Inicio + Sistema de Tareas (Planificado)
+
+### Arquitectura del Sistema Híbrido
+
+```
+NIVEL 1: Tarea independiente (type: 'tarea')
+  ├── content: "Regar las plantas"
+  ├── completado: boolean
+  ├── puntos: number (10, 20, 30, 50, 100)
+  ├── tags: ["jardin"]
+  ├── deadline: ISO date | null
+  └── parent_id: null (tarea suelta, sin proyecto)
+
+NIVEL 2: Proyecto con subtareas (type: 'proyecto')
+  ├── content: "Jardín"
+  ├── tareas: [{titulo, completado}, ...]  ← checklist embebido
+  ├── descripcion, urls, tags
+  └── Se visualiza como CARD en Historial, NO en Inicio
+```
+
+### Vista Inicio — Qué muestra
+
+```
+┌──────────────────────────────────────────────────┐
+│ [Escribe una tarea...                 ] [➕] [🎤] │ ← Quick-add BAR
+├──────────────────────────────────────────────────┤
+│ [Todas] [Pendientes] [Logradas]                  │ ← Filtros base
+│ [#jardín] [#salud] [#trabajo] [#estudio] ...     │ ← Tags como chips
+├──────────────────────────────────────────────────┤
+│ 📌 Ancladas                                      │
+│ ☐ Tarea importante pinchada                      │
+│                                                   │
+│ 🔴 Vencidas                                      │
+│ ☐ Tarea con deadline pasado    (acento rojo)     │
+│                                                   │
+│ 📅 Hoy                                           │
+│ ☐ Regar las plantas            #jardín           │
+│ ☐ Llamar al médico             #salud            │
+│                                                   │
+│ 📅 Mañana                                         │
+│ ☐ Ir al super                                     │
+│                                                   │
+│ 📅 Esta semana                                    │
+│ ☐ Otra tarea                                      │
+│                                                   │
+│ 🗂️ Sin fecha                                     │
+│ ☐ Tarea sin deadline                              │
+│                                                   │
+│ ──────────────────────                            │
+│ 🔽 Mostrar completadas de hoy                     │
+└──────────────────────────────────────────────────┘
+```
+
+### Comportamiento de tareas
+
+| Acción | Comportamiento |
+|--------|---------------|
+| Click en checkbox | Check animado (300ms) + fade out → desaparece de Inicio |
+| Click en texto | Expande inline para editar (textarea) sin abrir card |
+| Crear desde quick-add | Se agrega como `type: 'tarea'` con `puntos` asignados |
+| Completar | Se guarda en Historial como completada, suma puntos |
+| Tags en tareas | Se crean inline en la tarea, aparecen como chips filtro arriba |
+
+### Sistema de Puntos
+
+- Puntuación base por tarea: 10, 20, 30, 50, 100 (configurable después)
+- Se guarda en `item.puntos`
+- Acumulador visible en perfil / dashboard
+- Modular: el cálculo de puntos se define en un solo lugar (config)
+
+### Tags
+
+- Crear: escribís `#tema` en la tarea y se crea automáticamente
+- Editar: click en tag → editable inline
+- Borrar: click X en el chip
+- Filtro: click en chip tag → filtra todas las tareas con esa tag
+- Persisten en Supabase como `tags: string[]`
+
+### Captura de info
+
+| Canal | Crea |
+|-------|------|
+| Barra quick-add en Inicio | Tareas (`type: 'tarea'`) |
+| Footer `+` | Modal: nota / tarea / proyecto / enlace (según selección) |
+| Footer `+` en Inicio | Abre por defecto en modo tarea |
+
+### Relación con otras vistas
+
+- **Inicio**: solo tareas pendientes, para hacer. No muestra cards.
+- **Historial**: TODO (tareas completadas, notas, proyectos, enlaces, check-ins, pomodoros) en orden cronológico. Las tareas completadas aparecen acá.
+- **Baúl / Dashboard**: Logros, puntos acumulados, estadísticas (a definir en fase posterior).
+
+### Principios de diseño
+
+- **Modular**: cada feature es independiente, se puede agregar/sacar sin romper el resto
+- **Escalable**: el modelo de datos permite crecer sin migraciones dolorosas
+- **Reutilizable**: el sistema de tags, puntos, filtros se comparte entre secciones
+- **ADHD-friendly**: mínima fricción para capturar, máxima visibilidad de pendientes
+
+### Archivos a modificar (estimado)
+
+| Archivo | Cambio |
+|---------|--------|
+| `index.html` | Nueva estructura del Inicio (quick-add bar, lista de tareas, filtros, secciones) |
+| `src/js/ui.js` | Nuevo `renderInicioTasks()` para la lista de tareas (no cards) |
+| `src/js/logic.js` | Nueva lógica de filtros (pendientes/logradas/tags), quick-add handler, puntos |
+| `src/js/data.js` | Soporte para campo `puntos` y `completado` si no existe |
+| `src/css/style.css` | Estilos para la lista de tareas, chips tags, animación check |
+
+> **Nota**: Esta fase NO modifica el sistema de cards existente (notas, proyectos, enlaces). Siguen funcionando igual en Historial y desde el footer `+`.
+
+---
+Última actualización: Mayo 2026

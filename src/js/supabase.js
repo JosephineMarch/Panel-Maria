@@ -38,11 +38,11 @@ export const CONFIG = {
         proyecto: '📁',
         directorio: '🔗',
     },
-typeColors: {
-        nota: '#ffcf7d',
-        tarea: '#DCFCE7',
-        proyecto: '#FFB7C5',
-        directorio: '#CFFAFE',
+    typeColors: {
+        nota: '#f0a5ff',
+        tarea: '#64748B',
+        proyecto: '#37d9e0',
+        directorio: '#f0a5ff',
     }
 };
 

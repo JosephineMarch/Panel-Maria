@@ -67,34 +67,45 @@ Hoja de ruta del proyecto con estado actual y mejoras futuras.
 
 ---
 
-## 📋 Pendiente - Alta Prioridad
+## 📋 Plan de Fases
 
-### 1. Múltiples enlaces con estilo Google Keep
-- **Problema actual**: Se pueden guardar varios enlaces (estructura de datos lista), pero no se pueden reordenar ni organizar como bloques independientes.
-- **Requerimiento**: Que cada card tenga bloques reordenables de: texto, checklist, deadline, enlaces múltiples — como Google Keep.
-- **Impacto**: Mejora significativa en la organización visual de la información.
+### Fase 1 — 🔥 INICIO + SISTEMA DE TAREAS (Siguiente)
+- **Estado**: Planificado (ver `docs/architecture.md` → Fase 1)
+- **Descripción**: Rediseño completo del Inicio como centro de productividad:
+  - Quick-add bar para crear tareas en 2 segundos
+  - Lista plana de tareas (sin cards) agrupadas por fecha/prioridad
+  - Sistema de puntos (10/20/30/50/100)
+  - Tags como filtros (chips clicables)
+  - Animación al completar (300ms check + fade out)
+  - Tareas completadas salen de Inicio → van a Historial
+  - Footer `+` sigue siendo el capturador universal (notas, enlaces, proyectos)
+- **Impacto**: Flujo de productividad diaria para TDAH
 
-### 2. Sección "Hoy" funcional completa
-- **Problema actual**: La sección existe como pestaña secundaria pero la creación de nuevos items y el marcado de tareas por defecto (medicación) no funcionan correctamente.
-- **Requerimiento**: 
-  - Poder crear nuevos items desde la sección Hoy
-  - Poder marcar como hechas las tareas por defecto (medicación)
-  - Por defecto la pestaña activa debe ser Timeline, no Hoy
-- **Impacto**: La sección Hoy es clave para la rutina diaria ADHD.
+### Fase 2 — 🎨 DISEÑO DIFERENCIAL DE CARDS
+- **Estado**: Pendiente
+- **Descripción**: Cada tipo de card (nota, tarea, enlace, proyecto) con identidad visual propia
+- **Depende de**: Fase 1
 
-### 3. Pantalla de inicio de sesión dedicada
-- **Problema actual**: El login se hace desde un sidebar, sin una pantalla dedicada.
-- **Requerimiento**: Pantalla de login separada con diseño personalizable (el usuario ilustrará después).
-- **Impacto**: Mejor primera impresión y onboarding.
+### Fase 3 — 💚 SALUD UNIFICADO
+- **Estado**: Pendiente
+- **Descripción**: Unificar los dos sistemas de salud actuales, agregar interrupciones de sueño, múltiples check-ins por día
+- **Depende de**: Fase 2
 
-### 4. Limpiar el proyecto
-- **Problema actual**: Hay archivos que confunden y marean.
-- **Requerimiento**: 
-  - Eliminar archivos no utilizados
-  - Organizar estructura de carpetas
-  - Limpiar código muerto o comentado
-  - Verificar que todos los módulos del SW estén en STATIC_ASSETS
-- **Impacto**: Reduce confusión y mejora mantenibilidad.
+### Fase 4 — 📅 HISTORIAL COMO AGENDA
+- **Estado**: Pendiente
+- **Descripción**: Vista cronológica completa con filtros, tipo calendario/agenda. TODO visible aquí.
+
+### Fase 5 — ⏱️ POMODORO
+- **Estado**: Pendiente
+- **Descripción**: Timer funcional, integrado con el sistema de tareas
+
+### Fase 6 — 🏆 BAÚL + GAMIFICACIÓN
+- **Estado**: Pendiente
+- **Descripción**: Logros, puntos acumulados, recompensas, features extra
+
+### Fase 7 — 🔮 FEATURES EXTRA
+- **Estado**: Pendiente
+- **Descripción**: Lector de archivos, gastos, mascotas, etc.
 
 ---
 
