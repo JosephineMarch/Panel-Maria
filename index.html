@@ -337,6 +337,13 @@
                 <i class="fas fa-check-circle text-4xl text-gray-300 mb-3"></i>
                 <p class="text-gray-500 text-sm">¡Todo listo! No hay tareas pendientes.</p>
             </div>
+            
+            <!-- Botón Pomodoro flotante -->
+            <button id="btn-pomodoro"
+                class="fixed bottom-28 right-4 w-14 h-14 rounded-full bg-brand-dark text-white shadow-float flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-30"
+                title="Iniciar Pomodoro">
+                <span class="text-2xl">⏱</span>
+            </button>
         </section>
 
         <!-- ==================== SECCIÓN SALUD ==================== -->
@@ -786,6 +793,61 @@
                         luego</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal Pomodoro -->
+    <div id="modal-pomodoro"
+        class="fixed inset-0 bg-ink/50 backdrop-blur-sm z-[150] flex items-center justify-center hidden">
+        <div class="bg-white rounded-3xl w-full max-w-sm mx-4 p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-ink">🍅 Pomodoro</h2>
+                <button id="pomodoro-cerrar" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <!-- Timer -->
+            <div class="text-center mb-6">
+                <div id="pomodoro-timer" class="text-5xl font-bold text-brand mb-2">25:00</div>
+                <div id="pomodoro-ciclos" class="text-sm text-gray-400">Ciclo: 1/4</div>
+            </div>
+            
+            <!-- Selector de tarea (opcional) -->
+            <div class="mb-4">
+                <label class="text-xs text-gray-500 block mb-1">Vincular a tarea (opcional)</label>
+                <select id="pomodoro-tarea" class="w-full text-sm border rounded-lg p-2">
+                    <option value="">Sin tarea específica</option>
+                </select>
+            </div>
+            
+            <!-- Botones de control -->
+            <div class="flex gap-2 mb-4">
+                <button id="pomodoro-btn-iniciar"
+                    class="flex-1 bg-brand text-white font-bold py-3 rounded-xl hover:bg-brand-dark transition">
+                    ▶ Iniciar
+                </button>
+            </div>
+            
+            <div class="flex gap-2">
+                <button id="pomodoro-btn-saltar"
+                    class="flex-1 bg-gray-100 text-gray-600 font-bold py-2 rounded-lg hover:bg-gray-200 transition text-sm">
+                    ⏭ Saltar
+                </button>
+                <button id="pomodoro-btn-fin"
+                    class="flex-1 bg-gray-100 text-gray-600 font-bold py-2 rounded-lg hover:bg-gray-200 transition text-sm">
+                    ⏹ Fin
+                </button>
+            </div>
+            
+            <!-- Opciones post-trabajo (hidden por defecto) -->
+            <div id="pomodoro-opciones" class="hidden mt-4 pt-4 border-t text-center">
+                <p class="text-sm text-gray-500 mb-2">¿Continuar con descanso?</p>
+                <div class="flex gap-2">
+                    <button id="pomodoro-btn-descanso" class="flex-1 bg-success text-white font-bold py-2 rounded-lg">☕ Descanso</button>
+                    <button id="pomodoro-btn-seguir" class="flex-1 bg-brand text-white font-bold py-2 rounded-lg">▶ Seguir</button>
+                </div>
+            </div>
         </div>
     </div>
 

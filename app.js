@@ -5,6 +5,7 @@
 import './src/js/logic.js';
 import './src/js/share.js';
 import './src/js/alarmas.js';
+import './src/js/pomodoro.js';
 import { requestFCMToken, refreshFCMTokenIfNeeded, onForegroundMessage, startTokenRefreshListener, getStoredFCMToken } from './src/js/firebase.js';
 
 // Exponer alarms globalmente para los botones de snooze en HTML
