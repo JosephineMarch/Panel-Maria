@@ -210,11 +210,6 @@
                     <span id="notification-badge"
                         class="hidden absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">0</span>
                 </button>
-                <!-- Botón Home (antes Timeline) -->
-                <button id="btn-home" title="Inicio / Timeline"
-                    class="w-12 h-12 rounded-full bg-brand/10 hover:bg-brand/20 flex items-center justify-center transition text-xl">
-                    🏠
-                </button>
             </div>
         </div>
     </header>
@@ -286,16 +281,16 @@
 
         <!-- ==================== SECCIÓN INICIO (Nueva) ==================== -->
         <section id="section-inicio" class="space-y-6 hidden">
-            <!-- Cards de filtro rápido -->
+            <!-- Cards de filtro rápido (fondo secundario) -->
             <div class="flex gap-2">
                 <button id="card-pendientes"
-                    class="flex-1 py-2 px-3 rounded-xl bg-white border-2 border-brand/20 flex flex-col items-center cursor-pointer hover:border-brand hover:shadow-md transition-all active:scale-95">
+                    class="flex-1 py-2 px-3 rounded-xl bg-secondary/30 border-2 border-brand/30 flex flex-col items-center cursor-pointer hover:border-brand hover:bg-secondary/50 transition-all active:scale-95">
                     <span class="text-xl">📋</span>
                     <span class="text-xs font-bold text-brand">Pendientes</span>
                     <span id="count-pendientes" class="text-lg font-bold text-brand">0</span>
                 </button>
                 <button id="card-logradas"
-                    class="flex-1 py-2 px-3 rounded-xl bg-white border-2 border-success/30 flex flex-col items-center cursor-pointer hover:border-success hover:shadow-md transition-all active:scale-95">
+                    class="flex-1 py-2 px-3 rounded-xl bg-success/10 border-2 border-success/30 flex flex-col items-center cursor-pointer hover:border-success hover:bg-success/20 transition-all active:scale-95">
                     <span class="text-xl">✨</span>
                     <span class="text-xs font-bold text-green-600">Logradas</span>
                     <span id="count-logradas" class="text-lg font-bold text-green-600">0</span>
@@ -714,9 +709,13 @@
                             class="tag-suggestion px-2 py-1 rounded-lg text-[10px] font-semibold text-brand border border-brand/30 cursor-pointer hover:border-brand hover:bg-brand/5 transition"
                             data-tag="emocion">emocion</span>
                     </div>
-                    <input type="text" id="edit-tags"
-                        class="input-base bg-link/30 border-link text-purple-600"
-                        placeholder="logro, salud, emocion...">
+                    <div class="relative">
+                        <input type="text" id="edit-tags"
+                            class="input-base bg-link/30 border-link text-purple-600 w-full"
+                            placeholder="Escribe etiquetas o busca...">
+                        <div id="tag-autocomplete" class="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg hidden max-h-48 overflow-y-auto">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="space-y-2">

@@ -79,6 +79,17 @@
     --card-bg: #FFFFFF;
 }
 
+/* === TEXT SELECTION === */
+::selection {
+    background: var(--secondary);
+    color: white;
+}
+
+::-moz-selection {
+    background: var(--secondary);
+    color: white;
+}
+
 /* === RESET === */
 @media (prefers-reduced-motion: reduce) {
 
@@ -2265,6 +2276,28 @@ i {
     flex-wrap: wrap;
 }
 
+/* Points en línea separada, debajo del texto de la tarea */
+.task-points-line {
+    margin-top: 4px;
+}
+
+/* En móvil, forzar separación clara de puntos */
+@media (max-width: 480px) {
+    .task-content-wrapper {
+        gap: 8px;
+    }
+    
+    .task-points-line {
+        display: block;
+        margin-top: 2px;
+        margin-bottom: 2px;
+    }
+    
+    .task-meta {
+        margin-top: 4px;
+    }
+}
+
 .task-time {
     font-size: var(--text-xs);
     color: var(--ink-light);
@@ -2485,19 +2518,28 @@ i {
    ===================================================== */
 @media (max-width: 480px) {
     #inicio-quick-bar {
-        padding: 8px 12px;
+        padding: 10px 12px;
         gap: 8px;
     }
     
+    /* Quick-add: puntos en su propia línea en móvil */
+    #inicio-points-selector {
+        width: 100%;
+        justify-content: flex-start;
+        padding: 4px 0;
+        margin-top: 2px;
+    }
+    
     .points-btn {
-        padding: 4px 8px;
-        font-size: 11px;
-        min-height: 32px;
+        padding: 6px 14px;
+        font-size: 12px;
+        min-height: 36px;
     }
 
-    /* Evitar que el input se colapse */
+    /* Input más flexible en móvil */
     #inicio-quick-input {
-        min-width: 100px;
+        flex: 1;
+        min-width: 60px;
     }
 
     /* Ajuste de contenedores con scroll horizontal */
@@ -2505,6 +2547,20 @@ i {
     #inicio-tag-filters,
     .overflow-x-auto {
         -webkit-overflow-scrolling: touch;
+    }
+
+    /* Task rows: ajustar layout en móvil */
+    .task-row {
+        padding: 12px;
+        gap: 10px;
+    }
+    
+    .task-content-wrapper {
+        gap: 6px;
+    }
+    
+    .task-points-line {
+        margin-top: 2px;
     }
 
     /* Modales más cómodos en móvil */

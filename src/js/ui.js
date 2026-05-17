@@ -1132,7 +1132,19 @@ export const ui = {
         const deadline = (date && time) ? `${date}T${time}` : (date || null);
         const repeat = document.getElementById('edit-repeat')?.value || null;
 
-        const tags = tagsStr.split(',').map(t => t.trim()).filter(t => t);
+        // Extraer etiquetas del campo de etiquetas (texto simple) Y del contenido
+        let tags = tagsStr.split(',').map(t => t.trim()).filter(t => t);
+        
+        // También extraer hashtags del contenido (#tag)
+        const contentHashtags = content.match(/#[\w-]+/g);
+        if (contentHashtags) {
+            contentHashtags.forEach(tag => {
+                const cleanTag = tag.substring(1).toLowerCase();
+                if (!tags.includes(cleanTag)) {
+                    tags.push(cleanTag);
+                }
+            });
+        }
 
         const tareas = [];
         document.querySelectorAll('.task-item-input').forEach(input => {
@@ -1509,6 +1521,11 @@ export const ui = {
                 <div class="bg-gray-50 border-2 border-gray-100 p-6 rounded-3xl">
                     <h3 class="text-base font-bold text-gray-400 uppercase mb-3">Tags más usados</h3>
                     <div class="flex flex-wrap gap-2">${tagsHtml}</div>
+                </div>
+
+                <!-- GESTIÓN DE ETIQUETAS -->
+                <div id="tag-manager-section">
+                    ${window.kai ? window.kai.renderTagManager() : ''}
                 </div>
 
                 <!-- BACK -->
@@ -1978,15 +1995,19 @@ export const ui = {
         const dateGroups = {}; // dateKey -> { label, items }
 
         items.forEach(item => {
-            if (!item.deadline) {
+            // Usar deadline si existe, si no usar created_at como fallback
+            const hasDeadline = !!item.deadline;
+            const effectiveDate = item.deadline || item.created_at;
+            if (!effectiveDate) {
                 noDate.items.push(item);
                 return;
             }
 
-            const deadline = new Date(item.deadline);
+            const deadline = new Date(effectiveDate);
             const deadlineDate = new Date(deadline.getFullYear(), deadline.getMonth(), deadline.getDate());
 
-            if (deadlineDate < today) {
+            // Solo marcar como vencida si tiene deadline real (no fallback a created_at)
+            if (hasDeadline && deadlineDate < today) {
                 overdue.items.push(item);
                 return;
             }
@@ -2034,6 +2055,16 @@ export const ui = {
 
         const puntos = item.meta?.puntos || 10;
 
+        // Generar etiquetas editables (con botón para eliminar)
+        const tagsHtml = item.tags && item.tags.length > 0
+            ? item.tags.map(t =>
+                '<span class="tag tag-s tag-primary inline-flex items-center gap-1">' + t + '<button class="remove-tag-btn text-xs hover:text-red-500 ml-1" data-tag="' + t + '">&times;</button></span>'
+            ).join('')
+            : '';
+        
+        // Botón para agregar etiqueta
+        const addTagBtn = '<button class="add-tag-btn text-xs bg-gray-100 hover:bg-gray-200 text-gray-500 px-2 py-1 rounded" data-id="' + item.id + '">+ Tag</button>';
+
         row.innerHTML = ''
             + '<label class="task-checkbox-label">'
             + '<input type="checkbox" class="task-checkbox"' + (item.status === 'completed' ? ' checked' : '') + '>'
@@ -2041,14 +2072,12 @@ export const ui = {
             + '</label>'
             + '<div class="task-content-wrapper">'
             + '<span class="task-text" data-id="' + item.id + '">' + this.escapeHtml(item.content) + '</span>'
+            // Puntos en su propia línea, debajo del texto
+            + '<div class="task-points-line">' + this.renderPointsBadge(puntos) + '</div>'
             + '<div class="task-meta">'
             + '<div class="flex items-center gap-2 flex-wrap">'
-            + this.renderPointsBadge(puntos)
-            + (item.tags && item.tags.length > 0
-                ? item.tags.map(t =>
-                    '<span class="tag tag-s tag-primary">' + t + '</span>'
-                ).join('')
-                : '')
+            + tagsHtml
+            + addTagBtn
             + '</div>'
             + '<button class="task-action action-delete" data-id="' + item.id + '" title="Eliminar">'
             + '<i class="fa-regular fa-trash-can"></i>'

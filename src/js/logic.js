@@ -77,6 +77,7 @@ class KaiController {
         this.currentView = 'timeline'; // Default: Timeline
         this.expandedCardId = null; // ID de la card expandida (para persistencia)
         this.isAnimating = false; // Guard para animación de completado
+        this.inicioFilter = null; // Filtro de Inicio: null=todas, 'pending'=pendientes, 'completed'=logradas
         this.init();
     }
 
@@ -108,6 +109,9 @@ class KaiController {
             console.error('Error en inicialización:', error);
             this.loadEmptyState();
         }
+
+        // Configurar eventos de gestión de etiquetas
+        this.setupTagManagerEvents();
 
         ai.init();
     }
@@ -652,21 +656,27 @@ class KaiController {
             this.showDashboard('total');
         });
         
-        // Cards de filtro rápido en Inicio
+        // Cards de filtro rápido en Inicio (solo tareas y proyectos)
         document.getElementById('card-pendientes')?.addEventListener('click', () => {
             this.currentTag = null;
-            this.currentExcludeTag = 'logro';
+            this.inicioFilter = 'pending';
             this.currentView = 'timeline';
+            // Resaltar card activa
             document.getElementById('card-pendientes')?.classList.add('ring-2', 'ring-brand');
             document.getElementById('card-logradas')?.classList.remove('ring-2', 'ring-brand', 'ring-success');
-            this.loadItems();
+            this.loadInicioTasks();
+            this.updateFilterCounts();
             this.saveState();
         });
-        document.getElementById('card-logradas')?.addEventListener('click', async () => {
-            document.getElementById('section-inicio')?.classList.add('hidden');
-            document.getElementById('timeline-content')?.classList.add('hidden');
-            document.getElementById('items-container')?.classList.remove('hidden');
-            await this.showDashboard('total');
+        document.getElementById('card-logradas')?.addEventListener('click', () => {
+            this.currentTag = null;
+            this.inicioFilter = 'completed';
+            this.currentView = 'timeline';
+            // Resaltar card activa
+            document.getElementById('card-logradas')?.classList.add('ring-2', 'ring-success');
+            document.getElementById('card-pendientes')?.classList.remove('ring-2', 'ring-brand', 'ring-success');
+            this.loadInicioTasks();
+            this.updateFilterCounts();
             this.saveState();
         });
         
@@ -736,6 +746,56 @@ class KaiController {
                 input.value = current && !current.endsWith(' ') ? current + ', ' + newTag : current + newTag;
             });
         });
+
+        // Autocomplete de etiquetas en modal de edición
+        const editTagsInput = document.getElementById('edit-tags');
+        const tagAutocomplete = document.getElementById('tag-autocomplete');
+        
+        if (editTagsInput && tagAutocomplete) {
+            editTagsInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim();
+                const lastTag = query.split(',').pop().trim();
+                
+                if (!lastTag) {
+                    tagAutocomplete.classList.add('hidden');
+                    return;
+                }
+                
+                const allTags = this.getAllTags();
+                const matches = allTags.filter(t => t.includes(lastTag));
+                
+                if (matches.length === 0) {
+                    tagAutocomplete.classList.add('hidden');
+                    return;
+                }
+                
+                tagAutocomplete.innerHTML = matches.map(tag => 
+                    `<div class="tag-option px-3 py-2 hover:bg-brand/10 cursor-pointer text-sm text-brand" data-tag="${tag}">#${tag}</div>`
+                ).join('');
+                
+                tagAutocomplete.classList.remove('hidden');
+                
+                // Agregar tags al hacer click
+                tagAutocomplete.querySelectorAll('.tag-option').forEach(opt => {
+                    opt.addEventListener('click', () => {
+                        const current = editTagsInput.value;
+                        const parts = current.split(',');
+                        parts.pop();
+                        parts.push(opt.dataset.tag.trim());
+                        editTagsInput.value = parts.join(', ') + ', ';
+                        tagAutocomplete.classList.add('hidden');
+                        editTagsInput.focus();
+                    });
+                });
+            });
+            
+            // Ocultar autocomplete al hacer click fuera
+            document.addEventListener('click', (e) => {
+                if (!editTagsInput.contains(e.target) && !tagAutocomplete.contains(e.target)) {
+                    tagAutocomplete.classList.add('hidden');
+                }
+            });
+        }
 
         // Quick tags for inline addition (Footer Input)
         document.querySelectorAll('.quick-tag').forEach(tagBtn => {
@@ -996,31 +1056,108 @@ class KaiController {
                         taskText.removeEventListener('keydown', onKeydown);
                     }, { once: true });
                 }
-            });
-        }
 
-        // --- Inicio: Filter chips ---
-        document.querySelectorAll('.filter-chip').forEach(chip => {
-            chip.addEventListener('click', () => {
-                document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-                chip.classList.add('active');
-                const filter = chip.dataset.filter;
-                if (filter === 'all') {
-                    this.loadInicioTasks();
-                } else if (filter === 'pending') {
-                    // Just show reload filtered — handled by loadInicioTasks
-                    this.loadInicioTasks();
-                } else if (filter === 'done') {
-                    // Show completed tasks — navigate to historial
-                    if (window.switchView) {
-                        window.switchView('historial');
-                    } else {
-                        this.currentView = 'historial';
-                        this.loadItems();
+                // Eliminar etiqueta (click en la X)
+                const removeTagBtn = e.target.closest('.remove-tag-btn');
+                if (removeTagBtn) {
+                    e.stopPropagation();
+                    const itemId = removeTagBtn.closest('.task-row').dataset.itemId;
+                    const tagToRemove = removeTagBtn.dataset.tag;
+                    
+                    const item = this.items.find(i => i.id === itemId);
+                    if (item && item.tags) {
+                        const newTags = item.tags.filter(t => t !== tagToRemove);
+                        data.updateItem(itemId, { tags: newTags }).then(() => {
+                            item.tags = newTags;
+                            this.loadInicioTasks();
+                            this.updateFilterCounts();
+                            ui.showNotification('Etiqueta eliminada', 'info');
+                        }).catch(err => {
+                            console.error('Error removing tag:', err);
+                            ui.showNotification('Error al eliminar etiqueta', 'error');
+                        });
                     }
                 }
+
+                // Agregar etiqueta (click en + Tag) - Input con autocompletado
+                const addTagBtn = e.target.closest('.add-tag-btn');
+                if (addTagBtn) {
+                    e.stopPropagation();
+                    const itemId = addTagBtn.dataset.id;
+                    const allTags = this.getAllTags();
+                    const currentTags = this.items.find(i => i.id === itemId)?.tags || [];
+                    
+                    // Crear input inline con autocomplete
+                    const existingInput = document.querySelector('.quick-tag-input');
+                    if (existingInput) existingInput.remove();
+                    
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'relative quick-tag-wrapper';
+                    
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'text-xs border rounded-lg p-1 bg-white w-24';
+                    input.placeholder = 'escribir...';
+                    
+                    const dropdown = document.createElement('div');
+                    dropdown.className = 'absolute z-50 top-full left-0 mt-1 bg-white border rounded-lg shadow-lg hidden max-h-32 overflow-y-auto quick-tag-dropdown';
+                    
+                    wrapper.appendChild(input);
+                    wrapper.appendChild(dropdown);
+                    
+                    // Insertar después del botón
+                    addTagBtn.parentNode.insertBefore(wrapper, addTagBtn.nextSibling);
+                    input.focus();
+                    
+                    // Autocomplete mientras escribe
+                    input.addEventListener('input', (ev) => {
+                        const query = ev.target.value.toLowerCase();
+                        const available = allTags.filter(t => !currentTags.includes(t) && t.includes(query));
+                        
+                        if (available.length === 0 || !query) {
+                            dropdown.classList.add('hidden');
+                            return;
+                        }
+                        
+                        dropdown.innerHTML = available.map(t => 
+                            `<div class="tag-option px-2 py-1 hover:bg-brand/10 cursor-pointer text-xs text-brand" data-tag="${t}">#${t}</div>`
+                        ).join('');
+                        dropdown.classList.remove('hidden');
+                        
+                        dropdown.querySelectorAll('.tag-option').forEach(opt => {
+                            opt.addEventListener('click', () => {
+                                this.addTagToItem(itemId, opt.dataset.tag);
+                                wrapper.remove();
+                            });
+                        });
+                    });
+                    
+                    // Enter para confirmar nueva etiqueta
+                    input.addEventListener('keydown', (ev) => {
+                        if (ev.key === 'Enter') {
+                            ev.preventDefault();
+                            const val = input.value.trim();
+                            if (val) {
+                                this.addTagToItem(itemId, val.toLowerCase());
+                            }
+                            wrapper.remove();
+                        } else if (ev.key === 'Escape') {
+                            wrapper.remove();
+                        }
+                    });
+                    
+                    // Cerrar al hacer click fuera
+                    setTimeout(() => {
+                        document.addEventListener('click', function onDocClick(e) {
+                            if (!wrapper.contains(e.target)) {
+                                wrapper.remove();
+                                document.removeEventListener('click', onDocClick);
+                            }
+                        });
+                    }, 0);
+                }
             });
-        });
+        }
     }
 
     async handleExport() {
@@ -1944,10 +2081,19 @@ Responde SOLO JSON con esta estructura:
                     await ui.animateTaskComplete(element);
                 }
 
-                await data.updateItem(itemId, { status: 'completed' });
+                // Agregar tag "logro" automáticamente al completar
+                const currentTags = item.tags || [];
+                const newTags = currentTags.includes('logro') ? currentTags : [...currentTags, 'logro'];
+                
+                await data.updateItem(itemId, { 
+                    status: 'completed',
+                    tags: newTags
+                });
                 item.status = 'completed';
+                item.tags = newTags;
 
                 this.loadInicioTasks();
+                this.updateFilterCounts();
                 this.updatePointsAccumulator();
             } else {
                 await data.updateItem(itemId, { status: 'inbox' });
@@ -1969,10 +2115,20 @@ Responde SOLO JSON con esta estructura:
     loadInicioTasks() {
         const items = this.items || [];
 
-        // Filter: type === 'tarea', not completed
+        // Filter: tareas y proyectos (no notas ni enlaces)
         let filtered = items.filter(item =>
-            item.type === 'tarea' && item.status !== 'completed'
+            (item.type === 'tarea' || item.type === 'proyecto')
         );
+
+        // Apply inicio filter (pendientes/logradas/todas)
+        if (this.inicioFilter === 'pending') {
+            filtered = filtered.filter(item => item.status !== 'completed');
+        } else if (this.inicioFilter === 'completed') {
+            filtered = filtered.filter(item => item.status === 'completed');
+        } else {
+            // Default: mostrar solo pendientes
+            filtered = filtered.filter(item => item.status !== 'completed');
+        }
 
         // Apply tag filter
         if (this.currentTag) {
@@ -1981,9 +2137,9 @@ Responde SOLO JSON con esta estructura:
             );
         }
 
-        // Extract unique tags from all tareas
+        // Extract unique tags from all tareas/proyectos
         const allTags = [...new Set(
-            items.filter(i => i.type === 'tarea' && i.tags && i.tags.length > 0)
+            items.filter(i => (i.type === 'tarea' || i.type === 'proyecto') && i.tags && i.tags.length > 0)
                 .flatMap(i => i.tags)
         )];
 
@@ -1998,6 +2154,33 @@ Responde SOLO JSON con esta estructura:
 
         // Update points
         this.updatePointsAccumulator();
+
+        // Update filter card counts
+        this.updateFilterCounts();
+    }
+
+    /**
+     * Actualiza los contadores de pendientes y logradas en los botones de filtro
+     * Solo cuenta tareas y proyectos (no notas ni enlaces)
+     */
+    updateFilterCounts() {
+        const items = this.items || [];
+        
+        // Contar pendientes (tareas y proyectos no completados)
+        const pendientes = items.filter(i => 
+            (i.type === 'tarea' || i.type === 'proyecto') && i.status !== 'completed'
+        ).length;
+        
+        // Contar logradas (tareas y proyectos completados)
+        const logradas = items.filter(i => 
+            (i.type === 'tarea' || i.type === 'proyecto') && i.status === 'completed'
+        ).length;
+
+        const pendEl = document.getElementById('count-pendientes');
+        const logrEl = document.getElementById('count-logradas');
+
+        if (pendEl) pendEl.textContent = pendientes;
+        if (logrEl) logrEl.textContent = logradas;
     }
 
     /**
@@ -2869,14 +3052,200 @@ Responde SOLO JSON con esta estructura:
             ui.showNotification('❌ Error: ' + error.message, 'error');
         }
     }
+
+    // ========== GESTIÓN DE ETIQUETAS ==========
+
+    /**
+     * Obtiene todas las etiquetas únicas de tareas y proyectos
+     */
+    getAllTags() {
+        const items = this.items || [];
+        const tagSet = new Set();
+        
+        items.forEach(item => {
+            if ((item.type === 'tarea' || item.type === 'proyecto') && item.tags && Array.isArray(item.tags)) {
+                item.tags.forEach(tag => tagSet.add(tag));
+            }
+        });
+        
+        return Array.from(tagSet).sort();
+    }
+
+    /**
+     * Renombra una etiqueta en TODAS las tareas/proyectos que la contain
+     * @param {string} oldTag - Etiqueta actual
+     * @param {string} newTag - Nueva etiqueta
+     */
+    async renameTag(oldTag, newTag) {
+        if (!oldTag || !newTag || oldTag === newTag) {
+            ui.showNotification('Los nombres de etiqueta deben ser diferentes', 'warning');
+            return;
+        }
+
+        const items = this.items || [];
+        const itemsToUpdate = items.filter(item => 
+            (item.type === 'tarea' || item.type === 'proyecto') && 
+            item.tags && 
+            item.tags.includes(oldTag)
+        );
+
+        if (itemsToUpdate.length === 0) {
+            ui.showNotification('No hay tareas con esa etiqueta', 'warning');
+            return;
+        }
+
+        try {
+            let updated = 0;
+            for (const item of itemsToUpdate) {
+                const newTags = item.tags.map(t => t === oldTag ? newTag : t);
+                await data.updateItem(item.id, { tags: newTags });
+                item.tags = newTags;
+                updated++;
+            }
+
+            ui.showNotification(`✓ "${oldTag}" renombrada a "${newTag}" en ${updated} tareas`, 'success');
+            
+            this.loadInicioTasks();
+            this.updateFilterCounts();
+            this.loadItems();
+        } catch (error) {
+            console.error('Error renameTag:', error);
+            ui.showNotification('Error al renombrar etiqueta', 'error');
+        }
+    }
+
+    /**
+     * Elimina una etiqueta de TODAS las tareas/proyectos
+     * @param {string} tag - Etiqueta a eliminar
+     */
+    async deleteTag(tag) {
+        if (!tag) return;
+
+        const items = this.items || [];
+        const itemsToUpdate = items.filter(item => 
+            (item.type === 'tarea' || item.type === 'proyecto') && 
+            item.tags && 
+            item.tags.includes(tag)
+        );
+
+        if (itemsToUpdate.length === 0) {
+            ui.showNotification('No hay tareas con esa etiqueta', 'warning');
+            return;
+        }
+
+        if (!confirm(`¿Eliminar la etiqueta "${tag}" de ${itemsToUpdate.length} tareas?`)) {
+            return;
+        }
+
+        try {
+            for (const item of itemsToUpdate) {
+                const newTags = item.tags.filter(t => t !== tag);
+                await data.updateItem(item.id, { tags: newTags });
+                item.tags = newTags;
+            }
+
+            ui.showNotification(`✓ Etiqueta "${tag}" eliminada de ${itemsToUpdate.length} tareas`, 'success');
+            
+            this.loadInicioTasks();
+            this.updateFilterCounts();
+            this.loadItems();
+        } catch (error) {
+            console.error('Error deleteTag:', error);
+            ui.showNotification('Error al eliminar etiqueta', 'error');
+        }
+    }
+
+    /**
+     * Renderiza la sección de gestión de etiquetas
+     */
+    renderTagManager() {
+        const tags = this.getAllTags();
+        
+        if (tags.length === 0) {
+            return `
+                <div class="bg-gray-50 border-2 border-gray-100 p-6 rounded-3xl">
+                    <h3 class="text-lg font-bold text-ink mb-3">🏷️ Gestión de Etiquetas</h3>
+                    <p class="text-gray-400 text-base">No hay etiquetas aún. Crea tareas con #etiqueta para comenzar.</p>
+                </div>
+            `;
+        }
+
+        const tagsHtml = tags.map(tag => `
+            <div class="flex items-center gap-2 py-2 border-b border-gray-100 last:border-0">
+                <span class="bg-brand/10 text-brand border border-brand/30 px-3 py-1 rounded-full text-sm font-semibold">#${tag}</span>
+                <button class="text-gray-400 hover:text-brand transition edit-tag-btn" data-tag="${tag}" title="Renombrar">
+                    <i class="fas fa-pencil-alt"></i>
+                </button>
+                <button class="text-gray-400 hover:text-red-500 transition delete-tag-btn" data-tag="${tag}" title="Eliminar">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `).join('');
+
+        return `
+            <div class="bg-white border-2 border-brand/20 p-6 rounded-3xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-ink">🏷️ Gestión de Etiquetas</h3>
+                    <span class="text-sm text-gray-400">${tags.length} etiqueta${tags.length !== 1 ? 's' : ''}</span>
+                </div>
+                <div class="space-y-1 max-h-64 overflow-y-auto">
+                    ${tagsHtml}
+                </div>
+                <p class="text-xs text-gray-400 mt-3">✏️ Click en ✏️ para renombrar, 🗑️ para eliminar de todas las tareas</p>
+            </div>
+        `;
+    }
+
+    /**
+     * Configura eventos para la gestión de etiquetas
+     */
+    setupTagManagerEvents() {
+        document.addEventListener('click', async (e) => {
+            const editBtn = e.target.closest('.edit-tag-btn');
+            const deleteBtn = e.target.closest('.delete-tag-btn');
+
+            if (editBtn) {
+                const oldTag = editBtn.dataset.tag;
+                const newTag = prompt(`Renombrar "${oldTag}" a:`, oldTag);
+                if (newTag && newTag !== oldTag) {
+                    await this.renameTag(oldTag, newTag.trim().toLowerCase());
+                }
+            }
+
+            if (deleteBtn) {
+                const tag = deleteBtn.dataset.tag;
+                await this.deleteTag(tag);
+            }
+        });
+    }
+
+    /**
+     * Agrega una etiqueta a una tarea
+     */
+    addTagToItem(itemId, tag) {
+        const item = this.items.find(i => i.id === itemId);
+        if (item && tag && tag.trim()) {
+            const t = tag.trim().toLowerCase();
+            const currTags = item.tags || [];
+            if (!currTags.includes(t)) {
+                data.updateItem(itemId, { tags: [...currTags, t] }).then(() => {
+                    item.tags = [...currTags, t];
+                    this.loadInicioTasks();
+                    this.updateFilterCounts();
+                    ui.showNotification('Etiqueta agregada', 'success');
+                }).catch(err => {
+                    console.error('Error adding tag:', err);
+                    ui.showNotification('Error al agregar etiqueta', 'error');
+                });
+            }
+        }
+    }
 }
-
-
 
 // Inicialización global
 window.addEventListener('DOMContentLoaded', () => {
     window.kai = new KaiController();
-    window.controller = window.kai; // Compatibilidad con módulos que buscan window.controller
+    window.controller = window.kai;
 });
 
 export default KaiController;

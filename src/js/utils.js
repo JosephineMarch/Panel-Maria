@@ -29,12 +29,11 @@ export const utils = {
 
     sanitizeInput(text) {
         if (typeof text !== 'string') return text;
+        // Solo escapar < y > que son los únicos caracteres peligrosos para XSS
+        // Permitir / y comillas que son caracteres válidos en contenido de tareas
         return text
             .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#x27;')
-            .replace(/\//g, '&#x2F;');
+            .replace(/>/g, '&gt;');
     },
 
     stripHtml(html) {
