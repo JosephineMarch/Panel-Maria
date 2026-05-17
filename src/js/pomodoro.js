@@ -1,6 +1,7 @@
 /**
  * Módulo Pomodoro
  * Sistema de gestión de tiempo Pomodoro para KAI
+ * Usa timestamps para funcionar incluso cuando la pestaña no está activa
  */
 
 import { data } from './data.js';
@@ -14,11 +15,26 @@ export const pomodoro = {
     maxCiclos: 4,
     
     // Estado
-    tiempoRestante: 25 * 60, // segundos
-    estado: 'idle',          // idle, trabajo, descanso
+    tiempoTotal: 25 * 60,    // segundos totales del período actual
+    tiempoInicio: null,     // timestamp cuando inició el período
+    estado: 'idle',         // idle, trabajo, descanso
     ciclosCompletados: 0,
     intervalo: null,
     tareaActual: null,      // ID de tarea asociada
+    
+    /**
+     * Obtener tiempo restante basado en timestamp (funciona cuando la pestaña no está activa)
+     */
+    getTiempoRestante() {
+        if (!this.tiempoInicio || this.estado === 'idle') {
+            return this.tiempoTotal;
+        }
+        const elapsed = Math.floor((Date.now() - this.tiempoInicio) / 1000);
+        const remaining = Math.max(0, this.tiempoTotal - elapsed);
+        // Debug
+        // console.log(`tiempoTotal: ${this.tiempoTotal}, elapsed: ${elapsed}, remaining: ${remaining}`);
+        return remaining;
+    },
     
     /**
      * Iniciar el Pomodoro
@@ -28,7 +44,8 @@ export const pomodoro = {
         
         this.tareaActual = tareaId;
         this.estado = 'trabajo';
-        this.tiempoRestante = this.tiempoTrabajo * 60;
+        this.tiempoTotal = this.tiempoTrabajo * 60;
+        this.tiempoInicio = Date.now();
         
         this.mostrarTimer();
         this.iniciarIntervalo();
@@ -40,15 +57,25 @@ export const pomodoro = {
      * Iniciar el intervalo del timer
      */
     iniciarIntervalo() {
-        this.intervalo = setInterval(() => {
-            this.tiempoRestante--;
+        if (this.intervalo) clearInterval(this.intervalo);
+        
+        const tick = () => {
+            if (this.estado === 'idle') return;
             
-            if (this.tiempoRestante <= 0) {
+            const remaining = this.getTiempoRestante();
+            
+            if (remaining <= 0) {
                 this.completarPeriodo();
-            } else {
-                this.actualizarTimer();
+                return;
             }
-        }, 1000);
+            
+            this.actualizarTimer();
+            
+            // Programar siguiente tick
+            this.intervalo = setTimeout(tick, 200);
+        };
+        
+        tick();
     },
     
     /**
@@ -68,13 +95,15 @@ export const pomodoro = {
                 // Descanso largo
                 this.notificar('🎉 ¡4 pomodoros!', 'Descanso largo de 15 minutos');
                 this.estado = 'descanso-largo';
-                this.tiempoRestante = this.tiempoDescansoLargo * 60;
+                this.tiempoTotal = this.tiempoDescansoLargo * 60;
             } else {
                 // Descanso corto
                 this.notificar('⏰ ¡25 min!', 'Descansa 5 minutos');
                 this.estado = 'descanso';
-                this.tiempoRestante = this.tiempoDescansoCorto * 60;
+                this.tiempoTotal = this.tiempoDescansoCorto * 60;
             }
+            
+            this.tiempoInicio = Date.now();
             
             // Reproducir audio
             this.reproducirAudio('descanso');
@@ -87,18 +116,22 @@ export const pomodoro = {
             this.notificar('☕ Descanso terminado', '¡Listo para enfocarte!');
             this.reproducirAudio('trabajo');
             this.estado = 'trabajo';
-            this.tiempoRestante = this.tiempoTrabajo * 60;
+            this.tiempoTotal = this.tiempoTrabajo * 60;
+            this.tiempoInicio = Date.now();
             this.mostrarTimer();
             this.iniciarIntervalo();
         }
     },
     
     /**
-     * Pausar el Pomodoro
+     * Pausar el Pomodoro (guarda el tiempo restante)
      */
     pausar() {
         if (this.estado === 'idle') return;
         this.detener();
+        // Guardar el tiempo restante al pausar
+        this.tiempoTotal = this.getTiempoRestante();
+        this.tiempoInicio = null;
         this.estado = 'pausado';
         this.mostrarTimer();
     },
@@ -108,7 +141,9 @@ export const pomodoro = {
      */
     reanudar() {
         if (this.estado !== 'pausado') return;
-        this.estado = 'trabajo';
+        // Usar el tiempoTotal guardado como tiempo restante
+        this.tiempoInicio = Date.now();
+        this.estado = this.estadoPrevio || 'trabajo';
         this.iniciarIntervalo();
         this.mostrarTimer();
     },
@@ -118,7 +153,7 @@ export const pomodoro = {
      */
     async detener() {
         if (this.intervalo) {
-            clearInterval(this.intervalo);
+            clearTimeout(this.intervalo);
             this.intervalo = null;
         }
     },
@@ -136,17 +171,18 @@ export const pomodoro = {
             // Ir a descanso
             if (this.ciclosCompletados >= this.maxCiclos - 1) {
                 this.estado = 'descanso-largo';
-                this.tiempoRestante = this.tiempoDescansoLargo * 60;
+                this.tiempoTotal = this.tiempoDescansoLargo * 60;
             } else {
                 this.estado = 'descanso';
-                this.tiempoRestante = this.tiempoDescansoCorto * 60;
+                this.tiempoTotal = this.tiempoDescansoCorto * 60;
             }
         } else {
             // Fin del descanso, volver a trabajo
             this.estado = 'trabajo';
-            this.tiempoRestante = this.tiempoTrabajo * 60;
+            this.tiempoTotal = this.tiempoTrabajo * 60;
         }
         
+        this.tiempoInicio = Date.now();
         this.mostrarTimer();
         this.iniciarIntervalo();
     },
@@ -165,7 +201,8 @@ export const pomodoro = {
      */
     reset() {
         this.estado = 'idle';
-        this.tiempoRestante = this.tiempoTrabajo * 60;
+        this.tiempoTotal = this.tiempoTrabajo * 60;
+        this.tiempoInicio = null;
         this.ciclosCompletados = 0;
         this.tareaActual = null;
         this.mostrarTimer();
@@ -265,8 +302,10 @@ export const pomodoro = {
         const modal = document.getElementById('modal-pomodoro');
         if (!modal) return;
         
-        const minutos = Math.floor(this.tiempoRestante / 60);
-        const segundos = this.tiempoRestante % 60;
+        // Usar getTiempoRestante para obtener el tiempo basado en timestamps
+        const remaining = this.getTiempoRestante();
+        const minutos = Math.floor(remaining / 60);
+        const segundos = remaining % 60;
         const tiempoStr = `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
         
         document.getElementById('pomodoro-timer').textContent = tiempoStr;
@@ -339,6 +378,13 @@ export const pomodoro = {
         });
         
         console.log('✅ Pomodoro inicializado');
+        
+        // Fix: actualizar timer cuando la pestaña vuelve a estar visible
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && this.estado !== 'idle') {
+                this.actualizarTimer();
+            }
+        });
     }
 };
 

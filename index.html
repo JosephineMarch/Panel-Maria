@@ -220,54 +220,204 @@
         role="main">
 
         <!-- ==================== SECCIÓN SALUD (Bitácora de Bienestar) ==================== -->
-        <section id="section-hoy" class="space-y-6 hidden">
+        <!-- ==================== SECCIÓN SALUD (antes "section-hoy") ==================== -->
+        <section id="section-salud" class="space-y-6 hidden">
             <!-- Header -->
             <div class="bg-gradient-to-r from-mint via-brand/10 to-mint p-5 rounded-[2rem] shadow-sm">
                 <div class="text-center">
                     <h2 class="text-2xl font-bold text-green-600 flex items-center justify-center gap-2">
-                        <span class="text-3xl">💚</span> Bitácora de Bienestar
+                        <span class="text-3xl">💚</span> Tu Salud
                     </h2>
                     <p id="hoy-fecha" class="text-gray-500 text-base mt-1"></p>
                     <p id="hoy-saludo" class="text-green-500 text-sm font-medium mt-1"></p>
                 </div>
             </div>
 
-            <!-- ÁNIMO -->
+            <!-- ÁNIMO (SLIDER HORIZONTAL) -->
             <div class="bg-white border-2 border-brand/10 p-5 rounded-[2.5rem] shadow-sm">
                 <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
-                    <span class="text-2xl">😊</span> Ánimo
+                    <span class="text-2xl" id="animo-icon">😊</span> Ánimo
                 </h3>
-                <div class="grid grid-cols-3 gap-3" id="animo-group"></div>
+                <div class="relative">
+                    <input type="range" id="animo-slider" min="1" max="10" value="5" 
+                        class="w-full h-4 bg-gray-200 rounded-full appearance-none cursor-pointer accent-brand"
+                        style="height: 8px;">
+                    <div class="flex justify-between text-xs text-gray-400 mt-2">
+                        <span>1</span>
+                        <span>5</span>
+                        <span>10</span>
+                    </div>
+                    <div class="text-center mt-2">
+                        <span id="animo-value" class="text-2xl">🙂</span>
+                        <span id="animo-label" class="text-sm text-gray-500 ml-2">Normal</span>
+                    </div>
+                </div>
             </div>
 
-            <!-- ENERGÍA -->
+            <!-- ENERGÍA (SLIDER HORIZONTAL) -->
             <div class="bg-white border-2 border-brand/10 p-5 rounded-[2.5rem] shadow-sm">
                 <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
-                    <span class="text-2xl">⚡</span> Energía
+                    <span class="text-2xl" id="energia-icon">⚡</span> Energía
                 </h3>
-                <div class="grid grid-cols-3 gap-3" id="energia-group"></div>
+                <div class="relative">
+                    <input type="range" id="energia-slider" min="1" max="10" value="5" 
+                        class="w-full h-4 bg-gray-200 rounded-full appearance-none cursor-pointer accent-brand"
+                        style="height: 8px;">
+                    <div class="flex justify-between text-xs text-gray-400 mt-2">
+                        <span>1</span>
+                        <span>5</span>
+                        <span>10</span>
+                    </div>
+                    <div class="text-center mt-2">
+                        <span id="energia-value" class="text-2xl">😐</span>
+                        <span id="energia-label" class="text-sm text-gray-500 ml-2">Normal</span>
+                    </div>
+                </div>
             </div>
 
-            <!-- SUEÑO -->
+            <!-- SUEÑO (Registro completo) -->
             <div class="bg-white border-2 border-brand/10 p-5 rounded-[2.5rem] shadow-sm">
                 <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
-                    <span class="text-2xl">😴</span> Sueño
+                    <span class="text-2xl">😴</span> Mi Sueño
                 </h3>
-                <div class="grid grid-cols-3 gap-3" id="sueno-group"></div>
+
+                <!-- Formulario de registro -->
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Hora de dormirse -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-2">🌙 ¿A qué hora te dormiste?</label>
+                            <input type="time" id="sueno-dormir" 
+                                class="w-full p-3 rounded-xl border-2 border-brand/30 focus:border-brand focus:outline-none text-center text-lg"
+                                value="23:00">
+                        </div>
+                        <!-- Hora de despertarse -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-2">☀️ ¿A qué hora despertaste?</label>
+                            <input type="time" id="sueno-despertar" 
+                                class="w-full p-3 rounded-xl border-2 border-brand/30 focus:border-brand focus:outline-none text-center text-lg"
+                                value="07:00">
+                        </div>
+                    </div>
+
+                    <!-- Interrupciones -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-2">🔄 ¿Cuántas veces te despertaste?</label>
+                        <div class="flex items-center gap-3">
+                            <button type="button" id="sueno-interrupciones-menos" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-xl font-bold">-</button>
+                            <span id="sueno-interrupciones-valor" class="text-2xl font-bold text-brand w-12 text-center">0</span>
+                            <button type="button" id="sueno-interrupciones-mas" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-xl font-bold">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Dormí de día -->
+                    <div class="border-t border-gray-100 pt-4">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" id="sueno-dia-check" class="w-5 h-5 rounded text-brand focus:ring-brand">
+                            <span class="text-sm font-medium text-gray-600">😴 Dormí de día (siesta)</span>
+                        </label>
+                        
+                        <!-- Detalles de la siesta (oculto por defecto) -->
+                        <div id="sueno-dia-detalles" class="hidden mt-3 p-3 bg-purple-50 rounded-xl space-y-3">
+                            <p class="text-xs text-purple-600 font-medium">Registrá tu siesta:</p>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Desde</label>
+                                    <input type="time" id="sueno-dia-desde" 
+                                        class="w-full p-2 rounded-lg border-2 border-purple-200 focus:border-purple-400 focus:outline-none text-center text-sm"
+                                        value="14:00">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Hasta</label>
+                                    <input type="time" id="sueno-dia-hasta" 
+                                        class="w-full p-2 rounded-lg border-2 border-purple-200 focus:border-purple-400 focus:outline-none text-center text-sm"
+                                        value="15:30">
+                                </div>
+                            </div>
+                            <p id="sueno-dia-duration" class="text-sm font-bold text-purple-600 text-center">⏱️ 1h 30min</p>
+                        </div>
+                    </div>
+
+                    <!-- Horas calculadas -->
+                    <div class="bg-secondary/10 rounded-2xl p-4 text-center">
+                        <p class="text-sm text-gray-500">Horas dormidas</p>
+                        <p id="sueno-horas-total" class="text-3xl font-bold text-secondary">8h</p>
+                        <p id="sueno-horas-efectivas" class="text-sm text-gray-400">(7h 30m efectivas)</p>
+                    </div>
+                </div>
+
+                <!-- Sugerencia del día -->
+                <div id="sueno-sugerencia" class="mt-4 p-3 bg-accent/20 rounded-xl hidden">
+                    <p class="text-sm font-bold text-amber-700">💡 Sugerencia:</p>
+                    <p id="sueno-sugerencia-texto" class="text-sm text-amber-600">—</p>
+                </div>
             </div>
 
-            <!-- CICLO -->
-            <div class="bg-white border-2 border-brand/10 p-5 rounded-[2.5rem] shadow-sm">
+            <!-- CICLO MENSTRUAL (Con cálculo automático de fases) -->
+            <div class="bg-white border-2 border-brand/10 p-5 rounded-[2.5rem] shadow-sm" id="ciclo-section">
                 <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
-                    <span class="text-2xl">🌸</span> Ciclo menstrual
+                    <span class="text-2xl">🌸</span> Mi Ciclo
                 </h3>
-                <div class="grid grid-cols-2 gap-3" id="ciclo-group"></div>
+                
+                <!-- Estado: NO CONFIGURADO -->
+                <div id="ciclo-no-configurado" class="text-center py-4">
+                    <p class="text-gray-500 mb-4">Registrá el primer día de tu último período para calcular tu ciclo</p>
+                    <div class="flex flex-col gap-3">
+                        <input type="date" id="ciclo-fecha-inicio" 
+                            class="w-full p-3 rounded-xl border-2 border-brand/30 focus:border-brand focus:outline-none text-center"
+                            max="">
+                        <button id="btn-guardar-ciclo" 
+                            class="bg-brand text-white font-bold py-3 px-6 rounded-xl shadow-sticker hover:bg-brand-dark transition-all">
+                            💚 Guardar ciclo
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Estado: CONFIGURADO (muestra fases) -->
+                <div id="ciclo-configurado" class="hidden space-y-4">
+                    <!-- Progress bar del ciclo -->
+                    <div class="relative">
+                        <div class="h-3 bg-gray-100 rounded-full overflow-hidden">
+                            <div id="ciclo-progress" class="h-full bg-gradient-to-r from-pink-300 to-brand rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                        <!-- Días del ciclo -->
+                        <div class="flex justify-between mt-2 text-xs text-gray-500">
+                            <span id="ciclo-dia-actual">Día 1</span>
+                            <span>28 días</span>
+                        </div>
+                    </div>
+
+                    <!-- Fase actual -->
+                    <div class="bg-pink-50 rounded-2xl p-4 text-center">
+                        <span id="ciclo-fase-icon" class="text-4xl">🌸</span>
+                        <p id="ciclo-fase-nombre" class="font-bold text-lg text-pink-600 mt-2">Fase Folicular</p>
+                        <p id="ciclo-fase-desc" class="text-sm text-gray-500 mt-1">Tu energía va en aumento</p>
+                    </div>
+
+                    <!-- Próximos eventos -->
+                    <div class="space-y-2">
+                        <p class="font-bold text-sm text-gray-600">Próximos:</p>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-500">🩸 Próxima menstruación</span>
+                            <span id="ciclo-proxima-fecha" class="font-bold text-brand">—</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-500">🥚 Ovulación</span>
+                            <span id="ciclo-ovulacion-fecha" class="font-bold text-secondary">—</span>
+                        </div>
+                    </div>
+
+                    <!-- Actualizar fecha -->
+                    <button id="btn-actualizar-ciclo" class="text-sm text-brand hover:underline">
+                        📅 Actualizar fecha del período
+                    </button>
+                </div>
             </div>
 
             <!-- GUARDAR -->
             <button id="btn-save-wellness"
                 class="w-full bg-brand text-white font-bold py-4 rounded-2xl shadow-sticker hover:bg-brand-dark hover:scale-[1.02] active:scale-[0.98] transition-all">
-                💾 Guardar registro de hoy
+                💚 Guardar registro
             </button>
 
             <!-- HISTORIAL RECIENTE -->
@@ -1030,7 +1180,7 @@
             });
 
             // Mostrar/ocultar secciones
-            document.getElementById('section-hoy').classList.toggle('hidden', view !== 'salud');
+            document.getElementById('section-salud').classList.toggle('hidden', view !== 'salud');
             document.getElementById('section-inicio').classList.toggle('hidden', view !== 'timeline');
             document.getElementById('section-baul').classList.toggle('hidden', view !== 'baul');
             document.getElementById('section-historial').classList.toggle('hidden', view !== 'historial');

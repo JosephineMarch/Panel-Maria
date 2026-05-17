@@ -152,16 +152,15 @@ class KaiController {
         // La navegación ahora la maneja switchView() en index.html.
         // applyViewStateOnly solo se ocupa de la UI en init(), sin cargar datos.
         // Delegamos al switchView unificado para vistas que no sean timeline.
-        const sectionHoy = document.getElementById('section-hoy');
+        const sectionSalud = document.getElementById('section-salud');  // Antes "section-hoy"
         const sectionInicio = document.getElementById('section-inicio');
-        const sectionSalud = document.getElementById('section-salud');
         const sectionBaul = document.getElementById('section-baul');
         const sectionHistorial = document.getElementById('section-historial');
         const timelineContent = document.getElementById('timeline-content');
         const itemsContainer = document.getElementById('items-container');
         
         // Ocultar todo primero
-        [sectionHoy, sectionInicio, sectionSalud, sectionBaul, sectionHistorial].forEach(s => {
+        [sectionSalud, sectionInicio, sectionBaul, sectionHistorial].forEach(s => {
             if (s) s.classList.add('hidden');
         });
         if (timelineContent) timelineContent.classList.add('hidden');
@@ -172,7 +171,7 @@ class KaiController {
             if (sectionInicio) sectionInicio.classList.remove('hidden');
             // Inicio NO muestra timelineContent ni itemsContainer (solo la quick bar y su lista propia)
         } else if (this.currentView === 'salud') {
-            if (sectionHoy) sectionHoy.classList.remove('hidden');
+            if (sectionSalud) sectionSalud.classList.remove('hidden');
         } else if (this.currentView === 'historial') {
             if (sectionHistorial) sectionHistorial.classList.remove('hidden');
             if (timelineContent) timelineContent.classList.remove('hidden');
@@ -213,6 +212,8 @@ class KaiController {
     async loadHoySection() {
         this.updateSaludDate();
         this.renderSaludOptions();
+        this.renderCicloDisplay();  // Renderizar ciclo menstrual
+        this.renderSuenoData();     // Renderizar datos de sueño
         await this.loadTodayWellness();
         this.bindSaludEvents();
         await this.loadWellnessHistory();
@@ -270,6 +271,286 @@ class KaiController {
                 { valor: 'lutea', label: 'Lútea', icono: '🌙' }
             ]
         };
+    }
+
+    // ===== CÁLCULO DEL CICLO MENSTRUAL =====
+    getCicloData() {
+        const fechaInicio = localStorage.getItem('ciclo_fecha_inicio');
+        const duracionCiclo = parseInt(localStorage.getItem('ciclo_duracion') || '28');
+        
+        if (!fechaInicio) return null;
+        
+        const inicio = new Date(fechaInicio);
+        const hoy = new Date();
+        const diffTime = hoy - inicio;
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        
+        // Ajustar por si el período还没terminado (día 1-5 de menstruación)
+        const diaDelCiclo = ((diffDays % duracionCiclo) + duracionCiclo) % duracionCiclo + 1;
+        
+        // Determinar fase
+        let fase = {};
+        if (diaDelCiclo <= 5) {
+            fase = { nombre: 'Menstruación', icono: '🩸', desc: 'Tu cuerpo se renueva', color: 'text-pink-500' };
+        } else if (diaDelCiclo <= 13) {
+            fase = { nombre: 'Fase Folicular', icono: '🌱', desc: 'Tu energía va en aumento', color: 'text-green-500' };
+        } else if (diaDelCiclo <= 16) {
+            fase = { nombre: 'Ovulación', icono: '🥚', desc: 'Día fértil - máxima energía', color: 'text-yellow-500' };
+        } else {
+            fase = { nombre: 'Fase Lútea', icono: '🌙', desc: 'Más introspectiva', color: 'text-indigo-500' };
+        }
+        
+        // Próxima menstruación
+        const proximaMenstruacion = new Date(inicio);
+        proximaMenstruacion.setDate(proximaMenstruacion.getDate() + duracionCiclo);
+        
+        // Ovulación (aproximadamente día 14)
+        const ovulacion = new Date(inicio);
+        ovulacion.setDate(ovulacion.getDate() + 14);
+        
+        return {
+            diaDelCiclo: Math.min(diaDelCiclo, duracionCiclo),
+            duracionCiclo,
+            fase,
+            fechaInicio: inicio.toLocaleDateString('es-ES'),
+            proximaMenstruacion: proximaMenstruacion.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }),
+            ovulacion: ovulacion.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }),
+            diasParaProxima: Math.ceil((proximaMenstruacion - hoy) / (1000 * 60 * 60 * 24))
+        };
+    }
+
+    renderCicloDisplay() {
+        const noConfigurado = document.getElementById('ciclo-no-configurado');
+        const configurado = document.getElementById('ciclo-configurado');
+        
+        if (!noConfigurado || !configurado) return;
+        
+        const data = this.getCicloData();
+        
+        if (!data) {
+            // No hay datos - mostrar formulario
+            noConfigurado.classList.remove('hidden');
+            configurado.classList.add('hidden');
+            
+            // Set max date a hoy
+            const inputFecha = document.getElementById('ciclo-fecha-inicio');
+            if (inputFecha) {
+                inputFecha.value = '';
+                inputFecha.max = new Date().toISOString().split('T')[0];
+            }
+        } else {
+            // Mostrar datos calculados
+            noConfigurado.classList.add('hidden');
+            configurado.classList.remove('hidden');
+            
+            // Progress bar
+            const progress = document.getElementById('ciclo-progress');
+            if (progress) {
+                progress.style.width = `${(data.diaDelCiclo / data.duracionCiclo) * 100}%`;
+            }
+            
+            // Día actual
+            const diaActual = document.getElementById('ciclo-dia-actual');
+            if (diaActual) diaActual.textContent = `Día ${data.diaDelCiclo} de ${data.duracionCiclo}`;
+            
+            // Fase actual
+            const faseIcon = document.getElementById('ciclo-fase-icon');
+            const faseNombre = document.getElementById('ciclo-fase-nombre');
+            const faseDesc = document.getElementById('ciclo-fase-desc');
+            
+            if (faseIcon) faseIcon.textContent = data.fase.icono;
+            if (faseNombre) {
+                faseNombre.textContent = data.fase.nombre;
+                faseNombre.className = `font-bold text-lg ${data.fase.color} mt-2`;
+            }
+            if (faseDesc) faseDesc.textContent = data.fase.desc;
+            
+            // Próximos eventos
+            const proximaFecha = document.getElementById('ciclo-proxima-fecha');
+            const ovulacionFecha = document.getElementById('ciclo-ovulacion-fecha');
+            
+            if (proximaFecha) proximaFecha.textContent = `${data.proximaMenstruacion} (${data.diasParaProxima} días)`;
+            if (ovulacionFecha) ovulacionFecha.textContent = data.ovulacion;
+        }
+    }
+
+    saveCicloFecha(fecha) {
+        if (!fecha) return;
+        localStorage.setItem('ciclo_fecha_inicio', fecha);
+        this.renderCicloDisplay();
+        ui.showNotification('¡Ciclo registrado! 💚', 'success');
+    }
+
+    // ===== REGISTRO DE SUEÑO =====
+    calcularHorasSueno(dormir, despertar, interrupciones) {
+        const [hDormir, mDormir] = dormir.split(':').map(Number);
+        const [hDespertar, mDespertar] = despertar.split(':').map(Number);
+        
+        let minutosDormir = hDormir * 60 + mDormir;
+        let minutosDespertar = hDespertar * 60 + mDespertar;
+        
+        // Si despertó después de medianoche
+        if (minutosDespertar < minutosDormir) {
+            minutosDespertar += 24 * 60; // Agregar 24 horas
+        }
+        
+        let minutosTotales = minutosDespertar - minutosDormir;
+        // Restar ~15 min por cada interrupción
+        minutosTotales -= (interrupciones * 15);
+        
+        if (minutosTotales < 0) minutosTotales = 0;
+        
+        const horas = Math.floor(minutosTotales / 60);
+        const minutos = minutosTotales % 60;
+        
+        return { horas, minutos, texto: `${horas}h ${minutos > 0 ? minutos + 'm' : ''}` };
+    }
+
+    generarSugerenciaSueno(horas, interrupciones, horaDormir, tieneSiesta = false) {
+        const sugerencias = [];
+        
+        if (horas < 6) {
+            sugerencias.push('🛌 Tu cuerpo necesita más descanso. Intentá dormir al menos 7 horas.');
+        } else if (horas >= 7 && horas <= 9) {
+            sugerencias.push('✅ Tus horas de sueño están dentro del rango recomendado (7-9h).');
+        } else if (horas > 9) {
+            sugerencias.push('💤 Dormiste mucho, pero si aún sentís cansancio, la calidad puede estar afectada.');
+        }
+        
+        if (interrupciones >= 3) {
+            sugerencias.push('🌊多次 interrupciones pueden afectar la calidad del sueño. ¿Hay algo que te despierta?');
+        }
+        
+        // Analizar hora de dormir
+        const horaNum = parseInt(horaDormir.split(':')[0]);
+        if (horaNum >= 0 && horaNum < 3) {
+            sugerencias.push('🌙 Dormiste muy tarde. Esto puede afectar tu ritmo circadiano.');
+        }
+        
+        // Sugerencia basada en fatiga + siesta
+        if (tieneSiesta) {
+            sugerencias.push('😴 Tomaste siesta hoy. Si fue después de las 4pm, puede afectar tu sueño tonight.');
+            sugerencias.push('💡 Las siestas cortas (20-30 min) antes de las 3pm son las mejores para recuperar energía.');
+        }
+        
+        if (horas < 7 || interrupciones >= 2) {
+            sugerencias.push('☕ Considerá una siesta de 20 min antes de las 3pm para recuperar energía.');
+        }
+        
+        return sugerencias[Math.floor(Math.random() * sugerencias.length)] || '';
+    }
+
+    actualizarCalculoSueno() {
+        const dormir = document.getElementById('sueno-dormir')?.value || '23:00';
+        const despertar = document.getElementById('sueno-despertar')?.value || '07:00';
+        const interrupciones = parseInt(document.getElementById('sueno-interrupciones-valor')?.textContent || '0');
+        
+        // Calcular horas de sueño principal
+        const calculo = this.calcularHorasSueno(dormir, despertar, interrupciones);
+        
+        // Calcular siesta (dormir de día)
+        const tieneSiesta = document.getElementById('sueno-dia-check')?.checked;
+        const diaDetalles = document.getElementById('sueno-dia-detalles');
+        let horasSiesta = { horas: 0, minutos: 0, texto: '' };
+        
+        if (diaDetalles) {
+            if (tieneSiesta) {
+                diaDetalles.classList.remove('hidden');
+                const desde = document.getElementById('sueno-dia-desde')?.value || '14:00';
+                const hasta = document.getElementById('sueno-dia-hasta')?.value || '15:30';
+                horasSiesta = this.calcularHorasSueno(desde, hasta, 0);
+                
+                const durationDisplay = document.getElementById('sueno-dia-duration');
+                if (durationDisplay) {
+                    durationDisplay.textContent = `⏱️ ${horasSiesta.texto}`;
+                }
+            } else {
+                diaDetalles.classList.add('hidden');
+            }
+        }
+        
+        // Calcular total (noche + siesta)
+        const totalMinutos = (calculo.horas * 60 + calculo.minutos) + (horasSiesta.horas * 60 + horasSiesta.minutos);
+        const totalHoras = Math.floor(totalMinutos / 60);
+        const totalMinutosRest = totalMinutos % 60;
+        const totalTexto = `${totalHoras}h ${totalMinutosRest > 0 ? totalMinutosRest + 'm' : ''}`;
+        
+        // Actualizar display
+        const horasTotal = document.getElementById('sueno-horas-total');
+        const horasEfectivas = document.getElementById('sueno-horas-efectivas');
+        
+        if (horasTotal) horasTotal.textContent = totalTexto;
+        if (horasEfectivas) {
+            let efectivasTexto = `${calculo.horas}h ${calculo.minutos}m`;
+            if (horasSiesta.horas > 0 || horasSiesta.minutos > 0) {
+                efectivasTexto += ` + ${horasSiesta.texto} (siesta)`;
+            }
+            horasEfectivas.textContent = `(${efectivasTexto})`;
+        }
+        
+        // Generar sugerencia
+        const sugerenciaContainer = document.getElementById('sueno-sugerencia');
+        const sugerenciaTexto = document.getElementById('sueno-sugerencia-texto');
+        
+        if (sugerenciaContainer && sugerenciaTexto) {
+            const sugerencia = this.generarSugerenciaSueno(calculo.horas, interrupciones, dormir, tieneSiesta);
+            if (sugerencia) {
+                sugerenciaContainer.classList.remove('hidden');
+                sugerenciaTexto.textContent = sugerencia;
+            } else {
+                sugerenciaContainer.classList.add('hidden');
+            }
+        }
+    }
+
+    getSuenoData() {
+        return {
+            dormir: localStorage.getItem('sueno_dormir') || '23:00',
+            despertar: localStorage.getItem('sueno_despertar') || '07:00',
+            interrupciones: parseInt(localStorage.getItem('sueno_interrupciones') || '0'),
+            tieneSiesta: localStorage.getItem('sueno_tiene_siesta') === 'true',
+            siestaDesde: localStorage.getItem('sueno_siesta_desde') || '14:00',
+            siestaHasta: localStorage.getItem('sueno_siesta_hasta') || '15:30'
+        };
+    }
+
+    renderSuenoData() {
+        const data = this.getSuenoData();
+        
+        const dormirInput = document.getElementById('sueno-dormir');
+        const despertarInput = document.getElementById('sueno-despertar');
+        const interrupcionesDisplay = document.getElementById('sueno-interrupciones-valor');
+        const siestaCheck = document.getElementById('sueno-dia-check');
+        const siestaDesde = document.getElementById('sueno-dia-desde');
+        const siestaHasta = document.getElementById('sueno-dia-hasta');
+        
+        if (dormirInput) dormirInput.value = data.dormir;
+        if (despertarInput) despertarInput.value = data.despertar;
+        if (interrupcionesDisplay) interrupcionesDisplay.textContent = data.interrupciones;
+        if (siestaCheck) siestaCheck.checked = data.tieneSiesta;
+        if (siestaDesde) siestaDesde.value = data.siestaDesde;
+        if (siestaHasta) siestaHasta.value = data.siestaHasta;
+        
+        // Calcular y mostrar
+        this.actualizarCalculoSueno();
+    }
+
+    saveSuenoData() {
+        const dormir = document.getElementById('sueno-dormir')?.value;
+        const despertar = document.getElementById('sueno-despertar')?.value;
+        const interrupciones = document.getElementById('sueno-interrupciones-valor')?.textContent;
+        const tieneSiesta = document.getElementById('sueno-dia-check')?.checked;
+        const siestaDesde = document.getElementById('sueno-dia-desde')?.value;
+        const siestaHasta = document.getElementById('sueno-dia-hasta')?.value;
+        
+        if (dormir) localStorage.setItem('sueno_dormir', dormir);
+        if (despertar) localStorage.setItem('sueno_despertar', despertar);
+        if (interrupciones) localStorage.setItem('sueno_interrupciones', interrupciones);
+        localStorage.setItem('sueno_tiene_siesta', tieneSiesta ? 'true' : 'false');
+        if (siestaDesde) localStorage.setItem('sueno_siesta_desde', siestaDesde);
+        if (siestaHasta) localStorage.setItem('sueno_siesta_hasta', siestaHasta);
+        
+        this.actualizarCalculoSueno();
     }
 
     renderSaludOptions() {
@@ -416,6 +697,142 @@ class KaiController {
     }
 
     bindSaludEvents() {
+        // ===== SLIDERS DE ÁNIMO =====
+        const animoSlider = document.getElementById('animo-slider');
+        const animoIcon = document.getElementById('animo-icon');
+        const animoValue = document.getElementById('animo-value');
+        const animoLabel = document.getElementById('animo-label');
+        
+        const animoEmojis = {
+            1: '😢', 2: '😔', 3: '😕', 4: '😟', 5: '😐',
+            6: '🙂', 7: '😊', 8: '😄', 9: '😁', 10: '🤩'
+        };
+        const animoLabels = {
+            1: 'Muy triste', 2: 'Triste', 3: 'Algo triste', 4: 'Bajón', 5: 'Normal',
+            6: 'Bien', 7: 'Contenta', 8: 'Feliz', 9: 'Muy feliz', 10: 'Excelente'
+        };
+        
+        if (animoSlider) {
+            animoSlider.addEventListener('input', (e) => {
+                const val = parseInt(e.target.value);
+                animoIcon.textContent = animoEmojis[val];
+                animoValue.textContent = animoEmojis[val];
+                animoLabel.textContent = animoLabels[val];
+            });
+        }
+        
+        // ===== SLIDERS DE ENERGÍA =====
+        const energiaSlider = document.getElementById('energia-slider');
+        const energiaIcon = document.getElementById('energia-icon');
+        const energiaValue = document.getElementById('energia-value');
+        const energiaLabel = document.getElementById('energia-label');
+        
+        const energiaEmojis = {
+            1: '💀', 2: '😴', 3: '😪', 4: '😌', 5: '😐',
+            6: '🙂', 7: '💪', 8: '⚡', 9: '🔥', 10: '🚀'
+        };
+        const energiaLabels = {
+            1: 'Sin energía', 2: 'Agotada', 3: 'Muy cansada', 4: 'Cansada', 5: 'Normal',
+            6: 'Bien', 7: 'Activa', 8: 'Energética', 9: 'A tope', 10: 'Explosiva'
+        };
+        
+        if (energiaSlider) {
+            energiaSlider.addEventListener('input', (e) => {
+                const val = parseInt(e.target.value);
+                energiaIcon.textContent = energiaEmojis[val];
+                energiaValue.textContent = energiaEmojis[val];
+                energiaLabel.textContent = energiaLabels[val];
+            });
+        }
+        
+        // ===== EVENTOS DEL CICLO MENSTRUAL =====
+        // Guardar fecha del ciclo
+        const btnGuardarCiclo = document.getElementById('btn-guardar-ciclo');
+        const inputFechaCiclo = document.getElementById('ciclo-fecha-inicio');
+        
+        if (btnGuardarCiclo && inputFechaCiclo) {
+            btnGuardarCiclo.addEventListener('click', () => {
+                const fecha = inputFechaCiclo.value;
+                if (!fecha) {
+                    ui.showNotification('Seleccioná una fecha', 'warning');
+                    return;
+                }
+                this.saveCicloFecha(fecha);
+            });
+            
+            // También guardar al presionar Enter
+            inputFechaCiclo.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    btnGuardarCiclo.click();
+                }
+            });
+        }
+        
+        // Actualizar fecha del ciclo
+        const btnActualizarCiclo = document.getElementById('btn-actualizar-ciclo');
+        if (btnActualizarCiclo) {
+            btnActualizarCiclo.addEventListener('click', () => {
+                document.getElementById('ciclo-no-configurado').classList.remove('hidden');
+                document.getElementById('ciclo-configurado').classList.add('hidden');
+            });
+        }
+        
+        // ===== EVENTOS DE SUEÑO =====
+        // Renderizar datos guardados
+        this.renderSuenoData();
+        
+        // Actualizar cálculo al cambiar horas
+        const dormirInput = document.getElementById('sueno-dormir');
+        const despertarInput = document.getElementById('sueno-despertar');
+        
+        if (dormirInput) {
+            dormirInput.addEventListener('change', () => this.actualizarCalculoSueno());
+        }
+        if (despertarInput) {
+            despertarInput.addEventListener('change', () => this.actualizarCalculoSueno());
+        }
+        
+        // Botones de interrupciones +/-
+        const btnMenos = document.getElementById('sueno-interrupciones-menos');
+        const btnMas = document.getElementById('sueno-interrupciones-mas');
+        const interrupcionesDisplay = document.getElementById('sueno-interrupciones-valor');
+        
+        if (btnMenos && interrupcionesDisplay) {
+            btnMenos.addEventListener('click', () => {
+                let val = parseInt(interrupcionesDisplay.textContent);
+                if (val > 0) {
+                    interrupcionesDisplay.textContent = val - 1;
+                    this.actualizarCalculoSueno();
+                }
+            });
+        }
+        
+        if (btnMas && interrupcionesDisplay) {
+            btnMas.addEventListener('click', () => {
+                let val = parseInt(interrupcionesDisplay.textContent);
+                if (val < 20) {
+                    interrupcionesDisplay.textContent = val + 1;
+                    this.actualizarCalculoSueno();
+                }
+            });
+        }
+        
+        // ===== EVENTOS DE SIESTA (DORMIR DE DÍA) =====
+        const siestaCheck = document.getElementById('sueno-dia-check');
+        const siestaDesde = document.getElementById('sueno-dia-desde');
+        const siestaHasta = document.getElementById('sueno-dia-hasta');
+        
+        if (siestaCheck) {
+            siestaCheck.addEventListener('change', () => this.actualizarCalculoSueno());
+        }
+        if (siestaDesde) {
+            siestaDesde.addEventListener('change', () => this.actualizarCalculoSueno());
+        }
+        if (siestaHasta) {
+            siestaHasta.addEventListener('change', () => this.actualizarCalculoSueno());
+        }
+        
+        // Botones legacy (sueno, ciclo)
         document.querySelectorAll('.salud-radio').forEach(btn => {
             btn.addEventListener('click', () => {
                 const group = btn.dataset.group;
@@ -433,28 +850,61 @@ class KaiController {
         const saveBtn = document.getElementById('btn-save-wellness');
         if (saveBtn) {
             saveBtn.addEventListener('click', async () => {
-                const animo = document.querySelector('.salud-radio[data-group="animo"][aria-pressed="true"]');
-                const energia = document.querySelector('.salud-radio[data-group="energia"][aria-pressed="true"]');
-                const sueno = document.querySelector('.salud-radio[data-group="sueno"][aria-pressed="true"]');
-                const ciclo = document.querySelector('.salud-radio[data-group="ciclo"][aria-pressed="true"]');
-
-                if (!animo || !energia || !sueno) {
-                    ui.showNotification('Seleccioná ánimo, energía y sueño al menos', 'warning');
-                    return;
+                // Obtener valores de sliders (ánimo y energía)
+                const animoSlider = document.getElementById('animo-slider');
+                const energiaSlider = document.getElementById('energia-slider');
+                
+                const animo = animoSlider ? parseInt(animoSlider.value) : 5;
+                const energia = energiaSlider ? parseInt(energiaSlider.value) : 5;
+                
+                // Obtener valores del nuevo registro de sueño
+                const suenoDormir = document.getElementById('sueno-dormir')?.value;
+                const suenoDespertar = document.getElementById('sueno-despertar')?.value;
+                const suenoInterrupciones = parseInt(document.getElementById('sueno-interrupciones-valor')?.textContent || '0');
+                const tieneSiesta = document.getElementById('sueno-dia-check')?.checked;
+                const siestaDesde = document.getElementById('sueno-dia-desde')?.value;
+                const siestaHasta = document.getElementById('sueno-dia-hasta')?.value;
+                
+                // Calcular horas dormidas (noche)
+                const calculoSueno = this.calcularHorasSueno(suenoDormir, suenoDespertar, suenoInterrupciones);
+                
+                // Calcular horas de siesta si aplica
+                let calculoSiesta = { horas: 0, minutos: 0, texto: '' };
+                if (tieneSiesta && siestaDesde && siestaHasta) {
+                    calculoSiesta = this.calcularHorasSueno(siestaDesde, siestaHasta, 0);
                 }
+                
+                // Calcular total (noche + siesta)
+                const totalMinutos = (calculoSueno.horas * 60 + calculoSueno.minutos) + (calculoSiesta.horas * 60 + calculoSiesta.minutos);
+                const totalHoras = Math.floor(totalMinutos / 60);
+                const totalMinutosRest = totalMinutos % 60;
+                const totalSuenoTexto = `${totalHoras}h ${totalMinutosRest > 0 ? totalMinutosRest + 'm' : ''}`;
+                
+                // Guardar datos del sueño en localStorage también
+                this.saveSuenoData();
+
+                // Obtener valores de botones legacy (ciclo)
+                const ciclo = document.querySelector('.salud-radio[data-group="ciclo"][aria-pressed="true"]');
 
                 saveBtn.disabled = true;
                 saveBtn.textContent = 'Guardando...';
 
                 await this.saveWellness({
-                    animo: animo.dataset.value,
-                    energia: parseInt(energia.dataset.value),
-                    sueno: sueno.dataset.value,
+                    animo: animo,
+                    energia: energia,
+                    // Nuevo formato de sueño
+                    sueno_dormir: suenoDormir,
+                    sueno_despertar: suenoDespertar,
+                    sueno_interrupciones: suenoInterrupciones,
+                    sueno_horas: totalSuenoTexto,
+                    sueno_tiene_siesta: tieneSiesta,
+                    sueno_siesta_desde: tieneSiesta ? siestaDesde : null,
+                    sueno_siesta_hasta: tieneSiesta ? siestaHasta : null,
                     ciclo: ciclo ? ciclo.dataset.value : null
                 });
 
                 saveBtn.disabled = false;
-                saveBtn.innerHTML = '💾 Guardar registro de hoy';
+                saveBtn.innerHTML = '💚 Guardar registro';
 
                 await this.loadWellnessHistory();
             });
