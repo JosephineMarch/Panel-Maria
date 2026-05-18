@@ -18,6 +18,7 @@ export const pomodoro = {
     tiempoTotal: 25 * 60,    // segundos totales del período actual
     tiempoInicio: null,     // timestamp cuando inició el período
     estado: 'idle',         // idle, trabajo, descanso
+    estadoPrevio: null,     // estado anterior (para reanudar desde pausa)
     ciclosCompletados: 0,
     intervalo: null,
     tareaActual: null,      // ID de tarea asociada
@@ -44,6 +45,7 @@ export const pomodoro = {
         
         this.tareaActual = tareaId;
         this.estado = 'trabajo';
+        this.estadoPrevio = 'trabajo';
         this.tiempoTotal = this.tiempoTrabajo * 60;
         this.tiempoInicio = Date.now();
         
@@ -104,6 +106,7 @@ export const pomodoro = {
             }
             
             this.tiempoInicio = Date.now();
+            this.estadoPrevio = this.estado; // Guardar estado para pausa
             
             // Reproducir audio
             this.reproducirAudio('descanso');
@@ -118,6 +121,7 @@ export const pomodoro = {
             this.estado = 'trabajo';
             this.tiempoTotal = this.tiempoTrabajo * 60;
             this.tiempoInicio = Date.now();
+            this.estadoPrevio = this.estado; // Guardar estado para pausa
             this.mostrarTimer();
             this.iniciarIntervalo();
         }
@@ -128,6 +132,8 @@ export const pomodoro = {
      */
     pausar() {
         if (this.estado === 'idle') return;
+        // Guardar el estado anterior antes de pausar
+        this.estadoPrevio = this.estado;
         this.detener();
         // Guardar el tiempo restante al pausar
         this.tiempoTotal = this.getTiempoRestante();
@@ -143,6 +149,7 @@ export const pomodoro = {
         if (this.estado !== 'pausado') return;
         // Usar el tiempoTotal guardado como tiempo restante
         this.tiempoInicio = Date.now();
+        // Restaurar el estado anterior (trabajo, descanso, etc.)
         this.estado = this.estadoPrevio || 'trabajo';
         this.iniciarIntervalo();
         this.mostrarTimer();
@@ -183,6 +190,7 @@ export const pomodoro = {
         }
         
         this.tiempoInicio = Date.now();
+        this.estadoPrevio = this.estado; // Guardar estado para pausa
         this.mostrarTimer();
         this.iniciarIntervalo();
     },
@@ -201,6 +209,7 @@ export const pomodoro = {
      */
     reset() {
         this.estado = 'idle';
+        this.estadoPrevio = null;
         this.tiempoTotal = this.tiempoTrabajo * 60;
         this.tiempoInicio = null;
         this.ciclosCompletados = 0;
@@ -351,7 +360,11 @@ export const pomodoro = {
         // Botones del modal
         document.getElementById('pomodoro-btn-iniciar')?.addEventListener('click', () => {
             if (this.estado === 'idle' || this.estado === 'pausado') {
-                this.iniciar(this.tareaActual);
+                if (this.estado === 'pausado') {
+                    this.reanudar();
+                } else {
+                    this.iniciar(this.tareaActual);
+                }
             } else {
                 this.pausar();
             }
@@ -363,6 +376,33 @@ export const pomodoro = {
         
         document.getElementById('pomodoro-btn-fin')?.addEventListener('click', () => {
             this.finish();
+        });
+        
+        // Botones de descanso/seguir (después de completar trabajo)
+        document.getElementById('pomodoro-btn-descanso')?.addEventListener('click', () => {
+            // Iniciar descanso manualmente
+            if (this.estado === 'pausado' || this.estado === 'trabajo' || this.estado === 'descanso' || this.estado === 'descanso-largo') {
+                this.estado = 'descanso';
+                this.estadoPrevio = 'descanso';
+                this.tiempoTotal = this.tiempoDescansoCorto * 60;
+                this.tiempoInicio = Date.now();
+                this.iniciarIntervalo();
+                this.mostrarTimer();
+                document.getElementById('pomodoro-opciones')?.classList.add('hidden');
+            }
+        });
+        
+        document.getElementById('pomodoro-btn-seguir')?.addEventListener('click', () => {
+            // Saltar descanso e ir directamente al siguiente trabajo
+            if (this.estado === 'pausado' || this.estado === 'trabajo' || this.estado === 'descanso' || this.estado === 'descanso-largo') {
+                this.estado = 'trabajo';
+                this.estadoPrevio = 'trabajo';
+                this.tiempoTotal = this.tiempoTrabajo * 60;
+                this.tiempoInicio = Date.now();
+                this.iniciarIntervalo();
+                this.mostrarTimer();
+                document.getElementById('pomodoro-opciones')?.classList.add('hidden');
+            }
         });
         
         // Cerrar modal
