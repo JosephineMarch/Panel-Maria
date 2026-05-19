@@ -573,13 +573,13 @@ class KaiController {
         }
     }
 
-    async saveWellness(data) {
+    async saveWellness(wellnessData) {
         const fecha = new Date().toISOString().split('T')[0];
 
         if (!this.currentUser) {
             const local = JSON.parse(localStorage.getItem('wellness_local') || '[]');
             const idx = local.findIndex(w => w.fecha === fecha);
-            const entry = { ...data, fecha, updatedAt: new Date().toISOString() };
+            const entry = { ...wellnessData, fecha, updatedAt: new Date().toISOString() };
             if (idx >= 0) local[idx] = entry;
             else local.push(entry);
             localStorage.setItem('wellness_local', JSON.stringify(local));
@@ -592,14 +592,14 @@ class KaiController {
         try {
             if (existing) {
                 await data.updateItem(existing.id, {
-                    meta: { ...existing.meta, ...data, fecha }
+                    meta: { ...existing.meta, ...wellnessData, fecha }
                 });
             } else {
                 await data.createItem({
                     content: `Bitácora - ${fecha}`,
                     type: 'checkin',
                     tags: ['salud', 'bienestar'],
-                    meta: { ...data, fecha }
+                    meta: { ...wellnessData, fecha }
                 });
             }
             ui.showNotification('Registro guardado 💚', 'success');
