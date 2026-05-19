@@ -1254,13 +1254,21 @@
             const fecha = new Date();
             const opcionesFecha = { weekday: 'long', day: 'numeric', month: 'long' };
             const fechaStr = fecha.toLocaleDateString('es-ES', opcionesFecha);
-            document.getElementById('hoy-fecha').textContent = fechaStr.charAt(0).toUpperCase() + fechaStr.slice(1);
+            const elementFecha = document.getElementById('salud-fecha');
+            const elementSaludo = document.getElementById('salud-saludo');
+            
+            if (elementFecha) {
+                elementFecha.textContent = fechaStr.charAt(0).toUpperCase() + fechaStr.slice(1);
+            }
 
             const hora = fecha.getHours();
             let saludo = 'Buenos días';
             if (hora >= 12 && hora < 18) saludo = 'Buenas tardes';
             if (hora >= 18) saludo = 'Buenas noches';
-            document.getElementById('hoy-saludo').textContent = saludo;
+            
+            if (elementSaludo) {
+                elementSaludo.textContent = saludo;
+            }
         }
 
         // ==================== HISTORIAL ====================
@@ -1348,6 +1356,24 @@
 
             container.innerHTML = html;
         }
+
+        // ==================== BAÚL ====================
+
+        // Cargar baúl (items archivados o especiales)
+        function loadBaul() {
+            const container = document.getElementById('baul-list');
+            if (!container) return;
+
+            // Por ahora, mostrar un mensaje de que está en desarrollo o cargar items filtrados
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <div class="text-6xl mb-4">📦</div>
+                    <p class="text-gray-400">Tu baúl está vacío</p>
+                    <p class="text-xs text-gray-300 mt-2">Aquí aparecerán tus cosas guardadas para después</p>
+                </div>
+            `;
+        }
+
 
         // Inicializar historial
         document.addEventListener('DOMContentLoaded', () => {
