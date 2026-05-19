@@ -33,3 +33,4 @@ yarn-error.log*
 !pnpm-workspace.yaml
 !supabase/
 !scripts/
+nul
