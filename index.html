@@ -228,8 +228,8 @@
                     <h2 class="text-2xl font-bold text-green-600 flex items-center justify-center gap-2">
                         <span class="text-3xl">💚</span> Tu Salud
                     </h2>
-                    <p id="hoy-fecha" class="text-gray-500 text-base mt-1"></p>
-                    <p id="hoy-saludo" class="text-green-500 text-sm font-medium mt-1"></p>
+                    <p id="salud-fecha" class="text-gray-500 text-base mt-1"></p>
+                    <p id="salud-saludo" class="text-green-500 text-sm font-medium mt-1"></p>
                 </div>
             </div>
 
@@ -1020,12 +1020,10 @@
         </div>
     </div>
 
-    <!-- Script para navegación HOY/TIMELINE -->
+    <!-- Script para navegación SALUD/TIMELINE -->
     <script type="module">
-        import { hoy } from './src/js/hoy.js';
-
         // Estado de la vista actual
-        let currentView = 'timeline'; // 'hoy' o 'timeline'
+        let currentView = 'timeline'; // 'salud' o 'timeline'
 
         // Inicializar
         document.addEventListener('DOMContentLoaded', () => {

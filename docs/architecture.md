@@ -8,7 +8,7 @@
 UI (ui.js) → Controller (logic.js) → Managers (items.js, alarmas.js, etc.) → Data (data.js) → Supabase
 ```
 
-14 módulos ES con patrón singleton. Comunicación vía Custom Events (`window.dispatchEvent`).
+13 módulos ES con patrón singleton. Comunicación vía Custom Events (`window.dispatchEvent`).
 
 ## Módulos
 
@@ -22,8 +22,7 @@ UI (ui.js) → Controller (logic.js) → Managers (items.js, alarmas.js, etc.) �
 | `cerebras.js` | Motor IA: RAG, chat, 10 acciones JSON |
 | `auth.js` | Google OAuth + Email/Password |
 | `alarmas.js` | Alarmas: polling 30s, snooze, repeticiones, push |
-| `checkins.js` | Check-ins de bienestar (3 momentos) |
-| `hoy.js` | Rutinas diarias + tareas del día |
+| `salud.js` | Gestión de Salud: ciclo, sueño, check-ins |
 | `ai.js` | Voz (Web Speech API) + detección offline |
 | `firebase.js` | FCM tokens + foreground messages |
 | `share.js` | Share Target API |

@@ -30,7 +30,7 @@ No formatter, linter, or type checker is configured. Code style is enforced by c
 ├── manifest.json           # PWA manifest (Share Target, shortcuts, icons)
 ├── offline.html            # Offline fallback page
 ├── src/
-│   ├── js/                 # 14 ES modules (named exports, no default)
+│   ├── js/                 # 13 ES modules (named exports, no default)
 │   │   ├── logic.js        # KaiController — orchestrator (~2500 lines)
 │   │   ├── ui.js           # View: Bento cards, Kai chat, inline editing
 │   │   ├── data.js         # Model: Supabase CRUD, sanitization, FTS
@@ -39,8 +39,7 @@ No formatter, linter, or type checker is configured. Code style is enforced by c
 │   │   ├── items.js        # ItemManager: load/create/update/delete/finish/pin
 │   │   ├── cerebras.js     # Cerebras AI: RAG, chat, 10 JSON action types
 │   │   ├── alarmas.js      # AlarmManager: polling (30s), snooze, push
-│   │   ├── checkins.js     # CheckinManager: wellness check-ins
-│   │   ├── hoy.js          # HoyManager: routines, daily tasks
+│   │   ├── salud.js        # SaludManager: wellness, cycle, sleep
 │   │   ├── ai.js           # Voice recognition (Web Speech API)
 │   │   ├── firebase.js     # FCM client: token gen, refresh, foreground
 │   │   ├── share.js        # Share Target API handler

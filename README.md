@@ -23,7 +23,7 @@ app.js                  # Entry: SW register, FCM, alarmas
 sw.js                   # Service Worker (kai-cache-v12)
 manifest.json           # PWA manifest
 
-src/js/                 # 14 módulos ES
+src/js/                 # 13 módulos ES
 ├── logic.js            # KaiController — orquestador
 ├── ui.js               # Renderizado: cards Bento, chat, edición inline
 ├── data.js             # CRUD Supabase + sanitización
@@ -32,8 +32,7 @@ src/js/                 # 14 módulos ES
 ├── cerebras.js         # Motor IA: RAG, chat, 10 acciones JSON
 ├── auth.js             # Google OAuth + Email/Password
 ├── alarmas.js          # Alarmas: polling 30s, snooze, push
-├── checkins.js         # Check-ins de bienestar
-├── hoy.js              # Rutinas diarias + tareas del día
+├── salud.js            # Módulo de Salud: ciclo, sueño, check-ins
 ├── ai.js               # Voz (Web Speech API)
 ├── firebase.js         # FCM tokens + foreground messages
 ├── share.js            # Share Target API

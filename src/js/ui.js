@@ -69,6 +69,14 @@ export const ui = {
             headerBg: null,
             label: 'LOGRO'
         },
+        checkin: {
+            color: 'brand',
+            icon: '🌸',
+            bg: 'bg-brand/5',
+            text: 'text-ink',
+            headerBg: null,
+            label: 'SALUD'
+        },
     },
 
 
@@ -547,7 +555,7 @@ export const ui = {
             <!-- Header: Tipo | Acciones -->
             <div class="card-header-simple">
                 <div class="flex items-center gap-2">
-                    <span class="card-type-badge ${typeBadgeClass}">${typeConfig.icon}</span>
+                    <span class="card-type-badge ${typeBadgeClass}">${displayIcon}</span>
                     <span class="text-sm font-medium text-ink">${typeConfig.label}</span>
                     ${deadlineHtml}
                 </div>
@@ -2080,6 +2088,67 @@ export const ui = {
             + addTagBtn
             + '</div>'
             + '<button class="task-action action-delete" data-id="' + item.id + '" title="Eliminar">'
+            + '<i class="fa-regular fa-trash-can"></i>'
+            + '</button>'
+            + '</div>'
+            + '</div>';
+
+        return row;
+    },
+
+    /**
+     * Renderiza chips de tags como filtros clicables
+     * @param {string[]} tags - Array de tags únicos
+     * @param {string|null} activeFilter - Tag actualmente activo (null = todos)
+     * @returns {string}
+     */
+    renderTagChips(tags, activeFilter) {
+        if (!tags || tags.length === 0) return '';
+
+        let html = '<button class="tag-chip' + (!activeFilter ? ' active' : '') + '" data-tag="">Mostrar todos</button>';
+        html += tags.map(tag =>
+            '<button class="tag-chip' + (activeFilter === tag ? ' active' : '') + '" data-tag="' + tag + '">#' + tag + '</button>'
+        ).join('');
+
+        return html;
+    },
+
+    /**
+     * Renderiza badge de puntos
+     * @param {number} puntos - 10, 20, 50, 100
+     * @returns {string}
+     */
+    renderPointsBadge(puntos) {
+        if (!puntos || puntos <= 0) return '';
+        return '<span class="points-badge">' + puntos + ' \u2B50</span>';
+    },
+
+    /**
+     * Anima el completado de una tarea: 300ms fade out + remove
+     * @param {HTMLElement} element - task-row element
+     * @returns {Promise} - resolves when animation complete
+     */
+    animateTaskComplete(element) {
+        return new Promise((resolve) => {
+            element.classList.add('completed-fade-out');
+            setTimeout(() => {
+                element.remove();
+                resolve();
+            }, 300);
+        });
+    },
+
+    /**
+     * Escapa HTML para prevenir XSS
+     */
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+};
+-delete" data-id="' + item.id + '" title="Eliminar">'
             + '<i class="fa-regular fa-trash-can"></i>'
             + '</button>'
             + '</div>'
