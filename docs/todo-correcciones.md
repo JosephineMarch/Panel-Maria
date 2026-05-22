@@ -40,14 +40,51 @@
 
 ## 🟠 HISTORIAL — PRIORIDAD ALTA
 
-| # | Tarea | Estado |
-|---|-------|--------|
-| H1 | **Filtros**: Corregir enlace (actualmente redirige al inicio en vez de filtrar) | 🔲 Pendiente |
-| H2 | **Limpieza**: Borrar duplicados (identificar ID en inspector y eliminar resumen redundante) | 🔲 Pendiente |
-| H3 | **Renombrar**: `timeline-content` a `historial-content` | 🔲 Pendiente |
-| H4 | **Rediseño cards**: Más limpias, estilo tareas. Eliminar opción "cambiar tipo" | 🔲 Pendiente |
-| H5 | **Lógica visual**: Si es nota, solo texto; si es tarea, solo checklist; si es enlace, solo URL | 🔲 Pendiente |
-| H6 | **Interacción**: Definir si editar vía modal o desplegable | 🔲 Pendiente |
+### Plan de Implementación: Unificación y Mejoras del Historial
+
+**Objetivo:** Unificar `timeline-content` dentro de `section-historial`, agregar calendario semanal, CRUD completo, filtros avanzados y rediseño de cards.
+
+**Arquitectura escalable:** El calendario semanal es la base para futuras vistas (diaria, mensual, Google Calendar-style).
+
+| Fase | Paso | Tarea | Estado |
+|------|------|-------|--------|
+| **Fase 1** | 1.1 | Unificar `timeline-content` dentro de `section-historial` (mover búsqueda/filtros, eliminar contenedores duplicados) | ✅ Completado |
+| **Fase 1** | 1.2 | Centralizar data en un solo array y actualizar `renderTimeline()` | 🔲 Pendiente |
+| **Fase 2** | 2.1 | Crear estructura HTML del calendario semanal horizontal | 🔲 Pendiente |
+| **Fase 2** | 2.2 | Implementar lógica JS para generar días de la semana actual | 🔲 Pendiente |
+| **Fase 2** | 2.3 | Agregar navegación entre semanas (anterior/siguiente) | 🔲 Pendiente |
+| **Fase 2** | 2.4 | Highlight del día seleccionado y scroll automático | 🔲 Pendiente |
+| **Fase 3** | 3.1 | Rediseñar cards del historial (mismo estilo que tareas del inicio) | 🔲 Pendiente |
+| **Fase 3** | 3.2 | Mostrar contenido condicional según tipo (nota=texto, tarea=checklist, enlace=URL) | 🔲 Pendiente |
+| **Fase 4** | 4.1 | Implementar modal de edición para items del historial | 🔲 Pendiente |
+| **Fase 4** | 4.2 | Agregar botón de eliminar con confirmación | 🔲 Pendiente |
+| **Fase 4** | 4.3 | Persistir cambios en localStorage/Supabase | 🔲 Pendiente |
+| **Fase 5** | 5.1 | Sistema de filtros por tipo (nota, enlace, tarea, salud, gatos) | 🔲 Pendiente |
+| **Fase 5** | 5.2 | Sistema de filtros por tags | 🔲 Pendiente |
+| **Fase 5** | 5.3 | Filtros combinables y fáciles de extender | 🔲 Pendiente |
+| **Fase 6** | 6.1 | Pruebas de usabilidad y ajustes finales | 🔲 Pendiente |
+| **Futuro** | F1 | Vista diaria del calendario | 🔲 Evaluación |
+| **Futuro** | F2 | Vista mensual del calendario | 🔲 Evaluación |
+| **Futuro** | F3 | Vista tipo Google Calendar (grilla completa) | 🔲 Evaluación |
+
+---
+
+### Historial de Cambios
+
+| Fecha | Paso Completado | Descripción |
+|-------|-----------------|-------------|
+| 2026-05-17 | 1.1 | Unificada la estructura: `timeline-content` eliminado, búsqueda/filtros movidos a `section-historial`, `switchView()` actualizado |
+
+---
+
+| # | Tarea Original | Estado | Nota |
+|---|-------|--------|------|
+| H1 | **Filtros**: Corregir enlace (actualmente redirige al inicio en vez de filtrar) | ✅ Resuelto | Integrado en Paso 1.1 |
+| H2 | **Limpieza**: Borrar duplicados (identificar ID en inspector y eliminar resumen redundante) | 🔄 En Proceso | Se abordará en centralización de data (Paso 1.2) |
+| H3 | **Renombrar**: `timeline-content` a `historial-content` | ✅ Resuelto | Eliminado en favor de unificar en `section-historial` |
+| H4 | **Rediseño cards**: Más limpias, estilo tareas. Eliminar opción "cambiar tipo" | 🔲 Pendiente | Fase 3 |
+| H5 | **Lógica visual**: Si es nota, solo texto; si es tarea, solo checklist; si es enlace, solo URL | 🔲 Pendiente | Fase 3 |
+| H6 | **Interacción**: Definir si editar vía modal o desplegable | ✅ Decidido | Modal (Fase 4) |
 
 ---
 
