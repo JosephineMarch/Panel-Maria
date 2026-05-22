@@ -39,10 +39,10 @@ export const CONFIG = {
         directorio: '🔗',
     },
     typeColors: {
-        nota: '#FFF2A1',
-        tarea: '#A1DFFF',
-        proyecto: '#FFB7C5',
-        directorio: '#C9B8FF',
+        nota: '#f0a5ff',
+        tarea: '#64748B',
+        proyecto: '#37d9e0',
+        directorio: '#f0a5ff',
     }
 };
 

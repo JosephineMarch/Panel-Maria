@@ -29,12 +29,11 @@ export const utils = {
 
     sanitizeInput(text) {
         if (typeof text !== 'string') return text;
+        // Solo escapar < y > que son los únicos caracteres peligrosos para XSS
+        // Permitir / y comillas que son caracteres válidos en contenido de tareas
         return text
             .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#x27;')
-            .replace(/\//g, '&#x2F;');
+            .replace(/>/g, '&gt;');
     },
 
     stripHtml(html) {
@@ -162,8 +161,8 @@ export const utils = {
 
     getRandomColor() {
         const colors = [
-            '#fef3c7', '#d1fae5', '#e0e7ff', '#fee2e2',
-            '#dbeafe', '#fce7f3', '#f3e8ff', '#ffedd5'
+            '#ffcf7d', '#DCFCE7', '#CFFAFE', '#FFE4E6',
+            '#CFFAFE', '#FFE4E6', '#CFFAFE', '#ffcf7d'
         ];
         return colors[Math.floor(Math.random() * colors.length)];
     },

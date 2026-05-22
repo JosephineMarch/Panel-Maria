@@ -28,7 +28,11 @@ export const data = {
             deadline: itemData.deadline || null,
             repeat: itemData.repeat || null,
             anclado: itemData.anclado || false,
-            meta: itemData.meta || {}
+            meta: (() => {
+                const m = { ...(itemData.meta || {}) };
+                if (itemData.type === 'tarea' && !m.puntos) m.puntos = 10;
+                return m;
+            })()
         };
 
         const { data, error } = await supabase

@@ -41,7 +41,9 @@ import { ui } from './ui.js';
 import { auth } from './auth.js';
 import { ai } from './ai.js';
 import { cerebras } from './cerebras.js';
-import { hoy } from './hoy.js';
+import { salud } from './salud.js';
+import { gatos } from './gatos.js';
+import { utils } from './utils.js';
 
 function formatDeadlineForDB(deadline) {
     if (!deadline) return null;
@@ -69,11 +71,15 @@ class KaiController {
     constructor() {
         this.currentUser = null;
         this.currentParentId = null;
-        this.currentCategory = 'all';
+        this.currentCategory = 'tarea';
         this.currentTag = null;
+        this.currentExcludeTag = null;
         this.breadcrumbPath = [];
         this.currentView = 'timeline'; // Default: Timeline
         this.expandedCardId = null; // ID de la card expandida (para persistencia)
+        this.isAnimating = false; // Guard para animación de completado
+        this.inicioFilter = null; // Filtro de Inicio: null=todas, 'pending'=pendientes, 'completed'=logradas
+        this.selectedDate = new Date(); // Fecha seleccionada para el calendario
         this.init();
     }
 
@@ -85,13 +91,18 @@ class KaiController {
 
         try {
             this.currentUser = await auth.init();
+            salud.init(this.currentUser);
+            this.gatos = gatos;
+            this.gatos.init(this.currentUser);
             if (this.currentUser) {
                 ui.updateUserInfo(this.currentUser);
                 // Restaurar estado persistido DESPUÉS de tener usuario
                 this.restoreState();
                 // Cargar según la vista actual
-                if (this.currentView === 'hoy') {
-                    await this.loadHoySection();
+                if (this.currentView === 'hoy' || this.currentView === 'salud') {
+                    await salud.loadHoySection();
+                } else if (this.currentView === 'gatos') {
+                    await this.gatos.loadGatosSection();
                 } else {
                     await this.loadItems();
                 }
@@ -106,7 +117,14 @@ class KaiController {
             this.loadEmptyState();
         }
 
+        // Configurar eventos de gestión de etiquetas
+        this.setupTagManagerEvents();
+
         ai.init();
+        salud.initCheckinSystem();
+        
+        // Renderizar calendario semanal inicial
+        this.renderWeeklyCalendar();
     }
     
     // === Persistencia de Estado ===
@@ -115,7 +133,8 @@ class KaiController {
             currentView: this.currentView,
             expandedCardId: this.expandedCardId,
             currentCategory: this.currentCategory,
-            currentTag: this.currentTag
+            currentTag: this.currentTag,
+            currentExcludeTag: this.currentExcludeTag
         };
         localStorage.setItem('kai_state', JSON.stringify(state));
     }
@@ -127,8 +146,9 @@ class KaiController {
                 const state = JSON.parse(saved);
                 this.currentView = state.currentView || 'timeline';
                 this.expandedCardId = state.expandedCardId || null;
-                this.currentCategory = state.currentCategory || 'all';
+                this.currentCategory = state.currentCategory || 'tarea';
                 this.currentTag = state.currentTag || null;
+                this.currentExcludeTag = state.currentExcludeTag || null;
                 
                 // Aplicar la vista guardada (sin cargar datos - eso se hace en init())
                 this.applyViewStateOnly();
@@ -140,76 +160,47 @@ class KaiController {
     
     // Versión de applyViewState que NO carga datos (para restoreState)
     applyViewStateOnly() {
-        const btnHoy = document.getElementById('nav-hoy');
-        const btnTimeline = document.getElementById('nav-timeline');
-        
-        if (btnHoy && btnTimeline) {
-            if (this.currentView === 'hoy') {
-                btnHoy.classList.add('bg-brand', 'text-white', 'shadow-sticker');
-                btnHoy.classList.remove('text-gray-500', 'hover:bg-gray-100');
-                btnTimeline.classList.remove('bg-brand', 'text-white', 'shadow-sticker');
-                btnTimeline.classList.add('text-gray-500', 'hover:bg-gray-100');
-            } else {
-                btnTimeline.classList.add('bg-brand', 'text-white', 'shadow-sticker');
-                btnTimeline.classList.remove('text-gray-500', 'hover:bg-gray-100');
-                btnHoy.classList.remove('bg-brand', 'text-white', 'shadow-sticker');
-                btnHoy.classList.add('text-gray-500', 'hover:bg-gray-100');
-            }
-        }
-        
-        const sectionHoy = document.getElementById('section-hoy');
+        // La navegación ahora la maneja switchView() en index.html.
+        // applyViewStateOnly solo se ocupa de la UI en init(), sin cargar datos.
+        // Delegamos al switchView unificado para vistas que no sean timeline.
+        const sectionSalud = document.getElementById('section-salud');  // Antes "section-hoy"
+        const sectionInicio = document.getElementById('section-inicio');
+        const sectionBaul = document.getElementById('section-baul');
+        const sectionHistorial = document.getElementById('section-historial');
+        const sectionGatos = document.getElementById('section-gatos');
         const timelineContent = document.getElementById('timeline-content');
+        const itemsContainer = document.getElementById('items-container');
         
-        if (sectionHoy && timelineContent) {
-            if (this.currentView === 'hoy') {
-                sectionHoy.classList.remove('hidden');
-                timelineContent.classList.add('hidden');
-            } else {
-                sectionHoy.classList.add('hidden');
-                timelineContent.classList.remove('hidden');
-            }
+        // Ocultar todo primero
+        [sectionSalud, sectionInicio, sectionBaul, sectionHistorial, sectionGatos].forEach(s => {
+            if (s) s.classList.add('hidden');
+        });
+        if (timelineContent) timelineContent.classList.add('hidden');
+        if (itemsContainer) itemsContainer.classList.add('hidden');
+        
+        // Mostrar según la vista
+        if (this.currentView === 'timeline') {
+            if (sectionInicio) sectionInicio.classList.remove('hidden');
+            // Inicio NO muestra timelineContent ni itemsContainer (solo la quick bar y su lista propia)
+        } else if (this.currentView === 'salud') {
+            if (sectionSalud) sectionSalud.classList.remove('hidden');
+        } else if (this.currentView === 'historial') {
+            if (sectionHistorial) sectionHistorial.classList.remove('hidden');
+            if (timelineContent) timelineContent.classList.remove('hidden');
+            if (itemsContainer) itemsContainer.classList.remove('hidden');
+        } else if (this.currentView === 'baul') {
+            if (sectionBaul) sectionBaul.classList.remove('hidden');
+        } else if (this.currentView === 'dashboard') {
+            if (itemsContainer) itemsContainer.classList.remove('hidden');
+        } else if (this.currentView === 'gatos') {
+            if (sectionGatos) sectionGatos.classList.remove('hidden');
         }
     }
+
     
     applyViewState() {
-        // Actualizar estilos de botones de navegación
-        const btnHoy = document.getElementById('nav-hoy');
-        const btnTimeline = document.getElementById('nav-timeline');
-        
-        if (btnHoy && btnTimeline) {
-            if (this.currentView === 'hoy') {
-                btnHoy.classList.add('bg-brand', 'text-white', 'shadow-sticker');
-                btnHoy.classList.remove('text-gray-500', 'hover:bg-gray-100');
-                btnTimeline.classList.remove('bg-brand', 'text-white', 'shadow-sticker');
-                btnTimeline.classList.add('text-gray-500', 'hover:bg-gray-100');
-            } else {
-                btnTimeline.classList.add('bg-brand', 'text-white', 'shadow-sticker');
-                btnTimeline.classList.remove('text-gray-500', 'hover:bg-gray-100');
-                btnHoy.classList.remove('bg-brand', 'text-white', 'shadow-sticker');
-                btnHoy.classList.add('text-gray-500', 'hover:bg-gray-100');
-            }
-        }
-        
-        // Mostrar/ocultar secciones
-        const sectionHoy = document.getElementById('section-hoy');
-        const timelineContent = document.getElementById('timeline-content');
-        const footer = document.getElementById('app-footer');
-        
-        if (sectionHoy && timelineContent) {
-            if (this.currentView === 'hoy') {
-                sectionHoy.classList.remove('hidden');
-                timelineContent.classList.add('hidden');
-                if (footer) footer.classList.add('hidden');
-                // Cargar datos de HOY si hay usuario
-                if (this.currentUser) {
-                    this.loadHoySection();
-                }
-            } else {
-                sectionHoy.classList.add('hidden');
-                timelineContent.classList.remove('hidden');
-                if (footer) footer.classList.remove('hidden');
-            }
-        }
+        // Igual que applyViewStateOnly - solo UI, delegar carga de datos al inline switchView
+        this.applyViewStateOnly();
     }
     
     switchView(view) {
@@ -224,214 +215,45 @@ class KaiController {
             this.loadItems();
         }
         
-        // Si es HOY, cargar datos de HOY
-        if (view === 'hoy') {
-            this.loadHoySection();
+        // Si es SALUD, cargar datos de SALUD
+        if (view === 'salud') {
+            salud.loadHoySection();
+        }
+        
+        // Si es GATOS, cargar datos de GATOS
+        if (view === 'gatos') {
+            this.gatos.loadGatosSection();
         }
     }
     
-    // ==================== SECCIÓN HOY ====================
-    
+    // ==================== SECCIÓN SALUD (Delegada a salud.js) ====================
+
     async loadHoySection() {
-        await this.updateHoyDate();
-        await this.loadTodayTasks();
-        this.initHoyEvents();
+        return salud.loadHoySection();
     }
-    
-    updateHoyDate() {
-        const fechaEl = document.getElementById('hoy-fecha');
-        const saludoEl = document.getElementById('hoy-saludo');
-        if (!fechaEl || !saludoEl) return;
-        
-        const hoy = new Date();
-        const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-        const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-        
-        fechaEl.textContent = `${diasSemana[hoy.getDay()]} ${hoy.getDate()} de ${meses[hoy.getMonth()]}`;
-        
-        const hora = hoy.getHours();
-        if (hora < 12) {
-            saludoEl.textContent = 'Buenos días ☀️';
-        } else if (hora < 18) {
-            saludoEl.textContent = 'Buenas tardes 🌤️';
-        } else {
-            saludoEl.textContent = 'Buenas noches 🌙';
-        }
+
+    async saveWellness(wellnessData) {
+        return salud.saveWellness(wellnessData);
     }
-    
-    async loadRoutines() {
-        const container = document.getElementById('rutinas-list');
-        if (!container) return;
-        
-        try {
-            const routines = await hoy.getRoutines();
-            const completions = await hoy.getRoutineCompletions();
-            const completedIds = completions.map(c => c.routine_id || c.id);
-            
-            container.innerHTML = routines.map(r => `
-                <div class="flex items-center gap-3 p-3 rounded-xl bg-brand/5 border border-brand/10 group hover:bg-brand/10 transition">
-                    <input type="checkbox" 
-                           class="routine-checkbox w-6 h-6 rounded border-2 border-brand text-brand focus:ring-brand accent-brand cursor-pointer"
-                           data-routine-id="${r.id}"
-                           ${completedIds.includes(r.id) ? 'checked' : ''}>
-                    <span class="text-2xl">${r.emoji || '📌'}</span>
-                    <span class="flex-1 font-medium text-ink ${completedIds.includes(r.id) ? 'line-through opacity-50' : ''}">${r.name}</span>
-                    ${r.is_default ? '<span class="text-[10px] text-brand font-bold">DEFAULT</span>' : ''}
-                </div>
-            `).join('');
-            
-            // Bind eventos de checkboxes
-            container.querySelectorAll('.routine-checkbox').forEach(cb => {
-                cb.addEventListener('change', async (e) => {
-                    const routineId = e.target.dataset.routineId;
-                    const completed = e.target.checked;
-                    await hoy.toggleRoutineCompletion(routineId, completed);
-                    
-                    // Actualizar UI
-                    const row = e.target.closest('.flex');
-                    const text = row.querySelector('span:nth-child(3)');
-                    if (text) {
-                        if (completed) {
-                            text.classList.add('line-through', 'opacity-50');
-                        } else {
-                            text.classList.remove('line-through', 'opacity-50');
-                        }
-                    }
-                });
-            });
-        } catch (error) {
-            console.error('Error loading routines:', error);
-            container.innerHTML = '<p class="text-center text-gray-400 py-4">Error al cargar rutinas</p>';
-        }
+
+    async getTodayWellness() {
+        return salud.getTodayWellness();
     }
-    
-    async loadTodayTasks() {
-        const container = document.getElementById('tareas-list');
-        if (!container) return;
-        
-        try {
-            // Ahora siempre usa localStorage (ya no hay versión Supabase)
-            const tasks = hoy.getTodayTasks();
-            
-            if (tasks.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-6 text-gray-400">
-                        <span class="text-4xl">📋</span>
-                        <p class="mt-2 text-sm">No hay tareas para hoy. ¡Agrega una!</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            container.innerHTML = tasks.map(t => `
-                <div class="flex items-center gap-3 p-3 rounded-xl bg-white border border-gray-100 hover:border-brand/20 transition group" data-task-id="${t.id}">
-                    <input type="checkbox"
-                           class="hoy-task-checkbox w-5 h-5 rounded border-2 border-gray-200 text-brand focus:ring-brand accent-brand cursor-pointer"
-                           data-task-id="${t.id}"
-                           ${t.completed ? 'checked' : ''}>
-                    <span class="flex-1 text-ink ${t.completed ? 'line-through opacity-50' : 'font-medium'}">${t.content}</span>
-                    <button class="hoy-task-delete opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 transition p-1" data-task-id="${t.id}">
-                        <i class="fa-solid fa-xmark text-sm"></i>
-                    </button>
-                </div>
-            `).join('');
-            
-            // Bind eventos de checkboxes
-            container.querySelectorAll('.hoy-task-checkbox').forEach(cb => {
-                cb.addEventListener('change', async (e) => {
-                    const taskId = e.target.dataset.taskId;
-                    const completed = e.target.checked;
-                    await hoy.toggleTaskCompletion(taskId, completed);
-                    
-                    // Actualizar UI
-                    const row = e.target.closest('.flex');
-                    const text = row.querySelector('span:nth-child(2)');
-                    if (text) {
-                        if (completed) {
-                            text.classList.add('line-through', 'opacity-50');
-                        } else {
-                            text.classList.remove('line-through', 'opacity-50');
-                        }
-                    }
-                });
-            });
-            
-            // Bind eventos de eliminar
-            container.querySelectorAll('.hoy-task-delete').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    const taskId = btn.dataset.taskId;
-                    if (confirm('¿Eliminar esta tarea?')) {
-                        await hoy.deleteTask(taskId);
-                        await this.loadTodayTasks();
-                    }
-                });
-            });
-        } catch (error) {
-            console.error('Error loading tasks:', error);
-            container.innerHTML = '<p class="text-center text-gray-400 py-4">Error al cargar tareas</p>';
-        }
+
+    async loadWellnessHistory(days = 7) {
+        return salud.loadWellnessHistory(days);
     }
-    
-    initHoyEvents() {
-        // Botón agregar tarea
-        const btnAddTask = document.getElementById('btn-add-task-hoy');
-        const addTaskForm = document.getElementById('add-task-form');
-        const newTaskInput = document.getElementById('new-task-input');
-        const btnConfirmTask = document.getElementById('btn-confirm-task');
-        
-        btnAddTask?.addEventListener('click', () => {
-            addTaskForm?.classList.toggle('hidden');
-            if (!addTaskForm?.classList.contains('hidden')) {
-                newTaskInput?.focus();
-            }
-        });
-        
-        btnConfirmTask?.addEventListener('click', async () => {
-            const content = newTaskInput?.value.trim();
-            if (content) {
-                await hoy.addTask(content);
-                newTaskInput.value = '';
-                addTaskForm?.classList.add('hidden');
-                await this.loadTodayTasks();
-            }
-        });
-        
-        newTaskInput?.addEventListener('keypress', async (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                btnConfirmTask?.click();
-            }
-        });
-        
-        // Botón cancelar en formulario de tarea
-        newTaskInput?.closest('.flex')?.querySelector('button:first-child')?.addEventListener('click', () => {
-            addTaskForm?.classList.add('hidden');
-            newTaskInput.value = '';
-        });
-        
-        // Botón guardar check-in
-        document.getElementById('btn-save-checkin')?.addEventListener('click', async () => {
-            const emotionalState = document.querySelector('.emoji-btn.selected')?.dataset.emoji || null;
-            const physical = document.getElementById('checkin-physical')?.value.trim() || '';
-            const note = document.getElementById('checkin-note')?.value.trim() || '';
-            
-            if (!emotionalState) {
-                ui.showNotification('Selecciona cómo te sientes 😊', 'warning');
-                return;
-            }
-            
-            await hoy.saveCheckin(emotionalState, physical, note);
-            ui.showNotification('¡Check-in guardado! 💚', 'success');
-        });
-        
-        // Selector de emoji (para marcar selección)
-        document.querySelectorAll('.emoji-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('selected', 'border-brand', 'bg-brand/10'));
-                btn.classList.add('selected', 'border-brand', 'bg-brand/10');
-            });
-        });
+
+    async testPushNotification() {
+        return salud.testPushNotification();
+    }
+
+    async loadTodayWellness() {
+        return salud.loadTodayWellness();
+    }
+
+    async bindSaludEvents() {
+        return salud.bindSaludEvents();
     }
     
     setExpandedCard(cardId) {
@@ -505,11 +327,6 @@ class KaiController {
         // --- Notificaciones ---
         this.initNotifications();
 
-        // Hoy desde sidebar
-        document.getElementById('btn-hoy')?.addEventListener('click', () => {
-            this.switchView('hoy');
-            ui.closeSidebar();
-        });
         
         // --- Datos (Import/Export) ---
         document.getElementById('btn-export')?.addEventListener('click', () => this.handleExport());
@@ -520,7 +337,7 @@ class KaiController {
         
         // --- Debug: Test Notificación ---
         document.getElementById('btn-test-notification')?.addEventListener('click', async () => {
-            await this.testPushNotification();
+            await salud.testPushNotification();
         });
 
         // --- Entradas Principales ---
@@ -567,6 +384,15 @@ class KaiController {
             searchInput.focus();
             // Restaurar vista normal (cargar todos los items)
             await this.loadItems();
+        });
+
+        // --- Calendario Semanal ---
+        document.getElementById('prev-week')?.addEventListener('click', () => {
+            this.changeWeek(-1);
+        });
+        
+        document.getElementById('next-week')?.addEventListener('click', () => {
+            this.changeWeek(1);
         });
 
         // --- Share Target Event ---
@@ -628,7 +454,34 @@ class KaiController {
         document.getElementById('btn-add-task')?.addEventListener('click', () => ui.addTaskToModal());
         document.getElementById('btn-dashboard')?.addEventListener('click', () => {
             ui.closeSidebar();
+            document.getElementById('section-inicio')?.classList.add('hidden');
+            document.getElementById('timeline-content')?.classList.add('hidden');
+            document.getElementById('items-container')?.classList.remove('hidden');
             this.showDashboard('total');
+        });
+        
+        // Cards de filtro rápido en Inicio (solo tareas y proyectos)
+        document.getElementById('card-pendientes')?.addEventListener('click', () => {
+            this.currentTag = null;
+            this.inicioFilter = 'pending';
+            this.currentView = 'timeline';
+            // Resaltar card activa
+            document.getElementById('card-pendientes')?.classList.add('ring-2', 'ring-brand');
+            document.getElementById('card-logradas')?.classList.remove('ring-2', 'ring-brand', 'ring-success');
+            this.loadInicioTasks();
+            this.updateFilterCounts();
+            this.saveState();
+        });
+        document.getElementById('card-logradas')?.addEventListener('click', () => {
+            this.currentTag = null;
+            this.inicioFilter = 'completed';
+            this.currentView = 'timeline';
+            // Resaltar card activa
+            document.getElementById('card-logradas')?.classList.add('ring-2', 'ring-success');
+            document.getElementById('card-pendientes')?.classList.remove('ring-2', 'ring-brand', 'ring-success');
+            this.loadInicioTasks();
+            this.updateFilterCounts();
+            this.saveState();
         });
         
         // Cambio de período en dashboard de estadísticas
@@ -697,6 +550,56 @@ class KaiController {
                 input.value = current && !current.endsWith(' ') ? current + ', ' + newTag : current + newTag;
             });
         });
+
+        // Autocomplete de etiquetas en modal de edición
+        const editTagsInput = document.getElementById('edit-tags');
+        const tagAutocomplete = document.getElementById('tag-autocomplete');
+        
+        if (editTagsInput && tagAutocomplete) {
+            editTagsInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim();
+                const lastTag = query.split(',').pop().trim();
+                
+                if (!lastTag) {
+                    tagAutocomplete.classList.add('hidden');
+                    return;
+                }
+                
+                const allTags = this.getAllTags();
+                const matches = allTags.filter(t => t.includes(lastTag));
+                
+                if (matches.length === 0) {
+                    tagAutocomplete.classList.add('hidden');
+                    return;
+                }
+                
+                tagAutocomplete.innerHTML = matches.map(tag => 
+                    `<div class="tag-option px-3 py-2 hover:bg-brand/10 cursor-pointer text-sm text-brand" data-tag="${tag}">#${tag}</div>`
+                ).join('');
+                
+                tagAutocomplete.classList.remove('hidden');
+                
+                // Agregar tags al hacer click
+                tagAutocomplete.querySelectorAll('.tag-option').forEach(opt => {
+                    opt.addEventListener('click', () => {
+                        const current = editTagsInput.value;
+                        const parts = current.split(',');
+                        parts.pop();
+                        parts.push(opt.dataset.tag.trim());
+                        editTagsInput.value = parts.join(', ') + ', ';
+                        tagAutocomplete.classList.add('hidden');
+                        editTagsInput.focus();
+                    });
+                });
+            });
+            
+            // Ocultar autocomplete al hacer click fuera
+            document.addEventListener('click', (e) => {
+                if (!editTagsInput.contains(e.target) && !tagAutocomplete.contains(e.target)) {
+                    tagAutocomplete.classList.add('hidden');
+                }
+            });
+        }
 
         // Quick tags for inline addition (Footer Input)
         document.querySelectorAll('.quick-tag').forEach(tagBtn => {
@@ -811,7 +714,7 @@ class KaiController {
             if (this.currentUser) {
                 ui.updateUserInfo(this.currentUser);
                 await this.loadItems();
-                await this.initCheckinSystem();
+                await salud.initCheckinSystem();
             }
         });
 
@@ -827,6 +730,238 @@ class KaiController {
             if (input) input.value = e.detail.transcript;
             this.stopVoiceInput();
         });
+
+        // --- Inicio: Quick-add submit ---
+        const quickInput = document.getElementById('inicio-quick-input');
+        if (quickInput) {
+            quickInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.quickAddInicio(quickInput.value);
+                }
+            });
+        }
+
+        const btnAdd = document.getElementById('btn-inicio-add');
+        if (btnAdd) {
+            btnAdd.addEventListener('click', () => {
+                const input = document.getElementById('inicio-quick-input');
+                if (input) {
+                    this.quickAddInicio(input.value);
+                }
+            });
+        }
+
+        // --- Inicio: Points selector ---
+        document.querySelectorAll('.points-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.points-btn').forEach(b => {
+                    b.classList.remove('active');
+                    b.setAttribute('aria-pressed', 'false');
+                });
+                btn.classList.add('active');
+                btn.setAttribute('aria-pressed', 'true');
+            });
+        });
+
+        // --- Inicio: Tag chip clicks (delegated) ---
+        const tagFilterBar = document.getElementById('inicio-tag-filters');
+        if (tagFilterBar) {
+            tagFilterBar.addEventListener('click', (e) => {
+                const chip = e.target.closest('.tag-chip');
+                if (chip) {
+                    const tag = chip.dataset.tag;
+                    this.filterByTag(tag);
+                }
+            });
+        }
+
+        // --- Inicio: Task checkbox clicks & edit/delete (delegated) ---
+        const taskList = document.getElementById('inicio-task-list');
+        if (taskList) {
+            // Checkbox toggle
+            taskList.addEventListener('change', (e) => {
+                if (e.target.classList.contains('task-checkbox')) {
+                    const row = e.target.closest('.task-row');
+                    if (row) {
+                        this.toggleCompletado(row.dataset.itemId, row);
+                    }
+                }
+            });
+
+            // Inline edit on text click + delete action
+            taskList.addEventListener('click', (e) => {
+                const deleteBtn = e.target.closest('.action-delete');
+                const taskText = e.target.closest('.task-text');
+
+                if (deleteBtn) {
+                    e.stopPropagation();
+                    const id = deleteBtn.dataset.id;
+                    if (confirm('¿Eliminar esta tarea?')) {
+                        data.deleteItem(id).then(() => {
+                            this.loadItems();
+                            ui.showNotification('Tarea eliminada', 'info');
+                        }).catch(err => {
+                            console.error('Error deleting task:', err);
+                            ui.showNotification('Error al eliminar', 'error');
+                        });
+                    }
+                } else if (taskText && !taskText.isContentEditable) {
+                    e.stopPropagation();
+                    const id = taskText.dataset.id;
+                    const original = taskText.textContent;
+
+                    taskText.contentEditable = 'true';
+                    taskText.classList.add('editing');
+                    taskText.focus();
+
+                    // Seleccionar todo el texto
+                    const range = document.createRange();
+                    range.selectNodeContents(taskText);
+                    const sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+
+                    const save = () => {
+                        taskText.contentEditable = 'false';
+                        taskText.classList.remove('editing');
+                        const newText = taskText.textContent.trim();
+                        if (newText && newText !== original) {
+                            const sanitized = utils.sanitizeInput(newText);
+                            taskText.textContent = sanitized;
+                            data.updateItem(id, { content: sanitized }).catch(err => {
+                                console.error('Error saving inline edit:', err);
+                                taskText.textContent = original;
+                                ui.showNotification('Error al guardar', 'error');
+                            });
+                        } else if (!newText) {
+                            taskText.textContent = original;
+                        } else {
+                            taskText.textContent = original;
+                        }
+                    };
+
+                    const onBlur = () => save();
+                    const onKeydown = (ev) => {
+                        if (ev.key === 'Enter') {
+                            ev.preventDefault();
+                            taskText.blur();
+                        } else if (ev.key === 'Escape') {
+                            taskText.textContent = original;
+                            taskText.contentEditable = 'false';
+                            taskText.classList.remove('editing');
+                        }
+                    };
+
+                    taskText.addEventListener('blur', onBlur, { once: true });
+                    taskText.addEventListener('keydown', onKeydown);
+                    // Clean up keydown listener on blur
+                    taskText.addEventListener('blur', () => {
+                        taskText.removeEventListener('keydown', onKeydown);
+                    }, { once: true });
+                }
+
+                // Eliminar etiqueta (click en la X)
+                const removeTagBtn = e.target.closest('.remove-tag-btn');
+                if (removeTagBtn) {
+                    e.stopPropagation();
+                    const itemId = removeTagBtn.closest('.task-row').dataset.itemId;
+                    const tagToRemove = removeTagBtn.dataset.tag;
+                    
+                    const item = this.items.find(i => i.id === itemId);
+                    if (item && item.tags) {
+                        const newTags = item.tags.filter(t => t !== tagToRemove);
+                        data.updateItem(itemId, { tags: newTags }).then(() => {
+                            item.tags = newTags;
+                            this.loadInicioTasks();
+                            this.updateFilterCounts();
+                            ui.showNotification('Etiqueta eliminada', 'info');
+                        }).catch(err => {
+                            console.error('Error removing tag:', err);
+                            ui.showNotification('Error al eliminar etiqueta', 'error');
+                        });
+                    }
+                }
+
+                // Agregar etiqueta (click en + Tag) - Input con autocompletado
+                const addTagBtn = e.target.closest('.add-tag-btn');
+                if (addTagBtn) {
+                    e.stopPropagation();
+                    const itemId = addTagBtn.dataset.id;
+                    const allTags = this.getAllTags();
+                    const currentTags = this.items.find(i => i.id === itemId)?.tags || [];
+                    
+                    // Crear input inline con autocomplete
+                    const existingInput = document.querySelector('.quick-tag-input');
+                    if (existingInput) existingInput.remove();
+                    
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'relative quick-tag-wrapper';
+                    
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'text-xs border rounded-lg p-1 bg-white w-24';
+                    input.placeholder = 'escribir...';
+                    
+                    const dropdown = document.createElement('div');
+                    dropdown.className = 'absolute z-50 top-full left-0 mt-1 bg-white border rounded-lg shadow-lg hidden max-h-32 overflow-y-auto quick-tag-dropdown';
+                    
+                    wrapper.appendChild(input);
+                    wrapper.appendChild(dropdown);
+                    
+                    // Insertar después del botón
+                    addTagBtn.parentNode.insertBefore(wrapper, addTagBtn.nextSibling);
+                    input.focus();
+                    
+                    // Autocomplete mientras escribe
+                    input.addEventListener('input', (ev) => {
+                        const query = ev.target.value.toLowerCase();
+                        const available = allTags.filter(t => !currentTags.includes(t) && t.includes(query));
+                        
+                        if (available.length === 0 || !query) {
+                            dropdown.classList.add('hidden');
+                            return;
+                        }
+                        
+                        dropdown.innerHTML = available.map(t => 
+                            `<div class="tag-option px-2 py-1 hover:bg-brand/10 cursor-pointer text-xs text-brand" data-tag="${t}">#${t}</div>`
+                        ).join('');
+                        dropdown.classList.remove('hidden');
+                        
+                        dropdown.querySelectorAll('.tag-option').forEach(opt => {
+                            opt.addEventListener('click', () => {
+                                this.addTagToItem(itemId, opt.dataset.tag);
+                                wrapper.remove();
+                            });
+                        });
+                    });
+                    
+                    // Enter para confirmar nueva etiqueta
+                    input.addEventListener('keydown', (ev) => {
+                        if (ev.key === 'Enter') {
+                            ev.preventDefault();
+                            const val = input.value.trim();
+                            if (val) {
+                                this.addTagToItem(itemId, val.toLowerCase());
+                            }
+                            wrapper.remove();
+                        } else if (ev.key === 'Escape') {
+                            wrapper.remove();
+                        }
+                    });
+                    
+                    // Cerrar al hacer click fuera
+                    setTimeout(() => {
+                        document.addEventListener('click', function onDocClick(e) {
+                            if (!wrapper.contains(e.target)) {
+                                wrapper.remove();
+                                document.removeEventListener('click', onDocClick);
+                            }
+                        });
+                    }, 0);
+                }
+            });
+        }
     }
 
     async handleExport() {
@@ -1077,6 +1212,22 @@ REGLAS:
             repeat,
             hasRecordatorio: !!deadline // Para detectar si es recordatorio automático
         };
+    }
+
+    async addItem(input) {
+        try {
+            await data.createItem({
+                content: utils.sanitizeInput(input.contenido || ''),
+                type: input.tipo || 'nota',
+                tags: input.tags || [],
+                parent_id: this.currentParentId
+            });
+            ui.showNotification('¡Anotado! ✨', 'success');
+            await this.loadItems();
+        } catch (error) {
+            console.error('Error addItem:', error);
+            ui.showNotification('No pude guardar. ¿Intentamos de nuevo?', 'error');
+        }
     }
 
     async handleSubmit() {
@@ -1396,7 +1547,12 @@ Responde SOLO JSON con esta estructura:
                     return d === today || esResumenDiario;
                 });
 
-                ui.render(filteredItems);
+                this.items = filteredItems;
+                if (this.currentView === 'timeline') {
+                    this.loadInicioTasks();
+                } else {
+                    ui.render(filteredItems);
+                }
             } else {
                 if (this.currentCategory !== 'all') filters.type = this.currentCategory;
                 const items = await data.getItems(filters);
@@ -1407,8 +1563,23 @@ Responde SOLO JSON con esta estructura:
                     filteredItems = items.filter(item => item.tags && item.tags.includes(this.currentTag));
                 }
 
+                // Filtrar por exclusión de tag (ej: pendientes = sin tag 'logro')
+                if (this.currentExcludeTag) {
+                    filteredItems = filteredItems.filter(item => !item.tags || !item.tags.includes(this.currentExcludeTag));
+                }
+
+                // Excluir items marcados como ocultos de la vista general
+                if (this.currentView !== 'gatos') {
+                    filteredItems = filteredItems.filter(item => !item.tags || !item.tags.includes('gato_oculto'));
+                }
+
                 console.log(`[loadItems] Obtenidos ${items.length} items, filtrados ${filteredItems.length}`);
-                ui.render(filteredItems);
+                this.items = filteredItems;
+                if (this.currentView === 'timeline') {
+                    this.loadInicioTasks();
+                } else {
+                    ui.render(filteredItems);
+                }
             }
             
             this.updateBreadcrumb();
@@ -1632,21 +1803,222 @@ Responde SOLO JSON con esta estructura:
     async goHome() {
         this.breadcrumbPath = [];
         this.currentParentId = null;
-        this.currentCategory = 'all';
+        this.currentCategory = 'tarea';
         this.currentTag = null;
-        this.currentView = 'timeline';
+        this.currentExcludeTag = null;
         
         // Resetear estilos de botones de categoría
         document.querySelectorAll('.btn-category').forEach(b => {
             b.classList.remove('active', 'border-brand', 'bg-white', 'shadow-sticker');
         });
         document.querySelectorAll('.btn-tag').forEach(b => {
-            b.classList.remove('active', 'bg-lavender', 'text-purple-600', 'border-purple-200');
+            b.classList.remove('active', 'bg-link', 'text-purple-600', 'border-purple-200');
         });
         
-        this.applyViewState();
-        this.saveState();
-        await this.loadItems();
+        // Delegar al sistema de navegación unificado
+        if (window.switchView) {
+            window.switchView('timeline');
+        } else {
+            this.applyViewState();
+            this.saveState();
+            await this.loadItems();
+        }
+    }
+
+    // ========== INICIO — SISTEMA DE TAREAS ==========
+
+    /**
+     * Quick-add desde la barra de Inicio
+     * @param {string} text - Texto de la tarea
+     */
+    async quickAddInicio(text) {
+        if (!text || !text.trim()) return;
+
+        const sanitized = utils.sanitizeInput(text.trim());
+
+        // Parse inline tags (#tag)
+        const tags = [];
+        const cleaned = sanitized.replace(/#(\w+)/g, (match, tag) => {
+            if (!tags.includes(tag)) tags.push(tag);
+            return '';
+        }).trim();
+
+        // Get selected points from the points selector
+        let puntos = 10;
+        const activePointsBtn = document.querySelector('.points-btn.active');
+        if (activePointsBtn) {
+            puntos = parseInt(activePointsBtn.dataset.points, 10) || 10;
+        }
+
+        try {
+            await data.createItem({
+                content: cleaned || sanitized,
+                type: 'tarea',
+                tags: tags,
+                meta: { puntos }
+            });
+
+            const input = document.getElementById('inicio-quick-input');
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
+
+            ui.showNotification('✓ Tarea creada!', 'success');
+            await this.loadItems();
+        } catch (err) {
+            console.error('Error creating task from quick-add:', err);
+            ui.showNotification('Error al crear tarea', 'error');
+        }
+    }
+
+    /**
+     * Toggle completado de una tarea desde Inicio
+     * @param {string} itemId
+     * @param {HTMLElement} element - task-row DOM element
+     */
+    async toggleCompletado(itemId, element) {
+        const item = this.items.find(i => i.id === itemId);
+        if (!item || this.isAnimating) return;
+
+        this.isAnimating = true;
+        const isCompleted = item.status === 'completed';
+
+        try {
+            if (!isCompleted) {
+                if (element) {
+                    await ui.animateTaskComplete(element);
+                }
+
+                // Agregar tag "logro" automáticamente al completar
+                const currentTags = item.tags || [];
+                const newTags = currentTags.includes('logro') ? currentTags : [...currentTags, 'logro'];
+                
+                await data.updateItem(itemId, { 
+                    status: 'completed',
+                    tags: newTags
+                });
+                item.status = 'completed';
+                item.tags = newTags;
+
+                this.loadInicioTasks();
+                this.updateFilterCounts();
+                this.updatePointsAccumulator();
+            } else {
+                await data.updateItem(itemId, { status: 'inbox' });
+                item.status = 'inbox';
+
+                this.loadInicioTasks();
+            }
+        } catch (error) {
+            console.error('Error toggling completado:', error);
+            ui.showNotification('Error al completar tarea', 'error');
+        } finally {
+            this.isAnimating = false;
+        }
+    }
+
+    /**
+     * Carga y renderiza tareas para la vista Inicio
+     */
+    loadInicioTasks() {
+        const items = this.items || [];
+
+        // Filter: tareas y proyectos (no notas ni enlaces)
+        let filtered = items.filter(item =>
+            (item.type === 'tarea' || item.type === 'proyecto')
+        );
+
+        // Apply inicio filter (pendientes/logradas/todas)
+        if (this.inicioFilter === 'pending') {
+            filtered = filtered.filter(item => item.status !== 'completed');
+        } else if (this.inicioFilter === 'completed') {
+            filtered = filtered.filter(item => item.status === 'completed');
+        } else {
+            // Default: mostrar solo pendientes
+            filtered = filtered.filter(item => item.status !== 'completed');
+        }
+
+        // Apply tag filter
+        if (this.currentTag) {
+            filtered = filtered.filter(item =>
+                item.tags && item.tags.includes(this.currentTag)
+            );
+        }
+
+        // Extract unique tags from all tareas/proyectos
+        const allTags = [...new Set(
+            items.filter(i => (i.type === 'tarea' || i.type === 'proyecto') && i.tags && i.tags.length > 0)
+                .flatMap(i => i.tags)
+        )];
+
+        // Render tag chips
+        const tagBar = document.getElementById('inicio-tag-filters');
+        if (tagBar) {
+            tagBar.innerHTML = ui.renderTagChips(allTags, this.currentTag);
+        }
+
+        // Render task list
+        ui.renderInicioTasks(filtered);
+
+        // Update points
+        this.updatePointsAccumulator();
+
+        // Update filter card counts
+        this.updateFilterCounts();
+    }
+
+    /**
+     * Actualiza los contadores de pendientes y logradas en los botones de filtro
+     * Solo cuenta tareas y proyectos (no notas ni enlaces)
+     */
+    updateFilterCounts() {
+        const items = this.items || [];
+        
+        // Contar pendientes (tareas y proyectos no completados)
+        const pendientes = items.filter(i => 
+            (i.type === 'tarea' || i.type === 'proyecto') && i.status !== 'completed'
+        ).length;
+        
+        // Contar logradas (tareas y proyectos completados)
+        const logradas = items.filter(i => 
+            (i.type === 'tarea' || i.type === 'proyecto') && i.status === 'completed'
+        ).length;
+
+        const pendEl = document.getElementById('count-pendientes');
+        const logrEl = document.getElementById('count-logradas');
+
+        if (pendEl) pendEl.textContent = pendientes;
+        if (logrEl) logrEl.textContent = logradas;
+    }
+
+    /**
+     * Filtra tareas por tag
+     * @param {string|null} tag - Tag a filtrar (null = todas)
+     */
+    filterByTag(tag) {
+        if (this.currentTag === tag || !tag) {
+            this.currentTag = null; // toggle off
+        } else {
+            this.currentTag = tag;
+        }
+        this.loadInicioTasks();
+    }
+
+    /**
+     * Actualiza el acumulador de puntos en el header de Inicio
+     */
+    updatePointsAccumulator() {
+        const items = this.items || [];
+        const total = items
+            .filter(i => i.type === 'tarea' && i.status === 'completed')
+            .reduce((sum, i) => sum + (i.meta?.puntos || 10), 0);
+
+        const pointsEl = document.getElementById('points-total');
+        if (pointsEl) pointsEl.textContent = total;
+
+        const totalPointsEl = document.getElementById('total-points');
+        if (totalPointsEl) totalPointsEl.textContent = total + '⭐';
     }
 
     // ========== NOTIFICACIONES ==========
@@ -1727,11 +2099,11 @@ Responde SOLO JSON con esta estructura:
 
     async handleCategoryClick(button) {
         document.querySelectorAll('.btn-category').forEach(b => b.classList.remove('active', 'border-brand', 'bg-white', 'shadow-sticker'));
-        document.querySelectorAll('.btn-tag').forEach(b => b.classList.remove('active', 'bg-lavender', 'text-purple-600', 'border-purple-200'));
+        document.querySelectorAll('.btn-tag').forEach(b => b.classList.remove('active', 'bg-link', 'text-purple-600', 'border-purple-200'));
 
         // Aplicar estilos activos según el tipo de botón
         if (button.classList.contains('btn-tag')) {
-            button.classList.add('active', 'bg-lavender', 'text-purple-600', 'border-purple-200');
+            button.classList.add('active', 'bg-link', 'text-purple-600', 'border-purple-200');
         } else {
             button.classList.add('active', 'border-brand', 'bg-white', 'shadow-sticker');
         }
@@ -1746,6 +2118,17 @@ Responde SOLO JSON con esta estructura:
 
     async showDashboard(periodo = 'total') {
         try {
+            // Mostrar loading inmediato para feedback visual
+            const container = ui.elements.container();
+            if (container) {
+                container.innerHTML = `
+                    <div class="text-center py-16">
+                        <div class="text-6xl animate-bounce mb-4">📊</div>
+                        <p class="text-gray-400 text-lg">Cargando tu dashboard...</p>
+                    </div>
+                `;
+            }
+            
             // Cargar todos los items para procesarlos
             const allItems = await data.getItems({});
             
@@ -1797,7 +2180,7 @@ Responde SOLO JSON con esta estructura:
             const stats = this.calculateStats(filteredItems, allItems);
 
             // Get check-ins for emotions
-            const checkins = await this.getCheckinHistory(periodo === 'mes' ? 30 : 7);
+            const checkins = await salud.getCheckinHistory(periodo === 'mes' ? 30 : 7);
             
             // Procesar emociones
             const emocionesCount = {};
@@ -2144,348 +2527,300 @@ Responde SOLO JSON con esta estructura:
         ui.toggleVoiceOverlay(false);
     }
 
-    // =====================================
-    // SECCIÓN 8: CHECK-INS DE BIENESTAR
-    // =====================================
+    // ========== GESTIÓN DE ETIQUETAS ==========
 
-    getCheckinConfig() {
-        return {
-            momentos: [
-                { id: 'mañana', label: 'Mañana', hora: 10, icono: '🌅', pregunta: '¿Cómo amaneciste?' },
-                { id: 'tarde', label: 'Tarde', hora: 15, icono: '🌞', pregunta: '¿Cómo va tu día?' },
-                { id: 'noche', label: 'Noche', hora: 21, icono: '🌙', pregunta: '¿Cómo te sientes?' }
-            ],
-            opcionesEnergia: [
-                { valor: 10, label: 'A tope', icono: '🔥' },
-                { valor: 9, label: 'Explosiva', icono: '⚡' },
-                { valor: 8, label: 'Activa', icono: '💪' },
-                { valor: 7, label: 'Bien', icono: '🙂' },
-                { valor: 6, label: 'Normal', icono: '😐' },
-                { valor: 5, label: 'Regular', icono: '😌' },
-                { valor: 4, label: 'Cansada', icono: '😔' },
-                { valor: 3, label: 'Agotada', icono: '😴' },
-                { valor: 2, label: 'Sin ganas', icono: '😞' },
-                { valor: 1, label: 'Sin energía', icono: '💀' },
-                { valor: 0, label: 'Ausente', icono: '⬛' }
-            ],
-            opcionesEmocion: [
-                { valor: 'feliz', label: 'Feliz', icono: '😊' },
-                { valor: 'contenta', label: 'Contenta', icono: '😄' },
-                { valor: 'bien', label: 'Bien', icono: '🙂' },
-                { valor: 'tranquila', label: 'Tranquila', icono: '😌' },
-                { valor: 'neutral', label: 'Neutral', icono: '😐' },
-                { valor: 'ansiosa', label: 'Ansiosa', icono: '😰' },
-                { valor: 'triste', label: 'Triste', icono: '😢' },
-                { valor: 'molesta', label: 'Molesta', icono: '😠' },
-                { valor: 'frustrada', label: 'Frustrada', icono: '😤' },
-                { valor: 'abrumada', label: 'Abrumada', icono: '😵' }
-            ]
-        };
-    }
-
-    async initCheckinSystem() {
-        try {
-            await this.requestNotificationPermission();
-            
-            // Obtener token FCM para notificaciones push
-            try {
-                const { refreshFCMTokenIfNeeded, onForegroundMessage } = await import('./firebase.js');
-                await refreshFCMTokenIfNeeded();
-                await onForegroundMessage();
-                console.log('✓ Token FCM configurado');
-            } catch (fcmError) {
-                console.warn('FCM no disponible:', fcmError);
-            }
-            
-            this.checkPendingCheckin();
-            this.startCheckinChecker();
-            console.log('✓ Sistema de check-in inicializado');
-        } catch (error) {
-            console.error('Error initCheckinSystem:', error);
-        }
-    }
-
-    async requestNotificationPermission() {
-        if (!('Notification' in window)) return;
-        if (Notification.permission === 'granted') return;
-        if (Notification.permission === 'denied') return;
+    /**
+     * Obtiene todas las etiquetas únicas de tareas y proyectos
+     */
+    getAllTags() {
+        const items = this.items || [];
+        const tagSet = new Set();
         
-        const permission = await Notification.requestPermission();
-        console.log('Permiso de notificaciones:', permission);
-    }
-
-    getCurrentMoment() {
-        const hora = new Date().getHours();
-        if (hora >= 5 && hora < 12) return 'mañana';
-        if (hora >= 12 && hora < 18) return 'tarde';
-        return 'noche';
-    }
-
-    getNextMoment() {
-        const hora = new Date().getHours();
-        if (hora < 10) return 'mañana';
-        if (hora < 15) return 'tarde';
-        return 'noche';
-    }
-
-    getCheckinId(momento, fecha) {
-        const fechaStr = fecha || new Date().toISOString().split('T')[0];
-        return `checkin_${momento}_${fechaStr}`;
-    }
-
-    async checkPendingCheckin() {
-        if (!this.currentUser) return;
-        
-        const momento = this.getCurrentMoment();
-        const checkinId = this.getCheckinId(momento);
-        
-        try {
-            const items = await data.getItems({ type: 'checkin' });
-            const yaRespondio = items.some(item => item.meta?.checkin_id === checkinId);
-            
-            ui.toggleCheckinButton(!yaRespondio, momento);
-            
-            if (!yaRespondio) {
-                this.scheduleCheckinNotification(momento);
-            }
-        } catch (error) {
-            console.error('Error checkPendingCheckin:', error);
-        }
-    }
-
-    renderCheckinButton() {
-        ui.renderCheckinButton(this.getCheckinConfig().momentos);
-    }
-
-    async showCheckinModal(momento = null) {
-        const momentoActual = momento || this.getCurrentMoment();
-        const momentoConfig = this.getCheckinConfig().momentos.find(m => m.id === momentoActual);
-        const ahora = new Date();
-        
-        const checkinData = {
-            momento: momentoConfig,
-            energia: this.getCheckinConfig().opcionesEnergia,
-            emocion: this.getCheckinConfig().opcionesEmocion,
-            timestamp: ahora.toISOString()
-        };
-        
-        ui.showCheckinModal(checkinData);
-    }
-
-    async saveCheckin(momento, energia, emocion, hora = null) {
-        const fecha = new Date().toISOString().split('T')[0];
-        const checkinId = this.getCheckinId(momento, fecha);
-        
-        const momentoConfig = this.getCheckinConfig().momentos.find(m => m.id === momento);
-        const momentoLabel = momentoConfig ? momentoConfig.label : momento;
-        
-        let horaDespertar = null;
-        let horaDormir = null;
-        if (momento === 'mañana' && hora) {
-            horaDespertar = hora;
-        } else if (momento === 'noche' && hora) {
-            horaDormir = hora;
-        }
-
-        const itemData = {
-            content: `Check-in ${momentoLabel} - ${fecha}`,
-            type: 'checkin',
-            tags: ['salud', 'emocion', momento],
-            meta: {
-                energia: parseInt(energia),
-                emocion: emocion,
-                momento: momento,
-                checkin_id: checkinId,
-                horaDespertar: horaDespertar,
-                horaDormir: horaDormir,
-                timestamp: new Date().toISOString()
-            }
-        };
-
-        if (!this.currentUser) {
-            const localCheckins = JSON.parse(localStorage.getItem('checkins_local') || '[]');
-            localCheckins.push(itemData);
-            localStorage.setItem('checkins_local', JSON.stringify(localCheckins));
-            ui.showNotification('Check-in guardado localmente (inicia sesión para sincronizar)', 'success');
-            return true;
-        }
-
-        try {
-            await data.createItem(itemData);
-            ui.showNotification('¡Check-in guardado! 💚', 'success');
-            ui.toggleCheckinButton(false);
-            await this.loadItems();
-            return true;
-        } catch (error) {
-            console.error('Error saveCheckin:', error);
-            ui.showNotification('Error al guardar check-in.', 'error');
-            return false;
-        }
-    }
-
-    async getCheckinHistory(dias = 7) {
-        try {
-            const items = await data.getItems({ type: 'checkin' });
-            const limite = new Date();
-            limite.setDate(limite.getDate() - dias);
-            
-            return items.filter(item => 
-                new Date(item.created_at) >= limite &&
-                item.meta?.energia !== undefined
-            );
-        } catch (error) {
-            console.error('Error getCheckinHistory:', error);
-            return [];
-        }
-    }
-
-    calculateCheckinTrend(checkins, periodo = 'semana') {
-        if (!checkins || checkins.length === 0) return { energia: [], emocion: [] };
-        
-        const grouped = { energia: {}, emocion: {} };
-        
-        checkins.forEach(checkin => {
-            const momento = checkin.meta?.momento;
-            if (!momento) return;
-            
-            if (!grouped.energia[momento]) {
-                grouped.energia[momento] = { suma: 0, count: 0 };
-            }
-            grouped.energia[momento].suma += parseInt(checkin.meta.energia) || 0;
-            grouped.energia[momento].count++;
-            
-            if (checkin.meta?.emocion) {
-                if (!grouped.emocion[momento]) {
-                    grouped.emocion[momento] = {};
-                }
-                const emo = checkin.meta.emocion;
-                grouped.emocion[momento][emo] = (grouped.emocion[momento][emo] || 0) + 1;
+        items.forEach(item => {
+            if ((item.type === 'tarea' || item.type === 'proyecto') && item.tags && Array.isArray(item.tags)) {
+                item.tags.forEach(tag => tagSet.add(tag));
             }
         });
         
-        const energiaTrend = Object.entries(grouped.energia).map(([momento, data]) => ({
-            momento,
-            promedio: Math.round((data.suma / data.count) * 10) / 10,
-            count: data.count
-        }));
-        
-        const emocionTrend = Object.entries(grouped.emocion).map(([momento, emociones]) => ({
-            momento,
-            dominante: Object.entries(emociones).sort((a, b) => b[1] - a[1])[0]?.[0] || 'neutral'
-        }));
-        
-        return { energia: energiaTrend, emocion: emocionTrend };
+        return Array.from(tagSet).sort();
     }
 
-    scheduleCheckinNotification(momento) {
-        const momentoConfig = this.getCheckinConfig().momentos.find(m => m.id === momento);
-        if (!momentoConfig) return;
-        
-        const ahora = new Date();
-        const horaObjetivo = momentoConfig.hora;
-        
-        let horaNotificacion = new Date(ahora);
-        horaNotificacion.setHours(horaObjetivo, 0, 0, 0);
-        
-        if (horaNotificacion <= ahora) {
-            horaNotificacion.setDate(horaNotificacion.getDate() + 1);
+    /**
+     * Renombra una etiqueta en TODAS las tareas/proyectos que la contain
+     * @param {string} oldTag - Etiqueta actual
+     * @param {string} newTag - Nueva etiqueta
+     */
+    async renameTag(oldTag, newTag) {
+        if (!oldTag || !newTag || oldTag === newTag) {
+            ui.showNotification('Los nombres de etiqueta deben ser diferentes', 'warning');
+            return;
         }
-        
-        const tiempoEspera = horaNotificacion - ahora;
-        
-        setTimeout(() => {
-            this.showCheckinNotification(momento);
-        }, tiempoEspera);
-        
-        console.log(`Notificación de check-in programada para ${horaNotificacion.toLocaleString()}`);
-    }
 
-    showCheckinNotification(momento) {
-        const momentoConfig = this.getCheckinConfig().momentos.find(m => m.id === momento);
-        if (!momentoConfig) return;
-        
-        if (Notification.permission === 'granted') {
-            const title = '💭 Check-in de Bienestar';
-            const options = {
-                body: momentoConfig.pregunta,
-                icon: './src/assets/icon-192.png',
-                badge: './src/assets/icon-192.png',
-                tag: 'checkin',
-                requireInteraction: true,
-                data: { action: 'checkin', momento: momento }
-            };
+        const items = this.items || [];
+        const itemsToUpdate = items.filter(item => 
+            (item.type === 'tarea' || item.type === 'proyecto') && 
+            item.tags && 
+            item.tags.includes(oldTag)
+        );
 
-            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-                navigator.serviceWorker.ready.then(registration => {
-                    registration.showNotification(title, options);
-                });
-            } else {
-                const notification = new Notification(title, options);
-                notification.onclick = () => {
-                    window.focus();
-                    this.showCheckinModal(momento);
-                    notification.close();
-                };
-            }
+        if (itemsToUpdate.length === 0) {
+            ui.showNotification('No hay tareas con esa etiqueta', 'warning');
+            return;
         }
-        
-        this.scheduleCheckinNotification(momento);
-    }
 
-    startCheckinChecker() {
-        setInterval(() => {
-            this.checkPendingCheckin();
-        }, 60000);
-    }
-
-    // === Debug: Test de Notificaciones Push ===
-    async testPushNotification() {
         try {
-            ui.showNotification('🔔 Iniciando test...', 'info');
-            
-            // Obtener token fresco del dispositivo actual
-            const firebase = await import('./firebase.js');
-            const token = await firebase.requestFCMToken();
-            
-            if (!token) {
-                ui.showNotification('🔔 ERROR: No se pudo obtener token FCM', 'error');
-                return;
+            let updated = 0;
+            for (const item of itemsToUpdate) {
+                const newTags = item.tags.map(t => t === oldTag ? newTag : t);
+                await data.updateItem(item.id, { tags: newTags });
+                item.tags = newTags;
+                updated++;
             }
-            
-            console.log('📱 Token FCM generado:', token.substring(0, 50) + '...');
-            
-            // Enviar directamente a este token específico para testing
-            const { supabase } = await import('./supabase.js');
-            
-            const { data, error } = await supabase.functions.invoke('send-push', {
-                body: {
-                    token: token, // Enviar solo al token actual para testing
-                    title: '🔔 Test de KAI',
-                    body: 'Si ves esto, las notificaciones push funcionan! 🎉',
-                    timestamp: Date.now() - 60000 // Restar 1 minuto para forzar envío síncrono inmediato ignorando desincronización de relojes
-                }
-            });
 
-            if (error) {
-                console.error('Error enviando push:', error);
-                ui.showNotification('❌ Error: ' + (error.message || JSON.stringify(error)), 'error');
-            } else {
-                console.log('Push enviado:', data);
-                ui.showNotification(`✅ ${data.message || 'Notificación enviada!'}`, 'success');
-            }
+            ui.showNotification(`✓ "${oldTag}" renombrada a "${newTag}" en ${updated} tareas`, 'success');
+            
+            this.loadInicioTasks();
+            this.updateFilterCounts();
+            this.loadItems();
         } catch (error) {
-            console.error('Test push error:', error);
-            ui.showNotification('❌ Error: ' + error.message, 'error');
+            console.error('Error renameTag:', error);
+            ui.showNotification('Error al renombrar etiqueta', 'error');
         }
+    }
+
+    /**
+     * Elimina una etiqueta de TODAS las tareas/proyectos
+     * @param {string} tag - Etiqueta a eliminar
+     */
+    async deleteTag(tag) {
+        if (!tag) return;
+
+        const items = this.items || [];
+        const itemsToUpdate = items.filter(item => 
+            (item.type === 'tarea' || item.type === 'proyecto') && 
+            item.tags && 
+            item.tags.includes(tag)
+        );
+
+        if (itemsToUpdate.length === 0) {
+            ui.showNotification('No hay tareas con esa etiqueta', 'warning');
+            return;
+        }
+
+        if (!confirm(`¿Eliminar la etiqueta "${tag}" de ${itemsToUpdate.length} tareas?`)) {
+            return;
+        }
+
+        try {
+            for (const item of itemsToUpdate) {
+                const newTags = item.tags.filter(t => t !== tag);
+                await data.updateItem(item.id, { tags: newTags });
+                item.tags = newTags;
+            }
+
+            ui.showNotification(`✓ Etiqueta "${tag}" eliminada de ${itemsToUpdate.length} tareas`, 'success');
+            
+            this.loadInicioTasks();
+            this.updateFilterCounts();
+            this.loadItems();
+        } catch (error) {
+            console.error('Error deleteTag:', error);
+            ui.showNotification('Error al eliminar etiqueta', 'error');
+        }
+    }
+
+    /**
+     * Renderiza la sección de gestión de etiquetas
+     */
+    renderTagManager() {
+        const tags = this.getAllTags();
+        
+        if (tags.length === 0) {
+            return `
+                <div class="bg-gray-50 border-2 border-gray-100 p-6 rounded-3xl">
+                    <h3 class="text-lg font-bold text-ink mb-3">🏷️ Gestión de Etiquetas</h3>
+                    <p class="text-gray-400 text-base">No hay etiquetas aún. Crea tareas con #etiqueta para comenzar.</p>
+                </div>
+            `;
+        }
+
+        const tagsHtml = tags.map(tag => `
+            <div class="flex items-center gap-2 py-2 border-b border-gray-100 last:border-0">
+                <span class="bg-brand/10 text-brand border border-brand/30 px-3 py-1 rounded-full text-sm font-semibold">#${tag}</span>
+                <button class="text-gray-400 hover:text-brand transition edit-tag-btn" data-tag="${tag}" title="Renombrar">
+                    <i class="fas fa-pencil-alt"></i>
+                </button>
+                <button class="text-gray-400 hover:text-red-500 transition delete-tag-btn" data-tag="${tag}" title="Eliminar">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `).join('');
+
+        return `
+            <div class="bg-white border-2 border-brand/20 p-6 rounded-3xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-ink">🏷️ Gestión de Etiquetas</h3>
+                    <span class="text-sm text-gray-400">${tags.length} etiqueta${tags.length !== 1 ? 's' : ''}</span>
+                </div>
+                <div class="space-y-1 max-h-64 overflow-y-auto">
+                    ${tagsHtml}
+                </div>
+                <p class="text-xs text-gray-400 mt-3">✏️ Click en ✏️ para renombrar, 🗑️ para eliminar de todas las tareas</p>
+            </div>
+        `;
+    }
+
+    /**
+     * Configura eventos para la gestión de etiquetas
+     */
+    setupTagManagerEvents() {
+        document.addEventListener('click', async (e) => {
+            const editBtn = e.target.closest('.edit-tag-btn');
+            const deleteBtn = e.target.closest('.delete-tag-btn');
+
+            if (editBtn) {
+                const oldTag = editBtn.dataset.tag;
+                const newTag = prompt(`Renombrar "${oldTag}" a:`, oldTag);
+                if (newTag && newTag !== oldTag) {
+                    await this.renameTag(oldTag, newTag.trim().toLowerCase());
+                }
+            }
+
+            if (deleteBtn) {
+                const tag = deleteBtn.dataset.tag;
+                await this.deleteTag(tag);
+            }
+        });
+    }
+
+    /**
+     * Agrega una etiqueta a una tarea
+     */
+    addTagToItem(itemId, tag) {
+        const item = this.items.find(i => i.id === itemId);
+        if (item && tag && tag.trim()) {
+            const t = tag.trim().toLowerCase();
+            const currTags = item.tags || [];
+            if (!currTags.includes(t)) {
+                data.updateItem(itemId, { tags: [...currTags, t] }).then(() => {
+                    item.tags = [...currTags, t];
+                    this.loadInicioTasks();
+                    this.updateFilterCounts();
+                    ui.showNotification('Etiqueta agregada', 'success');
+                }).catch(err => {
+                    console.error('Error adding tag:', err);
+                    ui.showNotification('Error al agregar etiqueta', 'error');
+                });
+            }
+        }
+    }
+
+    // ==================== CALENDARIO SEMANAL ====================
+    
+    /**
+     * Cambia la semana seleccionada (hacia adelante o atrás)
+     * @param {number} direction -1 para semana anterior, 1 para siguiente
+     */
+    changeWeek(direction) {
+        this.selectedDate.setDate(this.selectedDate.getDate() + (direction * 7));
+        this.renderWeeklyCalendar();
+        this.filterBySelectedDate();
+    }
+
+    /**
+     * Renderiza el calendario semanal en el DOM
+     */
+    renderWeeklyCalendar() {
+        const container = document.getElementById('week-days-container');
+        if (!container) return;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Obtener el lunes de la semana actual (o domingo si es domingo)
+        const currentDay = this.selectedDate.getDay();
+        const diffToMonday = this.selectedDate.getDate() - currentDay + (currentDay === 0 ? -6 : 1);
+        const monday = new Date(this.selectedDate);
+        monday.setDate(diffToMonday);
+        monday.setHours(0, 0, 0, 0);
+
+        const dayNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+        
+        let html = '';
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(monday);
+            date.setDate(monday.getDate() + i);
+            
+            const isToday = date.getTime() === today.getTime();
+            const isSelected = date.toDateString() === this.selectedDate.toDateString();
+            
+            const dayName = dayNames[i];
+            const dayNumber = date.getDate();
+            const month = date.getMonth() + 1;
+            
+            let classes = 'day-cell flex-shrink-0';
+            if (isSelected) classes += ' active';
+            if (isToday && !isSelected) classes += ' today';
+            
+            html += `
+                <div class="${classes}" data-date="${date.toISOString().split('T')[0]}" role="button" tabindex="0" aria-label="${dayName} ${dayNumber} de ${month}">
+                    <span class="day-name">${dayName}</span>
+                    <span class="day-number">${dayNumber}</span>
+                </div>
+            `;
+        }
+        
+        container.innerHTML = html;
+        
+        // Agregar eventos a los días
+        container.querySelectorAll('.day-cell').forEach(cell => {
+            cell.addEventListener('click', () => {
+                const dateStr = cell.dataset.date;
+                this.selectedDate = new Date(dateStr);
+                this.renderWeeklyCalendar();
+                this.filterBySelectedDate();
+            });
+        });
+    }
+
+    /**
+     * Filtra y muestra items de la fecha seleccionada
+     */
+    async filterBySelectedDate() {
+        const dateStr = this.selectedDate.toISOString().split('T')[0];
+        console.log(`[filterBySelectedDate] Filtrando por fecha: ${dateStr}`);
+        
+        ui.showNotification(`Mostrando items del ${dateStr}`, 'info');
+        
+        // Obtener todos los items y filtrar por fecha
+        const allItems = await data.getItems({});
+        
+        const filteredItems = allItems.filter(item => {
+            let itemDate;
+            if (item.meta?.es_resumen_diario) {
+                itemDate = item.meta.fecha_original;
+            } else {
+                itemDate = item.deadline ? item.deadline.split('T')[0] : item.created_at.split('T')[0];
+            }
+            return itemDate === dateStr;
+        });
+        
+        // Ordenar por hora (más reciente primero)
+        filteredItems.sort((a, b) => {
+            const dateA = new Date(a.deadline || a.created_at);
+            const dateB = new Date(b.deadline || b.created_at);
+            return dateB - dateA;
+        });
+        
+        this.items = filteredItems;
+        ui.render(filteredItems);
     }
 }
-
-
 
 // Inicialización global
 window.addEventListener('DOMContentLoaded', () => {
     window.kai = new KaiController();
-    window.controller = window.kai; // Compatibilidad con módulos que buscan window.controller
+    window.controller = window.kai;
 });
 
 export default KaiController;

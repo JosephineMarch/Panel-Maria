@@ -153,8 +153,7 @@ const STATIC_ASSETS = [
     './src/js/utils.js',
     './src/js/share.js',
     './src/js/firebase.js',
-    './src/js/alarmas.js',
-    './src/js/hoy.js'
+    './src/js/alarmas.js'
 ];
 
 const CACHE_STRATEGIES = {
