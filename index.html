@@ -1491,20 +1491,6 @@ function setupHistorialEventListeners() {
         });
     });
 }
-                                    <p class="font-medium text-ink">Energía: ${energiaIcono} ${energia}/10</p>
-                                </div>
-                                <span class="text-sm text-brand font-bold">${c.meta?.emocion || ''}</span>
-                            </div>
-                        `;
-                    }).join('');
-                } catch (e) {
-                    console.error('Error loading salud checkins:', e);
-                    container.innerHTML = '<p class="text-center text-gray-400 py-6">Error al cargar check-ins</p>';
-                }
-            } else {
-                container.innerHTML = '<p class="text-center text-gray-400 py-6">Inicia sesión para ver tus check-ins</p>';
-            }
-        }
 
         // Exponer switchView globalmente para el controller
         window.switchView = switchView;
