@@ -4,8 +4,21 @@
  * Usa timestamps para funcionar incluso cuando la pestaña no está activa
  */
 
-import { data } from './data.js';
-import { ui } from './ui.js';
+// Las importaciones se hacen de forma diferida para evitar ciclos
+let dataModule = null;
+let uiModule = null;
+
+async function getModules() {
+    if (!dataModule || !uiModule) {
+        const modules = await Promise.all([
+            import('./data.js'),
+            import('./ui.js')
+        ]);
+        dataModule = modules[0].data;
+        uiModule = modules[1].ui;
+    }
+    return { data: dataModule, ui: uiModule };
+}
 
 export const pomodoro = {
     // Configuración
@@ -199,6 +212,7 @@ export const pomodoro = {
      * Finalizar sesión
      */
     async finish() {
+        const { ui } = await getModules();
         await this.detener();
         this.reset();
         ui.showNotification('Sesión finalizada', 'info');
