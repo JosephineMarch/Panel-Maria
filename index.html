@@ -1214,12 +1214,26 @@
                 }
             });
 
-            // Mostrar/ocultar secciones
-            document.getElementById('section-salud').classList.toggle('hidden', view !== 'salud');
-            document.getElementById('section-inicio').classList.toggle('hidden', view !== 'timeline');
-            document.getElementById('section-baul').classList.toggle('hidden', view !== 'baul');
-            document.getElementById('section-historial').classList.toggle('hidden', view !== 'historial');
-            document.getElementById('section-gatos').classList.toggle('hidden', view !== 'gatos');
+            // Mostrar/ocultar secciones - primero ocultar todas, luego mostrar la activa
+            const sections = ['section-salud', 'section-inicio', 'section-baul', 'section-historial', 'section-gatos'];
+            sections.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
+            
+            // Mostrar solo la sección activa
+            const activeSectionMap = {
+                'salud': 'section-salud',
+                'timeline': 'section-inicio',
+                'baul': 'section-baul',
+                'historial': 'section-historial',
+                'gatos': 'section-gatos'
+            };
+            const activeId = activeSectionMap[view];
+            if (activeId) {
+                const activeEl = document.getElementById(activeId);
+                if (activeEl) activeEl.classList.remove('hidden');
+            }
 
             // Sincronizar con el controlador principal para evitar conflictos de estado
             if (window.controller) {
@@ -1340,7 +1354,9 @@ function loadHistorial() {
             });
 
             // Obtener configuración del tipo para mostrar el icono
-            const typeConfig = window.ui.typeConfig[item.type] || window.ui.typeConfig['tarea'];
+            const typeConfig = (window.controller && window.controller.typeConfig) ? 
+                (window.controller.typeConfig[item.type] || window.controller.typeConfig['tarea']) : 
+                { icon: '✅', label: item.type || 'tarea' };
             const typeIcon = typeConfig.icon || '✅';
             
             // Usar el mismo diseño de task-row que en Inicio, con icono de tipo a la izquierda
@@ -1495,7 +1511,6 @@ function setupHistorialEventListeners() {
         // Exponer switchView globalmente para el controller
         window.switchView = switchView;
         window.getCurrentView = () => currentView;
-        window.loadSaludCheckins = loadSaludCheckins;
 
         // Inicializar: Timeline es la vista principal, footer visible
         // El footer se oculta solo cuando se cambia a la vista Hoy
