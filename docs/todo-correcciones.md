@@ -50,10 +50,10 @@
 |------|------|-------|--------|
 | **Fase 1** | 1.1 | Unificar `timeline-content` dentro de `section-historial` (mover búsqueda/filtros, eliminar contenedores duplicados) | ✅ Completado |
 | **Fase 1** | 1.2 | Centralizar data en un solo array y actualizar `renderTimeline()` | 🔲 Pendiente |
-| **Fase 2** | 2.1 | Crear estructura HTML del calendario semanal horizontal | 🔲 Pendiente |
-| **Fase 2** | 2.2 | Implementar lógica JS para generar días de la semana actual | 🔲 Pendiente |
-| **Fase 2** | 2.3 | Agregar navegación entre semanas (anterior/siguiente) | 🔲 Pendiente |
-| **Fase 2** | 2.4 | Highlight del día seleccionado y scroll automático | 🔲 Pendiente |
+| **Fase 2** | 2.1 | Crear estructura HTML del calendario semanal horizontal | ✅ Completado |
+| **Fase 2** | 2.2 | Implementar lógica JS para generar días de la semana actual | ✅ Completado |
+| **Fase 2** | 2.3 | Agregar navegación entre semanas (anterior/siguiente) | ✅ Completado |
+| **Fase 2** | 2.4 | Highlight del día seleccionado y scroll automático | ✅ Completado |
 | **Fase 3** | 3.1 | Rediseñar cards del historial (mismo estilo que tareas del inicio) | 🔲 Pendiente |
 | **Fase 3** | 3.2 | Mostrar contenido condicional según tipo (nota=texto, tarea=checklist, enlace=URL) | 🔲 Pendiente |
 | **Fase 4** | 4.1 | Implementar modal de edición para items del historial | 🔲 Pendiente |
@@ -74,6 +74,7 @@
 | Fecha | Paso Completado | Descripción |
 |-------|-----------------|-------------|
 | 2026-05-17 | 1.1 | Unificada la estructura: `timeline-content` eliminado, búsqueda/filtros movidos a `section-historial`, `switchView()` actualizado |
+| 2026-05-17 | 2.1-2.4 | **Fase 2 Completa**: Calendario semanal implementado - HTML agregado en section-historial, CSS de day-cell, lógica JS (changeWeek, renderWeeklyCalendar, filterBySelectedDate), inicialización en init() |
 
 ---
 
