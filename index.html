@@ -612,40 +612,6 @@
                 </div>
             </div>
 
-            <!-- Filtros de Categoría -->
-            <nav class="flex px-3 pb-4 gap-2" role="navigation" aria-label="Filtrar por tipo">
-                <button
-                    class="btn-category flex-1 min-h-[48px] py-4 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
-                    data-category="tarea" aria-label="Filtrar tareas">
-                    <i class="fa-regular fa-circle-check" aria-hidden="true"></i>
-                </button>
-                <button
-                    class="btn-category flex-1 min-h-[48px] py-4 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
-                    data-category="proyecto" aria-label="Filtrar proyectos">
-                    <i class="fa-regular fa-folder" aria-hidden="true"></i>
-                </button>
-                <button
-                    class="btn-category flex-1 min-h-[48px] py-4 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
-                    data-category="nota" aria-label="Filtrar notas">
-                    <i class="fa-regular fa-note-sticky" aria-hidden="true"></i>
-                </button>
-                <button
-                    class="btn-category flex-1 min-h-[48px] py-4 rounded-xl text-xl font-medium transition-all text-brand hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 cursor-pointer"
-                    data-category="directorio" aria-label="Filtrar enlaces">
-                    <i class="fa-solid fa-link" aria-hidden="true"></i>
-                </button>
-            </nav>
-
-            <!-- Header del Historial -->
-            <div class="bg-brand/5 border-2 border-brand/20 p-4 rounded-[2.5rem] shadow-sm">
-                <div class="text-center">
-                    <h2 class="text-2xl font-bold text-brand flex items-center justify-center gap-2">
-                        <span class="text-2xl">📜</span> Tu Historial
-                    </h2>
-                    <p class="text-gray-500 text-base">Todo lo que hiciste, en orden cronológico</p>
-                </div>
-            </div>
-
             <!-- Lista cronológica -->
             <div id="historial-list" class="space-y-3">
                 <!-- Se carga dinámicamente -->
@@ -1340,172 +1306,203 @@
 
         // ==================== HISTORIAL ====================
 
-        // Cargar historial
-        function loadHistorial() {
-            const container = document.getElementById('historial-list');
+// Cargar historial
+function loadHistorial() {
+    const container = document.getElementById('historial-list');
 
-            // Obtener items del controller
-            let items = [];
-            if (window.controller && window.controller.items) {
-                items = [...window.controller.items];
-            }
+    // Obtener items del controller
+    let items = [];
+    if (window.controller && window.controller.items) {
+        items = [...window.controller.items];
+    }
 
-            if (items.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-8">
-                        <div class="text-6xl mb-4">📭</div>
-                        <p class="text-gray-400">No hay registros todavía</p>
-                    </div>
-                `;
-                return;
-            }
+    if (items.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <div class="text-6xl mb-4">📭</div>
+                <p class="text-gray-400">No hay registros todavía</p>
+            </div>
+        `;
+        return;
+    }
 
-            // Ordenar por fecha (más reciente primero)
-            items.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    // Ordenar por fecha (más reciente primero)
+    items.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-            // Agrupar por día
-            const groups = {};
-            items.forEach(item => {
-                const d = new Date(item.created_at);
-                const dateKey = d.toLocaleDateString('es-ES', {
-                    year: 'numeric', month: 'long', day: 'numeric'
-                });
-                if (!groups[dateKey]) groups[dateKey] = { label: dateKey, items: [] };
-                groups[dateKey].items.push(item);
+    // Agrupar por día
+    const groups = {};
+    items.forEach(item => {
+        const d = new Date(item.created_at);
+        const dateKey = d.toLocaleDateString('es-ES', {
+            year: 'numeric', month: 'long', day: 'numeric'
+        });
+        if (!groups[dateKey]) groups[dateKey] = { label: dateKey, items: [] };
+        groups[dateKey].items.push(item);
+    });
+
+    let html = '';
+    Object.keys(groups).forEach(dateKey => {
+        const group = groups[dateKey];
+
+        // Date group header (mismo formato que Inicio)
+        html += '<div class="date-group-header">'
+            + '<i class="fa-regular fa-calendar"></i>'
+            + '<span>' + group.label.charAt(0).toUpperCase() + group.label.slice(1) + '</span>'
+            + '</div>';
+
+        group.items.forEach(item => {
+            const fecha = new Date(item.created_at).toLocaleTimeString('es-ES', {
+                hour: '2-digit', minute: '2-digit'
             });
 
-            const iconMap = {
-                tarea: '\uD83D\uDCCB',
-                nota: '\uD83D\uDCDD',
-                proyecto: '\uD83D\uDCC1',
-                directorio: '\uD83D\uDD17'
-            };
+            // Usar el mismo diseño de task-row que en Inicio
+            const puntos = item.meta?.puntos || 10;
+            const tagsHtml = item.tags && item.tags.length > 0
+                ? item.tags.map(t =>
+                    '<span class="tag tag-s tag-primary inline-flex items-center gap-1">' + t + '<button class="remove-tag-btn text-xs hover:text-red-500 ml-1" data-item-id="' + item.id + '" data-tag="' + t + '">&times;</button></span>'
+                ).join('')
+                : '';
+            
+            const addTagBtn = '<button class="add-tag-btn text-xs bg-gray-100 hover:bg-gray-200 text-gray-500 px-2 py-1 rounded" data-item-id="' + item.id + '">+ Tag</button>';
+            
+            const estadoClass = item.status === 'completed' ? 'completed' : '';
 
-            let html = '';
-            Object.keys(groups).forEach(dateKey => {
-                const group = groups[dateKey];
+            html += '<div class="task-row ' + estadoClass + '" data-item-id="' + item.id + '">'
+                + '<label class="task-checkbox-label">'
+                + '<input type="checkbox" class="task-checkbox"' + (item.status === 'completed' ? ' checked' : '') + ' data-item-id="' + item.id + '">'
+                + '<span class="checkmark"></span>'
+                + '</label>'
+                + '<div class="task-content-wrapper">'
+                + '<span class="task-text" data-item-id="' + item.id + '">' + window.ui.escapeHtml(item.content) + '</span>'
+                + '<div class="task-points-line">' + window.ui.renderPointsBadge(puntos) + '</div>'
+                + '<div class="task-meta">'
+                + '<div class="flex items-center gap-2 flex-wrap">'
+                + tagsHtml
+                + addTagBtn
+                + '</div>'
+                + '<div class="flex items-center gap-2">'
+                + '<span class="text-xs text-gray-400">' + fecha + '</span>'
+                + '<button class="task-action action-edit" data-item-id="' + item.id + '" title="Editar">'
+                + '<i class="fa-regular fa-pen-to-square"></i>'
+                + '</button>'
+                + '<button class="task-action action-delete" data-item-id="' + item.id + '" title="Eliminar">'
+                + '<i class="fa-regular fa-trash-can"></i>'
+                + '</button>'
+                + '</div>'
+                + '</div>'
+                + '</div>'
+                + '</div>';
+        });
+    });
 
-                // Date group header (mismo formato que Inicio)
-                html += '<div class="date-group-header">'
-                    + '<i class="fa-regular fa-calendar"></i>'
-                    + '<span>' + group.label.charAt(0).toUpperCase() + group.label.slice(1) + '</span>'
-                    + '</div>';
+    container.innerHTML = html;
+    
+    // Agregar event listeners para las acciones
+    setupHistorialEventListeners();
+}
 
-                group.items.forEach(item => {
-                    const fecha = new Date(item.created_at).toLocaleTimeString('es-ES', {
-                        hour: '2-digit', minute: '2-digit'
-                    });
-
-                    const icon = iconMap[item.type] || '\uD83D\uDCC4';
-                    const estadoBadge = item.status === 'completed'
-                        ? '<span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">✓ Hecho</span>'
-                        : '';
-
-                    html += '<div class="bg-white rounded-2xl p-4 shadow-sm mb-2">'
-                        + '<div class="flex items-start gap-3">'
-                        + '<span class="text-xl">' + icon + '</span>'
-                        + '<div class="flex-1 min-w-0">'
-                        + '<div class="flex items-center justify-between gap-2">'
-                        + '<span class="text-xs font-semibold text-gray-400">' + fecha + '</span>'
-                        + estadoBadge
-                        + '</div>'
-                        + '<p class="font-medium text-ink text-sm mt-0.5">' + item.content + '</p>'
-                        + (item.tags && item.tags.length > 0
-                            ? '<div class="flex gap-1 mt-1.5 flex-wrap">'
-                            + item.tags.map(tag => '<span class="text-xs text-brand">#' + tag + '</span>').join('')
-                            + '</div>'
-                            : '')
-                        + '</div>'
-                        + '</div>'
-                        + '</div>';
-                });
-            });
-
-            container.innerHTML = html;
-        }
-
-        // ==================== BAÚL ====================
-
-        // Cargar baúl (items archivados o especiales)
-        function loadBaul() {
-            const container = document.getElementById('baul-list');
-            if (!container) return;
-
-            // Por ahora, mostrar un mensaje de que está en desarrollo o cargar items filtrados
-            container.innerHTML = `
-                <div class="text-center py-8">
-                    <div class="text-6xl mb-4">📦</div>
-                    <p class="text-gray-400">Tu baúl está vacío</p>
-                    <p class="text-xs text-gray-300 mt-2">Aquí aparecerán tus cosas guardadas para después</p>
-                </div>
-            `;
-        }
-
-
-        // Inicializar historial
-        document.addEventListener('DOMContentLoaded', () => {
-            // Botón del sidebar para abrir historial
-            const btnHistorialSidebar = document.getElementById('btn-historial');
-            if (btnHistorialSidebar) {
-                btnHistorialSidebar.addEventListener('click', () => {
-                    // Cerrar sidebar
-                    document.getElementById('sidebar').classList.add('-translate-x-full');
-                    document.getElementById('sidebar-overlay').classList.add('hidden');
-                    // Cambiar a vista historial
-                    switchView('historial');
-                });
+// Configurar eventos para el historial
+function setupHistorialEventListeners() {
+    // Checkboxes para completar tareas
+    document.querySelectorAll('#historial-list .task-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', async (e) => {
+            e.stopPropagation();
+            const itemId = e.target.dataset.itemId;
+            const isChecked = e.target.checked;
+            
+            try {
+                await window.controller.finishItem(itemId, isChecked);
+                window.ui.showNotification(isChecked ? '¡Tarea completada! 🎉' : 'Tarea desmarcada', 'success');
+            } catch (error) {
+                console.error('Error al actualizar tarea:', error);
+                window.ui.showNotification('Error al actualizar la tarea', 'error');
+                e.target.checked = !isChecked;
             }
         });
-
-        // Check-in
-        let selectedEmoji = null;
-
-        async function loadTodayCheckin() {
-            const checkin = await hoy.getTodayCheckin();
-            if (checkin) {
-                selectedEmoji = checkin.emotional_state;
-                document.getElementById('checkin-physical').value = checkin.physical || '';
-                document.getElementById('checkin-note').value = checkin.note || '';
-
-                // Seleccionar el emoji
-                document.querySelectorAll('.emoji-btn').forEach(b => {
-                    if (b.dataset.emoji === selectedEmoji) {
-                        b.classList.remove('border-border-soft', 'bg-white');
-                        b.classList.add('border-brand', 'bg-brand/10', 'shadow-sticker');
-                    }
-                });
-            }
-        }
-
-        // ==================== SECCIÓN SALUD ====================
-        async function loadSaludCheckins() {
-            const container = document.getElementById('salud-checkins-list');
-            if (!container) return;
-
-            // Obtener check-ins recientes del controller
-            if (window.controller && typeof window.controller.getCheckinHistory === 'function') {
+    });
+    
+    // Botones de eliminar
+    document.querySelectorAll('#historial-list .action-delete').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const itemId = e.currentTarget.dataset.itemId;
+            
+            if (confirm('¿Estás seguro de que quieres eliminar este elemento?')) {
                 try {
-                    const checkins = await window.controller.getCheckinHistory(14);
-
-                    if (!checkins || checkins.length === 0) {
-                        container.innerHTML = '<p class="text-center text-gray-400 py-6">Aún no hay check-ins de bienestar</p>';
-                        return;
+                    await window.controller.deleteItem(itemId);
+                    window.ui.showNotification('Elemento eliminado', 'success');
+                    loadHistorial();
+                } catch (error) {
+                    console.error('Error al eliminar:', error);
+                    window.ui.showNotification('Error al eliminar el elemento', 'error');
+                }
+            }
+        });
+    });
+    
+    // Botones de editar
+    document.querySelectorAll('#historial-list .action-edit').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const itemId = e.currentTarget.dataset.itemId;
+            const item = window.controller.items.find(i => i.id === itemId);
+            
+            if (item) {
+                // Abrir modal de edición con los datos del item
+                window.ui.openEditModal(item);
+            }
+        });
+    });
+    
+    // Botones para agregar tags
+    document.querySelectorAll('#historial-list .add-tag-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const itemId = e.currentTarget.dataset.itemId;
+            const tag = prompt('Ingresa el nombre del tag:');
+            
+            if (tag && tag.trim()) {
+                try {
+                    const item = window.controller.items.find(i => i.id === itemId);
+                    if (item) {
+                        const tags = item.tags || [];
+                        if (!tags.includes(tag.trim())) {
+                            tags.push(tag.trim());
+                            await window.controller.updateItemTags(itemId, tags);
+                            window.ui.showNotification('Tag agregado', 'success');
+                            loadHistorial();
+                        }
                     }
-
-                    container.innerHTML = checkins.slice(0, 10).map(c => {
-                        const fecha = new Date(c.created_at).toLocaleDateString('es-ES', {
-                            weekday: 'short', day: 'numeric', month: 'short'
-                        });
-                        const momento = c.meta?.momento || '';
-                        const emojiMomento = momento === 'mañana' ? '🌅' : momento === 'tarde' ? '🌞' : '🌙';
-                        const energia = c.meta?.energia || '—';
-                        const energiaIcono = energia >= 8 ? '🔥' : energia >= 6 ? '💪' : energia >= 4 ? '😌' : '😴';
-
-                        return `
-                            <div class="bg-white border border-border-soft rounded-2xl p-4 shadow-sm flex items-center gap-3">
-                                <span class="text-2xl">${emojiMomento}</span>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm text-gray-400">${fecha}</p>
+                } catch (error) {
+                    console.error('Error al agregar tag:', error);
+                    window.ui.showNotification('Error al agregar el tag', 'error');
+                }
+            }
+        });
+    });
+    
+    // Botones para remover tags
+    document.querySelectorAll('#historial-list .remove-tag-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const itemId = e.currentTarget.dataset.itemId;
+            const tagToRemove = e.currentTarget.dataset.tag;
+            
+            try {
+                const item = window.controller.items.find(i => i.id === itemId);
+                if (item) {
+                    const tags = (item.tags || []).filter(t => t !== tagToRemove);
+                    await window.controller.updateItemTags(itemId, tags);
+                    window.ui.showNotification('Tag removido', 'success');
+                    loadHistorial();
+                }
+            } catch (error) {
+                console.error('Error al remover tag:', error);
+                window.ui.showNotification('Error al remover el tag', 'error');
+            }
+        });
+    });
+}
                                     <p class="font-medium text-ink">Energía: ${energiaIcono} ${energia}/10</p>
                                 </div>
                                 <span class="text-sm text-brand font-bold">${c.meta?.emocion || ''}</span>
