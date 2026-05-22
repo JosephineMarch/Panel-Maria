@@ -583,14 +583,25 @@
             </div>
         </section>
 
-        <!-- ==================== TIMELINE (Sections below are hidden when HOY is active) ==================== -->
-        <div id="timeline-content" class="hidden">
+        <!-- ==================== SECCIÓN HISTORIAL (Nueva - Cronológico) ==================== -->
+        <section id="section-historial" class="space-y-6 hidden">
+            <!-- Calendario Semanal -->
+            <div class="max-w-2xl mx-auto px-3 mb-4">
+                <div class="weekly-calendar bg-white rounded-2xl p-2 shadow-sm border border-border-soft flex items-center justify-between">
+                    <button id="prev-week" class="cal-nav-btn w-10 h-10 rounded-xl bg-brand/10 hover:bg-brand/20 text-brand font-bold transition flex items-center justify-center" aria-label="Semana anterior">&lt;</button>
+                    <div id="week-days-container" class="week-days flex gap-1 overflow-x-auto px-2">
+                        <!-- Los días se generarán dinámicamente -->
+                    </div>
+                    <button id="next-week" class="cal-nav-btn w-10 h-10 rounded-xl bg-brand/10 hover:bg-brand/20 text-brand font-bold transition flex items-center justify-center" aria-label="Siguiente semana">&gt;</button>
+                </div>
+            </div>
+
             <!-- Barra de Búsqueda -->
             <div class="max-w-2xl mx-auto px-3 mb-4">
                 <div class="relative">
-                    <input type="text" id="search-input" placeholder="🔍 Buscar en tu panel..."
+                    <input type="text" id="search-input" placeholder="🔍 Buscar en tu historial..."
                         class="w-full bg-white border-2 border-border-soft rounded-2xl py-4 px-6 pl-11 text-base font-medium focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition-all shadow-sm"
-                        aria-label="Buscar en el panel">
+                        aria-label="Buscar en el historial">
                     <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
                         aria-hidden="true"></i>
                     <button id="btn-clear-search"
@@ -624,16 +635,7 @@
                     <i class="fa-solid fa-link" aria-hidden="true"></i>
                 </button>
             </nav>
-        </div>
 
-        <!-- ==================== FEED DE ITEMS / DASHBOARD ==================== -->
-        <section id="items-container"
-            class="w-full px-2 md:px-6 pb-10 grid grid-cols-1 gap-4 md:gap-6 justify-items-center hidden">
-            <!-- Los items se inyectarán aquí -->
-        </section>
-
-        <!-- ==================== SECCIÓN HISTORIAL (Nueva - Cronológico) ==================== -->
-        <section id="section-historial" class="space-y-6 hidden">
             <!-- Header del Historial -->
             <div class="bg-brand/5 border-2 border-brand/20 p-4 rounded-[2.5rem] shadow-sm">
                 <div class="text-center">
@@ -1253,12 +1255,6 @@
             document.getElementById('section-historial').classList.toggle('hidden', view !== 'historial');
             document.getElementById('section-gatos').classList.toggle('hidden', view !== 'gatos');
 
-            // timeline-content visible solo en historial (búsqueda + filtros de categoría)
-            document.getElementById('timeline-content').classList.toggle('hidden', view !== 'historial');
-
-            // items-container visible en dashboard e historial (NO en timeline/inicio)
-            document.getElementById('items-container')?.classList.toggle('hidden', view !== 'dashboard' && view !== 'historial');
-
             // Sincronizar con el controlador principal para evitar conflictos de estado
             if (window.controller) {
                 window.controller.currentView = view;
@@ -1299,26 +1295,23 @@
             }
         }
 
-        // Asegurar que al hacer clic en Timeline se muestre el contenido
-        function ensureTimelineView() {
-            if (currentView !== 'timeline') {
-                switchView('timeline');
-            }
-        }
-
-        // Agregar eventos a los filtros del timeline para cambiar a vista timeline
+        // Agregar eventos a los filtros del historial para cambiar a vista historial
         document.addEventListener('DOMContentLoaded', () => {
-            // Filtros de tags en timeline (si existieran)
-            document.querySelectorAll('#timeline-content .btn-tag').forEach(btn => {
+            // Filtros de tags en historial (si existieran)
+            document.querySelectorAll('#section-historial .btn-tag').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    ensureTimelineView();
+                    if (currentView !== 'historial') {
+                        switchView('historial');
+                    }
                 });
             });
 
-            // Filtros de categoría en timeline (Tareas, Proyectos, Notas, Enlaces)
-            document.querySelectorAll('#timeline-content .btn-category').forEach(btn => {
+            // Filtros de categoría en historial (Tareas, Proyectos, Notas, Enlaces)
+            document.querySelectorAll('#section-historial .btn-category').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    ensureTimelineView();
+                    if (currentView !== 'historial') {
+                        switchView('historial');
+                    }
                 });
             });
         });

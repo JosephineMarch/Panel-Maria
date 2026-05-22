@@ -79,6 +79,7 @@ class KaiController {
         this.expandedCardId = null; // ID de la card expandida (para persistencia)
         this.isAnimating = false; // Guard para animación de completado
         this.inicioFilter = null; // Filtro de Inicio: null=todas, 'pending'=pendientes, 'completed'=logradas
+        this.selectedDate = new Date(); // Fecha seleccionada para el calendario
         this.init();
     }
 
@@ -121,6 +122,9 @@ class KaiController {
 
         ai.init();
         salud.initCheckinSystem();
+        
+        // Renderizar calendario semanal inicial
+        this.renderWeeklyCalendar();
     }
     
     // === Persistencia de Estado ===
@@ -380,6 +384,15 @@ class KaiController {
             searchInput.focus();
             // Restaurar vista normal (cargar todos los items)
             await this.loadItems();
+        });
+
+        // --- Calendario Semanal ---
+        document.getElementById('prev-week')?.addEventListener('click', () => {
+            this.changeWeek(-1);
+        });
+        
+        document.getElementById('next-week')?.addEventListener('click', () => {
+            this.changeWeek(1);
         });
 
         // --- Share Target Event ---
@@ -2700,6 +2713,107 @@ Responde SOLO JSON con esta estructura:
                 });
             }
         }
+    }
+
+    // ==================== CALENDARIO SEMANAL ====================
+    
+    /**
+     * Cambia la semana seleccionada (hacia adelante o atrás)
+     * @param {number} direction -1 para semana anterior, 1 para siguiente
+     */
+    changeWeek(direction) {
+        this.selectedDate.setDate(this.selectedDate.getDate() + (direction * 7));
+        this.renderWeeklyCalendar();
+        this.filterBySelectedDate();
+    }
+
+    /**
+     * Renderiza el calendario semanal en el DOM
+     */
+    renderWeeklyCalendar() {
+        const container = document.getElementById('week-days-container');
+        if (!container) return;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Obtener el lunes de la semana actual (o domingo si es domingo)
+        const currentDay = this.selectedDate.getDay();
+        const diffToMonday = this.selectedDate.getDate() - currentDay + (currentDay === 0 ? -6 : 1);
+        const monday = new Date(this.selectedDate);
+        monday.setDate(diffToMonday);
+        monday.setHours(0, 0, 0, 0);
+
+        const dayNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+        
+        let html = '';
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(monday);
+            date.setDate(monday.getDate() + i);
+            
+            const isToday = date.getTime() === today.getTime();
+            const isSelected = date.toDateString() === this.selectedDate.toDateString();
+            
+            const dayName = dayNames[i];
+            const dayNumber = date.getDate();
+            const month = date.getMonth() + 1;
+            
+            let classes = 'day-cell flex-shrink-0';
+            if (isSelected) classes += ' active';
+            if (isToday && !isSelected) classes += ' today';
+            
+            html += `
+                <div class="${classes}" data-date="${date.toISOString().split('T')[0]}" role="button" tabindex="0" aria-label="${dayName} ${dayNumber} de ${month}">
+                    <span class="day-name">${dayName}</span>
+                    <span class="day-number">${dayNumber}</span>
+                </div>
+            `;
+        }
+        
+        container.innerHTML = html;
+        
+        // Agregar eventos a los días
+        container.querySelectorAll('.day-cell').forEach(cell => {
+            cell.addEventListener('click', () => {
+                const dateStr = cell.dataset.date;
+                this.selectedDate = new Date(dateStr);
+                this.renderWeeklyCalendar();
+                this.filterBySelectedDate();
+            });
+        });
+    }
+
+    /**
+     * Filtra y muestra items de la fecha seleccionada
+     */
+    async filterBySelectedDate() {
+        const dateStr = this.selectedDate.toISOString().split('T')[0];
+        console.log(`[filterBySelectedDate] Filtrando por fecha: ${dateStr}`);
+        
+        ui.showNotification(`Mostrando items del ${dateStr}`, 'info');
+        
+        // Obtener todos los items y filtrar por fecha
+        const allItems = await data.getItems({});
+        
+        const filteredItems = allItems.filter(item => {
+            let itemDate;
+            if (item.meta?.es_resumen_diario) {
+                itemDate = item.meta.fecha_original;
+            } else {
+                itemDate = item.deadline ? item.deadline.split('T')[0] : item.created_at.split('T')[0];
+            }
+            return itemDate === dateStr;
+        });
+        
+        // Ordenar por hora (más reciente primero)
+        filteredItems.sort((a, b) => {
+            const dateA = new Date(a.deadline || a.created_at);
+            const dateB = new Date(b.deadline || b.created_at);
+            return dateB - dateA;
+        });
+        
+        this.items = filteredItems;
+        ui.render(filteredItems);
     }
 }
 
