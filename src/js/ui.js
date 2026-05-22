@@ -2201,3 +2201,6 @@ export const ui = {
     }
 };
 
+// Exportar funciones al objeto global window.ui
+window.ui = ui;
+
