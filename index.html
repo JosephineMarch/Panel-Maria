@@ -105,7 +105,8 @@
     </script>
 </head>
 
-<body class="font-sans text-ink min-h-screen flex flex-col selection:bg-primary selection:text-white" style="background-image: radial-gradient(#E2E8F0 1px, transparent 1px); background-size: 20px 20px;">
+<body class="font-sans text-ink min-h-screen flex flex-col selection:bg-primary selection:text-white"
+    style="background-image: radial-gradient(#E2E8F0 1px, transparent 1px); background-size: 20px 20px;">
 
     <!-- Left Sidebar (Like WhatsApp/Telegram) -->
     <aside id="sidebar"
@@ -239,7 +240,7 @@
                     <span class="text-2xl" id="animo-icon">😊</span> Ánimo
                 </h3>
                 <div class="relative">
-                    <input type="range" id="animo-slider" min="1" max="10" value="5" 
+                    <input type="range" id="animo-slider" min="1" max="10" value="5"
                         class="w-full h-4 bg-gray-200 rounded-full appearance-none cursor-pointer accent-brand"
                         style="height: 8px;">
                     <div class="flex justify-between text-xs text-gray-400 mt-2">
@@ -260,7 +261,7 @@
                     <span class="text-2xl" id="energia-icon">⚡</span> Energía
                 </h3>
                 <div class="relative">
-                    <input type="range" id="energia-slider" min="1" max="10" value="5" 
+                    <input type="range" id="energia-slider" min="1" max="10" value="5"
                         class="w-full h-4 bg-gray-200 rounded-full appearance-none cursor-pointer accent-brand"
                         style="height: 8px;">
                     <div class="flex justify-between text-xs text-gray-400 mt-2">
@@ -286,15 +287,17 @@
                     <div class="grid grid-cols-2 gap-4">
                         <!-- Hora de dormirse -->
                         <div>
-                            <label class="block text-sm font-medium text-gray-600 mb-2">🌙 ¿A qué hora te dormiste?</label>
-                            <input type="time" id="sueno-dormir" 
+                            <label class="block text-sm font-medium text-gray-600 mb-2">🌙 ¿A qué hora te
+                                dormiste?</label>
+                            <input type="time" id="sueno-dormir"
                                 class="w-full p-3 rounded-xl border-2 border-brand/30 focus:border-brand focus:outline-none text-center text-lg"
                                 value="23:00">
                         </div>
                         <!-- Hora de despertarse -->
                         <div>
-                            <label class="block text-sm font-medium text-gray-600 mb-2">☀️ ¿A qué hora despertaste?</label>
-                            <input type="time" id="sueno-despertar" 
+                            <label class="block text-sm font-medium text-gray-600 mb-2">☀️ ¿A qué hora
+                                despertaste?</label>
+                            <input type="time" id="sueno-despertar"
                                 class="w-full p-3 rounded-xl border-2 border-brand/30 focus:border-brand focus:outline-none text-center text-lg"
                                 value="07:00">
                         </div>
@@ -302,39 +305,45 @@
 
                     <!-- Interrupciones -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-600 mb-2">🔄 ¿Cuántas veces te despertaste?</label>
+                        <label class="block text-sm font-medium text-gray-600 mb-2">🔄 ¿Cuántas veces te
+                            despertaste?</label>
                         <div class="flex items-center gap-3">
-                            <button type="button" id="sueno-interrupciones-menos" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-xl font-bold">-</button>
-                            <span id="sueno-interrupciones-valor" class="text-2xl font-bold text-brand w-12 text-center">0</span>
-                            <button type="button" id="sueno-interrupciones-mas" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-xl font-bold">+</button>
+                            <button type="button" id="sueno-interrupciones-menos"
+                                class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-xl font-bold">-</button>
+                            <span id="sueno-interrupciones-valor"
+                                class="text-2xl font-bold text-brand w-12 text-center">0</span>
+                            <button type="button" id="sueno-interrupciones-mas"
+                                class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-xl font-bold">+</button>
                         </div>
                     </div>
 
                     <!-- Dormí de día -->
                     <div class="border-t border-gray-100 pt-4">
                         <label class="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox" id="sueno-dia-check" class="w-5 h-5 rounded text-brand focus:ring-brand">
+                            <input type="checkbox" id="sueno-dia-check"
+                                class="w-5 h-5 rounded text-brand focus:ring-brand">
                             <span class="text-sm font-medium text-gray-600">😴 Dormí de día (siesta)</span>
                         </label>
-                        
+
                         <!-- Detalles de la siesta (oculto por defecto) -->
                         <div id="sueno-dia-detalles" class="hidden mt-3 p-3 bg-purple-50 rounded-xl space-y-3">
                             <p class="text-xs text-purple-600 font-medium">Registrá tu siesta:</p>
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-xs text-gray-500 mb-1">Desde</label>
-                                    <input type="time" id="sueno-dia-desde" 
+                                    <input type="time" id="sueno-dia-desde"
                                         class="w-full p-2 rounded-lg border-2 border-purple-200 focus:border-purple-400 focus:outline-none text-center text-sm"
                                         value="14:00">
                                 </div>
                                 <div>
                                     <label class="block text-xs text-gray-500 mb-1">Hasta</label>
-                                    <input type="time" id="sueno-dia-hasta" 
+                                    <input type="time" id="sueno-dia-hasta"
                                         class="w-full p-2 rounded-lg border-2 border-purple-200 focus:border-purple-400 focus:outline-none text-center text-sm"
                                         value="15:30">
                                 </div>
                             </div>
-                            <p id="sueno-dia-duration" class="text-sm font-bold text-purple-600 text-center">⏱️ 1h 30min</p>
+                            <p id="sueno-dia-duration" class="text-sm font-bold text-purple-600 text-center">⏱️ 1h 30min
+                            </p>
                         </div>
                     </div>
 
@@ -358,15 +367,15 @@
                 <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
                     <span class="text-2xl">🌸</span> Mi Ciclo
                 </h3>
-                
+
                 <!-- Estado: NO CONFIGURADO -->
                 <div id="ciclo-no-configurado" class="text-center py-4">
                     <p class="text-gray-500 mb-4">Registrá el primer día de tu último período para calcular tu ciclo</p>
                     <div class="flex flex-col gap-3">
-                        <input type="date" id="ciclo-fecha-inicio" 
+                        <input type="date" id="ciclo-fecha-inicio"
                             class="w-full p-3 rounded-xl border-2 border-brand/30 focus:border-brand focus:outline-none text-center"
                             max="">
-                        <button id="btn-guardar-ciclo" 
+                        <button id="btn-guardar-ciclo"
                             class="bg-brand text-white font-bold py-3 px-6 rounded-xl shadow-sticker hover:bg-brand-dark transition-all">
                             💚 Guardar ciclo
                         </button>
@@ -378,7 +387,9 @@
                     <!-- Progress bar del ciclo -->
                     <div class="relative">
                         <div class="h-3 bg-gray-100 rounded-full overflow-hidden">
-                            <div id="ciclo-progress" class="h-full bg-gradient-to-r from-pink-300 to-brand rounded-full transition-all duration-500" style="width: 0%"></div>
+                            <div id="ciclo-progress"
+                                class="h-full bg-gradient-to-r from-pink-300 to-brand rounded-full transition-all duration-500"
+                                style="width: 0%"></div>
                         </div>
                         <!-- Días del ciclo -->
                         <div class="flex justify-between mt-2 text-xs text-gray-500">
@@ -443,9 +454,9 @@
             </div>
 
             <!-- Quick-add bar -->
-            <div id="inicio-quick-bar" class="flex flex-wrap items-center gap-2 bg-white rounded-2xl border-2 border-border-soft px-3 py-2 md:px-4 md:py-3 shadow-sm">
-                <input type="text" id="inicio-quick-input"
-                    placeholder="✏️ Nueva tarea..."
+            <div id="inicio-quick-bar"
+                class="flex flex-wrap items-center gap-2 bg-white rounded-2xl border-2 border-border-soft px-3 py-2 md:px-4 md:py-3 shadow-sm">
+                <input type="text" id="inicio-quick-input" placeholder="✏️ Nueva tarea..."
                     class="flex-1 min-w-[150px] bg-transparent text-base font-medium outline-none placeholder-gray-400"
                     aria-label="Nueva tarea rápida">
                 <button id="btn-inicio-add"
@@ -487,7 +498,7 @@
                 <i class="fas fa-check-circle text-4xl text-gray-300 mb-3"></i>
                 <p class="text-gray-500 text-sm">¡Todo listo! No hay tareas pendientes.</p>
             </div>
-            
+
             <!-- Botón Pomodoro flotante -->
             <button id="btn-pomodoro"
                 class="fixed bottom-28 right-4 w-14 h-14 rounded-full bg-brand-dark text-white shadow-float flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-30"
@@ -543,7 +554,13 @@
                     <p class="text-gray-500 text-base mt-1">Cosas guardadas para después</p>
                 </div>
             </div>
-
+            <!-- INICIO ACCESO GATOS -->
+            <div onclick="app.navegar('gatos')"
+                class="cursor-pointer bg-white p-4 rounded-lg shadow-md hover:shadow-xl hover:bg-blue-50 transition-all duration-200 border border-gray-200 flex flex-col items-center justify-center w-32 h-32">
+                <span class="text-4xl mb-2">🐱</span>
+                <span class="font-bold text-gray-700 text-sm">Mis Gatos</span>
+            </div>
+            <!-- FIN ACCESO GATOS -->
             <!-- Filtros -->
             <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2 -mx-3 px-3">
                 <button
@@ -639,7 +656,8 @@
         <!-- ==================== SECCIÓN GATOS ==================== -->
         <section id="section-gatos" class="space-y-6 hidden">
             <!-- Header de Gatos -->
-            <div class="bg-gradient-to-r from-brand/20 via-warning/10 to-brand/20 p-5 rounded-[2rem] shadow-sm animate-fade-in">
+            <div
+                class="bg-gradient-to-r from-brand/20 via-warning/10 to-brand/20 p-5 rounded-[2rem] shadow-sm animate-fade-in">
                 <div class="text-center">
                     <h2 class="text-2xl font-bold text-brand flex items-center justify-center gap-2">
                         <span class="text-3xl">🐱</span> Mis Gatos
@@ -762,7 +780,8 @@
             </div>
 
             <!-- Input principal -->
-            <div class="bg-gray-50 border-2 border-border-soft px-4 py-3 md:px-6 md:py-4 rounded-2xl flex items-center gap-2 md:gap-3">
+            <div
+                class="bg-gray-50 border-2 border-border-soft px-4 py-3 md:px-6 md:py-4 rounded-2xl flex items-center gap-2 md:gap-3">
                 <input type="text" id="quick-input" placeholder="Escribe aquí tu nota, tarea o enlace..."
                     class="bg-transparent text-base py-2 px-1 w-full focus:outline-none placeholder-gray-400 min-w-0"
                     aria-label="Escribe tu nota o tarea">
@@ -907,15 +926,12 @@
 
                 <div class="space-y-2">
                     <label for="edit-content" class="font-bold text-base ml-2">Título</label>
-                    <input type="text" id="edit-content"
-                        class="input-base font-bold bg-input-bg border-none"
-                        required>
+                    <input type="text" id="edit-content" class="input-base font-bold bg-input-bg border-none" required>
                 </div>
 
                 <div class="space-y-2">
                     <label class="font-bold text-base ml-2">Descripción</label>
-                    <textarea id="edit-description"
-                        class="textarea-base bg-input-bg border-none"
+                    <textarea id="edit-description" class="textarea-base bg-input-bg border-none"
                         placeholder="Añade más detalles aquí..."></textarea>
                 </div>
 
@@ -930,8 +946,7 @@
 
                 <div class="space-y-2">
                     <label class="font-bold text-base ml-2">Enlace Directo</label>
-                    <input type="url" id="edit-url"
-                        class="input-base bg-input-bg border-none text-action"
+                    <input type="url" id="edit-url" class="input-base bg-input-bg border-none text-action"
                         placeholder="https://...">
                 </div>
 
@@ -956,7 +971,8 @@
                         <input type="text" id="edit-tags"
                             class="input-base bg-link/30 border-link text-purple-600 w-full"
                             placeholder="Escribe etiquetas o busca...">
-                        <div id="tag-autocomplete" class="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg hidden max-h-48 overflow-y-auto">
+                        <div id="tag-autocomplete"
+                            class="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg hidden max-h-48 overflow-y-auto">
                         </div>
                     </div>
                 </div>
@@ -967,10 +983,8 @@
                         ⏰ Alarma / Deadline
                     </label>
                     <div class="flex gap-2">
-                        <input type="date" id="edit-deadline-date"
-                            class="input-base input-s bg-input-bg border-none">
-                        <input type="time" id="edit-deadline-time"
-                            class="input-base input-s bg-input-bg border-none">
+                        <input type="date" id="edit-deadline-date" class="input-base input-s bg-input-bg border-none">
+                        <input type="time" id="edit-deadline-time" class="input-base input-s bg-input-bg border-none">
                     </div>
                 </div>
 
@@ -1004,17 +1018,18 @@
         <div class="bg-white rounded-3xl w-full max-w-sm mx-4 p-6 shadow-2xl">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-xl font-bold text-ink">🍅 Pomodoro</h2>
-                <button id="pomodoro-cerrar" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center">
+                <button id="pomodoro-cerrar"
+                    class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
-            
+
             <!-- Timer -->
             <div class="text-center mb-6">
                 <div id="pomodoro-timer" class="text-5xl font-bold text-brand mb-2">25:00</div>
                 <div id="pomodoro-ciclos" class="text-sm text-gray-400">Ciclo: 1/4</div>
             </div>
-            
+
             <!-- Selector de tarea (opcional) -->
             <div class="mb-4">
                 <label class="text-xs text-gray-500 block mb-1">Vincular a tarea (opcional)</label>
@@ -1022,7 +1037,7 @@
                     <option value="">Sin tarea específica</option>
                 </select>
             </div>
-            
+
             <!-- Botones de control -->
             <div class="flex gap-2 mb-4">
                 <button id="pomodoro-btn-iniciar"
@@ -1030,7 +1045,7 @@
                     ▶ Iniciar
                 </button>
             </div>
-            
+
             <div class="flex gap-2">
                 <button id="pomodoro-btn-saltar"
                     class="flex-1 bg-gray-100 text-gray-600 font-bold py-2 rounded-lg hover:bg-gray-200 transition text-sm">
@@ -1041,13 +1056,15 @@
                     ⏹ Fin
                 </button>
             </div>
-            
+
             <!-- Opciones post-trabajo (hidden por defecto) -->
             <div id="pomodoro-opciones" class="hidden mt-4 pt-4 border-t text-center">
                 <p class="text-sm text-gray-500 mb-2">¿Continuar con descanso?</p>
                 <div class="flex gap-2">
-                    <button id="pomodoro-btn-descanso" class="flex-1 bg-success text-white font-bold py-2 rounded-lg">☕ Descanso</button>
-                    <button id="pomodoro-btn-seguir" class="flex-1 bg-brand text-white font-bold py-2 rounded-lg">▶ Seguir</button>
+                    <button id="pomodoro-btn-descanso" class="flex-1 bg-success text-white font-bold py-2 rounded-lg">☕
+                        Descanso</button>
+                    <button id="pomodoro-btn-seguir" class="flex-1 bg-brand text-white font-bold py-2 rounded-lg">▶
+                        Seguir</button>
                 </div>
             </div>
         </div>
@@ -1082,7 +1099,7 @@
             initNavigation();
             initFecha();
             initAddNewModal();
-            
+
             // Forzar vista inicial correcta
             switchView(currentView);
         });
@@ -1313,7 +1330,7 @@
             const fechaStr = fecha.toLocaleDateString('es-ES', opcionesFecha);
             const elementFecha = document.getElementById('salud-fecha');
             const elementSaludo = document.getElementById('salud-saludo');
-            
+
             if (elementFecha) {
                 elementFecha.textContent = fechaStr.charAt(0).toUpperCase() + fechaStr.slice(1);
             }
@@ -1322,7 +1339,7 @@
             let saludo = 'Buenos días';
             if (hora >= 12 && hora < 18) saludo = 'Buenas tardes';
             if (hora >= 18) saludo = 'Buenas noches';
-            
+
             if (elementSaludo) {
                 elementSaludo.textContent = saludo;
             }
@@ -1402,8 +1419,8 @@
                         + '<p class="font-medium text-ink text-sm mt-0.5">' + item.content + '</p>'
                         + (item.tags && item.tags.length > 0
                             ? '<div class="flex gap-1 mt-1.5 flex-wrap">'
-                                + item.tags.map(tag => '<span class="text-xs text-brand">#' + tag + '</span>').join('')
-                                + '</div>'
+                            + item.tags.map(tag => '<span class="text-xs text-brand">#' + tag + '</span>').join('')
+                            + '</div>'
                             : '')
                         + '</div>'
                         + '</div>'
@@ -1476,7 +1493,7 @@
             if (window.controller && typeof window.controller.getCheckinHistory === 'function') {
                 try {
                     const checkins = await window.controller.getCheckinHistory(14);
-                    
+
                     if (!checkins || checkins.length === 0) {
                         container.innerHTML = '<p class="text-center text-gray-400 py-6">Aún no hay check-ins de bienestar</p>';
                         return;
@@ -1490,7 +1507,7 @@
                         const emojiMomento = momento === 'mañana' ? '🌅' : momento === 'tarde' ? '🌞' : '🌙';
                         const energia = c.meta?.energia || '—';
                         const energiaIcono = energia >= 8 ? '🔥' : energia >= 6 ? '💪' : energia >= 4 ? '😌' : '😴';
-                        
+
                         return `
                             <div class="bg-white border border-border-soft rounded-2xl p-4 shadow-sm flex items-center gap-3">
                                 <span class="text-2xl">${emojiMomento}</span>
