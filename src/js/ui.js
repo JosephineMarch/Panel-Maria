@@ -2094,6 +2094,61 @@ export const ui = {
     },
 
     /**
+     * Renderiza una fila de tarea para el historial (con icono de tipo a la izquierda)
+     * @param {Object} item
+     * @returns {string} HTML string
+     */
+    renderTaskRowForHistorial(item) {
+        // Obtener configuración del tipo para mostrar el icono
+        const typeConfig = this.typeConfig[item.type] || this.typeConfig['tarea'];
+        const typeIcon = typeConfig.icon || '✅';
+        
+        const puntos = item.meta?.puntos || 10;
+        const fecha = new Date(item.created_at).toLocaleTimeString('es-ES', {
+            hour: '2-digit', minute: '2-digit'
+        });
+
+        // Generar etiquetas editables (con botón para eliminar)
+        const tagsHtml = item.tags && item.tags.length > 0
+            ? item.tags.map(t =>
+                '<span class="tag tag-s tag-primary inline-flex items-center gap-1">' + this.escapeHtml(t) + '<button class="remove-tag-btn text-xs hover:text-red-500 ml-1" data-item-id="' + item.id + '" data-tag="' + this.escapeHtml(t) + '">&times;</button></span>'
+            ).join('')
+            : '';
+        
+        // Botón para agregar etiqueta
+        const addTagBtn = '<button class="add-tag-btn text-xs bg-gray-100 hover:bg-gray-200 text-gray-500 px-2 py-1 rounded" data-item-id="' + item.id + '">+ Tag</button>';
+        
+        const estadoClass = item.status === 'completed' ? 'completed' : '';
+
+        return '<div class="task-row ' + estadoClass + '" data-item-id="' + item.id + '">'
+            + '<label class="task-checkbox-label">'
+            + '<input type="checkbox" class="task-checkbox"' + (item.status === 'completed' ? ' checked' : '') + ' data-item-id="' + item.id + '">'
+            + '<span class="checkmark"></span>'
+            + '</label>'
+            + '<div class="task-content-wrapper">'
+            + '<span class="task-type-icon mr-2 text-lg" title="' + (typeConfig.label || item.type) + '">' + typeIcon + '</span>'
+            + '<span class="task-text" data-item-id="' + item.id + '">' + this.escapeHtml(item.content) + '</span>'
+            + '<div class="task-points-line">' + this.renderPointsBadge(puntos) + '</div>'
+            + '<div class="task-meta">'
+            + '<div class="flex items-center gap-2 flex-wrap">'
+            + tagsHtml
+            + addTagBtn
+            + '</div>'
+            + '<div class="flex items-center gap-2">'
+            + '<span class="text-xs text-gray-400">' + fecha + '</span>'
+            + '<button class="task-action action-edit" data-item-id="' + item.id + '" title="Editar">'
+            + '<i class="fa-regular fa-pen-to-square"></i>'
+            + '</button>'
+            + '<button class="task-action action-delete" data-item-id="' + item.id + '" title="Eliminar">'
+            + '<i class="fa-regular fa-trash-can"></i>'
+            + '</button>'
+            + '</div>'
+            + '</div>'
+            + '</div>'
+            + '</div>';
+    },
+
+    /**
      * Renderiza chips de tags como filtros clicables
      * @param {string[]} tags - Array de tags únicos
      * @param {string|null} activeFilter - Tag actualmente activo (null = todos)

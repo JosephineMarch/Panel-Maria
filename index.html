@@ -1349,54 +1349,8 @@ function loadHistorial() {
             + '</div>';
 
         group.items.forEach(item => {
-            const fecha = new Date(item.created_at).toLocaleTimeString('es-ES', {
-                hour: '2-digit', minute: '2-digit'
-            });
-
-            // Obtener configuración del tipo para mostrar el icono
-            const typeConfig = (window.controller && window.controller.typeConfig) ? 
-                (window.controller.typeConfig[item.type] || window.controller.typeConfig['tarea']) : 
-                { icon: '✅', label: item.type || 'tarea' };
-            const typeIcon = typeConfig.icon || '✅';
-            
-            // Usar el mismo diseño de task-row que en Inicio, con icono de tipo a la izquierda
-            const puntos = item.meta?.puntos || 10;
-            const tagsHtml = item.tags && item.tags.length > 0
-                ? item.tags.map(t =>
-                    '<span class="tag tag-s tag-primary inline-flex items-center gap-1">' + t + '<button class="remove-tag-btn text-xs hover:text-red-500 ml-1" data-item-id="' + item.id + '" data-tag="' + t + '">&times;</button></span>'
-                ).join('')
-                : '';
-            
-            const addTagBtn = '<button class="add-tag-btn text-xs bg-gray-100 hover:bg-gray-200 text-gray-500 px-2 py-1 rounded" data-item-id="' + item.id + '">+ Tag</button>';
-            
-            const estadoClass = item.status === 'completed' ? 'completed' : '';
-
-            html += '<div class="task-row ' + estadoClass + '" data-item-id="' + item.id + '">'
-                + '<label class="task-checkbox-label">'
-                + '<input type="checkbox" class="task-checkbox"' + (item.status === 'completed' ? ' checked' : '') + ' data-item-id="' + item.id + '">'
-                + '<span class="checkmark"></span>'
-                + '</label>'
-                + '<div class="task-content-wrapper">'
-                + '<span class="task-type-icon mr-2 text-lg" title="' + (typeConfig.label || item.type) + '">' + typeIcon + '</span>'
-                + '<span class="task-text" data-item-id="' + item.id + '">' + window.ui.escapeHtml(item.content) + '</span>'
-                + '<div class="task-points-line">' + window.ui.renderPointsBadge(puntos) + '</div>'
-                + '<div class="task-meta">'
-                + '<div class="flex items-center gap-2 flex-wrap">'
-                + tagsHtml
-                + addTagBtn
-                + '</div>'
-                + '<div class="flex items-center gap-2">'
-                + '<span class="text-xs text-gray-400">' + fecha + '</span>'
-                + '<button class="task-action action-edit" data-item-id="' + item.id + '" title="Editar">'
-                + '<i class="fa-regular fa-pen-to-square"></i>'
-                + '</button>'
-                + '<button class="task-action action-delete" data-item-id="' + item.id + '" title="Eliminar">'
-                + '<i class="fa-regular fa-trash-can"></i>'
-                + '</button>'
-                + '</div>'
-                + '</div>'
-                + '</div>'
-                + '</div>';
+            // Usar la nueva función renderTaskRowForHistorial de ui.js
+            html += window.ui.renderTaskRowForHistorial(item);
         });
     });
 
