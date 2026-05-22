@@ -42,6 +42,7 @@ import { auth } from './auth.js';
 import { ai } from './ai.js';
 import { cerebras } from './cerebras.js';
 import { salud } from './salud.js';
+import { gatos } from './gatos.js';
 import { utils } from './utils.js';
 
 function formatDeadlineForDB(deadline) {
@@ -90,6 +91,8 @@ class KaiController {
         try {
             this.currentUser = await auth.init();
             salud.init(this.currentUser);
+            this.gatos = gatos;
+            this.gatos.init(this.currentUser);
             if (this.currentUser) {
                 ui.updateUserInfo(this.currentUser);
                 // Restaurar estado persistido DESPUÉS de tener usuario
@@ -97,6 +100,8 @@ class KaiController {
                 // Cargar según la vista actual
                 if (this.currentView === 'hoy' || this.currentView === 'salud') {
                     await salud.loadHoySection();
+                } else if (this.currentView === 'gatos') {
+                    await this.gatos.loadGatosSection();
                 } else {
                     await this.loadItems();
                 }
@@ -158,11 +163,12 @@ class KaiController {
         const sectionInicio = document.getElementById('section-inicio');
         const sectionBaul = document.getElementById('section-baul');
         const sectionHistorial = document.getElementById('section-historial');
+        const sectionGatos = document.getElementById('section-gatos');
         const timelineContent = document.getElementById('timeline-content');
         const itemsContainer = document.getElementById('items-container');
         
         // Ocultar todo primero
-        [sectionSalud, sectionInicio, sectionBaul, sectionHistorial].forEach(s => {
+        [sectionSalud, sectionInicio, sectionBaul, sectionHistorial, sectionGatos].forEach(s => {
             if (s) s.classList.add('hidden');
         });
         if (timelineContent) timelineContent.classList.add('hidden');
@@ -182,6 +188,8 @@ class KaiController {
             if (sectionBaul) sectionBaul.classList.remove('hidden');
         } else if (this.currentView === 'dashboard') {
             if (itemsContainer) itemsContainer.classList.remove('hidden');
+        } else if (this.currentView === 'gatos') {
+            if (sectionGatos) sectionGatos.classList.remove('hidden');
         }
     }
 
@@ -206,6 +214,11 @@ class KaiController {
         // Si es SALUD, cargar datos de SALUD
         if (view === 'salud') {
             salud.loadHoySection();
+        }
+        
+        // Si es GATOS, cargar datos de GATOS
+        if (view === 'gatos') {
+            this.gatos.loadGatosSection();
         }
     }
     
@@ -1540,6 +1553,11 @@ Responde SOLO JSON con esta estructura:
                 // Filtrar por exclusión de tag (ej: pendientes = sin tag 'logro')
                 if (this.currentExcludeTag) {
                     filteredItems = filteredItems.filter(item => !item.tags || !item.tags.includes(this.currentExcludeTag));
+                }
+
+                // Excluir items marcados como ocultos de la vista general
+                if (this.currentView !== 'gatos') {
+                    filteredItems = filteredItems.filter(item => !item.tags || !item.tags.includes('gato_oculto'));
                 }
 
                 console.log(`[loadItems] Obtenidos ${items.length} items, filtrados ${filteredItems.length}`);

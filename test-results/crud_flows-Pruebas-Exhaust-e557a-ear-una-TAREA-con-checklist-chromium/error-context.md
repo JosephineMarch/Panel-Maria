@@ -1,0 +1,85 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - navigation "Menú de navegación" [ref=e2]:
+    - generic [ref=e3]:
+      - heading "Menú" [level=2] [ref=e4]
+      - button "Cerrar menú" [ref=e5] [cursor=pointer]:
+        - generic [ref=e6]: 
+    - generic [ref=e8]:
+      - paragraph [ref=e9]: ¡Conecta tu cerebro!
+      - button "Google Login" [ref=e10] [cursor=pointer]:
+        - generic [ref=e11]: 🌐
+        - text: Google Login
+    - navigation "Opciones del menú" [ref=e12]:
+      - button "Kai KAI Asistente" [ref=e14] [cursor=pointer]:
+        - img "Kai" [ref=e15]
+        - generic [ref=e16]: KAI Asistente
+      - text: 
+      - generic [ref=e17]:
+        - paragraph [ref=e18]: Mi Progreso
+        - button "Dashboard de Logros" [ref=e19] [cursor=pointer]:
+          - generic [ref=e20]: 
+          - generic [ref=e21]: Dashboard de Logros
+      - generic [ref=e22]:
+        - paragraph [ref=e23]: Datos y Seguridad
+        - button "Exportar JSON" [ref=e24] [cursor=pointer]:
+          - generic [ref=e25]: 
+          - generic [ref=e26]: Exportar JSON
+        - button "Importar JSON" [ref=e27] [cursor=pointer]:
+          - generic [ref=e28]: 
+          - generic [ref=e29]: Importar JSON
+  - banner [ref=e30]:
+    - generic [ref=e31]:
+      - button "Perfil de usuario" [ref=e32] [cursor=pointer]:
+        - img "Tu avatar" [ref=e33]
+      - heading "KAI" [level=1] [ref=e34]
+      - button "" [ref=e36] [cursor=pointer]:
+        - generic [ref=e37]: 
+  - main [ref=e38]:
+    - text:  
+    - generic [ref=e39]:
+      - generic [ref=e41]:
+        - textbox "Buscar en el panel" [ref=e42]:
+          - /placeholder: 🔍 Buscar en tu panel...
+        - generic [ref=e43]: 
+        - text: 
+      - navigation "Filtrar por tipo" [ref=e44]:
+        - button "Filtrar tareas" [ref=e45] [cursor=pointer]:
+          - generic [ref=e46]: 
+        - button "Filtrar proyectos" [ref=e47] [cursor=pointer]:
+          - generic [ref=e48]: 
+        - button "Filtrar notas" [ref=e49] [cursor=pointer]:
+          - generic [ref=e50]: 
+        - button "Filtrar enlaces" [ref=e51] [cursor=pointer]:
+          - generic [ref=e52]: 
+  - navigation [ref=e53]:
+    - button " Inicio" [ref=e54] [cursor=pointer]:
+      - generic [ref=e55]: 
+      - generic [ref=e56]: Inicio
+    - button " Salud" [ref=e57] [cursor=pointer]:
+      - generic [ref=e58]: 
+      - generic [ref=e59]: Salud
+    - button " Gatos" [ref=e60] [cursor=pointer]:
+      - generic [ref=e61]: 
+      - generic [ref=e62]: Gatos
+    - button "+" [ref=e63] [cursor=pointer]:
+      - generic [ref=e64]: +
+    - button " Historial" [ref=e65] [cursor=pointer]:
+      - generic [ref=e66]: 
+      - generic [ref=e67]: Historial
+    - button " Baúl" [ref=e68] [cursor=pointer]:
+      - generic [ref=e69]: 
+      - generic [ref=e70]: Baúl
+  - text:   +        
+  - dialog "Notificaciones" [ref=e71]:
+    - generic [ref=e72]:
+      - heading "🔔 Notificaciones" [level=2] [ref=e73]
+      - button "Cerrar notificaciones" [ref=e74] [cursor=pointer]:
+        - generic [ref=e75]: 
+    - button " Marcar todo como leído" [ref=e77] [cursor=pointer]:
+      - generic [ref=e78]: 
+      - text: Marcar todo como leído
+    - paragraph [ref=e80]: No hay notificaciones
+```

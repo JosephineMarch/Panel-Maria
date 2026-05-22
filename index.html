@@ -635,6 +635,52 @@
                 </div>
             </div>
         </section>
+
+        <!-- ==================== SECCIÓN GATOS ==================== -->
+        <section id="section-gatos" class="space-y-6 hidden">
+            <!-- Header de Gatos -->
+            <div class="bg-gradient-to-r from-brand/20 via-warning/10 to-brand/20 p-5 rounded-[2rem] shadow-sm animate-fade-in">
+                <div class="text-center">
+                    <h2 class="text-2xl font-bold text-brand flex items-center justify-center gap-2">
+                        <span class="text-3xl">🐱</span> Mis Gatos
+                    </h2>
+                    <p class="text-gray-500 text-sm mt-1">Bitácora de salud y suministros</p>
+                </div>
+            </div>
+
+            <!-- Selector de Gatos Horizontal (Avatars) -->
+            <div class="flex items-center gap-3 overflow-x-auto no-scrollbar pb-2 px-1" id="gatos-avatars-container">
+                <!-- Se inyecta dinámicamente -->
+            </div>
+
+            <!-- Ficha del Gato Activo (Bento Card) -->
+            <div class="bg-white border border-brand/10 rounded-[2rem] p-5 shadow-sm" id="gatos-active-details">
+                <!-- Se inyecta dinámicamente -->
+            </div>
+
+            <!-- Bento Grid para Insumos y Salud -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Tarjeta de Existencias de Insumos -->
+                <div class="bg-white border border-warning/10 rounded-[2rem] p-5 shadow-sm space-y-4">
+                    <h3 class="font-bold text-base text-gray-800 flex items-center gap-2 border-b border-gray-50 pb-2">
+                        <span class="text-xl">📦</span> Bitácora de Insumos
+                    </h3>
+                    <div id="gatos-insumos-container">
+                        <!-- Se inyecta dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Tarjeta de Historial Médico y Salud -->
+                <div class="bg-white border border-secondary/10 rounded-[2rem] p-5 shadow-sm space-y-4">
+                    <h3 class="font-bold text-base text-gray-800 flex items-center gap-2 border-b border-gray-50 pb-2">
+                        <span class="text-xl">🩹</span> Salud y Cuidados
+                    </h3>
+                    <div id="gatos-salud-container">
+                        <!-- Se inyecta dinámicamente -->
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
     <!-- FOOTER NAV (Navegación principal) -->
@@ -649,6 +695,12 @@
             data-nav="salud">
             <i class="fa-solid fa-heart-pulse text-xl"></i>
             <span class="text-[10px] font-bold">Salud</span>
+        </button>
+        <button
+            class="footer-nav-btn flex flex-col items-center gap-1 p-3 rounded-xl text-gray-400 hover:text-brand transition"
+            data-nav="gatos">
+            <i class="fa-solid fa-cat text-xl"></i>
+            <span class="text-[10px] font-bold">Gatos</span>
         </button>
 
         <!-- Botón central (+) para agregar -->
@@ -1182,6 +1234,7 @@
             document.getElementById('section-inicio').classList.toggle('hidden', view !== 'timeline');
             document.getElementById('section-baul').classList.toggle('hidden', view !== 'baul');
             document.getElementById('section-historial').classList.toggle('hidden', view !== 'historial');
+            document.getElementById('section-gatos').classList.toggle('hidden', view !== 'gatos');
 
             // timeline-content visible solo en historial (búsqueda + filtros de categoría)
             document.getElementById('timeline-content').classList.toggle('hidden', view !== 'historial');
@@ -1222,6 +1275,10 @@
             } else if (view === 'baul') {
                 // Cargar baúl
                 loadBaul();
+            } else if (view === 'gatos') {
+                if (window.controller && window.controller.gatos) {
+                    window.controller.gatos.loadGatosSection();
+                }
             }
         }
 
