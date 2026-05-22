@@ -493,6 +493,7 @@ export const ui = {
         const typeConfig = this.typeConfig[item.type] || this.typeConfig['nota'];
         const pinnedClass = isPinned || item.anclado ? 'pinned-card' : '';
         const typeBadgeClass = `card-type-badge-${item.type === 'note' || item.type === 'nota' ? 'nota' : item.type === 'tarea' || item.type === 'task' ? 'tarea' : item.type}`;
+        const displayIcon = typeConfig.icon || '📝';
         
         card.className = `card-white mb-4 w-full cursor-pointer hover:shadow-md transition-all ${pinnedClass}`;
         card.dataset.expanded = 'false';
