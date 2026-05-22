@@ -706,15 +706,6 @@ export const ui = {
                         </button>
                     </div>
                 </div>
-
-                <!-- Energía (siempre visible) -->
-                <div class="space-y-2">
-                    <label class="card-section-title">Energía</label>
-                    <input type="number" id="inline-energy-${item.id}" min="1" max="10" 
-                           value="${item.meta?.energia || ''}" 
-                           class="w-24 bg-gray-50 border-2 border-gray-100 rounded-lg px-3 py-2 text-base text-ink focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none"
-                           placeholder="1-10">
-                </div>
             </div>
 
             <!-- Botones wishbar -->
@@ -2062,6 +2053,10 @@ export const ui = {
         row.className = 'task-row';
         row.dataset.itemId = item.id;
 
+        // Obtener configuración del tipo para mostrar el icono
+        const typeConfig = this.typeConfig[item.type] || this.typeConfig['tarea'];
+        const typeIcon = typeConfig.icon || '✅';
+        
         const puntos = item.meta?.puntos || 10;
 
         // Generar etiquetas editables (con botón para eliminar)
@@ -2080,6 +2075,7 @@ export const ui = {
             + '<span class="checkmark"></span>'
             + '</label>'
             + '<div class="task-content-wrapper">'
+            + '<span class="task-type-icon mr-2 text-lg" title="' + (typeConfig.label || item.type) + '">' + typeIcon + '</span>'
             + '<span class="task-text" data-id="' + item.id + '">' + this.escapeHtml(item.content) + '</span>'
             // Puntos en su propia línea, debajo del texto
             + '<div class="task-points-line">' + this.renderPointsBadge(puntos) + '</div>'

@@ -1263,23 +1263,7 @@
 
         // Agregar eventos a los filtros del historial para cambiar a vista historial
         document.addEventListener('DOMContentLoaded', () => {
-            // Filtros de tags en historial (si existieran)
-            document.querySelectorAll('#section-historial .btn-tag').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    if (currentView !== 'historial') {
-                        switchView('historial');
-                    }
-                });
-            });
-
-            // Filtros de categoría en historial (Tareas, Proyectos, Notas, Enlaces)
-            document.querySelectorAll('#section-historial .btn-category').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    if (currentView !== 'historial') {
-                        switchView('historial');
-                    }
-                });
-            });
+            // Los filtros de tags y categorías fueron eliminados
         });
 
         // Fecha y saludo
@@ -1355,7 +1339,11 @@ function loadHistorial() {
                 hour: '2-digit', minute: '2-digit'
             });
 
-            // Usar el mismo diseño de task-row que en Inicio
+            // Obtener configuración del tipo para mostrar el icono
+            const typeConfig = window.ui.typeConfig[item.type] || window.ui.typeConfig['tarea'];
+            const typeIcon = typeConfig.icon || '✅';
+            
+            // Usar el mismo diseño de task-row que en Inicio, con icono de tipo a la izquierda
             const puntos = item.meta?.puntos || 10;
             const tagsHtml = item.tags && item.tags.length > 0
                 ? item.tags.map(t =>
@@ -1373,6 +1361,7 @@ function loadHistorial() {
                 + '<span class="checkmark"></span>'
                 + '</label>'
                 + '<div class="task-content-wrapper">'
+                + '<span class="task-type-icon mr-2 text-lg" title="' + (typeConfig.label || item.type) + '">' + typeIcon + '</span>'
                 + '<span class="task-text" data-item-id="' + item.id + '">' + window.ui.escapeHtml(item.content) + '</span>'
                 + '<div class="task-points-line">' + window.ui.renderPointsBadge(puntos) + '</div>'
                 + '<div class="task-meta">'
@@ -1445,11 +1434,10 @@ function setupHistorialEventListeners() {
         btn.addEventListener('click', async (e) => {
             e.stopPropagation();
             const itemId = e.currentTarget.dataset.itemId;
-            const item = window.controller.items.find(i => i.id === itemId);
             
-            if (item) {
+            if (itemId) {
                 // Abrir modal de edición con los datos del item
-                window.ui.openEditModal(item);
+                await window.controller.openEditModal(itemId);
             }
         });
     });
